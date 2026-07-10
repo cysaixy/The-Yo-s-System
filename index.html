@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>The~Yo's Resto Bar — Baggao, Cagayan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -82,7 +82,8 @@
     color:#fff;
   }
   
-  nav ul{list-style:none;display:flex;gap:34px;}
+  nav { display: flex; align-items: center; gap: 34px; }
+  nav ul{list-style:none;display:flex;gap:34px;align-items:center;}
   nav a{
     color:#fff;font-size:0.82rem;letter-spacing:0.08em;text-transform:uppercase;
     font-weight:500;position:relative;padding-bottom:3px;
@@ -92,10 +93,32 @@
     transition:width .25s ease;
   }
   nav a:hover::after{width:100%;}
-  .nav-toggle{display:none;background:none;border:none;color:#fff;font-size:1.6rem;cursor:pointer;}
-  @media(max-width:800px){
-    nav{display:none;}
+  .nav-btn {
+    background: var(--brass);
+    color: var(--bone) !important;
+    padding: 8px 16px;
+    font-size: 0.75rem !important;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    border-radius: 2px;
+  }
+  .nav-btn::after { display: none !important; }
+  .nav-btn:hover { background: #fff; color: var(--dark) !important; }
+  
+  .nav-toggle{display:none;background:none;border:none;color:#fff;font-size:1.8rem;cursor:pointer;padding:5px;z-index:110;}
+  
+  @media(max-width:920px){
     .nav-toggle{display:block;}
+    nav {
+      display: none;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(18, 19, 21, 0.98);
+      flex-direction: column; justify-content: center; align-items: center;
+      z-index: 105;
+    }
+    nav.open { display: flex; }
+    nav ul { flex-direction: column; gap: 28px; }
+    nav a { font-size: 1.2rem; }
   }
 
   /* ---------- HERO ---------- */
@@ -274,10 +297,12 @@
   .order-summary-box {
     margin-top: 16px;
     padding-top: 14px;
-    border-top: 1px dashed rgba(21,23,26,0.2);
+    border-top: 1px dashed rgba(21, 23, 26, 0.2);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
   }
   .total-counter {
     font-family: 'Space Mono', monospace;
@@ -285,6 +310,42 @@
     font-size: 1.2rem;
     color: var(--brass);
   }
+
+  /* INTERACTIVE TAP-FRIENDLY RADIO SYSTEM BUTTONS */
+  .payments-badge-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .payment-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .payment-label input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--brass);
+    cursor: pointer;
+    margin: 0;
+  }
+  .payment-pill {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+  }
+  .p-gcash { background: #0056ff; color: #fff; }
+  .p-maya { background: #00ff66; color: #121315; }
+  .p-cash { background: rgba(21,23,26,0.15); color: var(--ink); }
 
   /* ---------- QR SCANNABLE COMMENTS BLOCK ---------- */
   .feedback-section {
@@ -321,7 +382,6 @@
     align-items: center;
     justify-content: center;
   }
-  /* CSS-only mockup representing standard QR code pattern anchors */
   .qr-graphic::before {
     content: ''; position: absolute; width: 18px; height: 18px; border: 4px solid #fff; top: 8px; left: 8px;
   }
@@ -438,22 +498,22 @@
 
 <header id="siteHeader">
   <a href="#" class="logo-link">
-    <img src="the-yo's_logo_3.jpg" alt="The~Yo's Resto Bar Logo" class="logo-img">
+    <img src="the-yo's_logo.jpg" alt="The~Yo's Resto Bar Logo" class="logo-img">
     <span class="logo-text">The~Yo's</span>
   </a>
-  <nav>
+  <nav id="siteNav">
     <ul>
       <li><a href="#about">About</a></li>
       <li><a href="#menu">Menu</a></li>
       <li><a href="#gallery">Gallery</a></li>
-      <li><a href="#reserve">Order & Book</a></li>
       <li><a href="#feedback">Reviews</a></li>
+      <li><a href="#reserve" class="nav-btn">Order Now</a></li>
     </ul>
   </nav>
-  <button class="nav-toggle" aria-label="Menu">☰</button>
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">☰</button>
 </header>
 
-<!-- HERO WITH PANCIT VIDEO BACKGROUND -->
+<!-- HERO -->
 <section class="hero" style="padding:0;">
   <video class="hero-video-bg" autoplay loop muted playsinline>
     <source src="pancit.mp4" type="video/mp4">
@@ -480,7 +540,7 @@
   </div>
 </div>
 
-<!-- ABOUT WITH ANNIVERSARY VIDEO BACKGROUND -->
+<!-- ABOUT -->
 <section id="about">
   <div class="wrap about reveal">
     <div class="about-figure">
@@ -494,7 +554,7 @@
       <p>Conveniently stationed at Poblacion, Baggao, The~Yo's Resto Bar brings a curated food and dining experience straight to the community. We focus on giving premium, satisfying local and classic meals without a heavy price tag.</p>
       <p>From regional favorites like our regional Pancit Batil Patung to overloaded snacks and top-tier coffee and matcha series, our doors are welcoming for friend groups, study breaks, and large special celebrations.</p>
       <div class="stat-row">
-        <div><strong>2+ Years</strong><span>Serving Baggao</span></div>
+        <div><strong>8AM - 8PM</strong><span>Operating Hours</span></div>
         <div><strong>20+</strong><span>Espresso & Beverages</span></div>
         <div><strong>2nd Flr</strong><span>DKB Building Hub</span></div>
       </div>
@@ -572,7 +632,7 @@
   </div>
 </section>
 
-<!-- MEDIA GRID GALLERY FEATURING DUBAI & COFFEE CLIPS -->
+<!-- GALLERY -->
 <section id="gallery">
   <div class="wrap reveal">
     <div class="section-head">
@@ -597,6 +657,11 @@
         <img src="the-yo's_sample-pic-4.jpg" alt="Handcrafted Beverage item display">
       </div>
     </div>
+    <div style="margin-top: 30px; text-align: center;">
+      <a href="https://www.tiktok.com/@theyos.restaurant" target="_blank" rel="noopener" class="btn btn-outline" style="color: var(--ink); border-color: var(--ink);">
+        Follow Our Stories on TikTok @theyos.restaurant
+      </a>
+    </div>
   </div>
 </section>
 
@@ -607,7 +672,8 @@
       <p class="eyebrow">Dine-In, Takeout & Catering</p>
       <h2 class="display" style="font-size:clamp(2rem,4.2vw,3rem);margin-top:10px;">Place Your Order</h2>
       <p>Build your order dynamically below. Select your category, pick an item, and adjust quantities to see your real-time running subtotal.</p>
-      <p style="margin-top: 14px; font-weight: 700; color: var(--brass);">Hotline Support: 0995-087-6069</p>
+      <p style="margin-top: 14px; font-weight: 700; color: var(--brass);">Open Everyday: 8:00 AM – 8:00 PM</p>
+      <p style="margin-top: 4px; font-weight: 500; font-size: 0.9rem;">Hotline Support: 0995-087-6069</p>
     </div>
     
     <form onsubmit="return handleReserve(event)">
@@ -647,14 +713,34 @@
         <button type="button" class="btn btn-outline" style="border-color:var(--ink); color:var(--ink); padding:8px 16px; font-size:0.7rem;" onclick="addOrderRow()">+ Add Another Item</button>
         
         <div class="order-summary-box">
-          <span style="font-family:'Space Mono', monospace; font-size:0.85rem; font-weight:700;">Estimated Subtotal:</span>
-          <span class="total-counter" id="runningTotalDisplay">₱0</span>
+          <div>
+            <span style="font-family:'Space Mono', monospace; font-size:0.85rem; font-weight:700; display:block;">Select Payment Mode:</span>
+            <!-- FIXED: TAP-FRIENDLY RADIO INPUT SELECTIONS FOR SMARTPHONES -->
+            <div class="payments-badge-wrapper">
+              <label class="payment-label">
+                <input type="radio" name="paymentChoice" value="GCash" required>
+                <span class="payment-pill p-gcash">GCash</span>
+              </label>
+              <label class="payment-label">
+                <input type="radio" name="paymentChoice" value="Maya">
+                <span class="payment-pill p-maya">Maya</span>
+              </label>
+              <label class="payment-label">
+                <input type="radio" name="paymentChoice" value="Cash">
+                <span class="payment-pill p-cash">Cash</span>
+              </label>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-family:'Space Mono', monospace; font-size:0.85rem; font-weight:700; display:block;">Estimated Subtotal:</span>
+            <span class="total-counter" id="runningTotalDisplay">₱0</span>
+          </div>
         </div>
       </div>
 
       <div>
         <label for="notes">Special Prep Instructions</label>
-        <textarea id="notes" placeholder="e.g. Less sweet coffee, spicy wings glaze preference..."></textarea>
+        <textarea id="notes" placeholder="e.g. Less sweet coffee, Cashless online payment confirmation note..."></textarea>
       </div>
       <div class="submit-row">
         <button type="submit" class="btn" style="border:1px solid var(--ink);background:var(--ink);">Submit Order Request</button>
@@ -664,7 +750,7 @@
   </div>
 </section>
 
-<!-- COMMENTS, RATINGS, & QR CUSTOMER FEEDBACK CODE -->
+<!-- FEEDBACK SCAN ENGINE -->
 <section id="feedback" class="feedback-section">
   <div class="wrap reveal">
     <div class="section-head">
@@ -674,7 +760,6 @@
     
     <div class="feedback-container">
       <div>
-        <!-- CLIENT REQ: QR CODE MOCKUP BADGE DESIGN -->
         <div class="qr-badge-container">
           <div class="qr-graphic">
             <div class="qr-graphic-dot"></div>
@@ -731,15 +816,6 @@
             <p class="comment-text">OMG, you have to try their new Dubai Chocolate Truffles! The crunchy pistachio filling paired with an iced Sea Salt latte is to die for.</p>
             <span class="comment-date">July 1, 2026</span>
           </div>
-          
-          <div class="comment-card">
-            <div class="comment-header">
-              <span class="comment-user">Sarah G.</span>
-              <span class="comment-stars">★★★★☆</span>
-            </div>
-            <p class="comment-text">Great spot on the second floor! Visited during their 2nd Anniversary setup, beautiful interior aesthetic and perfect Pancit Batil Patung serving sizes.</p>
-            <span class="comment-date">June 28, 2026</span>
-          </div>
         </div>
       </div>
     </div>
@@ -755,15 +831,15 @@
         <p style="max-width:300px;">A comforting community Resto Bar offering delicious rice platters, local noodle specialties, and artisan coffee lines to Baggao.</p>
       </div>
       <div>
-        <h4>Location Hub</h4>
+        <h4>Location & Hours</h4>
         <p>2nd Floor of DKB Building,<br>Poblacion, Baggao,<br>Cagayan Valley, Philippines</p>
-        <a href="tel:+639950876069">0995-087-6069</a>
+        <p style="color: var(--brass); font-weight:700; margin-top:8px;">Open Daily: 8:00 AM – 8:00 PM</p>
       </div>
       <div>
         <h4>Links</h4>
         <a href="https://www.facebook.com/profile.php?id=61555628762441" target="_blank" rel="noopener">Official Facebook Page</a>
+        <a href="https://www.tiktok.com/@theyos.restaurant" target="_blank" rel="noopener">Official TikTok Handle</a>
         <a href="#menu">View Full Menu</a>
-        <a href="#reserve">Inquire on Catering</a>
       </div>
     </div>
     <div class="foot-bottom">
@@ -774,7 +850,6 @@
 </footer>
 
 <script>
-  // Dynamic JavaScript Menu Object Array mapped with exact raw values for Live Calculations
   const menuDatabase = [
     { name: "Dubai Chocolate Truffles", price: 150 },
     { name: "Pansit Batil Patung (Regular)", price: 100 },
@@ -802,6 +877,24 @@
     header.classList.toggle('scrolled', window.scrollY > 40);
   });
 
+  const navToggle = document.getElementById('navToggle');
+  const siteNav = document.getElementById('siteNav');
+  
+  if (navToggle && siteNav) {
+    navToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      siteNav.classList.toggle('open');
+      navToggle.textContent = siteNav.classList.contains('open') ? '✕' : '☰';
+    });
+
+    siteNav.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        siteNav.classList.remove('open');
+        navToggle.textContent = '☰';
+      });
+    });
+  }
+
   const tabs = document.querySelectorAll('.tab-btn');
   const grids = document.querySelectorAll('.menu-grid');
   tabs.forEach(btn => {
@@ -819,11 +912,11 @@
   }, { threshold: 0.1 });
   revealEls.forEach(el => io.observe(el));
 
-  // RENDER DYNAMIC ORDER ROW LOGIC
   function addOrderRow() {
     const container = document.getElementById('orderItemsContainer');
-    const rowId = 'row_' + Date.now() + Math.floor(Math.random() * 100);
+    if(!container) return;
     
+    const rowId = 'row_' + Date.now() + Math.floor(Math.random() * 100);
     const rowDiv = document.createElement('div');
     rowDiv.className = 'order-row-item';
     rowDiv.id = rowId;
@@ -835,26 +928,34 @@
 
     rowDiv.innerHTML = `
       <div>
-        <select class="item-selector" onchange="calculateOrderTotal()" required>
+        <select class="item-selector" required>
           ${selectOptions}
         </select>
       </div>
       <div>
-        <input type="number" class="qty-selector" min="1" value="1" oninput="calculateOrderTotal()" required placeholder="Qty">
+        <input type="number" class="qty-selector" min="1" value="1" required placeholder="Qty">
       </div>
       <div>
         <button type="button" class="btn btn-outline" style="border-color:rgba(21,23,26,0.2); padding:6px 12px; color:rgba(21,23,26,0.6);" onclick="removeOrderRow('${rowId}')">Remove</button>
       </div>
     `;
+    
     container.appendChild(rowDiv);
+    
+    const sel = rowDiv.querySelector('.item-selector');
+    const qty = rowDiv.querySelector('.qty-selector');
+    if(sel) sel.addEventListener('change', calculateOrderTotal);
+    if(qty) {
+      qty.addEventListener('input', calculateOrderTotal);
+      qty.addEventListener('change', calculateOrderTotal);
+    }
+    
     calculateOrderTotal();
   }
 
   function removeOrderRow(id) {
     const row = document.getElementById(id);
-    if(row) {
-      row.remove();
-    }
+    if(row) row.remove();
     calculateOrderTotal();
   }
 
@@ -868,22 +969,28 @@
       
       if(selectEl && qtyEl) {
         const selectedOption = selectEl.options[selectEl.selectedIndex];
-        const itemPrice = parseFloat(selectedOption.getAttribute('data-price')) || 0;
-        const quantity = parseInt(qtyEl.value) || 0;
-        grandTotal += (itemPrice * quantity);
+        if(selectedOption) {
+          const itemPrice = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+          const quantity = parseInt(qtyEl.value) || 0;
+          grandTotal += (itemPrice * quantity);
+        }
       }
     });
 
-    document.getElementById('runningTotalDisplay').textContent = '₱' + grandTotal;
+    const display = document.getElementById('runningTotalDisplay');
+    if(display) display.textContent = '₱' + grandTotal;
   }
 
-  // Add initial food selection row on initial script runtime
-  addOrderRow();
+  document.addEventListener("DOMContentLoaded", () => {
+    addOrderRow();
+  });
 
   function handleReserve(e){
     e.preventDefault();
     const noteEl = document.getElementById('formNote');
-    noteEl.textContent = "Awesome! Order registered. We will print the slip and confirm immediately.";
+    const selectedPayment = document.querySelector('input[name="paymentChoice"]:checked').value;
+    
+    noteEl.textContent = `Awesome! Order registered via ${selectedPayment}. Please prepare validation elements if cashless.`;
     noteEl.style.color = "#2e7d32";
     e.target.reset();
     document.getElementById('orderItemsContainer').innerHTML = '';
@@ -891,7 +998,6 @@
     return false;
   }
 
-  // QR RATING SYSTEM STATE LOGIC
   let chosenRating = 5;
   const stars = document.querySelectorAll('#starSelector span');
   
@@ -933,7 +1039,7 @@
     `;
 
     const container = document.getElementById('commentsDisplay');
-    container.insertBefore(commentCard, container.firstChild);
+    if(container) container.insertBefore(commentCard, container.firstChild);
 
     e.target.reset();
     chosenRating = 5;
