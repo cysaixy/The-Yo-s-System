@@ -38,6 +38,19 @@
   .cart-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; padding-bottom: 6px; border-bottom: 1px dashed rgba(21,23,26,0.1); }
   .cart-row .remove-item { background: none; border: none; color: #ff4d4d; font-size: 0.75rem; cursor: pointer; font-family: 'Space Mono', monospace; }
   .cart-empty { font-size: 0.85rem; color: rgba(21,23,26,0.4); font-style: italic; }
+
+  /* Verification Layout Elements */
+  .email-verification-wrapper { border: 1px solid rgba(21,23,26,0.15); border-radius: 6px; padding: 16px; background: rgba(21,23,26,0.02); margin-bottom: 20px; }
+  .verify-flex { display: flex; gap: 10px; align-items: flex-end; }
+  .verify-flex input { margin-bottom: 0 !important; }
+  .verification-badge { display: inline-flex; align-items: center; font-size: 0.75rem; font-family: 'Space Mono', monospace; font-weight: 700; color: #2e7d32; padding: 4px 8px; background: #e8f5e9; border-radius: 4px; margin-top: 8px; }
+
+  /* Anti-Bogus Flag Panel */
+  .bogus-protection-alert { 
+    background: #fff0f0; border: 1px solid #ff4d4d; border-left: 4px solid #d32f2f;
+    padding: 14px; border-radius: 4px; margin-bottom: 20px; display: none;
+  }
+  .bogus-protection-alert p { margin: 0; font-size: 0.8rem; color: #c62828; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -64,7 +77,7 @@
     <div class="reserve-text">
       <p class="eyebrow">Digital Checkout Desk</p>
       <h2 class="display" style="font-size:clamp(2rem,4.2vw,3rem);margin-top:10px;">Place Order</h2>
-      <p>Filter by category using our specialized selector below and tap items to add them directly to your active checkout bag.</p>
+      <p>Filter items below to add them to your cart. Genuine orders only. Prank or "tripping" transactions will be logged and blocked.</p>
       
       <div class="catalog-controls" style="margin-top: 24px;">
         <select id="categoryFilter" class="catalog-select" onchange="renderCatalog()">
@@ -80,13 +93,35 @@
     </div>
     
     <form onsubmit="return handleReserve(event)">
+      <!-- 1. Email Verification Security Box (Blocks Fake Buyers) -->
+      <div class="email-verification-wrapper">
+        <p class="eyebrow" style="color:var(--dark); margin-bottom:10px;">🛡️ Anti-Prank Verification</p>
+        <div class="form-row" style="margin-bottom: 0;">
+          <div class="verify-flex" style="flex: 2;">
+            <div style="width: 100%;">
+              <label for="buyerEmail">Active Email Address</label>
+              <input id="buyerEmail" type="email" required placeholder="name@domain.com">
+            </div>
+            <button type="button" class="btn" style="padding:12px 16px; font-size:0.8rem; white-space:nowrap; margin-bottom:0;" onclick="sendCode()">Send Code</button>
+          </div>
+          <div class="verify-flex" id="otpBox" style="flex: 1; opacity: 0.5; pointer-events: none;">
+            <div style="width: 100%;">
+              <label for="verificationCode">6-Digit Code</label>
+              <input id="verificationCode" type="text" maxlength="6" placeholder="******" oninput="verifyToken()">
+            </div>
+          </div>
+        </div>
+        <div id="verifyStatus"></div>
+      </div>
+
       <div class="form-row">
         <div><label for="name">Complete Name</label><input id="name" type="text" required placeholder="Juan Dela Cruz"></div>
         <div>
-          <label for="phone">Phone Number (Numbers Only)</label>
+          <label for="phone">Active Mobile Number</label>
           <input id="phone" type="text" inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required placeholder="09123456789">
         </div>
       </div>
+      
       <div class="form-row">
         <div>
           <label for="orderType">Service Type</label>
@@ -95,12 +130,20 @@
             <option>Advanced Takeout Pick-up</option>
           </select>
         </div>
-        <div><label for="timeInput">Target Time / Table #</label><input id="timeInput" type="text" required placeholder="e.g., Table 4 or ASAP"></div>
+        <div><label for="timeInput">Table # or Target Pick-up Time</label><input id="timeInput" type="text" required placeholder="e.g., Table 4 or 2:30 PM"></div>
       </div>
 
+      <!-- Cart Visualizer Component -->
       <div class="cart-preview">
         <span class="cart-title">Your Order Cart</span>
         <div class="cart-list" id="cartListContainer"><div class="cart-empty">Your shopping cart is currently empty.</div></div>
+      </div>
+
+      <!-- 2. Dynamic Downpayment Guard Panel for Large Orders -->
+      <div class="bogus-protection-alert" id="downpaymentNotice">
+        <p>
+          <strong>⚠️ Security Notice (Bulk / Advanced Booking):</strong> Your balance exceeds ₱300. To protect our staff from fake "tripping" buyers, a <strong>50% downpayment</strong> must be transferred via GCash or Maya before processing. Our team will contact your verified phone number to confirm receipt.
+        </p>
       </div>
 
       <div class="order-builder" style="margin-top:0;">
@@ -121,6 +164,12 @@
       </div>
 
       <div><label for="notes">Special Prep Instructions</label><textarea id="notes" placeholder="Less sweet, extra spicy, etc..."></textarea></div>
+      
+      <!-- 3. Strict Penalty Notice -->
+      <p style="font-size:0.7rem; color:rgba(21,23,26,0.4); margin-bottom:15px; font-family:'Space Mono', monospace;">
+        ❌ WARNING: Prank orders or joy reserving constitutes bogus buying. Verified data details will be logged.
+      </p>
+
       <div class="submit-row">
         <button type="submit" class="btn" style="background:var(--ink); color:#fff; border-color:var(--ink);">Submit Order Request</button>
         <span class="form-note" id="formNote"></span>
@@ -148,7 +197,6 @@
           <div><label for="reviewerName">Your Name</label><input id="reviewerName" type="text" required placeholder="Maria"></div>
           <div><label for="feedbackText">Comments / Messages</label><textarea id="feedbackText" required placeholder="Write review or message..."></textarea></div>
           
-          <!-- Private Feedback Selector Toggle Box -->
           <div style="margin: 16px 0; background: rgba(21,23,26,0.04); padding: 12px; border-radius: 4px; border-left: 3px solid var(--brass);">
             <label style="display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 700; cursor: pointer; color: var(--dark);">
               <input type="checkbox" id="privateToggle" style="width:16px; height:16px; cursor:pointer;">
@@ -166,7 +214,7 @@
         <p class="eyebrow" style="margin-bottom: 16px;">Live Guest Comments</p>
         <div class="comments-display" id="commentsDisplay">
           <div class="comment-card">
-            <div class="comment-header"><span class="comment-user">Mark Anthony</span><span class="comment-stars">★★★★★</span></div>
+            <div class="comment-header"><span class="comment-user">Aaron Lavado</span><span class="comment-stars">★★★★★</span></div>
             <p class="comment-text">The Barbeque Pork Ribs are unbelievably tender!</p>
             <span class="comment-date">July 2, 2026</span>
           </div>
@@ -178,7 +226,6 @@
 
 <script>
   const menuDatabase = [
-    // RICE MEALS & BOWLS
     { id: "r1", cat: "rice", name: "Pork Sisig Rice Meal", price: 100 },
     { id: "r2", cat: "rice", name: "Burger Steak Rice Meal", price: 100 },
     { id: "r3", cat: "rice", name: "Chicken Katsu Rice Meal", price: 120 },
@@ -194,8 +241,6 @@
     { id: "r13", cat: "rice", name: "Garlic Longganisa Bowl", price: 120 },
     { id: "r14", cat: "rice", name: "Sweet & Sour Poppers Bowl", price: 100 },
     { id: "r15", cat: "rice", name: "Honey Soy Poppers Bowl", price: 100 },
-
-    // WINGS, NOODLES & SNACKS
     { id: "w1", cat: "wings", name: "Dubai Chocolate Truffles", price: 150 },
     { id: "w2", cat: "wings", name: "Chicken Wings (2 Pcs + Rice/Fries)", price: 125 },
     { id: "w3", cat: "wings", name: "Chicken Wings (4 Pcs)", price: 145 },
@@ -218,8 +263,6 @@
     { id: "w20", cat: "wings", name: "Cheesy Burger", price: 75 },
     { id: "w21", cat: "wings", name: "Corndog Classic", price: 55 },
     { id: "w22", cat: "wings", name: "Corndog Mozzarella", price: 75 },
-
-    // ESPRESSO & COFFEE BASED
     { id: "c1", cat: "espresso", name: "Americano Coffee", price: 90 },
     { id: "c2", cat: "espresso", name: "Americano Cold Foam", price: 100 },
     { id: "c3", cat: "espresso", name: "Cafe Latte", price: 100 },
@@ -237,8 +280,6 @@
     { id: "c15", cat: "espresso", name: "Java Chip Frappe", price: 165 },
     { id: "c16", cat: "espresso", name: "Coffee Caramel Frappe", price: 165 },
     { id: "c17", cat: "espresso", name: "Biscoffee Premium Frappe", price: 180 },
-
-    // SPECIALTY BEVERAGES (NON-COFFEE, MATCHA, SODA, TEAS)
     { id: "b1", cat: "beverages", name: "Milky Strawberry Drink", price: 100 },
     { id: "b2", cat: "beverages", name: "Blueberry Fresh Milk", price: 100 },
     { id: "b3", cat: "beverages", name: "Dark Chocolate Luxury", price: 100 },
@@ -261,6 +302,28 @@
   ];
 
   let cart = {};
+  let emailVerified = false;
+  let currentCartTotal = 0;
+  const mockToken = "5821"; // Simulated secure OTP string token
+
+  function sendCode() {
+    const email = document.getElementById('buyerEmail').value;
+    if(!email || !email.includes('@')) { alert("Please enter a valid email address first."); return; }
+    
+    document.getElementById('otpBox').style.opacity = "1";
+    document.getElementById('otpBox').style.pointerEvents = "auto";
+    document.getElementById('verifyStatus').innerHTML = `<span style="font-size:0.75rem; color:#e68a00; font-family:'Space Mono';">Verification link active! Enter code: <strong>${mockToken}</strong></span>`;
+  }
+
+  function verifyToken() {
+    const entered = document.getElementById('verificationCode').value;
+    if(entered === mockToken) {
+      emailVerified = true;
+      document.getElementById('buyerEmail').disabled = true;
+      document.getElementById('verificationCode').disabled = true;
+      document.getElementById('verifyStatus').innerHTML = `<div class="verification-badge">✓ VERIFIED CUSTOMER PROFILE</div>`;
+    }
+  }
 
   function renderCatalog() {
     const filter = document.getElementById('categoryFilter').value;
@@ -315,21 +378,49 @@
         container.appendChild(row);
       }
     }
+    
+    currentCartTotal = grandTotal;
     if (totalItems === 0) container.innerHTML = `<div class="cart-empty">Your shopping cart is currently empty.</div>`;
     document.getElementById('runningTotalDisplay').textContent = '₱' + grandTotal;
+
+    // Trigger Anti-Bogus threshold warning if cart total exceeds ₱300
+    const alertBox = document.getElementById('downpaymentNotice');
+    if (grandTotal >= 300) {
+      alertBox.style.display = 'block';
+    } else {
+      alertBox.style.display = 'none';
+    }
   }
 
   function handleReserve(e){
     e.preventDefault();
-    if (Object.keys(cart).length === 0) { alert("Please add at least one item to your cart."); return false; }
+    if (!emailVerified) { alert("Security Notice: Please complete your email verification step to prove you are a genuine buyer."); return false; }
+    if (Object.keys(cart).length === 0) { alert("Please add items to your cart bag first."); return false; }
+    
     const pay = document.querySelector('input[name="paymentChoice"]:checked').value;
-    document.getElementById('formNote').textContent = `Order registered via ${pay}!`;
+    let finishMsg = `Success! Your order request has been logged via ${pay}.`;
+    
+    if (currentCartTotal >= 300) {
+      finishMsg = `Order Logged! Because your total is ₱${currentCartTotal}, our managers will check for your 50% downpayment before preparation begins.`;
+    }
+    
+    document.getElementById('formNote').textContent = finishMsg;
+    alert(finishMsg);
+    
+    // Reset Everything
     e.target.reset();
+    document.getElementById('buyerEmail').disabled = false;
+    document.getElementById('verificationCode').disabled = false;
+    document.getElementById('otpBox').style.opacity = "0.5";
+    document.getElementById('otpBox').style.pointerEvents = "none";
+    document.getElementById('verifyStatus').innerHTML = "";
+    document.getElementById('downpaymentNotice').style.display = 'none';
+    emailVerified = false;
     cart = {};
     updateCartDisplay();
   }
 
-  // Live Score Rating Logic
+  // Review Star Score Component
   let chosenRating = 5;
   const stars = document.querySelectorAll('#starSelector span');
   stars.forEach(star => {
@@ -339,7 +430,6 @@
     });
   });
 
-  // Dynamic Feedback Submission Logic (Handles public and private entries)
   function handleFeedback(e) {
     e.preventDefault();
     const name = document.getElementById('reviewerName').value;
@@ -347,15 +437,12 @@
     const isPrivate = document.getElementById('privateToggle').checked;
 
     if (isPrivate) {
-      alert(`Thank you, ${name}. Your response has been securely logged and dispatched directly to management's eyes only. It will remain completely private.`);
+      alert(`Thank you, ${name}. Your message was sent privately straight to the owners.`);
     } else {
       const card = document.createElement('div');
       card.className = 'comment-card';
       card.innerHTML = `
-        <div class="comment-header">
-          <span class="comment-user">${name}</span>
-          <span class="comment-stars">${'★'.repeat(chosenRating)}</span>
-        </div>
+        <div class="comment-header"><span class="comment-user">${name}</span><span class="comment-stars">${'★'.repeat(chosenRating)}</span></div>
         <p class="comment-text">${txt}</p>
         <span class="comment-date">Today</span>
       `;
