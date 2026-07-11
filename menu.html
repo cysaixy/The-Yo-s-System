@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu — The~Yo's</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="menu-page-theme">
+
+<header style="background: rgba(12,13,15,0.98);">
+  <a href="index.html" class="logo-link">
+    <img src="the-yo's_logo.jpg" alt="Logo" class="logo-img">
+    <span class="logo-text">The~Yo's</span>
+  </a>
+  <nav id="siteNav">
+    <ul>
+      <li><a href="about.html">About</a></li>
+      <li><a href="menu.html" style="color:var(--brass);">Menu</a></li>
+      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="order.html#feedback">Reviews</a></li>
+      <li><a href="order.html" class="nav-btn">Order Now</a></li>
+    </ul>
+  </nav>
+  <button class="nav-toggle" id="navToggle">☰</button>
+</header>
+
+<section>
+  <div class="wrap reveal in">
+    <div class="section-head">
+      <h2 class="display">Our Menu</h2>
+      <p>Explore our complete culinary line-up, featuring satisfying rice courses, premium chicken wing selections, local noodles, and fully loaded specialty drinks.</p>
+    </div>
+    
+    <div class="menu-tabs">
+      <button class="tab-btn active" data-tab="rice-meals">Rice Meals & Bowls</button>
+      <button class="tab-btn" data-tab="wings-snacks">Wings, Noodles & Snacks</button>
+      <button class="tab-btn" data-tab="espresso-bar">Espresso & Coffee</button>
+      <button class="tab-btn" data-tab="non-coffee-drinks">Specialty Beverages</button>
+    </div>
+
+    <!-- Tab 1: Rice Meals -->
+    <div class="menu-grid active" id="rice-meals">
+      <div class="menu-item"><div><span class="name">Pork Sisig Rice Meal</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Burger Steak Rice Meal</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Chicken Katsu Rice Meal</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Cordon Blue Rice Meal</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Chicken Mushroom Rice Meal</span></div><span class="price">₱130</span></div>
+      <div class="menu-item"><div><span class="name">Kare Kare Rice Meal</span></div><span class="price">₱150</span></div>
+      <div class="menu-item"><div><span class="name">Barbeque Pork Rib Platter</span></div><span class="price">₱180</span></div>
+      <div class="menu-item"><div><span class="name">Chicken Inasal Platter</span></div><span class="price">₱165</span></div>
+      <div class="menu-item"><div><span class="name">Braised Pork Rice Meal</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Beef Tapa Bowl</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Pork Tocino Bowl</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Hungarian Sausage Bowl</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Garlic Longganisa Bowl</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Sweet & Sour Poppers Bowl</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Honey Soy Poppers Bowl</span></div><span class="price">₱100</span></div>
+    </div>
+
+    <!-- Tab 2: Wings, Pasta, Noodles & Snacks -->
+    <div class="menu-grid" id="wings-snacks">
+      <div class="menu-item"><div><span class="name">Dubai Chocolate Truffles</span><span class="desc">Premium crunch item</span></div><span class="price">₱150</span></div>
+      <div class="menu-item"><div><span class="name">Chicken Wings (2 Pcs with Rice & Fries)</span></div><span class="price">₱125</span></div>
+      <div class="menu-item"><div><span class="name">Chicken Wings (4 Pcs)</span></div><span class="price">₱145</span></div>
+      <div class="menu-item"><div><span class="name">Chicken Wings (6 Pcs)</span><span class="desc">Flavors: Buffalo, Cheesy Garlic, Garlic Parm, Honey Glaze, Korean BBQ, Salted Egg, Thai Sweet Chili</span></div><span class="price">₱180</span></div>
+      <div class="menu-item"><div><span class="name">Spaghetti Pasta</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Carbonara Pasta</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Lomi (Regular)</span></div><span class="price">₱70</span></div>
+      <div class="menu-item"><div><span class="name">Lomi (Overload)</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Pansit Batil Patung (Balor 100)</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Pansit Batil Patung (Balor 120)</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Pansit Batil Patung (Balor 150)</span></div><span class="price">₱150</span></div>
+      <div class="menu-item"><div><span class="name">Pansit Batil Patung Bilao (Small)</span></div><span class="price">₱300</span></div>
+      <div class="menu-item"><div><span class="name">Pansit Batil Patung Bilao (Large)</span></div><span class="price">₱500</span></div>
+      <div class="menu-item"><div><span class="name">Fries (Regular)</span></div><span class="price">₱70</span></div>
+      <div class="menu-item"><div><span class="name">Fries (Overload)</span></div><span class="price">₱200</span></div>
+      <div class="menu-item"><div><span class="name">Nachos (Regular)</span></div><span class="price">₱90</span></div>
+      <div class="menu-item"><div><span class="name">Nachos (Overload)</span></div><span class="price">₱200</span></div>
+      <div class="menu-item"><div><span class="name">Chic & Fries Basket</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Classic Burger (Regular)</span></div><span class="price">₱60</span></div>
+      <div class="menu-item"><div><span class="name">Cheesy Burger</span></div><span class="price">₱75</span></div>
+      <div class="menu-item"><div><span class="name">Corndog (Classic)</span></div><span class="price">₱55</span></div>
+      <div class="menu-item"><div><span class="name">Corndog (Mozzarella)</span></div><span class="price">₱75</span></div>
+    </div>
+
+    <!-- Tab 3: Espresso Coffee Menu -->
+    <div class="menu-grid" id="espresso-bar">
+      <div class="menu-item"><div><span class="name">Americano Coffee</span></div><span class="price">₱90</span></div>
+      <div class="menu-item"><div><span class="name">Americano with Cold Foam</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Cafe Latte</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Vanilla Latte</span></div><span class="price">₱110</span></div>
+      <div class="menu-item"><div><span class="name">Hazelnut Latte</span></div><span class="price">₱110</span></div>
+      <div class="menu-item"><div><span class="name">Spanish Latte</span></div><span class="price">₱110</span></div>
+      <div class="menu-item"><div><span class="name">Dark Mocha Craft</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">White Mocha Craft</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Caramel Macchiato</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Nutty Mocha Blend</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Nutty Caramel Blend</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Sea Salt Latte Signature</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Biscoff Latte Special</span></div><span class="price">₱140</span></div>
+      <div class="menu-item"><div><span class="name">Oreo Latte Cream</span></div><span class="price">₱110</span></div>
+      <div class="menu-item"><div><span class="name">Java Chip Coffee Frappe</span></div><span class="price">₱165</span></div>
+      <div class="menu-item"><div><span class="name">Coffee Caramel Frappe</span></div><span class="price">₱165</span></div>
+      <div class="menu-item"><div><span class="name">Biscoffee Premium Frappe</span></div><span class="price">₱180</span></div>
+    </div>
+
+    <!-- Tab 4: Non-Coffee, Matcha, Sodas & Fruit Teas -->
+    <div class="menu-grid" id="non-coffee-drinks">
+      <div class="menu-item"><div><span class="name">Milky Strawberry Drink</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Blueberry Fresh Milk</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Dark Chocolate Luxury</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Choco Berry Fusion</span></div><span class="price">₱110</span></div>
+      <div class="menu-item"><div><span class="name">Oreo Cookies Milkshake</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Matcha Latte (Classic)</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Berry Matcha Blend</span></div><span class="price">₱100</span></div>
+      <div class="menu-item"><div><span class="name">Oreo Matcha Fusion</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Caramel Matcha Fusion</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Biscoff Matcha Delight</span></div><span class="price">₱130</span></div>
+      <div class="menu-item"><div><span class="name">Sea Salt Matcha Signature</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Espresso Matcha Layered</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Wildberry Fruit Tea</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Four-Red Fruits Tea</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Lemon Ginger Tea Infusion</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Green Tea Wellness Mix</span></div><span class="price">₱120</span></div>
+      <div class="menu-item"><div><span class="name">Fruit Soda (Blueberry / Strawberry / Raspberry)</span></div><span class="price">₱80</span></div>
+      <div class="menu-item"><div><span class="name">Fruit Soda (Green Apple / Kiwi / Peach / Orange)</span></div><span class="price">₱80</span></div>
+      <div class="menu-item"><div><span class="name">Non-Coffee Frappe (Matcha / Strawberry / Blueberry)</span></div><span class="price">₱140</span></div>
+      <div class="menu-item"><div><span class="name">Non-Coffee Frappe (Cookies & Cream / Double Choc Chip)</span></div><span class="price">₱140</span></div>
+      <div class="menu-item"><div><span class="name">Biscoff Non-Coffee Frappe</span></div><span class="price">₱160</span></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const tabs = document.querySelectorAll('.tab-btn');
+  const grids = document.querySelectorAll('.menu-grid');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.forEach(b => b.classList.remove('active'));
+      grids.forEach(g => g.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+<script src="global.js"></script>
+</body>
+</html>

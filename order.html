@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order & Reviews — The~Yo's</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Premium Custom Styled Category Box Dropdown Selector */
+  .catalog-controls { margin-bottom: 24px; position: relative; max-width: 340px; width: 100%; }
+  
+  .catalog-select { 
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    background-color: #fff; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23bf9a40' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+    background-repeat: no-repeat; background-position: calc(100% - 16px) center; background-size: 14px;
+    border: 2px solid rgba(21,23,26,0.1); padding: 12px 40px 12px 16px; border-radius: 6px; 
+    font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+    color: var(--dark); cursor: pointer; width: 100%; transition: all 0.25s ease; outline: none;
+  }
+  .catalog-select:focus, .catalog-select:hover { border-color: var(--brass); box-shadow: 0 4px 12px rgba(191,154,64,0.15); }
+  .catalog-select option { font-family: 'Inter', sans-serif; text-transform: none; font-weight: 500; padding: 10px; color: var(--dark); background: #fff; }
+
+  /* Grid Catalog Layout */
+  .order-catalog { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-height: 480px; overflow-y: auto; padding-right: 8px; }
+  @media(max-width: 600px) { .order-catalog { grid-template-columns: 1fr; } }
+  .order-catalog::-webkit-scrollbar { width: 4px; }
+  .order-catalog::-webkit-scrollbar-thumb { background: var(--brass); border-radius: 2px; }
+  
+  .catalog-item { background: #fff; padding: 14px; border: 1px solid rgba(21,23,26,0.08); border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .catalog-info h4 { font-family: 'Archivo', sans-serif; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 2px; }
+  .catalog-info span { font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--brass); font-weight: 700; }
+  
+  /* Cart Preview Box */
+  .cart-preview { background: #fff; border: 1px solid var(--brass); border-radius: 4px; padding: 16px; margin-bottom: 20px; }
+  .cart-title { font-family: 'Space Mono', monospace; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brass); margin-bottom: 12px; display: block; }
+  .cart-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; margin-bottom: 12px; }
+  .cart-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; padding-bottom: 6px; border-bottom: 1px dashed rgba(21,23,26,0.1); }
+  .cart-row .remove-item { background: none; border: none; color: #ff4d4d; font-size: 0.75rem; cursor: pointer; font-family: 'Space Mono', monospace; }
+  .cart-empty { font-size: 0.85rem; color: rgba(21,23,26,0.4); font-style: italic; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo-link">
+    <img src="the-yo's_logo.jpg" alt="Logo" class="logo-img">
+    <span class="logo-text">The~Yo's</span>
+  </a>
+  <nav id="siteNav">
+    <ul>
+      <li><a href="about.html">About</a></li>
+      <li><a href="menu.html">Menu</a></li>
+      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="#feedback">Reviews</a></li>
+      <li><a href="order.html" class="nav-btn" style="background:#fff; color:var(--dark) !important;">Order Now</a></li>
+    </ul>
+  </nav>
+  <button class="nav-toggle" id="navToggle">☰</button>
+</header>
+
+<section class="reserve">
+  <div class="wrap reserve-inner reveal in">
+    <div class="reserve-text">
+      <p class="eyebrow">Digital Checkout Desk</p>
+      <h2 class="display" style="font-size:clamp(2rem,4.2vw,3rem);margin-top:10px;">Place Order</h2>
+      <p>Filter by category using our specialized selector below and tap items to add them directly to your active checkout bag.</p>
+      
+      <div class="catalog-controls" style="margin-top: 24px;">
+        <select id="categoryFilter" class="catalog-select" onchange="renderCatalog()">
+          <option value="all">📁 All Categories</option>
+          <option value="rice">🍛 Rice Meals & Bowls</option>
+          <option value="wings">🍗 Wings, Noodles & Snacks</option>
+          <option value="espresso">☕ Espresso & Coffee</option>
+          <option value="beverages">🍹 Specialty Beverages</option>
+        </select>
+      </div>
+
+      <div class="order-catalog" id="menuCatalog"></div>
+    </div>
+    
+    <form onsubmit="return handleReserve(event)">
+      <div class="form-row">
+        <div><label for="name">Complete Name</label><input id="name" type="text" required placeholder="Juan Dela Cruz"></div>
+        <div>
+          <label for="phone">Phone Number (Numbers Only)</label>
+          <input id="phone" type="text" inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required placeholder="09123456789">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="orderType">Service Type</label>
+          <select id="orderType">
+            <option>Dine-In (At Table)</option>
+            <option>Advanced Takeout Pick-up</option>
+          </select>
+        </div>
+        <div><label for="timeInput">Target Time / Table #</label><input id="timeInput" type="text" required placeholder="e.g., Table 4 or ASAP"></div>
+      </div>
+
+      <div class="cart-preview">
+        <span class="cart-title">Your Order Cart</span>
+        <div class="cart-list" id="cartListContainer"><div class="cart-empty">Your shopping cart is currently empty.</div></div>
+      </div>
+
+      <div class="order-builder" style="margin-top:0;">
+        <div class="order-summary-box" style="border:none; padding:0; margin:0;">
+          <div>
+            <span style="font-family:'Space Mono', monospace; font-size:0.85rem; font-weight:700; display:block;">Select Payment Mode:</span>
+            <div class="payments-badge-wrapper">
+              <label class="payment-label"><input type="radio" name="paymentChoice" value="GCash" required><span class="payment-pill p-gcash">GCash</span></label>
+              <label class="payment-label"><input type="radio" name="paymentChoice" value="Maya"><span class="payment-pill p-maya">Maya</span></label>
+              <label class="payment-label"><input type="radio" name="paymentChoice" value="Cash"><span class="payment-pill p-cash">Cash</span></label>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-family:'Space Mono', monospace; font-size:0.85rem; font-weight:700; display:block;">Estimated Total:</span>
+            <span class="total-counter" id="runningTotalDisplay">₱0</span>
+          </div>
+        </div>
+      </div>
+
+      <div><label for="notes">Special Prep Instructions</label><textarea id="notes" placeholder="Less sweet, extra spicy, etc..."></textarea></div>
+      <div class="submit-row">
+        <button type="submit" class="btn" style="background:var(--ink); color:#fff; border-color:var(--ink);">Submit Order Request</button>
+        <span class="form-note" id="formNote"></span>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- REVIEWS & PRIVATE FEEDBACK SECTION -->
+<section id="feedback" class="feedback-section">
+  <div class="wrap reveal in">
+    <div class="section-head">
+      <h2 class="display">Scan, Rate & Review</h2>
+      <p>Have something to share? Post a public review on our guest wall, or flip the switch to send a private note straight to management.</p>
+    </div>
+    <div class="feedback-container">
+      <div>
+        <form onsubmit="return handleFeedback(event)">
+          <div>
+            <label>Star Score</label>
+            <div class="star-rating-selector" id="starSelector">
+              <span data-value="1">★</span><span data-value="2">★</span><span data-value="3">★</span><span data-value="4">★</span><span data-value="5" class="active">★</span>
+            </div>
+          </div>
+          <div><label for="reviewerName">Your Name</label><input id="reviewerName" type="text" required placeholder="Maria"></div>
+          <div><label for="feedbackText">Comments / Messages</label><textarea id="feedbackText" required placeholder="Write review or message..."></textarea></div>
+          
+          <!-- Private Feedback Selector Toggle Box -->
+          <div style="margin: 16px 0; background: rgba(21,23,26,0.04); padding: 12px; border-radius: 4px; border-left: 3px solid var(--brass);">
+            <label style="display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 700; cursor: pointer; color: var(--dark);">
+              <input type="checkbox" id="privateToggle" style="width:16px; height:16px; cursor:pointer;">
+              🔒 SEND PRIVATELY TO MANAGEMENT
+            </label>
+            <span style="display:block; font-size:0.75rem; color:rgba(21,23,26,0.5); margin-top:4px; font-family:'Inter', sans-serif; font-weight:400;">
+              Checking this keeps your comments completely off our public guest feed.
+            </span>
+          </div>
+
+          <div style="margin-top: 10px;"><button type="submit" class="btn">Submit Feedback</button></div>
+        </form>
+      </div>
+      <div>
+        <p class="eyebrow" style="margin-bottom: 16px;">Live Guest Comments</p>
+        <div class="comments-display" id="commentsDisplay">
+          <div class="comment-card">
+            <div class="comment-header"><span class="comment-user">Mark Anthony</span><span class="comment-stars">★★★★★</span></div>
+            <p class="comment-text">The Barbeque Pork Ribs are unbelievably tender!</p>
+            <span class="comment-date">July 2, 2026</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const menuDatabase = [
+    // RICE MEALS & BOWLS
+    { id: "r1", cat: "rice", name: "Pork Sisig Rice Meal", price: 100 },
+    { id: "r2", cat: "rice", name: "Burger Steak Rice Meal", price: 100 },
+    { id: "r3", cat: "rice", name: "Chicken Katsu Rice Meal", price: 120 },
+    { id: "r4", cat: "rice", name: "Cordon Blue Rice Meal", price: 120 },
+    { id: "r5", cat: "rice", name: "Chicken Mushroom Rice", price: 130 },
+    { id: "r6", cat: "rice", name: "Kare Kare Rice Meal", price: 150 },
+    { id: "r7", cat: "rice", name: "Barbeque Pork Rib Platter", price: 180 },
+    { id: "r8", cat: "rice", name: "Chicken Inasal Platter", price: 165 },
+    { id: "r9", cat: "rice", name: "Braised Pork Rice Meal", price: 120 },
+    { id: "r10", cat: "rice", name: "Beef Tapa Bowl", price: 100 },
+    { id: "r11", cat: "rice", name: "Pork Tocino Bowl", price: 100 },
+    { id: "r12", cat: "rice", name: "Hungarian Sausage Bowl", price: 120 },
+    { id: "r13", cat: "rice", name: "Garlic Longganisa Bowl", price: 120 },
+    { id: "r14", cat: "rice", name: "Sweet & Sour Poppers Bowl", price: 100 },
+    { id: "r15", cat: "rice", name: "Honey Soy Poppers Bowl", price: 100 },
+
+    // WINGS, NOODLES & SNACKS
+    { id: "w1", cat: "wings", name: "Dubai Chocolate Truffles", price: 150 },
+    { id: "w2", cat: "wings", name: "Chicken Wings (2 Pcs + Rice/Fries)", price: 125 },
+    { id: "w3", cat: "wings", name: "Chicken Wings (4 Pcs)", price: 145 },
+    { id: "w4", cat: "wings", name: "Chicken Wings (6 Pcs)", price: 180 },
+    { id: "w5", cat: "wings", name: "Spaghetti Pasta", price: 120 },
+    { id: "w6", cat: "wings", name: "Carbonara Pasta", price: 120 },
+    { id: "w7", cat: "wings", name: "Lomi Regular", price: 70 },
+    { id: "w8", cat: "wings", name: "Lomi Overload", price: 100 },
+    { id: "w9", cat: "wings", name: "Batil Patung Balor 100", price: 100 },
+    { id: "w10", cat: "wings", name: "Batil Patung Balor 120", price: 120 },
+    { id: "w11", cat: "wings", name: "Batil Patung Balor 150", price: 150 },
+    { id: "w12", cat: "wings", name: "Batil Patung Bilao Small", price: 300 },
+    { id: "w13", cat: "wings", name: "Batil Patung Bilao Large", price: 500 },
+    { id: "w14", cat: "wings", name: "Fries Regular", price: 70 },
+    { id: "w15", cat: "wings", name: "Fries Overload", price: 200 },
+    { id: "w16", cat: "wings", name: "Nachos Regular", price: 90 },
+    { id: "w17", cat: "wings", name: "Nachos Overload", price: 200 },
+    { id: "w18", cat: "wings", name: "Chic & Fries Basket", price: 100 },
+    { id: "w19", cat: "wings", name: "Classic Burger", price: 60 },
+    { id: "w20", cat: "wings", name: "Cheesy Burger", price: 75 },
+    { id: "w21", cat: "wings", name: "Corndog Classic", price: 55 },
+    { id: "w22", cat: "wings", name: "Corndog Mozzarella", price: 75 },
+
+    // ESPRESSO & COFFEE BASED
+    { id: "c1", cat: "espresso", name: "Americano Coffee", price: 90 },
+    { id: "c2", cat: "espresso", name: "Americano Cold Foam", price: 100 },
+    { id: "c3", cat: "espresso", name: "Cafe Latte", price: 100 },
+    { id: "c4", cat: "espresso", name: "Vanilla Latte", price: 110 },
+    { id: "c5", cat: "espresso", name: "Hazelnut Latte", price: 110 },
+    { id: "c6", cat: "espresso", name: "Spanish Latte", price: 110 },
+    { id: "c7", cat: "espresso", name: "Dark Mocha", price: 120 },
+    { id: "c8", cat: "espresso", name: "White Mocha", price: 120 },
+    { id: "c9", cat: "espresso", name: "Caramel Macchiato", price: 120 },
+    { id: "c10", cat: "espresso", name: "Nutty Mocha Blend", price: 120 },
+    { id: "c11", cat: "espresso", name: "Nutty Caramel Blend", price: 120 },
+    { id: "c12", cat: "espresso", name: "Sea Salt Latte Signature", price: 120 },
+    { id: "c13", cat: "espresso", name: "Biscoff Latte Special", price: 140 },
+    { id: "c14", cat: "espresso", name: "Oreo Latte Cream", price: 110 },
+    { id: "c15", cat: "espresso", name: "Java Chip Frappe", price: 165 },
+    { id: "c16", cat: "espresso", name: "Coffee Caramel Frappe", price: 165 },
+    { id: "c17", cat: "espresso", name: "Biscoffee Premium Frappe", price: 180 },
+
+    // SPECIALTY BEVERAGES (NON-COFFEE, MATCHA, SODA, TEAS)
+    { id: "b1", cat: "beverages", name: "Milky Strawberry Drink", price: 100 },
+    { id: "b2", cat: "beverages", name: "Blueberry Fresh Milk", price: 100 },
+    { id: "b3", cat: "beverages", name: "Dark Chocolate Luxury", price: 100 },
+    { id: "b4", cat: "beverages", name: "Choco Berry Fusion", price: 110 },
+    { id: "b5", cat: "beverages", name: "Oreo Cookies Milkshake", price: 100 },
+    { id: "b6", cat: "beverages", name: "Matcha Latte (Classic)", price: 100 },
+    { id: "b7", cat: "beverages", name: "Berry Matcha Blend", price: 100 },
+    { id: "b8", cat: "beverages", name: "Oreo Matcha Fusion", price: 120 },
+    { id: "b9", cat: "beverages", name: "Caramel Matcha Fusion", price: 120 },
+    { id: "b10", cat: "beverages", name: "Biscoff Matcha Delight", price: 130 },
+    { id: "b11", cat: "beverages", name: "Sea Salt Matcha", price: 120 },
+    { id: "b12", cat: "beverages", name: "Espresso Matcha Layered", price: 120 },
+    { id: "b13", cat: "beverages", name: "Wildberry Fruit Tea", price: 120 },
+    { id: "b14", cat: "beverages", name: "Four-Red Fruits Tea", price: 120 },
+    { id: "b15", cat: "beverages", name: "Lemon Ginger Tea", price: 120 },
+    { id: "b16", cat: "beverages", name: "Green Tea Wellness Mix", price: 120 },
+    { id: "b17", cat: "beverages", name: "Fruit Soda Selection", price: 80 },
+    { id: "b18", cat: "beverages", name: "Non-Coffee Fruit Frappe", price: 140 },
+    { id: "b19", cat: "beverages", name: "Biscoff Non-Coffee Frappe", price: 160 }
+  ];
+
+  let cart = {};
+
+  function renderCatalog() {
+    const filter = document.getElementById('categoryFilter').value;
+    const catalogContainer = document.getElementById('menuCatalog');
+    catalogContainer.innerHTML = '';
+    
+    menuDatabase.forEach(item => {
+      if (filter !== 'all' && item.cat !== filter) return;
+      
+      const itemElement = document.createElement('div');
+      itemElement.className = 'catalog-item';
+      itemElement.innerHTML = `
+        <div class="catalog-info">
+          <h4>${item.name}</h4>
+          <span>₱${item.price}</span>
+        </div>
+        <button type="button" class="btn" style="padding:6px 12px; font-size:0.7rem;" onclick="addToCart('${item.id}')">Add</button>
+      `;
+      catalogContainer.appendChild(itemElement);
+    });
+  }
+
+  function addToCart(id) {
+    cart[id] = (cart[id] || 0) + 1;
+    updateCartDisplay();
+  }
+
+  function removeFromCart(id) {
+    delete cart[id];
+    updateCartDisplay();
+  }
+
+  function updateCartDisplay() {
+    const container = document.getElementById('cartListContainer');
+    container.innerHTML = '';
+    let grandTotal = 0, totalItems = 0;
+
+    for (const id in cart) {
+      const product = menuDatabase.find(p => p.id === id);
+      if (product) {
+        const qty = cart[id];
+        const subtotal = product.price * qty;
+        grandTotal += subtotal;
+        totalItems += qty;
+
+        const row = document.createElement('div');
+        row.className = 'cart-row';
+        row.innerHTML = `
+          <div><strong>${product.name}</strong><span style="color:var(--brass); margin-left:6px;">x${qty}</span></div>
+          <div style="display:flex; align-items:center; gap:12px;"><span>₱${subtotal}</span><button type="button" class="remove-item" onclick="removeFromCart('${id}')">✕</button></div>
+        `;
+        container.appendChild(row);
+      }
+    }
+    if (totalItems === 0) container.innerHTML = `<div class="cart-empty">Your shopping cart is currently empty.</div>`;
+    document.getElementById('runningTotalDisplay').textContent = '₱' + grandTotal;
+  }
+
+  function handleReserve(e){
+    e.preventDefault();
+    if (Object.keys(cart).length === 0) { alert("Please add at least one item to your cart."); return false; }
+    const pay = document.querySelector('input[name="paymentChoice"]:checked').value;
+    document.getElementById('formNote').textContent = `Order registered via ${pay}!`;
+    e.target.reset();
+    cart = {};
+    updateCartDisplay();
+  }
+
+  // Live Score Rating Logic
+  let chosenRating = 5;
+  const stars = document.querySelectorAll('#starSelector span');
+  stars.forEach(star => {
+    star.addEventListener('click', () => {
+      chosenRating = parseInt(star.getAttribute('data-value'));
+      stars.forEach(s => s.classList.toggle('active', parseInt(s.getAttribute('data-value')) <= chosenRating));
+    });
+  });
+
+  // Dynamic Feedback Submission Logic (Handles public and private entries)
+  function handleFeedback(e) {
+    e.preventDefault();
+    const name = document.getElementById('reviewerName').value;
+    const txt = document.getElementById('feedbackText').value;
+    const isPrivate = document.getElementById('privateToggle').checked;
+
+    if (isPrivate) {
+      alert(`Thank you, ${name}. Your response has been securely logged and dispatched directly to management's eyes only. It will remain completely private.`);
+    } else {
+      const card = document.createElement('div');
+      card.className = 'comment-card';
+      card.innerHTML = `
+        <div class="comment-header">
+          <span class="comment-user">${name}</span>
+          <span class="comment-stars">${'★'.repeat(chosenRating)}</span>
+        </div>
+        <p class="comment-text">${txt}</p>
+        <span class="comment-date">Today</span>
+      `;
+      document.getElementById('commentsDisplay').insertBefore(card, document.getElementById('commentsDisplay').firstChild);
+    }
+    
+    e.target.reset();
+    chosenRating = 5;
+    stars.forEach(s => s.classList.add('active'));
+  }
+
+  document.addEventListener("DOMContentLoaded", () => { renderCatalog(); updateCartDisplay(); });
+</script>
+<script src="global.js"></script>
+</body>
+</html>
