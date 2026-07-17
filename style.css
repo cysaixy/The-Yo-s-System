@@ -416,3 +416,18 @@ footer { background: var(--dark); color: #FAF8F4; padding: 90px 0 30px; }
 
 .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
 .reveal.in { opacity: 1; transform: translateY(0); }
+/* Custom Border and Padding for "+ Customize" Label */
+.catalog-item div span[style*="font-family:'Space Mono'"] {
+  border: 1px solid var(--line);
+  padding: 4px 10px;
+  border-radius: 4px;
+  display: inline-block;
+  transition: all 0.2s ease;
+}
+
+/* Hover effect to make it interactive */
+.catalog-item:hover div span[style*="font-family:'Space Mono'"] {
+  border-color: var(--brass);
+  color: #fff !important;
+  background-color: var(--brass);
+}
