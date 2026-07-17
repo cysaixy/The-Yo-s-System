@@ -3,52 +3,213 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Order & Reviews — The~Yo's</title>
+<title>Kiosk Order Terminal — The~Yo's</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-  /* Premium Custom Styled Category Box Dropdown Selector */
-  .catalog-controls { margin-bottom: 24px; position: relative; max-width: 340px; width: 100%; }
   
-  .catalog-select { 
-    appearance: none; -webkit-appearance: none; -moz-appearance: none;
-    background-color: #fff; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23bf9a40' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
-    background-repeat: no-repeat; background-position: calc(100% - 16px) center; background-size: 14px;
-    border: 2px solid rgba(21,23,26,0.1); padding: 12px 40px 12px 16px; border-radius: 6px; 
-    font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
-    color: var(--dark); cursor: pointer; width: 100%; transition: all 0.25s ease; outline: none;
+  .kiosk-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 30px;
+    margin-top: 20px;
+    align-items: start;
   }
-  .catalog-select:focus, .catalog-select:hover { border-color: var(--brass); box-shadow: 0 4px 12px rgba(191,154,64,0.15); }
-  .catalog-select option { font-family: 'Inter', sans-serif; text-transform: none; font-weight: 500; padding: 10px; color: var(--dark); background: #fff; }
+  @media(max-width: 990px) {
+    .kiosk-grid { grid-template-columns: 1fr; }
+  }
 
-  /* Grid Catalog Layout */
-  .order-catalog { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-height: 480px; overflow-y: auto; padding-right: 8px; }
-  @media(max-width: 600px) { .order-catalog { grid-template-columns: 1fr; } }
-  .order-catalog::-webkit-scrollbar { width: 4px; }
-  .order-catalog::-webkit-scrollbar-thumb { background: var(--brass); border-radius: 2px; }
   
-  .catalog-item { background: #fff; padding: 14px; border: 1px solid rgba(21,23,26,0.08); border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .catalog-info h4 { font-family: 'Archivo', sans-serif; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 2px; }
-  .catalog-info span { font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--brass); font-weight: 700; }
-  
-  /* Cart Preview Box */
-  .cart-preview { background: #fff; border: 1px solid var(--brass); border-radius: 4px; padding: 16px; margin-bottom: 20px; }
-  .cart-title { font-family: 'Space Mono', monospace; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brass); margin-bottom: 12px; display: block; }
-  .cart-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; margin-bottom: 12px; }
-  .cart-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; padding-bottom: 6px; border-bottom: 1px dashed rgba(21,23,26,0.1); }
-  .cart-row .remove-item { background: none; border: none; color: #ff4d4d; font-size: 0.75rem; cursor: pointer; font-family: 'Space Mono', monospace; }
-  .cart-empty { font-size: 0.85rem; color: rgba(21,23,26,0.4); font-style: italic; }
+  .kiosk-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .kiosk-tab-btn {
+    background: var(--component-bg);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 12px 18px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .kiosk-tab-btn.active, .kiosk-tab-btn:hover {
+    background: var(--brass);
+    color: #fff;
+    border-color: var(--brass);
+  }
 
-  /* Verification Layout Elements */
-  .email-verification-wrapper { border: 1px solid rgba(21,23,26,0.15); border-radius: 6px; padding: 16px; background: rgba(21,23,26,0.02); margin-bottom: 20px; }
+  
+  .order-catalog {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    max-height: 700px;
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+  .order-catalog::-webkit-scrollbar { width: 6px; }
+  .order-catalog::-webkit-scrollbar-thumb { background: var(--brass); border-radius: 3px; }
+  
+  .catalog-item {
+    background: var(--component-bg) !important;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  .catalog-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--brass);
+  }
+  .catalog-info h4 {
+    font-family: 'Archivo', sans-serif;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    color: var(--ink);
+  }
+  .catalog-info span {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.95rem;
+    color: var(--brass);
+    font-weight: 700;
+  }
+
+  
+  .kiosk-cart-panel {
+    background: var(--component-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 24px;
+    position: sticky;
+    top: 115px;
+  }
+  .cart-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--brass);
+    margin-bottom: 16px;
+    display: block;
+    font-weight: 700;
+  }
+  .cart-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 260px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+    padding-right: 4px;
+  }
+  .cart-list::-webkit-scrollbar { width: 4px; }
+  .cart-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+
+  .cart-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-size: 0.9rem;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--line);
+    color: var(--ink);
+  }
+  .cart-item-mods {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--brass);
+    font-style: italic;
+    margin-top: 2px;
+    line-height: 1.2;
+  }
+  .cart-row .remove-item {
+    background: none;
+    border: none;
+    color: #ff4d4d;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+    margin-left: 10px;
+    padding: 0;
+  }
+  .cart-empty {
+    font-size: 0.85rem;
+    color: var(--ink);
+    opacity: 0.5;
+    font-style: italic;
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+  .modal-card {
+    background: var(--component-bg) !important;
+    border: 1px solid var(--line);
+    width: 90%;
+    max-width: 400px;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  .modal-card h3 {
+    font-family: 'Archivo', sans-serif;
+    text-transform: uppercase;
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+
+  
+  .email-verification-wrapper {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 14px;
+    background: rgba(21,23,26,0.02);
+    margin-bottom: 16px;
+  }
   .verify-flex { display: flex; gap: 10px; align-items: flex-end; }
   .verify-flex input { margin-bottom: 0 !important; }
-  .verification-badge { display: inline-flex; align-items: center; font-size: 0.75rem; font-family: 'Space Mono', monospace; font-weight: 700; color: #2e7d32; padding: 4px 8px; background: #e8f5e9; border-radius: 4px; margin-top: 8px; }
+  .verification-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    color: #2e7d32;
+    padding: 4px 8px;
+    background: #e8f5e9;
+    border-radius: 4px;
+    margin-top: 8px;
+  }
 
-  /* Anti-Bogus Flag Panel */
   .bogus-protection-alert { 
     background: #fff0f0; border: 1px solid #ff4d4d; border-left: 4px solid #d32f2f;
-    padding: 14px; border-radius: 4px; margin-bottom: 20px; display: none;
+    padding: 12px; border-radius: 4px; margin-bottom: 16px; display: none;
   }
   .bogus-protection-alert p { margin: 0; font-size: 0.8rem; color: #c62828; line-height: 1.4; }
 </style>
@@ -72,118 +233,130 @@
   <button class="nav-toggle" id="navToggle">☰</button>
 </header>
 
-<section class="reserve">
-  <div class="wrap reserve-inner reveal in">
-    <div class="reserve-text">
-      <p class="eyebrow">Digital Checkout Desk</p>
-      <h2 class="display" style="font-size:clamp(2rem,4.2vw,3rem);margin-top:10px;">Place Order</h2>
-      <p>Filter items below to add them to your cart. Genuine orders only. Prank or "tripping" transactions will be logged and blocked.</p>
-      
-      <div class="catalog-controls" style="margin-top: 24px;">
-        <select id="categoryFilter" class="catalog-select" onchange="renderCatalog()">
-          <option value="all">📁 All Categories</option>
-          <option value="rice">🍛 Rice Meals & Bowls</option>
-          <option value="wings">🍗 Wings, Noodles & Snacks</option>
-          <option value="espresso">☕ Espresso & Coffee</option>
-          <option value="beverages">🍹 Specialty Beverages</option>
-        </select>
+<section class="reserve" style="padding-top:40px;">
+  <div class="wrap reveal in">
+    <div class="section-head" style="margin-bottom:30px;">
+      <div>
+        <p class="eyebrow">Self-Serve Terminal</p>
+        <h2 class="display">Tap to Order</h2>
       </div>
-
-      <div class="order-catalog" id="menuCatalog"></div>
+      <p>Select items from the catalog cards. Customize ingredients freely upon tapping.</p>
     </div>
+
     
-    <form onsubmit="return handleReserve(event)">
-      <!-- 1. Email Verification Security Box (Blocks Fake Buyers) -->
-      <div class="email-verification-wrapper">
-        <p class="eyebrow" style="color:var(--dark); margin-bottom:10px;">🛡️ Anti-Prank Verification</p>
-        <div class="form-row" style="margin-bottom: 0;">
-          <div class="verify-flex" style="flex: 2;">
-            <div style="width: 100%;">
-              <label for="buyerEmail">Active Email Address</label>
-              <input id="buyerEmail" type="email" required placeholder="name@domain.com">
-            </div>
-            <button type="button" class="btn" style="padding:12px 16px; font-size:0.8rem; white-space:nowrap; margin-bottom:0;" onclick="sendCode()">Send Code</button>
-          </div>
-          <div class="verify-flex" id="otpBox" style="flex: 1; opacity: 0.5; pointer-events: none;">
-            <div style="width: 100%;">
-              <label for="verificationCode">6-Digit Code</label>
-              <input id="verificationCode" type="text" maxlength="6" placeholder="******" oninput="verifyToken()">
-            </div>
-          </div>
-        </div>
-        <div id="verifyStatus"></div>
-      </div>
-
-      <div class="form-row">
-        <div><label for="name">Complete Name</label><input id="name" type="text" required placeholder="Juan Dela Cruz"></div>
-        <div>
-          <label for="phone">Active Mobile Number</label>
-          <input id="phone" type="text" inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required placeholder="09123456789">
-        </div>
-      </div>
+    <div class="kiosk-grid">
       
-      <div class="form-row">
-        <div>
-          <label for="orderType">Service Type</label>
-          <select id="orderType">
-            <option>Dine-In (At Table)</option>
-            <option>Advanced Takeout Pick-up</option>
-          </select>
+      
+      <div>
+        <div class="kiosk-tabs">
+          <button class="kiosk-tab-btn active" onclick="filterCatalog('all', this)">All Categories</button>
+          <button class="kiosk-tab-btn" onclick="filterCatalog('rice', this)">🍛 Rice meals</button>
+          <button class="kiosk-tab-btn" onclick="filterCatalog('wings', this)">🍗 Wings & Snacks</button>
+          <button class="kiosk-tab-btn" onclick="filterCatalog('espresso', this)">☕ Espresso</button>
+          <button class="kiosk-tab-btn" onclick="filterBeveragesTab(this)">🍹 Beverages</button>
         </div>
-        <div><label for="timeInput">Table # or Target Pick-up Time</label><input id="timeInput" type="text" required placeholder="e.g., Table 4 or 2:30 PM"></div>
+        
+        <div class="order-catalog" id="menuCatalog"></div>
       </div>
 
-      <!-- Cart Visualizer Component -->
-      <div class="cart-preview">
-        <span class="cart-title">Your Order Cart</span>
-        <div class="cart-list" id="cartListContainer"><div class="cart-empty">Your shopping cart is currently empty.</div></div>
-      </div>
+      
+      <div class="kiosk-cart-panel">
+        <form onsubmit="return handleReserve(event)">
+          
+          <span class="cart-title">Your Tray</span>
+          <div class="cart-preview" style="border:none; padding:0; margin:0;">
+            <div class="cart-list" id="cartListContainer">
+              <div class="cart-empty">Your shopping cart is currently empty.</div>
+            </div>
+          </div>
 
-      <!-- 2. Dynamic Downpayment Guard Panel for Large Orders -->
-      <div class="bogus-protection-alert" id="downpaymentNotice">
-        <p>
-          <strong>⚠️ Security Notice (Bulk / Advanced Booking):</strong> Your balance exceeds ₱300. To protect our staff from fake "tripping" buyers, a <strong>50% downpayment</strong> must be transferred via GCash or Maya before processing. Our team will contact your verified phone number to confirm receipt.
-        </p>
-      </div>
+          
+          <div class="bogus-protection-alert" id="downpaymentNotice">
+            <p><strong>⚠️ Downpayment Required:</strong> Total balance exceeds ₱300. A 50% downpayment via GCash is mandatory to begin your order preparation.</p>
+          </div>
 
-      <div class="order-builder" style="margin-top:0;">
-        <div class="order-summary-box" style="border:none; padding:0; margin:0;">
-          <div>
-            <span style="font-family:'Space Mono', monospace; font-size:0.85rem; font-weight:700; display:block;">Select Payment Mode:</span>
+          <div class="order-summary-box" style="margin: 0 0 20px 0; padding: 10px 0; border-bottom: 1px solid var(--line);">
+            <div>
+              <span style="font-family:'Space Mono', monospace; font-size:0.75rem; font-weight:700; display:block; text-transform:uppercase;">Grand Total</span>
+              <span class="total-counter" id="runningTotalDisplay" style="font-size:1.6rem;">₱0</span>
+            </div>
+          </div>
+
+          
+          <div class="email-verification-wrapper">
+            <p class="eyebrow" style="color:var(--ink); margin-bottom:10px;">🛡️ Anti-Prank Check</p>
+            <div class="verify-flex">
+              <div style="flex:1;">
+                <input id="buyerEmail" type="email" required placeholder="name@domain.com" style="font-size:0.9rem;">
+              </div>
+              <button type="button" class="btn" style="padding:10px 14px; font-size:0.7rem; margin-bottom:0;" onclick="sendCode()">Get Code</button>
+            </div>
+            <div class="verify-flex" id="otpBox" style="opacity: 0.5; pointer-events: none; margin-top:10px;">
+              <div style="flex:1;">
+                <input id="verificationCode" type="text" maxlength="6" placeholder="Enter 4-digit code" oninput="verifyToken()" style="font-size:0.9rem;">
+              </div>
+            </div>
+            <div id="verifyStatus"></div>
+          </div>
+
+          <div class="form-row">
+            <div><label for="name">Name</label><input id="name" type="text" required placeholder="Name"></div>
+            <div><label for="phone">Mobile Number</label><input id="phone" type="text" inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required placeholder="09xxxxxxxxx"></div>
+          </div>
+          
+          <div class="form-row">
+            <div>
+              <label for="orderType">Service</label>
+              <select id="orderType">
+                <option>Dine-In (At Table)</option>
+                <option>Advanced Takeout Pick-up</option>
+                <option>Delivery</option>
+              </select>
+            </div>
+            <div><label for="timeInput">Table # / Time</label><input id="timeInput" type="text" required placeholder="Table 4 or 2:30 PM"></div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <label style="font-family:'Space Mono', monospace; font-size:0.7rem; font-weight:700;">Payment Method:</label>
             <div class="payments-badge-wrapper">
               <label class="payment-label"><input type="radio" name="paymentChoice" value="GCash" required><span class="payment-pill p-gcash">GCash</span></label>
-              <label class="payment-label"><input type="radio" name="paymentChoice" value="Maya"><span class="payment-pill p-maya">Maya</span></label>
               <label class="payment-label"><input type="radio" name="paymentChoice" value="Cash"><span class="payment-pill p-cash">Cash</span></label>
             </div>
           </div>
-          <div style="text-align: right;">
-            <span style="font-family:'Space Mono', monospace; font-size:0.85rem; font-weight:700; display:block;">Estimated Total:</span>
-            <span class="total-counter" id="runningTotalDisplay">₱0</span>
-          </div>
-        </div>
+
+          <div style="margin-top:14px;"><label for="notes">Overall Special Prep Instructions</label><textarea id="notes" placeholder="General instructions for the whole order..."></textarea></div>
+
+          <button type="submit" class="btn" style="background:var(--ink); color:var(--bone); border-color:var(--ink); width:100%; justify-content:center; padding:16px; margin-top:15px; border-radius:6px;">Confirm and Send Order</button>
+          <div id="formNote" style="margin-top:10px; text-align:center; font-size:0.85rem;" class="form-note"></div>
+        </form>
       </div>
 
-      <div><label for="notes">Special Prep Instructions</label><textarea id="notes" placeholder="Less sweet, extra spicy, etc..."></textarea></div>
-      
-      <!-- 3. Strict Penalty Notice -->
-      <p style="font-size:0.7rem; color:rgba(21,23,26,0.4); margin-bottom:15px; font-family:'Space Mono', monospace;">
-        ❌ WARNING: Prank orders or joy reserving constitutes bogus buying. Verified data details will be logged.
-      </p>
-
-      <div class="submit-row">
-        <button type="submit" class="btn" style="background:var(--ink); color:#fff; border-color:var(--ink);">Submit Order Request</button>
-        <span class="form-note" id="formNote"></span>
-      </div>
-    </form>
+    </div>
   </div>
 </section>
 
-<!-- REVIEWS & PRIVATE FEEDBACK SECTION -->
+
+<div class="modal-overlay" id="customizationModal">
+  <div class="modal-card">
+    <h3 id="modalItemName">Item Name</h3>
+    <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 14px;">Specify changes (e.g., "no onions", "extra spicy", "less ice") or leave blank for default instructions.</p>
+    <div>
+      <label for="modalItemComments" style="font-family:'Space Mono'; font-size:0.7rem; font-weight:700;">Ingredient Adjustments:</label>
+      <input type="text" id="modalItemComments" placeholder="Add or remove ingredients..." style="font-size:0.9rem; margin-bottom:16px;">
+    </div>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button type="button" class="btn" style="background:transparent; color:var(--ink); border-color:var(--line); padding:8px 14px; font-size:0.75rem;" onclick="closeModal()">Cancel</button>
+      <button type="button" class="btn" style="padding:8px 14px; font-size:0.75rem; margin-bottom:0;" onclick="confirmAddToCart()">Add to Tray</button>
+    </div>
+  </div>
+</div>
+
+
 <section id="feedback" class="feedback-section">
   <div class="wrap reveal in">
     <div class="section-head">
       <h2 class="display">Scan, Rate & Review</h2>
-      <p>Have something to share? Post a public review on our guest wall, or flip the switch to send a private note straight to management.</p>
+      <p>Have something to share? Post a public review on our guest wall, or send a private note straight to management.</p>
     </div>
     <div class="feedback-container">
       <div>
@@ -202,9 +375,6 @@
               <input type="checkbox" id="privateToggle" style="width:16px; height:16px; cursor:pointer;">
               🔒 SEND PRIVATELY TO MANAGEMENT
             </label>
-            <span style="display:block; font-size:0.75rem; color:rgba(21,23,26,0.5); margin-top:4px; font-family:'Inter', sans-serif; font-weight:400;">
-              Checking this keeps your comments completely off our public guest feed.
-            </span>
           </div>
 
           <div style="margin-top: 10px;"><button type="submit" class="btn">Submit Feedback</button></div>
@@ -225,6 +395,7 @@
 </section>
 
 <script>
+  
   const menuDatabase = [
     { id: "r1", cat: "rice", name: "Pork Sisig Rice Meal", price: 100 },
     { id: "r2", cat: "rice", name: "Burger Steak Rice Meal", price: 100 },
@@ -301,18 +472,19 @@
     { id: "b19", cat: "beverages", name: "Biscoff Non-Coffee Frappe", price: 160 }
   ];
 
-  let cart = {};
+  let cart = [];
   let emailVerified = false;
   let currentCartTotal = 0;
-  const mockToken = "5821"; // Simulated secure OTP string token
+  let currentCategory = 'all';
+  let activeSelectedItemId = null;
+  const mockToken = "5821";
 
   function sendCode() {
     const email = document.getElementById('buyerEmail').value;
     if(!email || !email.includes('@')) { alert("Please enter a valid email address first."); return; }
-    
     document.getElementById('otpBox').style.opacity = "1";
     document.getElementById('otpBox').style.pointerEvents = "auto";
-    document.getElementById('verifyStatus').innerHTML = `<span style="font-size:0.75rem; color:#e68a00; font-family:'Space Mono';">Verification link active! Enter code: <strong>${mockToken}</strong></span>`;
+    document.getElementById('verifyStatus').innerHTML = `<span style="font-size:0.75rem; color:#e68a00; font-family:'Space Mono';">Verification code active! Enter: <strong>${mockToken}</strong></span>`;
   }
 
   function verifyToken() {
@@ -321,93 +493,64 @@
       emailVerified = true;
       document.getElementById('buyerEmail').disabled = true;
       document.getElementById('verificationCode').disabled = true;
-      document.getElementById('verifyStatus').innerHTML = `<div class="verification-badge">✓ VERIFIED CUSTOMER PROFILE</div>`;
+      document.getElementById('verifyStatus').innerHTML = `<div class="verification-badge">✓ VERIFIED PROFILE</div>`;
     }
   }
 
+  function filterCatalog(category, buttonEl) {
+    currentCategory = category;
+    const tabs = document.querySelectorAll('.kiosk-tab-btn');
+    tabs.forEach(t => t.classList.remove('active'));
+    buttonEl.classList.add('active');
+    renderCatalog();
+  }
+
+  function filterBeveragesTab(buttonEl) {
+    filterCatalog('beverages', buttonEl);
+  }
+
   function renderCatalog() {
-    const filter = document.getElementById('categoryFilter').value;
     const catalogContainer = document.getElementById('menuCatalog');
+    if(!catalogContainer) return;
     catalogContainer.innerHTML = '';
     
     menuDatabase.forEach(item => {
-      if (filter !== 'all' && item.cat !== filter) return;
+      if (currentCategory !== 'all' && item.cat !== currentCategory) return;
       
       const itemElement = document.createElement('div');
       itemElement.className = 'catalog-item';
+      itemElement.setAttribute('onclick', `openCustomizationModal('${item.id}')`);
       itemElement.innerHTML = `
         <div class="catalog-info">
           <h4>${item.name}</h4>
           <span>₱${item.price}</span>
         </div>
-        <button type="button" class="btn" style="padding:6px 12px; font-size:0.7rem;" onclick="addToCart('${item.id}')">Add</button>
+        <div style="text-align:right;"><span style="font-size:0.7rem; text-transform:uppercase; opacity:0.6; letter-spacing:1px; font-family:'Space Mono'">+ Customize</span></div>
       `;
       catalogContainer.appendChild(itemElement);
     });
   }
 
-  function addToCart(id) {
-    cart[id] = (cart[id] || 0) + 1;
+  function removeCartRow(uniqueCartId) {
+    cart = cart.filter(entry => entry.uniqueCartId !== uniqueCartId);
     updateCartDisplay();
-  }
-
-  function removeFromCart(id) {
-    delete cart[id];
-    updateCartDisplay();
-  }
-
-  function updateCartDisplay() {
-    const container = document.getElementById('cartListContainer');
-    container.innerHTML = '';
-    let grandTotal = 0, totalItems = 0;
-
-    for (const id in cart) {
-      const product = menuDatabase.find(p => p.id === id);
-      if (product) {
-        const qty = cart[id];
-        const subtotal = product.price * qty;
-        grandTotal += subtotal;
-        totalItems += qty;
-
-        const row = document.createElement('div');
-        row.className = 'cart-row';
-        row.innerHTML = `
-          <div><strong>${product.name}</strong><span style="color:var(--brass); margin-left:6px;">x${qty}</span></div>
-          <div style="display:flex; align-items:center; gap:12px;"><span>₱${subtotal}</span><button type="button" class="remove-item" onclick="removeFromCart('${id}')">✕</button></div>
-        `;
-        container.appendChild(row);
-      }
-    }
-    
-    currentCartTotal = grandTotal;
-    if (totalItems === 0) container.innerHTML = `<div class="cart-empty">Your shopping cart is currently empty.</div>`;
-    document.getElementById('runningTotalDisplay').textContent = '₱' + grandTotal;
-
-    // Trigger Anti-Bogus threshold warning if cart total exceeds ₱300
-    const alertBox = document.getElementById('downpaymentNotice');
-    if (grandTotal >= 300) {
-      alertBox.style.display = 'block';
-    } else {
-      alertBox.style.display = 'none';
-    }
   }
 
   function handleReserve(e){
     e.preventDefault();
-    if (!emailVerified) { alert("Security Notice: Please complete your email verification step to prove you are a genuine buyer."); return false; }
-    if (Object.keys(cart).length === 0) { alert("Please add items to your cart bag first."); return false; }
+    if (!emailVerified) { alert("Please complete email verification first."); return false; }
+    if (cart.length === 0) { alert("Your cart is empty."); return false; }
     
     const pay = document.querySelector('input[name="paymentChoice"]:checked').value;
     let finishMsg = `Success! Your order request has been logged via ${pay}.`;
     
     if (currentCartTotal >= 300) {
-      finishMsg = `Order Logged! Because your total is ₱${currentCartTotal}, our managers will check for your 50% downpayment before preparation begins.`;
+      finishMsg = `Order Logged! A 50% downpayment is expected for balances over ₱300 before cooking begins.`;
     }
     
     document.getElementById('formNote').textContent = finishMsg;
     alert(finishMsg);
     
-    // Reset Everything
     e.target.reset();
     document.getElementById('buyerEmail').disabled = false;
     document.getElementById('verificationCode').disabled = false;
@@ -415,12 +558,16 @@
     document.getElementById('otpBox').style.pointerEvents = "none";
     document.getElementById('verifyStatus').innerHTML = "";
     document.getElementById('downpaymentNotice').style.display = 'none';
+    
+    
+    const locationRow = document.getElementById('deliveryLocationWrapper');
+    if (locationRow) locationRow.remove();
+
     emailVerified = false;
-    cart = {};
+    cart = [];
     updateCartDisplay();
   }
 
-  // Review Star Score Component
   let chosenRating = 5;
   const stars = document.querySelectorAll('#starSelector span');
   stars.forEach(star => {
@@ -437,7 +584,7 @@
     const isPrivate = document.getElementById('privateToggle').checked;
 
     if (isPrivate) {
-      alert(`Thank you, ${name}. Your message was sent privately straight to the owners.`);
+      alert(`Thank you, ${name}. Your message was sent privately to the management.`);
     } else {
       const card = document.createElement('div');
       card.className = 'comment-card';
@@ -448,13 +595,10 @@
       `;
       document.getElementById('commentsDisplay').insertBefore(card, document.getElementById('commentsDisplay').firstChild);
     }
-    
     e.target.reset();
     chosenRating = 5;
     stars.forEach(s => s.classList.add('active'));
   }
-
-  document.addEventListener("DOMContentLoaded", () => { renderCatalog(); updateCartDisplay(); });
 </script>
 <script src="global.js"></script>
 </body>

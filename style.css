@@ -397,7 +397,7 @@ textarea { resize: none; height: 70px; }
 .comments-display { display: flex; flex-direction: column; gap: 20px; max-height: 520px; overflow-y: auto; padding-right: 15px; }
 .comments-display::-webkit-scrollbar { width: 4px; }
 .comments-display::-webkit-scrollbar-thumb { background: var(--brass); border-radius: 2px; }
-.comment-card { background: var(--component-bg); padding: 22px; border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); transition: background 0.3s ease; }
+.comment-card { background: varz(--component-bg); padding: 22px; border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); transition: background 0.3s ease; }
 .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .comment-user { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 0.95rem; text-transform: uppercase; }
 .comment-stars { color: var(--brass); font-size: 0.9rem; letter-spacing: 1px; }

@@ -22,6 +22,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- NEW LIGHT/DARK MODE ENGINE ---
   initThemeEngine();
+
+  // --- ORDER INITIALIZATION ---
+  if (document.getElementById('menuCatalog')) {
+    renderCatalog();
+    updateCartDisplay();
+    initServiceTypeListener(); // Added to track Delivery location field
+  }
 });
 
 function initThemeEngine() {
@@ -56,5 +63,140 @@ function initThemeEngine() {
   } else if (savedTheme === 'light') {
     if (isMenuPage) body.classList.add('light-theme');
     else body.classList.remove('dark-theme');
+  }
+}
+
+// --- DELIVERY EXPANSION LOGIC ---
+function initServiceTypeListener() {
+  const orderTypeSelect = document.getElementById('orderType');
+  if (!orderTypeSelect) return;
+
+  orderTypeSelect.addEventListener('change', (e) => {
+    const currentFormRow = orderTypeSelect.closest('.form-row');
+    let locationRow = document.getElementById('deliveryLocationWrapper');
+
+    if (e.target.value === 'Delivery') {
+      // Create and inject the location input if it doesn't exist yet
+      if (!locationRow) {
+        locationRow = document.createElement('div');
+        locationRow.id = 'deliveryLocationWrapper';
+        locationRow.className = 'form-row';
+        locationRow.style.marginTop = '10px';
+        locationRow.innerHTML = `
+          <div style="width: 100%;">
+            <label for="deliveryAddress" style="color: var(--brass); font-weight: 700;">📍 Delivery Address</label>
+            <input id="deliveryAddress" type="text" required placeholder="House No., Street, Barangay, Landmarks">
+          </div>
+        `;
+        // Insert right after the Service/Table form row
+        currentFormRow.parentNode.insertBefore(locationRow, currentFormRow.nextSibling);
+      }
+    } else {
+      // Remove it cleanly if they switch away from Delivery
+      if (locationRow) {
+        locationRow.remove();
+      }
+    }
+  });
+}
+
+// --- DYNAMIC CATALOG & CART CUSTOMIZATION LOGIC ---
+
+function openCustomizationModal(id, uniqueCartId = null) {
+  activeSelectedItemId = id;
+  const item = menuDatabase.find(p => p.id === id);
+  if (!item) return;
+  
+  document.getElementById('modalItemName').textContent = item.name;
+  
+  if (uniqueCartId) {
+    const cartEntry = cart.find(entry => entry.uniqueCartId === uniqueCartId);
+    document.getElementById('modalItemComments').value = cartEntry ? cartEntry.comments : '';
+    document.getElementById('customizationModal').setAttribute('data-editing-id', uniqueCartId);
+  } else {
+    document.getElementById('modalItemComments').value = '';
+    document.getElementById('customizationModal').removeAttribute('data-editing-id');
+  }
+  
+  document.getElementById('customizationModal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('customizationModal').classList.remove('active');
+  document.getElementById('customizationModal').removeAttribute('data-editing-id');
+  activeSelectedItemId = null;
+}
+
+function confirmAddToCart() {
+  if (!activeSelectedItemId) return;
+  const commentsInput = document.getElementById('modalItemComments').value.trim();
+  const editingUniqueId = document.getElementById('customizationModal').getAttribute('data-editing-id');
+  
+  if (editingUniqueId) {
+    const cartEntry = cart.find(entry => entry.uniqueCartId === editingUniqueId);
+    if (cartEntry) {
+      cartEntry.comments = commentsInput;
+    }
+  } else {
+    const existingIndex = cart.findIndex(entry => entry.id === activeSelectedItemId && entry.comments === commentsInput);
+    
+    if (existingIndex > -1) {
+      cart[existingIndex].qty += 1;
+    } else {
+      cart.push({
+        uniqueCartId: Date.now() + Math.random().toString(36).substr(2, 5),
+        id: activeSelectedItemId,
+        qty: 1,
+        comments: commentsInput
+      });
+    }
+  }
+  
+  closeModal();
+  updateCartDisplay();
+}
+
+function updateCartDisplay() {
+  const container = document.getElementById('cartListContainer');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  let grandTotal = 0, totalItems = 0;
+
+  cart.forEach(entry => {
+    const product = menuDatabase.find(p => p.id === entry.id);
+    if (product) {
+      const subtotal = product.price * entry.qty;
+      grandTotal += subtotal;
+      totalItems += entry.qty;
+
+      const row = document.createElement('div');
+      row.className = 'cart-row';
+      
+      let modsHTML = entry.comments ? `<span class="cart-item-mods">↳ Note: "${entry.comments}"</span>` : '';
+      
+      row.innerHTML = `
+        <div style="max-width: 75%; cursor: pointer;" onclick="openCustomizationModal('${entry.id}', '${entry.uniqueCartId}')" title="Click to edit customization">
+          <strong>${product.name}</strong>
+          <span style="color:var(--brass); margin-left:6px; font-family:'Space Mono'; font-weight:700;">x${entry.qty}</span>
+          ${modsHTML}
+          <span style="display:block; font-size:0.7rem; color:var(--ink); opacity:0.4; margin-top:2px;">✏️ Tap to edit details</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-family:'Space Mono';">₱${subtotal}</span>
+          <button type="button" class="remove-item" onclick="removeCartRow('${entry.uniqueCartId}')" title="Remove item">✕</button>
+        </div>
+      `;
+      container.appendChild(row);
+    }
+  });
+  
+  currentCartTotal = grandTotal;
+  if (totalItems === 0) container.innerHTML = `<div class="cart-empty">Your shopping cart is currently empty.</div>`;
+  document.getElementById('runningTotalDisplay').textContent = '₱' + grandTotal;
+
+  const alertBox = document.getElementById('downpaymentNotice');
+  if (alertBox) {
+    alertBox.style.display = (grandTotal >= 300) ? 'block' : 'none';
   }
 }
