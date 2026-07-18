@@ -20,14 +20,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }, { threshold: 0.1 });
   revealEls.forEach(el => io.observe(el));
 
-  // --- NEW LIGHT/DARK MODE ENGINE ---
+  // --- OVERHAULED LIGHT/DARK MODE ENGINE ---
   initThemeEngine();
 
   // --- ORDER INITIALIZATION ---
   if (document.getElementById('menuCatalog')) {
     renderCatalog();
     updateCartDisplay();
-    initServiceTypeListener(); // Added to track Delivery location field
+    initServiceTypeListener(); // Tracks Delivery location field
   }
 });
 
@@ -36,23 +36,30 @@ function initThemeEngine() {
   const isMenuPage = body.classList.contains('menu-page-theme');
   const savedTheme = localStorage.getItem('theme-preference');
   
+  // Determine starting active state to render matching initial labels
+  const initialTheme = savedTheme || (isMenuPage ? 'dark' : 'light');
+  const initialLabel = initialTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+
   // Inject theme switch button dynamically inside the navigation list
   const navUl = document.querySelector('#siteNav ul');
   if (navUl) {
     const toggleLi = document.createElement('li');
-    toggleLi.innerHTML = `<button class="theme-toggle-btn" id="themeToggleBtn">🌓 Theme</button>`;
+    toggleLi.innerHTML = `<button class="theme-toggle-btn" id="themeToggleBtn">${initialLabel}</button>`;
     navUl.appendChild(toggleLi);
 
     document.getElementById('themeToggleBtn').addEventListener('click', () => {
+      let activeDark;
       if (isMenuPage) {
         body.classList.toggle('light-theme');
-        const activeDark = !body.classList.contains('light-theme');
-        localStorage.setItem('theme-preference', activeDark ? 'dark' : 'light');
+        activeDark = !body.classList.contains('light-theme');
       } else {
         body.classList.toggle('dark-theme');
-        const activeDark = body.classList.contains('dark-theme');
-        localStorage.setItem('theme-preference', activeDark ? 'dark' : 'light');
+        activeDark = body.classList.contains('dark-theme');
       }
+      localStorage.setItem('theme-preference', activeDark ? 'dark' : 'light');
+      
+      // Swap button content instantly on click
+      document.getElementById('themeToggleBtn').innerHTML = activeDark ? '☀️ Light' : '🌙 Dark';
     });
   }
 
@@ -103,6 +110,7 @@ function initServiceTypeListener() {
 // --- DYNAMIC CATALOG & CART CUSTOMIZATION LOGIC ---
 
 function openCustomizationModal(id, uniqueCartId = null) {
+  // If uniqueCartId is provided, we are EDITING an existing item in the tray
   activeSelectedItemId = id;
   const item = menuDatabase.find(p => p.id === id);
   if (!item) return;
@@ -110,10 +118,13 @@ function openCustomizationModal(id, uniqueCartId = null) {
   document.getElementById('modalItemName').textContent = item.name;
   
   if (uniqueCartId) {
+    // Editing mode: Find the item in the cart and pre-fill its current notes
     const cartEntry = cart.find(entry => entry.uniqueCartId === uniqueCartId);
     document.getElementById('modalItemComments').value = cartEntry ? cartEntry.comments : '';
+    // Store the unique ID on the modal element so confirmAddToCart knows we are editing
     document.getElementById('customizationModal').setAttribute('data-editing-id', uniqueCartId);
   } else {
+    // New addition mode: Clear the input field
     document.getElementById('modalItemComments').value = '';
     document.getElementById('customizationModal').removeAttribute('data-editing-id');
   }
@@ -133,11 +144,13 @@ function confirmAddToCart() {
   const editingUniqueId = document.getElementById('customizationModal').getAttribute('data-editing-id');
   
   if (editingUniqueId) {
+    // MODE 1: EDITING AN EXISTING ITEM IN TRAY
     const cartEntry = cart.find(entry => entry.uniqueCartId === editingUniqueId);
     if (cartEntry) {
       cartEntry.comments = commentsInput;
     }
   } else {
+    // MODE 2: ADDING A NEW ITEM
     const existingIndex = cart.findIndex(entry => entry.id === activeSelectedItemId && entry.comments === commentsInput);
     
     if (existingIndex > -1) {
@@ -158,7 +171,7 @@ function confirmAddToCart() {
 
 function updateCartDisplay() {
   const container = document.getElementById('cartListContainer');
-  if (!container) return;
+  if (!container) return; // Prevent errors if on a page without a cart layout
   
   container.innerHTML = '';
   let grandTotal = 0, totalItems = 0;
@@ -175,6 +188,7 @@ function updateCartDisplay() {
       
       let modsHTML = entry.comments ? `<span class="cart-item-mods">↳ Note: "${entry.comments}"</span>` : '';
       
+      // Clicking item layout targets the edit modal
       row.innerHTML = `
         <div style="max-width: 75%; cursor: pointer;" onclick="openCustomizationModal('${entry.id}', '${entry.uniqueCartId}')" title="Click to edit customization">
           <strong>${product.name}</strong>

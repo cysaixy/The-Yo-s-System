@@ -155,26 +155,36 @@ nav a:hover::after { width: 100%; }
   nav a { font-size: 1.2rem; }
 }
 
-/* ---------- THEME BUTTON CONFIGURATION ---------- */
+/* ---------- REVISED THEME PILL BUTTON ---------- */
 .theme-toggle-btn {
-  background: transparent;
+  background: var(--component-bg);
   border: 1px solid var(--line);
   color: var(--ink);
-  padding: 6px 12px;
   font-family: 'Space Mono', monospace;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 16px;
+  border-radius: 24px; /* Distinct minimalist capsule shape */
   cursor: pointer;
-  border-radius: 2px;
-  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   margin-left: 14px;
 }
 .theme-toggle-btn:hover {
   border-color: var(--brass);
   color: var(--brass);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+.theme-toggle-btn:active {
+  transform: translateY(0);
 }
 @media(max-width:920px) {
-  .theme-toggle-btn { margin-left: 0; margin-top: 15px; }
+  .theme-toggle-btn { margin-left: 0; margin-top: 20px; width: auto; padding: 10px 20px; }
 }
 
 /* ---------- HERO (Home Only) ---------- */
@@ -255,8 +265,7 @@ section { padding: 100px 0; }
 .menu-grid.active { display: grid; }
 @media(max-width:800px) { .menu-grid { grid-template-columns: 1fr; } }
 
-/* ---------- TARGETED FIX FOR ORDER ITEMS (IMAGE 1) ---------- */
-/* Applies to item lists on order.html so they turn dark in dark mode */
+/* ---------- TARGETED FIX FOR ORDER ITEMS ---------- */
 .menu-grid .menu-item-card,
 .menu-item,
 .card,
@@ -266,7 +275,7 @@ section { padding: 100px 0; }
   flex-direction: column;
   justify-content: space-between; 
   padding: 18px 20px; 
-  background: var(--component-bg) !important; /* Overrides forced white layouts */
+  background: var(--component-bg) !important; 
   color: var(--ink) !important;
   border: 1px solid var(--line); 
   border-radius: 4px;
@@ -302,7 +311,6 @@ form { display: grid; gap: 18px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 @media(max-width:520px) { .form-row { grid-template-columns: 1fr; } }
 
-/* ✅ FIXED: Label visibility improved */
 label { 
   font-family: 'Space Mono', monospace; 
   font-size: 0.7rem; 
@@ -314,7 +322,6 @@ label {
   margin-bottom: 8px; 
 }
 
-/* ✅ FIXED: Form input text visibility enhanced */
 input, select, textarea { 
   width: 100%; 
   background: transparent; 
@@ -327,7 +334,6 @@ input, select, textarea {
   transition: border-color 0.3s ease, color 0.3s ease;
 }
 
-/* ✅ FIXED: Placeholder text now visible */
 input::placeholder, textarea::placeholder { 
   color: var(--ink) !important; 
   opacity: 0.6 !important; 
@@ -335,7 +341,6 @@ input::placeholder, textarea::placeholder {
 
 input:focus, select:focus, textarea:focus { outline: none; border-bottom-color: var(--brass); }
 
-/* ✅ FIXED: Prevent browser autofill from hiding text in dark mode */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -348,7 +353,6 @@ input:-webkit-autofill:active {
 textarea { resize: none; height: 70px; }
 .submit-row { display: flex; align-items: center; gap: 20px; margin-top: 10px; }
 
-/* Fixed invisible paragraph warning/notes elements at bottom */
 .form-note, .warning-msg, p.description-text, form p { 
   font-size: 0.8rem; 
   color: var(--ink) !important; 
@@ -356,7 +360,6 @@ textarea { resize: none; height: 70px; }
   font-weight: 600; 
 }
 
-/* Fixed white placeholder shopping cart box container layout */
 .order-builder { 
   background: var(--component-bg); 
   border: 1px solid var(--line); 
@@ -397,7 +400,7 @@ textarea { resize: none; height: 70px; }
 .comments-display { display: flex; flex-direction: column; gap: 20px; max-height: 520px; overflow-y: auto; padding-right: 15px; }
 .comments-display::-webkit-scrollbar { width: 4px; }
 .comments-display::-webkit-scrollbar-thumb { background: var(--brass); border-radius: 2px; }
-.comment-card { background: varz(--component-bg); padding: 22px; border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); transition: background 0.3s ease; }
+.comment-card { background: var(--component-bg); padding: 22px; border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); transition: background 0.3s ease; }
 .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .comment-user { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 0.95rem; text-transform: uppercase; }
 .comment-stars { color: var(--brass); font-size: 0.9rem; letter-spacing: 1px; }
@@ -416,6 +419,7 @@ footer { background: var(--dark); color: #FAF8F4; padding: 90px 0 30px; }
 
 .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
 .reveal.in { opacity: 1; transform: translateY(0); }
+
 /* Custom Border and Padding for "+ Customize" Label */
 .catalog-item div span[style*="font-family:'Space Mono'"] {
   border: 1px solid var(--line);
