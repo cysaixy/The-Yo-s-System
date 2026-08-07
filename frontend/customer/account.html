@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Account — The~Yo's</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .account-section { background: var(--stone); min-height: calc(100vh - 95px); display: flex; align-items: center; }
+  .account-wrap { max-width: 460px; margin: 0 auto; width: 100%; padding: 60px 22px; }
+
+  .account-card {
+    background: var(--component-bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 36px;
+  }
+  @media(max-width:520px) { .account-card { padding: 26px 22px; } }
+
+  .account-tabs { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; margin-bottom: 28px; }
+  .account-tab-btn {
+    flex: 1; background: transparent; border: none; padding: 13px 10px;
+    font-family: 'Space Mono', monospace; font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); opacity: 0.55;
+    cursor: pointer; transition: all 0.2s ease;
+  }
+  .account-tab-btn.active { background: var(--brass); color: #fff; opacity: 1; }
+  .account-tab-btn:not(.active):hover { opacity: 0.85; }
+
+  .account-panel { display: none; flex-direction: column; gap: 16px; }
+  .account-panel.active { display: flex; }
+
+  .field-hint { font-size: 0.72rem; color: var(--ink); opacity: 0.5; margin-top: -8px; }
+
+  .divider-row { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
+  .divider-row .line { flex: 1; height: 1px; background: var(--line); }
+  .divider-row span { font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink); opacity: 0.5; }
+
+  .btn-google {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; background: transparent; color: var(--ink);
+    border: 1px solid var(--line); padding: 13px 20px; border-radius: 4px;
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s ease;
+  }
+  .btn-google:hover { border-color: var(--brass); color: var(--brass); }
+  .btn-google svg { flex-shrink: 0; }
+
+  .account-submit {
+    width: 100%; justify-content: center; padding: 14px; border-radius: 4px;
+    margin-top: 4px;
+  }
+
+  .account-status {
+    font-size: 0.8rem; margin-top: 4px; min-height: 18px;
+    font-family: 'Space Mono', monospace;
+  }
+  .account-status.err { color: #e05252; }
+  .account-status.ok { color: #4caf7d; }
+  .account-status.info { color: var(--brass); }
+
+  .switch-hint { text-align: center; font-size: 0.82rem; color: var(--ink); opacity: 0.7; margin-top: 4px; }
+  .switch-hint a { color: var(--brass); font-weight: 600; cursor: pointer; }
+
+  /* Logged-in state */
+  .logged-in-card { display: none; text-align: center; }
+  .logged-in-card.active { display: block; }
+  .logged-in-card .avatar-ring {
+    width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 18px;
+    background: var(--brass); color: #fff; display: flex; align-items: center; justify-content: center;
+    font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.6rem;
+  }
+  .logged-in-card h3 { font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 1.2rem; margin-bottom: 6px; }
+  .logged-in-card p { font-size: 0.88rem; opacity: 0.65; margin-bottom: 26px; }
+  .logged-in-actions { display: flex; flex-direction: column; gap: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo-link">
+    <img src="../pics&vids/the-yo's_logo.jpg" alt="Logo" class="logo-img">
+    <span class="logo-text">The~Yo's</span>
+  </a>
+  <nav id="siteNav">
+    <ul>
+      <li><a href="about.html">About</a></li>
+      <li><a href="menu.html">Menu</a></li>
+      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="order.html#feedback">Reviews</a></li>
+      <li><a href="order.html" class="nav-btn">Order Now</a></li>
+    </ul>
+  </nav>
+  <button class="nav-toggle" id="navToggle">☰</button>
+</header>
+
+<section class="account-section">
+  <div class="account-wrap">
+
+    <!-- Signed-out state: tabbed Sign In / Create Account -->
+    <div class="account-card" id="authCard">
+      <div class="account-tabs">
+        <button type="button" class="account-tab-btn active" id="tabSignIn" onclick="switchTab('signin')">Sign In</button>
+        <button type="button" class="account-tab-btn" id="tabCreate" onclick="switchTab('create')">Create Account</button>
+      </div>
+
+      <!-- SIGN IN -->
+      <form class="account-panel active" id="panelSignIn" onsubmit="return handleSignIn(event)">
+        <div>
+          <label for="siEmail">Email</label>
+          <input id="siEmail" type="email" required placeholder="name@domain.com" autocomplete="email">
+        </div>
+        <div>
+          <label for="siPassword">Password</label>
+          <input id="siPassword" type="password" required placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn account-submit">Sign In</button>
+        <div class="divider-row"><div class="line"></div><span>or</span><div class="line"></div></div>
+        <button type="button" class="btn-google" onclick="handleGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.85.87-3.04.87-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.73A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.19.29-1.73V4.94H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.06l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.59-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.94l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+          Continue with Google
+        </button>
+        <div class="account-status" id="siStatus"></div>
+        <p class="switch-hint">Don't have an account? <a onclick="switchTab('create')">Create one</a></p>
+      </form>
+
+      <!-- CREATE ACCOUNT -->
+      <form class="account-panel" id="panelCreate" onsubmit="return handleCreate(event)">
+        <div>
+          <label for="caName">Full Name</label>
+          <input id="caName" type="text" required placeholder="Juan Dela Cruz" autocomplete="name">
+        </div>
+        <div>
+          <label for="caEmail">Email</label>
+          <input id="caEmail" type="email" required placeholder="name@domain.com" autocomplete="email">
+        </div>
+        <div>
+          <label for="caPhone">Mobile Number</label>
+          <input id="caPhone" type="text" inputmode="numeric" required placeholder="09xxxxxxxxx"
+                 oninput="this.value = this.value.replace(/[^0-9]/g, '');" autocomplete="tel">
+        </div>
+        <div>
+          <label for="caAddress">Address <span style="opacity:.6; text-transform:none;">(optional)</span></label>
+          <input id="caAddress" type="text" placeholder="House No., Street, Barangay" autocomplete="street-address">
+        </div>
+        <div>
+          <label for="caPassword">Password</label>
+          <input id="caPassword" type="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+        </div>
+        <div>
+          <label for="caConfirmPassword">Confirm Password</label>
+          <input id="caConfirmPassword" type="password" required minlength="6" placeholder="Re-enter password" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn account-submit">Create Account</button>
+        <div class="divider-row"><div class="line"></div><span>or</span><div class="line"></div></div>
+        <button type="button" class="btn-google" onclick="handleGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.85.87-3.04.87-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.73A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.19.29-1.73V4.94H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.06l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.59-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.94l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+          Continue with Google
+        </button>
+        <div class="account-status" id="caStatus"></div>
+        <p class="switch-hint">Already have an account? <a onclick="switchTab('signin')">Sign in</a></p>
+      </form>
+    </div>
+
+    <!-- Signed-in state -->
+    <div class="account-card logged-in-card" id="loggedInCard">
+      <div class="avatar-ring" id="avatarInitial">?</div>
+      <h3 id="loggedInName">Welcome back</h3>
+      <p id="loggedInEmail">—</p>
+      <div class="logged-in-actions">
+        <a href="my-orders.html" class="btn account-submit">View My Orders</a>
+        <a href="order.html" class="btn btn-outline account-submit">Place a New Order</a>
+        <button type="button" class="btn-google" onclick="handleSignOut()">Sign Out</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script type="module">
+  import { auth, googleProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged, syncCustomerProfile } from "./firebase-init.js";
+
+  function getRedirectTarget() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('redirect') || 'my-orders.html';
+  }
+
+  window.switchTab = function (tab) {
+    document.getElementById('tabSignIn').classList.toggle('active', tab === 'signin');
+    document.getElementById('tabCreate').classList.toggle('active', tab === 'create');
+    document.getElementById('panelSignIn').classList.toggle('active', tab === 'signin');
+    document.getElementById('panelCreate').classList.toggle('active', tab === 'create');
+  };
+
+  function setStatus(id, message, kind) {
+    const el = document.getElementById(id);
+    el.textContent = message;
+    el.className = 'account-status' + (kind ? ' ' + kind : '');
+  }
+
+  async function finishAuth(userCred, profileFields) {
+    const idToken = await userCred.user.getIdToken();
+    await syncCustomerProfile(idToken, profileFields);
+    window.location.href = getRedirectTarget();
+  }
+
+  window.handleSignIn = async function (e) {
+    e.preventDefault();
+    const email = document.getElementById('siEmail').value.trim();
+    const password = document.getElementById('siPassword').value;
+    setStatus('siStatus', 'Signing in…', 'info');
+    try {
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      setStatus('siStatus', 'Success! Redirecting…', 'ok');
+      await finishAuth(userCred, {});
+    } catch (err) {
+      setStatus('siStatus', friendlyAuthError(err), 'err');
+    }
+    return false;
+  };
+
+  window.handleCreate = async function (e) {
+    e.preventDefault();
+    const name = document.getElementById('caName').value.trim();
+    const email = document.getElementById('caEmail').value.trim();
+    const phone = document.getElementById('caPhone').value.trim();
+    const address = document.getElementById('caAddress').value.trim();
+    const password = document.getElementById('caPassword').value;
+    const confirmPassword = document.getElementById('caConfirmPassword').value;
+
+    if (password !== confirmPassword) {
+      setStatus('caStatus', 'Passwords do not match.', 'err');
+      return false;
+    }
+
+    setStatus('caStatus', 'Creating your account…', 'info');
+    try {
+      const userCred = await createUserWithEmailAndPassword(auth, email, password);
+      setStatus('caStatus', 'Account created! Redirecting…', 'ok');
+      await finishAuth(userCred, { name, phone, address });
+    } catch (err) {
+      setStatus('caStatus', friendlyAuthError(err), 'err');
+    }
+    return false;
+  };
+
+  window.handleGoogle = async function () {
+    const activePanel = document.getElementById('panelCreate').classList.contains('active') ? 'caStatus' : 'siStatus';
+    setStatus(activePanel, 'Opening Google sign-in…', 'info');
+    try {
+      const userCred = await signInWithPopup(auth, googleProvider);
+      setStatus(activePanel, 'Success! Redirecting…', 'ok');
+      // Google already supplies a display name; phone/address stay whatever
+      // was previously saved (COALESCE on the backend won't overwrite them).
+      await finishAuth(userCred, { name: userCred.user.displayName || undefined });
+    } catch (err) {
+      setStatus(activePanel, friendlyAuthError(err), 'err');
+    }
+  };
+
+  window.handleSignOut = async function () {
+    await signOut(auth);
+    window.location.reload();
+  };
+
+  function friendlyAuthError(err) {
+    const map = {
+      'auth/email-already-in-use': 'That email already has an account. Try signing in instead.',
+      'auth/invalid-credential': 'Incorrect email or password.',
+      'auth/wrong-password': 'Incorrect email or password.',
+      'auth/user-not-found': 'No account found with that email.',
+      'auth/weak-password': 'Password should be at least 6 characters.',
+      'auth/popup-closed-by-user': 'Google sign-in was closed before finishing.',
+    };
+    return map[err.code] || ('Error: ' + err.message);
+  }
+
+  // If already signed in, show the logged-in state instead of the forms.
+  onAuthStateChanged(auth, (user) => {
+    const authCard = document.getElementById('authCard');
+    const loggedInCard = document.getElementById('loggedInCard');
+    if (user) {
+      authCard.style.display = 'none';
+      loggedInCard.classList.add('active');
+      const label = user.displayName || user.email || 'there';
+      document.getElementById('loggedInName').textContent = 'Welcome back, ' + label.split(' ')[0];
+      document.getElementById('loggedInEmail').textContent = user.email || '';
+      document.getElementById('avatarInitial').textContent = label.charAt(0).toUpperCase();
+    } else {
+      authCard.style.display = 'block';
+      loggedInCard.classList.remove('active');
+    }
+  });
+</script>
+<script src="global.js"></script>
+</body>
+</html>

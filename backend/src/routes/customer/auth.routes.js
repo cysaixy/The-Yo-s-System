@@ -1,17 +1,11 @@
 import express from "express";
-const authRouter = express.Router();
-import {register, login, sendOtp, verifyOtp} from "../../controllers/customer/auth.controller.js";
+import { globalLimiter } from "../../middlewares/rateLimit.middleware.js";
+import { verifyFirebaseToken } from "../../middlewares/auth.middleware.js";
+import { syncCustomerProfile } from "../../controllers/customer/auth.controller.js";
 
-// POST /api/customer/auth/register
-authRouter.post("/register", register);
+const router = express.Router();
 
-// POST /api/customer/auth/login
-authRouter.post("/login", login);
+// Customer authentication sync endpoint
+router.post("/sync", globalLimiter, verifyFirebaseToken, syncCustomerProfile);
 
-// POST /api/customer/auth/send-otp   { email }
-authRouter.post("/send-otp", sendOtp);
-
-// POST /api/customer/auth/verify-otp { email, code }
-authRouter.post("/verify-otp", verifyOtp);
-
-export default authRouter;
+export default router;

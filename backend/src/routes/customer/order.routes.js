@@ -1,17 +1,27 @@
+// src/routes/customer/order.routes.js
 import express from "express";
-const orderRouter = express.Router();
-import {createOrder, getOrder, createPayment, getPayment} from "../../controllers/customer/order.controller.js";
+import { posLimiter, globalLimiter } from "../../middlewares/rateLimit.middleware.js";
+import { verifyFirebaseToken } from "../../middlewares/auth.middleware.js";
+import {
+  createOrder,
+  getOrder,
+  getCustomerOrders,
+  createPayment,
+  getPayment,
+} from "../../controllers/customer/order.controller.js";
 
-// POST /api/customer/orders   { customer_id, reservation_id, order_type, cart: [{menu_id, quantity}] }
-orderRouter.post("/", createOrder);
+const router = express.Router();
 
-// GET /api/customer/orders/:id
-orderRouter.get("/:id", getOrder);
+// Prevent rapid duplicate order submissions
+router.post("/", posLimiter, verifyFirebaseToken, createOrder);
 
-// POST /api/customer/orders/:id/payment
-orderRouter.post("/:id/payment", createPayment);
+// List every order for the logged-in customer (powers "My Orders" tracking)
+router.get("/", globalLimiter, verifyFirebaseToken, getCustomerOrders);
 
-// GET /api/customer/orders/:id/payment
-orderRouter.get("/:id/payment", getPayment);
+// Fetch a single order (only if it belongs to the logged-in customer)
+router.get("/:id", globalLimiter, verifyFirebaseToken, getOrder);
 
-export default orderRouter;
+router.post("/:id/payment", globalLimiter, verifyFirebaseToken, createPayment);
+router.get("/:id/payment", globalLimiter, verifyFirebaseToken, getPayment);
+
+export default router;

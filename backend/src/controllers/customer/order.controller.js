@@ -7,10 +7,13 @@ const VALID_PAYMENT_METHODS = ["cash", "gcash", "card", "bank_transfer"];
 export async function createOrder(req, res, next) {
   const client = await pool.connect();
   try {
-    const { customer_id, reservation_id, order_type, cart } = req.body;
+    const { reservation_id, order_type, cart } = req.body;
+    const customer_id = req.user?.customer?.id;
 
     if (!customer_id) {
-      return res.status(400).json({ error: "customer_id is required (orders must belong to a customer)." });
+      return res.status(400).json({
+        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
+      });
     }
     if (!VALID_ORDER_TYPES.includes(order_type)) {
       return res.status(400).json({
@@ -99,7 +102,46 @@ export async function getOrder(req, res, next) {
     );
 
     if (!rows[0]) return res.status(404).json({ error: "Order not found." });
+
+    // Customers may only view their own orders.
+    if (req.user?.customer?.id && rows[0].customer_id !== req.user.customer.id) {
+      return res.status(403).json({ error: "You don't have access to this order." });
+    }
+
     res.json({ order: rows[0] });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Lists every order placed by the currently authenticated customer, newest
+// first, each with its line items attached — powers the "My Orders" /
+// order-tracking page on the frontend.
+export async function getCustomerOrders(req, res, next) {
+  try {
+    const customer_id = req.user?.customer?.id;
+    if (!customer_id) {
+      return res.status(400).json({
+        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
+      });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT o.*, COALESCE(
+          json_agg(
+            json_build_object('menu_id', oi.menu_id, 'quantity', oi.quantity, 'price', oi.price, 'subtotal', oi.subtotal)
+          ) FILTER (WHERE oi.id IS NOT NULL),
+          '[]'
+       ) AS items
+       FROM orders o
+       LEFT JOIN order_items oi ON oi.order_id = o.id
+       WHERE o.customer_id = $1
+       GROUP BY o.id
+       ORDER BY o.datetime_ordered DESC`,
+      [customer_id]
+    );
+
+    res.json({ orders: rows });
   } catch (err) {
     next(err);
   }

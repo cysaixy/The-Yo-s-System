@@ -3,11 +3,19 @@ import pool from "../../config/db.js";
 
 export async function createReservation(req, res, next) {
   try {
-    const { customer_id, table_no, reservation_date, reservation_time, guests, notes } = req.body;
+    // Same rule as orders: customer_id comes from the verified token, never
+    // from the request body.
+    const customer_id = req.user?.customer?.id;
+    const { table_no, reservation_date, reservation_time, guests, notes } = req.body;
 
-    if (!customer_id || !reservation_date || !reservation_time || !guests) {
+    if (!customer_id) {
       return res.status(400).json({
-        error: "customer_id, reservation_date, reservation_time, and guests are required.",
+        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
+      });
+    }
+    if (!reservation_date || !reservation_time || !guests) {
+      return res.status(400).json({
+        error: "reservation_date, reservation_time, and guests are required.",
       });
     }
 

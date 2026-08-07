@@ -23,6 +23,9 @@ import customerMenuRouter from "./src/routes/customer/menu.routes.js";
 import customerOrderRouter from "./src/routes/customer/order.routes.js";
 import customerReservationRouter from "./src/routes/customer/reservation.routes.js";
 
+
+// Mount customer authentication routes
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -39,6 +42,7 @@ app.use("/api", globalLimiter);
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 // --- Customer API Routes ---
+
 app.use("/api/customer/auth", authLimiter, customerAuthRouter);
 app.use("/api/customer/menu", customerMenuRouter);
 app.use("/api/customer/orders", customerOrderRouter);

@@ -1,47 +1,48 @@
 // src/middlewares/auth.middleware.js
-import jwt from "jsonwebtoken";
+import { auth } from "../config/firebase.js";
 import pool from "../config/db.js";
 
-export async function requireStaffAuth(req, res, next) {
+// Firebase Token Middleware for Customers
+export async function verifyFirebaseToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized. Token missing." });
+  }
+
+  const token = authHeader.split(" ")[1];
+
   try {
-    const header = req.headers.authorization || "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-    
-    if (!token) {
-      return res.status(401).json({ error: "Missing auth token." });
-    }
+    const decodedToken = await auth.verifyIdToken(token);
+    const { uid, email } = decodedToken;
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const staffId = payload.staffId || payload.id || payload.staff_id;
-
-    if (!staffId) {
-      return res.status(401).json({ error: "Invalid token payload structure." });
-    }
-
-    // Direct SQL query fetching staff along with permissions
     const { rows } = await pool.query(
-      `SELECT s.id, s.name, s.email, s.role, s.status,
-              p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
-       FROM staff s
-       LEFT JOIN staff_permissions p ON p.staff_id = s.id
-       WHERE s.id = $1`,
-      [staffId]
+      "SELECT id, name, email, phone, address FROM customers WHERE firebase_uid = $1",
+      [uid]
     );
 
-    const staff = rows[0];
+    req.user = {
+      firebaseUid: uid,
+      email,
+      customer: rows[0] || null,
+    };
 
-    if (!staff || staff.status !== "active") {
-      return res.status(401).json({ error: "Invalid or inactive staff account." });
-    }
-
-    req.staff = staff;
     next();
-  } catch (err) {
-    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
-      return res.status(401).json({ error: "Invalid or expired token." });
-    }
-
-    console.error("Auth middleware internal error:", err);
-    return res.status(500).json({ error: "Internal server error during authentication." });
+  } catch (error) {
+    console.error("Firebase Token Error:", error.message);
+    return res.status(401).json({ error: "Unauthorized. Invalid or expired token." });
   }
+}
+
+// Staff/Admin Auth Middleware
+export function requireStaffAuth(req, res, next) {
+  if (req.session && req.session.staff) {
+    return next();
+  }
+
+  if (req.headers["x-staff-id"]) {
+    return next();
+  }
+
+  return res.status(401).json({ error: "Unauthorized. Staff login required." });
 }

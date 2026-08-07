@@ -7,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-  
   .kiosk-grid {
     display: grid;
     grid-template-columns: 1.6fr 1fr;
@@ -19,7 +18,6 @@
     .kiosk-grid { grid-template-columns: 1fr; }
   }
 
-  
   .kiosk-tabs {
     display: flex;
     gap: 8px;
@@ -27,9 +25,9 @@
     margin-bottom: 20px;
   }
   .kiosk-tab-btn {
-    background: var(--component-bg);
-    border: 1px solid var(--line);
-    color: var(--ink);
+    background: var(--component-bg, #1e1e1e);
+    border: 1px solid var(--line, #333);
+    color: var(--ink, #fff);
     padding: 12px 18px;
     font-family: 'Space Mono', monospace;
     font-size: 0.8rem;
@@ -40,12 +38,11 @@
     transition: all 0.2s ease;
   }
   .kiosk-tab-btn.active, .kiosk-tab-btn:hover {
-    background: var(--brass);
+    background: var(--brass, #d4af37);
     color: #fff;
-    border-color: var(--brass);
+    border-color: var(--brass, #d4af37);
   }
 
-  
   .order-catalog {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -55,11 +52,11 @@
     padding-right: 8px;
   }
   .order-catalog::-webkit-scrollbar { width: 6px; }
-  .order-catalog::-webkit-scrollbar-thumb { background: var(--brass); border-radius: 3px; }
+  .order-catalog::-webkit-scrollbar-thumb { background: var(--brass, #d4af37); border-radius: 3px; }
   
   .catalog-item {
-    background: var(--component-bg) !important;
-    border: 1px solid var(--line);
+    background: var(--component-bg, #1e1e1e) !important;
+    border: 1px solid var(--line, #333);
     border-radius: 8px;
     padding: 16px;
     display: flex;
@@ -71,26 +68,25 @@
   }
   .catalog-item:hover {
     transform: translateY(-2px);
-    border-color: var(--brass);
+    border-color: var(--brass, #d4af37);
   }
   .catalog-info h4 {
     font-family: 'Archivo', sans-serif;
     font-size: 0.95rem;
     text-transform: uppercase;
     margin-bottom: 4px;
-    color: var(--ink);
+    color: var(--ink, #fff);
   }
   .catalog-info span {
     font-family: 'Space Mono', monospace;
     font-size: 0.95rem;
-    color: var(--brass);
+    color: var(--brass, #d4af37);
     font-weight: 700;
   }
 
-  
   .kiosk-cart-panel {
-    background: var(--component-bg);
-    border: 1px solid var(--line);
+    background: var(--component-bg, #1e1e1e);
+    border: 1px solid var(--line, #333);
     border-radius: 8px;
     padding: 24px;
     position: sticky;
@@ -101,7 +97,7 @@
     font-size: 0.8rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--brass);
+    color: var(--brass, #d4af37);
     margin-bottom: 16px;
     display: block;
     font-weight: 700;
@@ -116,7 +112,7 @@
     padding-right: 4px;
   }
   .cart-list::-webkit-scrollbar { width: 4px; }
-  .cart-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+  .cart-list::-webkit-scrollbar-thumb { background: var(--line, #333); border-radius: 2px; }
 
   .cart-row {
     display: flex;
@@ -124,13 +120,13 @@
     align-items: flex-start;
     font-size: 0.9rem;
     padding-bottom: 10px;
-    border-bottom: 1px dashed var(--line);
-    color: var(--ink);
+    border-bottom: 1px dashed var(--line, #333);
+    color: var(--ink, #fff);
   }
   .cart-item-mods {
     display: block;
     font-size: 0.75rem;
-    color: var(--brass);
+    color: var(--brass, #d4af37);
     font-style: italic;
     margin-top: 2px;
     line-height: 1.2;
@@ -147,18 +143,17 @@
   }
   .cart-empty {
     font-size: 0.85rem;
-    color: var(--ink);
+    color: var(--ink, #fff);
     opacity: 0.5;
     font-style: italic;
     text-align: center;
     padding: 20px 0;
   }
 
-  
   .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -168,50 +163,32 @@
   }
   .modal-overlay.active { opacity: 1; pointer-events: auto; }
   .modal-card {
-    background: var(--component-bg) !important;
-    border: 1px solid var(--line);
+    background: var(--component-bg, #1e1e1e) !important;
+    border: 1px solid var(--line, #333);
     width: 90%;
     max-width: 400px;
     border-radius: 8px;
     padding: 24px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    color: var(--ink, #fff);
   }
   .modal-card h3 {
     font-family: 'Archivo', sans-serif;
     text-transform: uppercase;
     font-size: 1.1rem;
     margin-bottom: 6px;
-    color: var(--ink);
+    color: var(--ink, #fff);
   }
 
-  
-  .email-verification-wrapper {
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 14px;
-    background: rgba(21,23,26,0.02);
-    margin-bottom: 16px;
+  .signed-in-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    border: 1px solid var(--line, #333); border-radius: 6px; padding: 12px 14px;
+    margin-bottom: 16px; font-size: 0.82rem; background: rgba(163,132,74,0.08);
   }
-  .verify-flex { display: flex; gap: 10px; align-items: flex-end; }
-  .verify-flex input { margin-bottom: 0 !important; }
-  .verification-badge {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.75rem;
-    font-family: 'Space Mono', monospace;
-    font-weight: 700;
-    color: #2e7d32;
-    padding: 4px 8px;
-    background: #e8f5e9;
-    border-radius: 4px;
-    margin-top: 8px;
+  .signed-in-banner button {
+    background: none; border: none; color: var(--brass, #d4af37); font-family: 'Space Mono', monospace;
+    font-size: 0.72rem; text-transform: uppercase; cursor: pointer; text-decoration: underline;
   }
-
-  .bogus-protection-alert { 
-    background: #fff0f0; border: 1px solid #ff4d4d; border-left: 4px solid #d32f2f;
-    padding: 12px; border-radius: 4px; margin-bottom: 16px; display: none;
-  }
-  .bogus-protection-alert p { margin: 0; font-size: 0.8rem; color: #c62828; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -227,6 +204,7 @@
       <li><a href="menu.html">Menu</a></li>
       <li><a href="gallery.html">Gallery</a></li>
       <li><a href="#feedback">Reviews</a></li>
+      <li><a href="my-orders.html">My Orders</a></li>
       <li><a href="order.html" class="nav-btn" style="background:#fff; color:var(--dark) !important;">Order Now</a></li>
     </ul>
   </nav>
@@ -243,9 +221,7 @@
       <p>Select items from the catalog cards. Customize ingredients freely upon tapping.</p>
     </div>
 
-    
     <div class="kiosk-grid">
-      
       
       <div>
         <div class="kiosk-tabs">
@@ -259,7 +235,6 @@
         <div class="order-catalog" id="menuCatalog"></div>
       </div>
 
-      
       <div class="kiosk-cart-panel">
         <form onsubmit="return handleReserve(event)">
           
@@ -270,7 +245,6 @@
             </div>
           </div>
 
-          
           <div class="bogus-protection-alert" id="downpaymentNotice">
             <p><strong>⚠️ Downpayment Required:</strong> Total balance exceeds ₱300. A 50% downpayment via GCash is mandatory to begin your order preparation.</p>
           </div>
@@ -282,21 +256,12 @@
             </div>
           </div>
 
-          
-          <div class="email-verification-wrapper">
-            <p class="eyebrow" style="color:var(--ink); margin-bottom:10px;">🛡️ Anti-Prank Check</p>
-            <div class="verify-flex">
-              <div style="flex:1;">
-                <input id="buyerEmail" type="email" required placeholder="name@domain.com" style="font-size:0.9rem;">
-              </div>
-              <button type="button" class="btn" style="padding:10px 14px; font-size:0.7rem; margin-bottom:0;" onclick="sendCode()">Get Code</button>
-            </div>
-            <div class="verify-flex" id="otpBox" style="opacity: 0.5; pointer-events: none; margin-top:10px;">
-              <div style="flex:1;">
-                <input id="verificationCode" type="text" maxlength="6" placeholder="Enter 4-digit code" oninput="verifyToken()" style="font-size:0.9rem;">
-              </div>
-            </div>
-            <div id="verifyStatus"></div>
+          <div class="signed-in-banner" id="signedInBanner" style="display:none;">
+            <span>Ordering as <strong id="signedInEmail"></strong></span>
+            <button type="button" onclick="handleSignOutFromOrder()">Not you? Sign out</button>
+          </div>
+          <div class="signed-in-banner" id="signedOutBanner">
+            <span>Sign in to place your order — we'll use your saved details.</span>
           </div>
 
           <div class="form-row">
@@ -308,9 +273,9 @@
             <div>
               <label for="orderType">Service</label>
               <select id="orderType">
-                <option>Dine-In (At Table)</option>
-                <option>Advanced Takeout Pick-up</option>
-                <option>Delivery</option>
+                <option value="Dine-In">Dine-In (At Table)</option>
+                <option value="Takeout">Advanced Takeout Pick-up</option>
+                <option value="Delivery">Delivery</option>
               </select>
             </div>
             <div><label for="timeInput">Table # / Time</label><input id="timeInput" type="text" required placeholder="Table 4 or 2:30 PM"></div>
@@ -326,7 +291,7 @@
 
           <div style="margin-top:14px;"><label for="notes">Overall Special Prep Instructions</label><textarea id="notes" placeholder="General instructions for the whole order..."></textarea></div>
 
-          <button type="submit" class="btn" style="background:var(--ink); color:var(--bone); border-color:var(--ink); width:100%; justify-content:center; padding:16px; margin-top:15px; border-radius:6px;">Confirm and Send Order</button>
+          <button type="submit" id="btnConfirmOrder" class="btn" style="background:var(--ink); color:var(--bone); border-color:var(--ink); width:100%; justify-content:center; padding:16px; margin-top:15px; border-radius:6px;">Confirm and Send Order</button>
           <div id="formNote" style="margin-top:10px; text-align:center; font-size:0.85rem;" class="form-note"></div>
         </form>
       </div>
@@ -335,7 +300,7 @@
   </div>
 </section>
 
-
+<!-- Item Customization Modal -->
 <div class="modal-overlay" id="customizationModal">
   <div class="modal-card">
     <h3 id="modalItemName">Item Name</h3>
@@ -350,7 +315,6 @@
     </div>
   </div>
 </div>
-
 
 <section id="feedback" class="feedback-section">
   <div class="wrap reveal in">
@@ -394,8 +358,29 @@
   </div>
 </section>
 
-<script>
-  
+<script type="module">
+  import { auth, onAuthStateChanged, signOut, API_BASE_URL } from "./firebase-init.js";
+
+  let currentUser = null;
+
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    const signedInBanner = document.getElementById('signedInBanner');
+    const signedOutBanner = document.getElementById('signedOutBanner');
+    if (user) {
+      signedInBanner.style.display = 'flex';
+      signedOutBanner.style.display = 'none';
+      document.getElementById('signedInEmail').textContent = user.email || user.displayName || 'you';
+    } else {
+      signedInBanner.style.display = 'none';
+      signedOutBanner.style.display = 'flex';
+    }
+  });
+
+  window.handleSignOutFromOrder = async function () {
+    await signOut(auth);
+  };
+
   const menuDatabase = [
     { id: "r1", cat: "rice", name: "Pork Sisig Rice Meal", price: 100 },
     { id: "r2", cat: "rice", name: "Burger Steak Rice Meal", price: 100 },
@@ -473,41 +458,21 @@
   ];
 
   let cart = [];
-  let emailVerified = false;
   let currentCartTotal = 0;
   let currentCategory = 'all';
   let activeSelectedItemId = null;
-  const mockToken = "5821";
 
-  function sendCode() {
-    const email = document.getElementById('buyerEmail').value;
-    if(!email || !email.includes('@')) { alert("Please enter a valid email address first."); return; }
-    document.getElementById('otpBox').style.opacity = "1";
-    document.getElementById('otpBox').style.pointerEvents = "auto";
-    document.getElementById('verifyStatus').innerHTML = `<span style="font-size:0.75rem; color:#e68a00; font-family:'Space Mono';">Verification code active! Enter: <strong>${mockToken}</strong></span>`;
-  }
-
-  function verifyToken() {
-    const entered = document.getElementById('verificationCode').value;
-    if(entered === mockToken) {
-      emailVerified = true;
-      document.getElementById('buyerEmail').disabled = true;
-      document.getElementById('verificationCode').disabled = true;
-      document.getElementById('verifyStatus').innerHTML = `<div class="verification-badge">✓ VERIFIED PROFILE</div>`;
-    }
-  }
-
-  function filterCatalog(category, buttonEl) {
+  window.filterCatalog = function(category, buttonEl) {
     currentCategory = category;
     const tabs = document.querySelectorAll('.kiosk-tab-btn');
     tabs.forEach(t => t.classList.remove('active'));
     buttonEl.classList.add('active');
     renderCatalog();
-  }
+  };
 
-  function filterBeveragesTab(buttonEl) {
-    filterCatalog('beverages', buttonEl);
-  }
+  window.filterBeveragesTab = function(buttonEl) {
+    window.filterCatalog('beverages', buttonEl);
+  };
 
   function renderCatalog() {
     const catalogContainer = document.getElementById('menuCatalog');
@@ -531,43 +496,151 @@
     });
   }
 
-  function removeCartRow(uniqueCartId) {
+  window.openCustomizationModal = function(id) {
+    activeSelectedItemId = id;
+    const item = menuDatabase.find(i => i.id === id);
+    if (!item) return;
+    document.getElementById('modalItemName').innerText = item.name;
+    document.getElementById('modalItemComments').value = '';
+    document.getElementById('customizationModal').classList.add('active');
+  };
+
+  window.closeModal = function() {
+    document.getElementById('customizationModal').classList.remove('active');
+    activeSelectedItemId = null;
+  };
+
+  window.confirmAddToCart = function() {
+    if (!activeSelectedItemId) return;
+    const item = menuDatabase.find(i => i.id === activeSelectedItemId);
+    if (!item) return;
+
+    const notes = document.getElementById('modalItemComments').value.trim();
+    const cartEntry = {
+      uniqueCartId: Date.now() + Math.random(),
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      notes: notes
+    };
+
+    cart.push(cartEntry);
+    window.closeModal();
+    updateCartDisplay();
+  };
+
+  window.removeCartRow = function(uniqueCartId) {
     cart = cart.filter(entry => entry.uniqueCartId !== uniqueCartId);
     updateCartDisplay();
-  }
+  };
 
-  function handleReserve(e){
-    e.preventDefault();
-    if (!emailVerified) { alert("Please complete email verification first."); return false; }
-    if (cart.length === 0) { alert("Your cart is empty."); return false; }
-    
-    const pay = document.querySelector('input[name="paymentChoice"]:checked').value;
-    let finishMsg = `Success! Your order request has been logged via ${pay}.`;
-    
-    if (currentCartTotal >= 300) {
-      finishMsg = `Order Logged! A 50% downpayment is expected for balances over ₱300 before cooking begins.`;
+  function updateCartDisplay() {
+    const container = document.getElementById('cartListContainer');
+    const totalEl = document.getElementById('runningTotalDisplay');
+    const notice = document.getElementById('downpaymentNotice');
+
+    if (cart.length === 0) {
+      container.innerHTML = '<div class="cart-empty">Your shopping cart is currently empty.</div>';
+      currentCartTotal = 0;
+      totalEl.innerText = '₱0';
+      notice.style.display = 'none';
+      return;
     }
-    
-    document.getElementById('formNote').textContent = finishMsg;
-    alert(finishMsg);
-    
-    e.target.reset();
-    document.getElementById('buyerEmail').disabled = false;
-    document.getElementById('verificationCode').disabled = false;
-    document.getElementById('otpBox').style.opacity = "0.5";
-    document.getElementById('otpBox').style.pointerEvents = "none";
-    document.getElementById('verifyStatus').innerHTML = "";
-    document.getElementById('downpaymentNotice').style.display = 'none';
-    
-    
-    const locationRow = document.getElementById('deliveryLocationWrapper');
-    if (locationRow) locationRow.remove();
 
-    emailVerified = false;
-    cart = [];
-    updateCartDisplay();
+    currentCartTotal = cart.reduce((sum, entry) => sum + entry.price, 0);
+    totalEl.innerText = `₱${currentCartTotal}`;
+
+    if (currentCartTotal >= 300) {
+      notice.style.display = 'block';
+    } else {
+      notice.style.display = 'none';
+    }
+
+    container.innerHTML = cart.map(entry => `
+      <div class="cart-row">
+        <div>
+          <strong>${entry.name}</strong>
+          ${entry.notes ? `<span class="cart-item-mods">Note: ${entry.notes}</span>` : ''}
+        </div>
+        <div>
+          <span>₱${entry.price}</span>
+          <button type="button" class="remove-item" onclick="removeCartRow(${entry.uniqueCartId})">✕</button>
+        </div>
+      </div>
+    `).join('');
   }
 
+  // Order Handler
+  window.handleReserve = async function(e) {
+    e.preventDefault();
+    if (cart.length === 0) { alert("Your cart is empty."); return false; }
+
+    if (!currentUser) {
+      window.location.href = 'account.html?redirect=order.html';
+      return false;
+    }
+
+    try {
+      const idToken = await currentUser.getIdToken();
+      await executeOrderSubmission(idToken);
+    } catch (err) {
+      console.error("Authentication Token Error:", err);
+      alert("Session expired. Please sign in again.");
+      window.location.href = 'account.html?redirect=order.html';
+    }
+    return false;
+  };
+
+  async function executeOrderSubmission(idToken) {
+    const serviceType = document.getElementById('orderType').value;
+    const paymentChoice = document.querySelector('input[name="paymentChoice"]:checked')?.value || 'Cash';
+    const timeInput = document.getElementById('timeInput').value;
+    const notes = document.getElementById('notes').value;
+
+    const orderPayload = {
+      items: cart,
+      totalAmount: currentCartTotal,
+      serviceType: serviceType,
+      address: timeInput,
+      paymentChoice: paymentChoice,
+      notes: notes
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/customer/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify(orderPayload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        let finishMsg = `Success! Order #${data.orderId || 'Logged'} created via ${paymentChoice}.`;
+        if (currentCartTotal >= 300) {
+          finishMsg = `Order #${data.orderId || 'Logged'} Received! A 50% downpayment via GCash is required for totals over ₱300 before kitchen prep begins.`;
+        }
+
+        document.getElementById('formNote').textContent = finishMsg;
+        alert(finishMsg);
+
+        // Reset form and cart
+        document.querySelector('.kiosk-cart-panel form').reset();
+        cart = [];
+        updateCartDisplay();
+      } else {
+        alert("Order submission failed: " + (data.error || data.message));
+      }
+    } catch (err) {
+      console.error("Order submit network error:", err);
+      alert("Network error occurred while sending order to server.");
+    }
+  }
+
+  // Feedback Section Handlers
   let chosenRating = 5;
   const stars = document.querySelectorAll('#starSelector span');
   stars.forEach(star => {
@@ -577,14 +650,14 @@
     });
   });
 
-  function handleFeedback(e) {
+  window.handleFeedback = function(e) {
     e.preventDefault();
     const name = document.getElementById('reviewerName').value;
     const txt = document.getElementById('feedbackText').value;
     const isPrivate = document.getElementById('privateToggle').checked;
 
     if (isPrivate) {
-      alert(`Thank you, ${name}. Your message was sent privately to the management.`);
+      alert(`Thank you, ${name}. Your message was sent privately to management.`);
     } else {
       const card = document.createElement('div');
       card.className = 'comment-card';
@@ -598,7 +671,10 @@
     e.target.reset();
     chosenRating = 5;
     stars.forEach(s => s.classList.add('active'));
-  }
+    return false;
+  };
+
+  renderCatalog();
 </script>
 <script src="global.js"></script>
 </body>

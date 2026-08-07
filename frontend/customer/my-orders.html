@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Orders — The~Yo's</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .orders-list { display: flex; flex-direction: column; gap: 22px; margin-top: 10px; }
+
+  .order-card {
+    background: var(--component-bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 24px;
+  }
+  @media(max-width:520px) { .order-card { padding: 18px; } }
+
+  .order-card-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
+    padding-bottom: 16px; border-bottom: 1px dashed var(--line);
+  }
+  .order-id { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.15rem; text-transform: uppercase; }
+  .order-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; opacity: 0.6; margin-top: 4px; }
+  .order-total { text-align: right; }
+  .order-total .amount { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 1.3rem; color: var(--brass); display: block; }
+  .order-total .label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.6; }
+
+  /* Status stepper */
+  .status-tracker { display: flex; align-items: flex-start; margin-bottom: 20px; }
+  .status-step { flex: 1; text-align: center; position: relative; }
+  .status-step .dot {
+    width: 22px; height: 22px; border-radius: 50%; margin: 0 auto 8px;
+    background: var(--stone); border: 2px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--ink); opacity: 0.5;
+    transition: all 0.25s ease;
+  }
+  .status-step .connector {
+    position: absolute; top: 10px; left: -50%; width: 100%; height: 2px;
+    background: var(--line); z-index: -1;
+  }
+  .status-step:first-child .connector { display: none; }
+  .status-step .step-label {
+    font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+    letter-spacing: 0.04em; opacity: 0.55;
+  }
+  .status-step.done .dot { background: var(--brass); border-color: var(--brass); color: #fff; opacity: 1; }
+  .status-step.done .connector { background: var(--brass); }
+  .status-step.done .step-label { opacity: 1; color: var(--brass); }
+  .status-step.current .dot { background: var(--ink); border-color: var(--ink); color: var(--bone); opacity: 1; box-shadow: 0 0 0 4px rgba(163,132,74,0.18); }
+  .status-step.current .step-label { opacity: 1; font-weight: 700; }
+
+  .status-cancelled {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(224,82,82,0.08); border: 1px solid rgba(224,82,82,0.3);
+    color: #e05252; padding: 12px 16px; border-radius: 4px;
+    font-family: 'Space Mono', monospace; font-size: 0.78rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 20px;
+  }
+
+  .order-items { display: flex; flex-direction: column; gap: 8px; }
+  .order-item-row { display: flex; justify-content: space-between; font-size: 0.88rem; opacity: 0.85; }
+  .order-item-row .qty { font-family: 'Space Mono', monospace; color: var(--brass); margin-right: 6px; }
+
+  .orders-empty {
+    text-align: center; padding: 70px 20px; border: 1px dashed var(--line); border-radius: 6px;
+  }
+  .orders-empty p { opacity: 0.65; margin: 10px auto 22px; max-width: 340px; }
+
+  .orders-loading { text-align: center; padding: 60px 20px; opacity: 0.6; font-family: 'Space Mono', monospace; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo-link">
+    <img src="../pics&vids/the-yo's_logo.jpg" alt="Logo" class="logo-img">
+    <span class="logo-text">The~Yo's</span>
+  </a>
+  <nav id="siteNav">
+    <ul>
+      <li><a href="about.html">About</a></li>
+      <li><a href="menu.html">Menu</a></li>
+      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="order.html#feedback">Reviews</a></li>
+      <li><a href="order.html" class="nav-btn">Order Now</a></li>
+    </ul>
+  </nav>
+  <button class="nav-toggle" id="navToggle">☰</button>
+</header>
+
+<section>
+  <div class="wrap reveal in">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Order Tracking</p>
+        <h2 class="display">My Orders</h2>
+      </div>
+      <p>Track every order from the moment it lands in the kitchen to the moment it's ready.</p>
+    </div>
+
+    <div id="ordersLoading" class="orders-loading">Loading your orders…</div>
+    <div id="ordersList" class="orders-list"></div>
+    <div id="ordersEmpty" class="orders-empty" style="display:none;">
+      <p class="eyebrow" style="display:block; margin-bottom:10px;">Nothing here yet</p>
+      <p>You haven't placed any orders yet. Once you do, you'll be able to track their status right here.</p>
+      <a href="order.html" class="btn">Place Your First Order</a>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+  import { auth, onAuthStateChanged, API_BASE_URL } from "./firebase-init.js";
+
+  const STEPS = [
+    { key: 'pending', label: 'Pending' },
+    { key: 'confirmed', label: 'Confirmed' },
+    { key: 'preparing', label: 'Preparing' },
+    { key: 'ready', label: 'Ready' },
+  ];
+  // Some backends may finalize with 'completed' instead of 'ready' — treat
+  // both as the last step so the tracker doesn't break either way.
+  const STEP_ALIASES = { completed: 'ready' };
+
+  function peso(n) {
+    return '₱' + Number(n || 0).toLocaleString('en-PH', { maximumFractionDigits: 2 });
+  }
+
+  function renderTracker(status) {
+    const normalized = STEP_ALIASES[status] || status;
+    if (normalized === 'cancelled') {
+      return `<div class="status-cancelled">✕ This order was cancelled</div>`;
+    }
+    const currentIndex = STEPS.findIndex(s => s.key === normalized);
+    return `<div class="status-tracker">
+      ${STEPS.map((step, i) => {
+        let cls = 'status-step';
+        if (currentIndex >= 0 && i < currentIndex) cls += ' done';
+        if (i === currentIndex) cls += ' current';
+        return `<div class="${cls}">
+          <div class="connector"></div>
+          <div class="dot">${i < currentIndex ? '✓' : i + 1}</div>
+          <div class="step-label">${step.label}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  function renderOrder(order) {
+    const date = order.datetime_ordered
+      ? new Date(order.datetime_ordered).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
+      : '';
+    const items = Array.isArray(order.items) ? order.items.filter(it => it && it.menu_id !== null) : [];
+
+    return `<div class="order-card">
+      <div class="order-card-head">
+        <div>
+          <div class="order-id">Order #${order.id}</div>
+          <div class="order-meta">${date} · ${(order.order_type || '').replace('_', ' ')}</div>
+        </div>
+        <div class="order-total">
+          <span class="amount">${peso(order.total_amount)}</span>
+          <span class="label">Total</span>
+        </div>
+      </div>
+      ${renderTracker(order.status)}
+      <div class="order-items">
+        ${items.length
+          ? items.map(it => `<div class="order-item-row"><span><span class="qty">×${it.quantity}</span>Item #${it.menu_id}</span><span>${peso(it.subtotal)}</span></div>`).join('')
+          : '<div class="order-item-row" style="opacity:.5;">No item details available.</div>'}
+      </div>
+    </div>`;
+  }
+
+  async function loadOrders(idToken) {
+    const loading = document.getElementById('ordersLoading');
+    const list = document.getElementById('ordersList');
+    const empty = document.getElementById('ordersEmpty');
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/customer/orders`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      loading.style.display = 'none';
+
+      if (!res.ok) {
+        list.innerHTML = `<div class="orders-empty"><p>${data.error || 'Could not load your orders right now.'}</p></div>`;
+        return;
+      }
+
+      const orders = data.orders || [];
+      if (orders.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+      list.innerHTML = orders.map(renderOrder).join('');
+    } catch (err) {
+      loading.style.display = 'none';
+      list.innerHTML = `<div class="orders-empty"><p>Network error while loading your orders. Please try again.</p></div>`;
+    }
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = 'account.html?redirect=my-orders.html';
+      return;
+    }
+    const idToken = await user.getIdToken();
+    loadOrders(idToken);
+  });
+</script>
+<script src="global.js"></script>
+</body>
+</html>
