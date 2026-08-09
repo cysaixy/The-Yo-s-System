@@ -17,7 +17,9 @@ staffRouter.get("/me", me);
 staffRouter.get("/", requireAdmin, listStaff);
 staffRouter.get("/:id", requireAdmin, getStaffById);
 staffRouter.post("/", requireAdmin, createStaff);
-staffRouter.patch("/:id", requireAdmin, updateStaff);
-staffRouter.patch("/:id/permissions", requireAdmin, updatePermissions);
+// staff.html and settings.html both send PUT for updates, not PATCH -
+// changed to match (both routes accepted the same body shape either way).
+staffRouter.put("/:id", requireAdmin, updateStaff);
+staffRouter.put("/:id/permissions", requireAdmin, updatePermissions);
 
 export default staffRouter;

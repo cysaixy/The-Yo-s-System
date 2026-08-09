@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+<style>
+  .perm-check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, formatDate, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'staff', title: 'Staff' });
+  if (session) init();
+
+  let staffList = [];
+
+  function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="admin-panel">
+        <div class="admin-panel-head">
+          <h3>Staff Accounts</h3>
+          <button class="btn small" id="newStaffBtn">+ New Staff</button>
+        </div>
+        <div class="admin-panel-body" style="padding:0;" id="staffWrap"><div class="admin-loading">Loading…</div></div>
+      </div>
+
+      <div class="modal-backdrop" id="staffModal">
+        <div class="modal-box">
+          <h3 id="staffModalTitle">New Staff</h3>
+          <input type="hidden" id="staffId">
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;"><label>Name</label><input type="text" id="staffName"></div>
+            <div class="form-field" style="grid-column:1/-1;" id="emailField"><label>Email</label><input type="email" id="staffEmail"></div>
+            <div class="form-field" style="grid-column:1/-1;" id="passwordField"><label>Password</label><input type="password" id="staffPassword"></div>
+            <div class="form-field">
+              <label>Role</label>
+              <select id="staffRole">
+                <option value="Cashier">Cashier</option>
+                <option value="Manager">Manager</option>
+                <option value="Kitchen">Kitchen</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Status</label>
+              <select id="staffStatus">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="staffCancelBtn">Cancel</button>
+            <button class="btn" id="staffSaveBtn">Save Staff</button>
+          </div>
+          <div class="admin-error" id="staffError" style="display:none; padding:10px 0 0; text-align:left;"></div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="permModal">
+        <div class="modal-box">
+          <h3>Permissions</h3>
+          <input type="hidden" id="permStaffId">
+          <label class="perm-check"><input type="checkbox" id="permInventory"> Can access Inventory</label>
+          <label class="perm-check"><input type="checkbox" id="permStockIn"> Can access Stock-In / Purchases</label>
+          <label class="perm-check"><input type="checkbox" id="permReports"> Can access Reports</label>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="permCancelBtn">Cancel</button>
+            <button class="btn" id="permSaveBtn">Save Permissions</button>
+          </div>
+          <div class="admin-error" id="permError" style="display:none; padding:10px 0 0; text-align:left;"></div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('newStaffBtn').addEventListener('click', () => openStaffModal());
+    document.getElementById('staffCancelBtn').addEventListener('click', () => toggleModal('staffModal', false));
+    document.getElementById('staffSaveBtn').addEventListener('click', saveStaff);
+    document.getElementById('permCancelBtn').addEventListener('click', () => toggleModal('permModal', false));
+    document.getElementById('permSaveBtn').addEventListener('click', savePermissions);
+
+    loadStaff();
+  }
+
+  function toggleModal(id, show) { document.getElementById(id).classList.toggle('active', show); }
+
+  async function loadStaff() {
+    try {
+      const res = await adminFetch('/api/admin/staff');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load staff.');
+      staffList = data.staff || [];
+      render();
+    } catch (err) {
+      document.getElementById('staffWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function render() {
+    const wrap = document.getElementById('staffWrap');
+    if (staffList.length === 0) {
+      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No staff accounts yet.</div>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${staffList.map(s => `
+            <tr>
+              <td>${escapeHtml(s.name)}</td>
+              <td>${escapeHtml(s.email)}</td>
+              <td><span class="pill pill-brass">${s.role}</span></td>
+              <td><span class="pill ${s.status === 'active' ? 'pill-success' : 'pill-neutral'}">${s.status}</span></td>
+              <td style="font-size:0.78rem; opacity:0.7;">${formatDate(s.created_at, { dateStyle: 'medium' })}</td>
+              <td><div class="row-actions">
+                <button class="edit-staff-btn" data-id="${s.id}">Edit</button>
+                <button class="perm-btn" data-id="${s.id}"
+                        data-inv="${s.can_access_inventory}" data-stock="${s.can_access_stock_in}" data-rep="${s.can_access_reports}">Permissions</button>
+              </div></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+    wrap.querySelectorAll('.edit-staff-btn').forEach(btn => btn.addEventListener('click', () => openStaffModal(btn.dataset.id)));
+    wrap.querySelectorAll('.perm-btn').forEach(btn => btn.addEventListener('click', () => openPermModal(btn)));
+  }
+
+  function openStaffModal(id) {
+    const staff = id ? staffList.find(s => s.id == id) : null;
+    document.getElementById('staffModalTitle').textContent = staff ? `Edit — ${staff.name}` : 'New Staff';
+    document.getElementById('staffId').value = id || '';
+    document.getElementById('staffName').value = staff?.name || '';
+    document.getElementById('staffEmail').value = staff?.email || '';
+    document.getElementById('staffPassword').value = '';
+    document.getElementById('staffRole').value = staff?.role || 'Cashier';
+    document.getElementById('staffStatus').value = staff?.status || 'active';
+
+    // Email + password are only set at creation time - the update endpoint
+    // doesn't accept them, so hide those fields when editing.
+    document.getElementById('emailField').style.display = staff ? 'none' : 'block';
+    document.getElementById('passwordField').style.display = staff ? 'none' : 'block';
+
+    document.getElementById('staffError').style.display = 'none';
+    toggleModal('staffModal', true);
+  }
+
+  async function saveStaff() {
+    const id = document.getElementById('staffId').value;
+    const errEl = document.getElementById('staffError');
+
+    try {
+      let res, data;
+      if (id) {
+        res = await adminFetch(`/api/admin/staff/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: document.getElementById('staffName').value.trim(),
+            role: document.getElementById('staffRole').value,
+            status: document.getElementById('staffStatus').value,
+          }),
+        });
+      } else {
+        const name = document.getElementById('staffName').value.trim();
+        const email = document.getElementById('staffEmail').value.trim();
+        const password = document.getElementById('staffPassword').value;
+        if (!name || !email || !password) {
+          errEl.textContent = 'Name, email, and password are required.';
+          errEl.style.display = 'block';
+          return;
+        }
+        res = await adminFetch('/api/admin/staff', {
+          method: 'POST',
+          body: JSON.stringify({ name, email, password, role: document.getElementById('staffRole').value }),
+        });
+      }
+      data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save staff member.');
+      toggleModal('staffModal', false);
+      loadStaff();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    }
+  }
+
+  function openPermModal(btn) {
+    document.getElementById('permStaffId').value = btn.dataset.id;
+    document.getElementById('permInventory').checked = btn.dataset.inv === 'true';
+    document.getElementById('permStockIn').checked = btn.dataset.stock === 'true';
+    document.getElementById('permReports').checked = btn.dataset.rep === 'true';
+    document.getElementById('permError').style.display = 'none';
+    toggleModal('permModal', true);
+  }
+
+  async function savePermissions() {
+    const id = document.getElementById('permStaffId').value;
+    const errEl = document.getElementById('permError');
+    try {
+      const res = await adminFetch(`/api/admin/staff/${id}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          can_access_inventory: document.getElementById('permInventory').checked,
+          can_access_stock_in: document.getElementById('permStockIn').checked,
+          can_access_reports: document.getElementById('permReports').checked,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save permissions.');
+      toggleModal('permModal', false);
+      loadStaff();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>

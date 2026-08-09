@@ -7,7 +7,13 @@ export async function login(req, res, next) {
   try {
     const { email, password } = req.body;
 
-    const { rows } = await pool.query("SELECT * FROM staff WHERE email = $1", [email]);
+    const { rows } = await pool.query(
+      `SELECT s.*, p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
+       FROM staff s
+       LEFT JOIN staff_permissions p ON p.staff_id = s.id
+       WHERE s.email = $1`,
+      [email]
+    );
     const staff = rows[0];
 
     if (!staff || staff.status !== "active") {

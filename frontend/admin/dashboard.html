@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+<style>
+  .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  .bar-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .bar-row:last-child { border-bottom: none; }
+  .bar-row .name { flex: 1; font-size: 0.85rem; }
+  .bar-row .qty { font-family: 'Space Mono', monospace; font-size: 0.75rem; opacity: 0.6; width: 70px; text-align: right; }
+  .bar-row .amt { font-family: 'Space Mono', monospace; font-size: 0.85rem; width: 90px; text-align: right; color: var(--brass-dark); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, peso } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'dashboard', title: 'Dashboard' });
+  if (session) init();
+
+  async function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `<div class="admin-loading">Loading dashboard…</div>`;
+
+    // Fetched separately (not Promise.all) on purpose: summary is meant to
+    // be every staff member's default view, but sales-breakdown is gated
+    // behind can_access_reports. A Cashier without that permission would
+    // previously see the ENTIRE dashboard fail with a permissions error,
+    // instead of just missing the one section they don't have access to.
+    let summary, breakdown, breakdownError = null;
+
+    try {
+      const summaryRes = await adminFetch('/api/admin/dashboard');
+      summary = await summaryRes.json();
+      if (!summaryRes.ok) throw new Error(summary.error || 'Could not load summary.');
+    } catch (err) {
+      content.innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+      return;
+    }
+
+    try {
+      const breakdownRes = await adminFetch('/api/admin/dashboard/sales-breakdown');
+      breakdown = await breakdownRes.json();
+      if (!breakdownRes.ok) throw new Error(breakdown.error || 'Could not load sales breakdown.');
+    } catch (err) {
+      breakdownError = err.message;
+      breakdown = { byOrderType: [], byCategory: [] };
+    }
+
+    render(summary, breakdown, breakdownError);
+  }
+
+  function render(summary, breakdown, breakdownError) {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label">Today's Sales</div><div class="value brass">${peso(summary.todaySales)}</div></div>
+        <div class="stat-card"><div class="label">Today's Orders</div><div class="value">${summary.todayOrderCount}</div></div>
+        <div class="stat-card"><div class="label">Low / Out of Stock</div><div class="value ${summary.lowStockCount > 0 ? 'danger' : 'success'}">${summary.lowStockCount}</div></div>
+        <div class="stat-card"><div class="label">Order Types Tracked</div><div class="value">${breakdown.byOrderType.length}</div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="admin-panel">
+          <div class="admin-panel-head"><h3>Best Sellers</h3></div>
+          <div class="admin-panel-body">
+            ${summary.bestSellers.length
+              ? summary.bestSellers.map(b => `
+                  <div class="bar-row">
+                    <span class="name">${b.name}</span>
+                    <span class="qty">×${b.qty_sold}</span>
+                    <span class="amt">${peso(b.sales_amount)}</span>
+                  </div>`).join('')
+              : `<div class="panel-empty">No sales recorded yet.</div>`}
+          </div>
+        </div>
+
+        <div class="admin-panel">
+          <div class="admin-panel-head"><h3>Sales by Order Type</h3></div>
+          <div class="admin-panel-body">
+            ${breakdownError
+              ? `<div class="panel-empty">🔒 ${breakdownError}</div>`
+              : breakdown.byOrderType.length
+                ? breakdown.byOrderType.map(t => `
+                    <div class="bar-row">
+                      <span class="name">${(t.order_type || '').replace('_', ' ')}</span>
+                      <span class="qty">${t.order_count} orders</span>
+                      <span class="amt">${peso(t.total_sales)}</span>
+                    </div>`).join('')
+                : `<div class="panel-empty">No orders yet.</div>`}
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-panel" style="margin-top:20px;">
+        <div class="admin-panel-head"><h3>Sales by Category</h3></div>
+        <div class="admin-panel-body">
+          ${breakdownError
+            ? `<div class="panel-empty">🔒 ${breakdownError}</div>`
+            : breakdown.byCategory.length
+              ? breakdown.byCategory.map(c => `
+                  <div class="bar-row">
+                    <span class="name">${c.category_name}</span>
+                    <span class="amt">${peso(c.total_sales)}</span>
+                  </div>`).join('')
+              : `<div class="panel-empty">No category sales yet.</div>`}
+        </div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>

@@ -20,8 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }, { threshold: 0.1 });
   revealEls.forEach(el => io.observe(el));
 
-  // --- OVERHAULED LIGHT/DARK MODE ENGINE ---
-  initThemeEngine();
+  // --- THEME ENGINE DISABLED FOR NOW ---
+  // initThemeEngine();
 
   // --- ORDER INITIALIZATION ---
   if (document.getElementById('menuCatalog')) {
@@ -35,19 +35,19 @@ function initThemeEngine() {
   const body = document.body;
   const isMenuPage = body.classList.contains('menu-page-theme');
   const savedTheme = localStorage.getItem('theme-preference');
-  
-  // Determine starting active state to render matching initial labels
-  const initialTheme = savedTheme || (isMenuPage ? 'dark' : 'light');
-  const initialLabel = initialTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
 
-  // Inject theme switch button dynamically inside the navigation list
-  const navUl = document.querySelector('#siteNav ul');
-  if (navUl) {
-    const toggleLi = document.createElement('li');
-    toggleLi.innerHTML = `<button class="theme-toggle-btn" id="themeToggleBtn">${initialLabel}</button>`;
-    navUl.appendChild(toggleLi);
+  const SUN_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg>';
+  const MOON_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>';
 
-    document.getElementById('themeToggleBtn').addEventListener('click', () => {
+  const activeThemeIsDark = savedTheme
+    ? savedTheme === 'dark'
+    : isMenuPage;
+
+  const toggleBtn = document.getElementById('themeToggleBtn');
+  if (toggleBtn) {
+    toggleBtn.innerHTML = activeThemeIsDark ? `${SUN_ICON}<span>Light</span>` : `${MOON_ICON}<span>Dark</span>`;
+
+    toggleBtn.addEventListener('click', () => {
       let activeDark;
       if (isMenuPage) {
         body.classList.toggle('light-theme');
@@ -57,13 +57,10 @@ function initThemeEngine() {
         activeDark = body.classList.contains('dark-theme');
       }
       localStorage.setItem('theme-preference', activeDark ? 'dark' : 'light');
-      
-      // Swap button content instantly on click
-      document.getElementById('themeToggleBtn').innerHTML = activeDark ? '☀️ Light' : '🌙 Dark';
+      toggleBtn.innerHTML = activeDark ? `${SUN_ICON}<span>Light</span>` : `${MOON_ICON}<span>Dark</span>`;
     });
   }
 
-  // Apply stored preferences on load
   if (savedTheme === 'dark') {
     if (!isMenuPage) body.classList.add('dark-theme');
     else body.classList.remove('light-theme');
@@ -83,7 +80,6 @@ function initServiceTypeListener() {
     let locationRow = document.getElementById('deliveryLocationWrapper');
 
     if (e.target.value === 'Delivery') {
-      // Create and inject the location input if it doesn't exist yet
       if (!locationRow) {
         locationRow = document.createElement('div');
         locationRow.id = 'deliveryLocationWrapper';
@@ -95,11 +91,9 @@ function initServiceTypeListener() {
             <input id="deliveryAddress" type="text" required placeholder="House No., Street, Barangay, Landmarks">
           </div>
         `;
-        // Insert right after the Service/Table form row
         currentFormRow.parentNode.insertBefore(locationRow, currentFormRow.nextSibling);
       }
     } else {
-      // Remove it cleanly if they switch away from Delivery
       if (locationRow) {
         locationRow.remove();
       }
@@ -108,9 +102,7 @@ function initServiceTypeListener() {
 }
 
 // --- DYNAMIC CATALOG & CART CUSTOMIZATION LOGIC ---
-
 function openCustomizationModal(id, uniqueCartId = null) {
-  // If uniqueCartId is provided, we are EDITING an existing item in the tray
   activeSelectedItemId = id;
   const item = menuDatabase.find(p => p.id === id);
   if (!item) return;
@@ -118,13 +110,10 @@ function openCustomizationModal(id, uniqueCartId = null) {
   document.getElementById('modalItemName').textContent = item.name;
   
   if (uniqueCartId) {
-    // Editing mode: Find the item in the cart and pre-fill its current notes
     const cartEntry = cart.find(entry => entry.uniqueCartId === uniqueCartId);
     document.getElementById('modalItemComments').value = cartEntry ? cartEntry.comments : '';
-    // Store the unique ID on the modal element so confirmAddToCart knows we are editing
     document.getElementById('customizationModal').setAttribute('data-editing-id', uniqueCartId);
   } else {
-    // New addition mode: Clear the input field
     document.getElementById('modalItemComments').value = '';
     document.getElementById('customizationModal').removeAttribute('data-editing-id');
   }
@@ -144,13 +133,11 @@ function confirmAddToCart() {
   const editingUniqueId = document.getElementById('customizationModal').getAttribute('data-editing-id');
   
   if (editingUniqueId) {
-    // MODE 1: EDITING AN EXISTING ITEM IN TRAY
     const cartEntry = cart.find(entry => entry.uniqueCartId === editingUniqueId);
     if (cartEntry) {
       cartEntry.comments = commentsInput;
     }
   } else {
-    // MODE 2: ADDING A NEW ITEM
     const existingIndex = cart.findIndex(entry => entry.id === activeSelectedItemId && entry.comments === commentsInput);
     
     if (existingIndex > -1) {
@@ -171,7 +158,7 @@ function confirmAddToCart() {
 
 function updateCartDisplay() {
   const container = document.getElementById('cartListContainer');
-  if (!container) return; // Prevent errors if on a page without a cart layout
+  if (!container) return;
   
   container.innerHTML = '';
   let grandTotal = 0, totalItems = 0;
@@ -188,7 +175,6 @@ function updateCartDisplay() {
       
       let modsHTML = entry.comments ? `<span class="cart-item-mods">↳ Note: "${entry.comments}"</span>` : '';
       
-      // Clicking item layout targets the edit modal
       row.innerHTML = `
         <div style="max-width: 75%; cursor: pointer;" onclick="openCustomizationModal('${entry.id}', '${entry.uniqueCartId}')" title="Click to edit customization">
           <strong>${product.name}</strong>

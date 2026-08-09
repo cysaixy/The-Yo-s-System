@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, formatDate, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'inventory', title: 'Inventory' });
+  if (session) init();
+
+  let items = [];
+
+  function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="admin-panel">
+        <div class="admin-panel-head">
+          <h3>Stock Overview</h3>
+          <button class="btn small" id="openLogBtn">View Full Log</button>
+        </div>
+        <div class="admin-panel-body" style="padding:0;" id="stockWrap">
+          <div class="admin-loading">Loading stock overview…</div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="adjustModal">
+        <div class="modal-box">
+          <h3 id="adjustModalTitle">Adjust Stock</h3>
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Quantity Change</label>
+              <input type="number" id="adjQty" placeholder="e.g. -5 to remove, 10 to add">
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Remarks (optional)</label>
+              <input type="text" id="adjRemarks" placeholder="Reason for adjustment">
+            </div>
+          </div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="adjCancelBtn">Cancel</button>
+            <button class="btn" id="adjSaveBtn">Save Adjustment</button>
+          </div>
+          <div class="admin-error" id="adjError" style="display:none; padding:10px 0 0; text-align:left;"></div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="logModal">
+        <div class="modal-box" style="max-width:720px;">
+          <h3>Inventory Log</h3>
+          <div id="logWrap"><div class="admin-loading">Loading log…</div></div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="logCloseBtn">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('openLogBtn').addEventListener('click', openLog);
+    document.getElementById('logCloseBtn').addEventListener('click', () => toggleModal('logModal', false));
+    document.getElementById('adjCancelBtn').addEventListener('click', () => toggleModal('adjustModal', false));
+    document.getElementById('adjSaveBtn').addEventListener('click', saveAdjustment);
+
+    loadStock();
+  }
+
+  function toggleModal(id, show) {
+    document.getElementById(id).classList.toggle('active', show);
+  }
+
+  const STATUS_LABELS = {
+    out_of_stock: { label: 'Out of Stock', pill: 'pill-danger' },
+    low_stock: { label: 'Low Stock', pill: 'pill-warning' },
+    below_reorder: { label: 'Below Reorder', pill: 'pill-info' },
+    in_stock: { label: 'In Stock', pill: 'pill-success' },
+  };
+
+  async function loadStock() {
+    try {
+      const res = await adminFetch('/api/admin/inventory');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load inventory.');
+      items = data.items || [];
+      renderStock();
+    } catch (err) {
+      document.getElementById('stockWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function renderStock() {
+    const wrap = document.getElementById('stockWrap');
+    if (items.length === 0) {
+      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No menu items found.</div>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <table class="admin-table">
+        <thead><tr><th>Item</th><th>Stock Qty</th><th>Status</th><th>Item Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${items.map(i => {
+            const s = STATUS_LABELS[i.stock_status] || STATUS_LABELS.in_stock;
+            return `<tr>
+              <td>${escapeHtml(i.name)}</td>
+              <td>${i.stock_quantity === null ? 'Untracked' : i.stock_quantity}</td>
+              <td><span class="pill ${s.pill}">${s.label}</span></td>
+              <td><span class="pill pill-neutral">${i.status}</span></td>
+              <td><div class="row-actions"><button data-id="${i.id}" data-name="${escapeHtml(i.name)}" class="primary adj-btn">Adjust</button></div></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+    wrap.querySelectorAll('.adj-btn').forEach(btn => {
+      btn.addEventListener('click', () => openAdjust(btn.dataset.id, btn.dataset.name));
+    });
+  }
+
+  let adjustingId = null;
+
+  function openAdjust(id, name) {
+    adjustingId = id;
+    document.getElementById('adjustModalTitle').textContent = `Adjust Stock — ${name}`;
+    document.getElementById('adjQty').value = '';
+    document.getElementById('adjRemarks').value = '';
+    document.getElementById('adjError').style.display = 'none';
+    toggleModal('adjustModal', true);
+  }
+
+  async function saveAdjustment() {
+    const qty = Number(document.getElementById('adjQty').value);
+    const remarks = document.getElementById('adjRemarks').value.trim();
+    const errEl = document.getElementById('adjError');
+
+    if (!qty) {
+      errEl.textContent = 'Enter a non-zero quantity change.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await adminFetch('/api/admin/inventory/adjustments', {
+        method: 'POST',
+        body: JSON.stringify({ menu_id: adjustingId, quantity_change: qty, remarks: remarks || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save adjustment.');
+      toggleModal('adjustModal', false);
+      loadStock();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    }
+  }
+
+  async function openLog() {
+    toggleModal('logModal', true);
+    const wrap = document.getElementById('logWrap');
+    wrap.innerHTML = `<div class="admin-loading">Loading log…</div>`;
+    try {
+      const res = await adminFetch('/api/admin/inventory/log');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load log.');
+      const entries = data.entries || [];
+      wrap.innerHTML = entries.length
+        ? `<table class="admin-table">
+            <thead><tr><th>Item</th><th>Type</th><th>Change</th><th>Staff</th><th>Date</th></tr></thead>
+            <tbody>${entries.map(e => `
+              <tr>
+                <td>${escapeHtml(e.item_name)}</td>
+                <td><span class="pill pill-neutral">${e.transaction_type}</span></td>
+                <td style="color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'}; font-family:'Space Mono';">${e.quantity_change > 0 ? '+' : ''}${e.quantity_change}</td>
+                <td>${e.staff_name || '—'}</td>
+                <td style="font-size:0.78rem; opacity:0.7;">${formatDate(e.log_date)}</td>
+              </tr>`).join('')}</tbody>
+          </table>`
+        : `<div class="panel-empty">No log entries yet.</div>`;
+    } catch (err) {
+      wrap.innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+</script>
+</body>
+</html>

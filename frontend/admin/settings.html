@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'settings', title: 'Settings' });
+  if (session) init(session);
+
+  function init(session) {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="admin-panel" style="max-width:520px;">
+        <div class="admin-panel-head"><h3>My Profile</h3></div>
+        <div class="admin-panel-body">
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Name</label>
+              <input type="text" id="profName" value="${session.staff.name || ''}">
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Email</label>
+              <input type="email" value="${session.staff.email || ''}" disabled>
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Role</label>
+              <input type="text" value="${session.staff.role || ''}" disabled>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" id="saveProfileBtn">Save Changes</button>
+          </div>
+          <div class="admin-error" id="profileStatus" style="display:none; margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <p style="opacity:0.55; font-size:0.8rem; max-width:520px; margin-top:16px;">
+        Note: this only updates your display name. Password changes and
+        deeper account settings (staff permissions, roles) live under
+        <a href="staff.html" style="color:var(--brass);">Staff</a> — only
+        Admin-role accounts can manage other staff there.
+      </p>
+    `;
+
+    document.getElementById('saveProfileBtn').addEventListener('click', () => saveProfile(session));
+  }
+
+  async function saveProfile(session) {
+    const statusEl = document.getElementById('profileStatus');
+    const name = document.getElementById('profName').value.trim();
+    if (!name) {
+      statusEl.className = 'admin-error';
+      statusEl.textContent = 'Name cannot be empty.';
+      statusEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await adminFetch(`/api/admin/staff/${session.staff.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not update profile.');
+
+      // Keep the cached session in sync so the header updates immediately.
+      const updated = { ...session.staff, name: data.staff.name };
+      localStorage.setItem('staffInfo', JSON.stringify(updated));
+
+      statusEl.className = 'admin-error';
+      statusEl.style.color = 'var(--success)';
+      statusEl.textContent = 'Saved.';
+      statusEl.style.display = 'block';
+    } catch (err) {
+      statusEl.className = 'admin-error';
+      statusEl.style.color = '';
+      statusEl.textContent = err.message;
+      statusEl.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>

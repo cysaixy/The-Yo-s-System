@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash Accounts — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, peso, formatDate, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'cash-accounts', title: 'Cash Accounts' });
+  if (session) init();
+
+  let accounts = [];
+
+  function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="admin-panel">
+        <div class="admin-panel-head">
+          <h3>Accounts</h3>
+          <button class="btn small" id="newAcctBtn">+ New Account</button>
+        </div>
+        <div class="admin-panel-body" style="padding:0;" id="acctWrap"><div class="admin-loading">Loading…</div></div>
+      </div>
+
+      <div class="modal-backdrop" id="acctModal">
+        <div class="modal-box">
+          <h3 id="acctModalTitle">New Cash Account</h3>
+          <input type="hidden" id="acctId">
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;"><label>Name</label><input type="text" id="acctName" placeholder="e.g. Main Drawer, GCash, BDO Savings"></div>
+            <div class="form-field"><label>Type</label>
+              <select id="acctType">
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+                <option value="ewallet">E-Wallet</option>
+              </select>
+            </div>
+            <div class="form-field" id="acctStartingBalWrap"><label>Starting Balance</label><input type="number" step="0.01" id="acctBalance" value="0"></div>
+            <div class="form-field" style="grid-column:1/-1;" id="acctStatusWrap" style="display:none;"><label>Status</label>
+              <select id="acctStatus">
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="acctCancelBtn">Cancel</button>
+            <button class="btn" id="acctSaveBtn">Save Account</button>
+          </div>
+          <div class="admin-error" id="acctError" style="display:none; padding:10px 0 0; text-align:left;"></div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('newAcctBtn').addEventListener('click', () => openModal());
+    document.getElementById('acctCancelBtn').addEventListener('click', () => toggleModal(false));
+    document.getElementById('acctSaveBtn').addEventListener('click', save);
+
+    load();
+  }
+
+  function toggleModal(show) { document.getElementById('acctModal').classList.toggle('active', show); }
+
+  async function load() {
+    try {
+      const res = await adminFetch('/api/admin/cash-accounts');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load accounts.');
+      accounts = data.accounts || [];
+      render();
+    } catch (err) {
+      document.getElementById('acctWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function render() {
+    const wrap = document.getElementById('acctWrap');
+    if (accounts.length === 0) {
+      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No cash accounts yet.</div>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Balance</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${accounts.map(a => `
+            <tr>
+              <td>${escapeHtml(a.name)}</td>
+              <td><span class="pill pill-neutral">${a.account_type}</span></td>
+              <td style="font-family:'Space Mono'; font-weight:700;">${peso(a.balance)}</td>
+              <td><span class="pill ${a.status === 'active' ? 'pill-success' : 'pill-neutral'}">${a.status}</span></td>
+              <td style="font-size:0.78rem; opacity:0.7;">${formatDate(a.created_at, { dateStyle: 'medium' })}</td>
+              <td><div class="row-actions">
+                <button class="edit-acct-btn" data-id="${a.id}">Edit</button>
+                <button class="danger del-acct-btn" data-id="${a.id}">Delete</button>
+              </div></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+    wrap.querySelectorAll('.edit-acct-btn').forEach(btn => btn.addEventListener('click', () => openModal(btn.dataset.id)));
+    wrap.querySelectorAll('.del-acct-btn').forEach(btn => btn.addEventListener('click', () => remove(btn.dataset.id)));
+  }
+
+  function openModal(id) {
+    const acct = id ? accounts.find(a => a.id == id) : null;
+    document.getElementById('acctModalTitle').textContent = acct ? `Edit — ${acct.name}` : 'New Cash Account';
+    document.getElementById('acctId').value = id || '';
+    document.getElementById('acctName').value = acct?.name || '';
+    document.getElementById('acctType').value = acct?.account_type || 'cash';
+
+    // Balance is only settable at creation - after that it's driven by
+    // recorded transactions (see Cash Transactions page), so hide it and
+    // show status instead when editing.
+    document.getElementById('acctStartingBalWrap').style.display = acct ? 'none' : 'block';
+    document.getElementById('acctStatusWrap').style.display = acct ? 'block' : 'none';
+    if (acct) document.getElementById('acctStatus').value = acct.status;
+    document.getElementById('acctBalance').value = 0;
+
+    document.getElementById('acctError').style.display = 'none';
+    toggleModal(true);
+  }
+
+  async function save() {
+    const id = document.getElementById('acctId').value;
+    const errEl = document.getElementById('acctError');
+    try {
+      let res;
+      if (id) {
+        res = await adminFetch(`/api/admin/cash-accounts/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: document.getElementById('acctName').value.trim(),
+            account_type: document.getElementById('acctType').value,
+            status: document.getElementById('acctStatus').value,
+          }),
+        });
+      } else {
+        res = await adminFetch('/api/admin/cash-accounts', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: document.getElementById('acctName').value.trim(),
+            account_type: document.getElementById('acctType').value,
+            balance: Number(document.getElementById('acctBalance').value) || 0,
+          }),
+        });
+      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save account.');
+      toggleModal(false);
+      load();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    }
+  }
+
+  async function remove(id) {
+    if (!confirm('Delete this cash account? Only possible if it has no transactions yet.')) return;
+    try {
+      const res = await adminFetch(`/api/admin/cash-accounts/${id}`, { method: 'DELETE' });
+      if (res.status !== 204) {
+        const data = await res.json();
+        throw new Error(data.error || 'Could not delete account.');
+      }
+      load();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+</script>
+</body>
+</html>

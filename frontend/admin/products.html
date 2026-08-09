@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Products — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+<style>
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tabs button {
+    padding: 9px 16px; border-radius: 6px; border: 1px solid var(--line); background: var(--component-bg);
+    font-family: 'Space Mono', monospace; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;
+    cursor: pointer; color: var(--ink); opacity: 0.6;
+  }
+  .tabs button.active { background: var(--brass); color: #fff; border-color: var(--brass); opacity: 1; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, peso, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'products', title: 'Products' });
+  if (session) init();
+
+  let categories = [];
+  let items = [];
+
+  function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="tabs">
+        <button class="active" data-tab="items">Menu Items</button>
+        <button data-tab="categories">Categories</button>
+      </div>
+
+      <div class="tab-panel active" id="tabItems">
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <h3>Menu Items</h3>
+            <button class="btn small" id="newItemBtn">+ New Item</button>
+          </div>
+          <div class="admin-panel-body" style="padding:0;" id="itemsWrap"><div class="admin-loading">Loading…</div></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tabCategories">
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <h3>Categories</h3>
+            <button class="btn small" id="newCatBtn">+ New Category</button>
+          </div>
+          <div class="admin-panel-body" style="padding:0;" id="catsWrap"><div class="admin-loading">Loading…</div></div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="itemModal">
+        <div class="modal-box">
+          <h3 id="itemModalTitle">New Menu Item</h3>
+          <input type="hidden" id="itemId">
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Name</label><input type="text" id="itemName">
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Category</label>
+              <select id="itemCategory"></select>
+            </div>
+            <div class="form-field">
+              <label>Price (₱)</label><input type="number" step="0.01" id="itemPrice">
+            </div>
+            <div class="form-field">
+              <label>Stock Qty</label><input type="number" id="itemStock">
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Status</label>
+              <select id="itemStatus">
+                <option value="available">Available</option>
+                <option value="unavailable">Unavailable</option>
+              </select>
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Description (optional)</label><textarea id="itemDesc"></textarea>
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Image URL (optional)</label><input type="text" id="itemImage">
+            </div>
+          </div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="itemCancelBtn">Cancel</button>
+            <button class="btn" id="itemSaveBtn">Save Item</button>
+          </div>
+          <div class="admin-error" id="itemError" style="display:none; padding:10px 0 0; text-align:left;"></div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="catModal">
+        <div class="modal-box">
+          <h3 id="catModalTitle">New Category</h3>
+          <input type="hidden" id="catId">
+          <div class="form-field"><label>Name</label><input type="text" id="catName"></div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="catCancelBtn">Cancel</button>
+            <button class="btn" id="catSaveBtn">Save Category</button>
+          </div>
+          <div class="admin-error" id="catError" style="display:none; padding:10px 0 0; text-align:left;"></div>
+        </div>
+      </div>
+    `;
+
+    document.querySelectorAll('.tabs button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab === 'items' ? 'tabItems' : 'tabCategories').classList.add('active');
+      });
+    });
+
+    document.getElementById('newItemBtn').addEventListener('click', () => openItemModal());
+    document.getElementById('itemCancelBtn').addEventListener('click', () => toggleModal('itemModal', false));
+    document.getElementById('itemSaveBtn').addEventListener('click', saveItem);
+
+    document.getElementById('newCatBtn').addEventListener('click', () => openCatModal());
+    document.getElementById('catCancelBtn').addEventListener('click', () => toggleModal('catModal', false));
+    document.getElementById('catSaveBtn').addEventListener('click', saveCategory);
+
+    loadAll();
+  }
+
+  function toggleModal(id, show) { document.getElementById(id).classList.toggle('active', show); }
+
+  async function loadAll() {
+    try {
+      const [catsRes, itemsRes] = await Promise.all([
+        adminFetch('/api/admin/products/categories'),
+        adminFetch('/api/admin/products/menuitems'),
+      ]);
+      const catsData = await catsRes.json();
+      const itemsData = await itemsRes.json();
+      if (!catsRes.ok) throw new Error(catsData.error || 'Could not load categories.');
+      if (!itemsRes.ok) throw new Error(itemsData.error || 'Could not load items.');
+
+      categories = catsData.data || [];
+      items = itemsData.items || [];
+      renderCategories();
+      renderItems();
+    } catch (err) {
+      document.getElementById('itemsWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+      document.getElementById('catsWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function renderItems() {
+    const wrap = document.getElementById('itemsWrap');
+    if (items.length === 0) {
+      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No menu items yet.</div>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${items.map(i => `
+            <tr>
+              <td>${escapeHtml(i.name)}</td>
+              <td>${escapeHtml(i.category_name || '—')}</td>
+              <td>${peso(i.price)}</td>
+              <td>${i.stock_quantity === null ? 'Untracked' : i.stock_quantity}</td>
+              <td><span class="pill ${i.status === 'available' ? 'pill-success' : 'pill-neutral'}">${i.status}</span></td>
+              <td><div class="row-actions">
+                <button class="edit-item-btn" data-id="${i.id}">Edit</button>
+                <button class="danger del-item-btn" data-id="${i.id}">Delete</button>
+              </div></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+    wrap.querySelectorAll('.edit-item-btn').forEach(btn => btn.addEventListener('click', () => openItemModal(btn.dataset.id)));
+    wrap.querySelectorAll('.del-item-btn').forEach(btn => btn.addEventListener('click', () => deleteItem(btn.dataset.id)));
+  }
+
+  function renderCategories() {
+    const wrap = document.getElementById('catsWrap');
+    if (categories.length === 0) {
+      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No categories yet.</div>`;
+      return;
+    }
+    wrap.innerHTML = `
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${categories.map(c => `
+            <tr>
+              <td>${escapeHtml(c.name)}</td>
+              <td><div class="row-actions">
+                <button class="edit-cat-btn" data-id="${c.id}" data-name="${escapeHtml(c.name)}">Edit</button>
+                <button class="danger del-cat-btn" data-id="${c.id}">Delete</button>
+              </div></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+    wrap.querySelectorAll('.edit-cat-btn').forEach(btn => btn.addEventListener('click', () => openCatModal(btn.dataset.id, btn.dataset.name)));
+    wrap.querySelectorAll('.del-cat-btn').forEach(btn => btn.addEventListener('click', () => deleteCategory(btn.dataset.id)));
+  }
+
+  function openItemModal(id) {
+    const item = id ? items.find(i => i.id == id) : null;
+    document.getElementById('itemModalTitle').textContent = item ? `Edit — ${item.name}` : 'New Menu Item';
+    document.getElementById('itemId').value = id || '';
+    document.getElementById('itemName').value = item?.name || '';
+    document.getElementById('itemPrice').value = item?.price || '';
+    document.getElementById('itemStock').value = item?.stock_quantity ?? '';
+    document.getElementById('itemStatus').value = item?.status || 'available';
+    document.getElementById('itemDesc').value = item?.description || '';
+    document.getElementById('itemImage').value = item?.image_url || '';
+
+    const catSelect = document.getElementById('itemCategory');
+    catSelect.innerHTML = categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    if (item?.category_id) catSelect.value = item.category_id;
+
+    document.getElementById('itemError').style.display = 'none';
+    toggleModal('itemModal', true);
+  }
+
+  async function saveItem() {
+    const id = document.getElementById('itemId').value;
+    const payload = {
+      name: document.getElementById('itemName').value.trim(),
+      category_id: document.getElementById('itemCategory').value,
+      price: Number(document.getElementById('itemPrice').value),
+      stock_quantity: document.getElementById('itemStock').value === '' ? null : Number(document.getElementById('itemStock').value),
+      status: document.getElementById('itemStatus').value,
+      description: document.getElementById('itemDesc').value.trim() || null,
+      image_url: document.getElementById('itemImage').value.trim() || null,
+    };
+    const errEl = document.getElementById('itemError');
+    if (!payload.name || !payload.category_id || !payload.price) {
+      errEl.textContent = 'Name, category, and price are required.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await adminFetch(id ? `/api/admin/products/menuitems/${id}` : '/api/admin/products/menuitems', {
+        method: id ? 'PATCH' : 'POST',
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save item.');
+      toggleModal('itemModal', false);
+      loadAll();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    }
+  }
+
+  async function deleteItem(id) {
+    if (!confirm('Delete this menu item?')) return;
+    try {
+      const res = await adminFetch(`/api/admin/products/menuitems/${id}`, { method: 'DELETE' });
+      if (res.status !== 204) {
+        const data = await res.json();
+        throw new Error(data.error || 'Could not delete item.');
+      }
+      loadAll();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  function openCatModal(id, name) {
+    document.getElementById('catModalTitle').textContent = id ? 'Edit Category' : 'New Category';
+    document.getElementById('catId').value = id || '';
+    document.getElementById('catName').value = name || '';
+    document.getElementById('catError').style.display = 'none';
+    toggleModal('catModal', true);
+  }
+
+  async function saveCategory() {
+    const id = document.getElementById('catId').value;
+    const name = document.getElementById('catName').value.trim();
+    const errEl = document.getElementById('catError');
+    if (!name) {
+      errEl.textContent = 'Name is required.';
+      errEl.style.display = 'block';
+      return;
+    }
+    try {
+      const res = await adminFetch(id ? `/api/admin/products/categories/${id}` : '/api/admin/products/categories', {
+        method: id ? 'PATCH' : 'POST',
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save category.');
+      toggleModal('catModal', false);
+      loadAll();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    }
+  }
+
+  async function deleteCategory(id) {
+    if (!confirm('Delete this category? Items using it must be reassigned first.')) return;
+    try {
+      const res = await adminFetch(`/api/admin/products/categories/${id}`, { method: 'DELETE' });
+      if (res.status !== 204) {
+        const data = await res.json();
+        throw new Error(data.error || 'Could not delete category.');
+      }
+      loadAll();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+</script>
+</body>
+</html>

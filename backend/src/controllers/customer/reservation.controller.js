@@ -31,3 +31,29 @@ export async function createReservation(req, res, next) {
     next(err);
   }
 }
+
+// Lists every reservation made by the currently authenticated customer, so
+// they can check whether the restaurant confirmed or cancelled it - powers
+// the status list on reservations.html.
+export async function getCustomerReservations(req, res, next) {
+  try {
+    const customer_id = req.user?.customer?.id;
+    if (!customer_id) {
+      return res.status(400).json({
+        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
+      });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT id, table_no, reservation_date, reservation_time, guests, notes, status, datetime_reserved
+       FROM reservations
+       WHERE customer_id = $1
+       ORDER BY reservation_date DESC, reservation_time DESC`,
+      [customer_id]
+    );
+
+    res.json({ reservations: rows });
+  } catch (err) {
+    next(err);
+  }
+}

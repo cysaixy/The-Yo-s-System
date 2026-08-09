@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash Transactions — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, peso, formatDate, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'cash-transactions', title: 'Cash Transactions' });
+  if (session) init();
+
+  let accounts = [];
+
+  function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="filter-bar">
+        <div><label>Type</label>
+          <select id="filterType">
+            <option value="">All</option>
+            <option value="in">Cash In</option>
+            <option value="out">Cash Out</option>
+          </select>
+        </div>
+      </div>
+      <div class="admin-panel">
+        <div class="admin-panel-head">
+          <h3>Transaction History</h3>
+          <button class="btn small" id="newTxBtn">+ Record Transaction</button>
+        </div>
+        <div class="admin-panel-body" style="padding:0;" id="txWrap"><div class="admin-loading">Loading…</div></div>
+      </div>
+
+      <div class="modal-backdrop" id="txModal">
+        <div class="modal-box">
+          <h3>Record Transaction</h3>
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Cash Account</label>
+              <select id="txAccount"></select>
+            </div>
+            <div class="form-field">
+              <label>Type</label>
+              <select id="txType">
+                <option value="in">Cash In</option>
+                <option value="out">Cash Out</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Amount (₱)</label><input type="number" step="0.01" id="txAmount">
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Category (optional)</label><input type="text" id="txCategory" placeholder="e.g. Supplies, Utilities, Owner Draw">
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Description (optional)</label><textarea id="txDesc"></textarea>
+            </div>
+          </div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="txCancelBtn">Cancel</button>
+            <button class="btn" id="txSaveBtn">Save Transaction</button>
+          </div>
+          <div class="admin-error" id="txError" style="display:none; padding:10px 0 0; text-align:left;"></div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('filterType').addEventListener('change', load);
+    document.getElementById('newTxBtn').addEventListener('click', openModal);
+    document.getElementById('txCancelBtn').addEventListener('click', () => toggleModal(false));
+    document.getElementById('txSaveBtn').addEventListener('click', save);
+
+    loadAccounts();
+    load();
+  }
+
+  function toggleModal(show) { document.getElementById('txModal').classList.toggle('active', show); }
+
+  async function loadAccounts() {
+    try {
+      const res = await adminFetch('/api/admin/cash-accounts');
+      const data = await res.json();
+      if (res.ok) accounts = (data.accounts || []).filter(a => a.status === 'active');
+    } catch { /* modal will just show an empty select if this fails */ }
+  }
+
+  async function load() {
+    const type = document.getElementById('filterType').value;
+    const qs = type ? `?transaction_type=${type}` : '';
+    try {
+      const res = await adminFetch(`/api/admin/cash-transactions${qs}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load transactions.');
+      const rows = data.transactions || [];
+      const wrap = document.getElementById('txWrap');
+      wrap.innerHTML = rows.length
+        ? `<table class="admin-table">
+            <thead><tr><th>Account</th><th>Type</th><th>Category</th><th>Amount</th><th>Staff</th><th>Date</th><th>Description</th></tr></thead>
+            <tbody>${rows.map(t => `
+              <tr>
+                <td>${escapeHtml(t.account_name)}</td>
+                <td><span class="pill ${t.transaction_type === 'in' ? 'pill-success' : 'pill-danger'}">${t.transaction_type === 'in' ? 'Cash In' : 'Cash Out'}</span></td>
+                <td>${escapeHtml(t.category || '—')}</td>
+                <td style="font-family:'Space Mono'; font-weight:700; color:${t.transaction_type === 'in' ? 'var(--success)' : 'var(--danger)'};">${t.transaction_type === 'in' ? '+' : '-'}${peso(t.amount)}</td>
+                <td>${t.staff_name || '—'}</td>
+                <td style="font-size:0.78rem; opacity:0.7;">${formatDate(t.transaction_date)}</td>
+                <td style="font-size:0.8rem; opacity:0.75; max-width:200px;">${escapeHtml(t.description || '—')}</td>
+              </tr>`).join('')}</tbody>
+          </table>`
+        : `<div class="panel-empty" style="padding:20px;">No transactions recorded yet.</div>`;
+    } catch (err) {
+      document.getElementById('txWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function openModal() {
+    document.getElementById('txAccount').innerHTML = accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)} (${peso(a.balance)})</option>`).join('');
+    document.getElementById('txType').value = 'in';
+    document.getElementById('txAmount').value = '';
+    document.getElementById('txCategory').value = '';
+    document.getElementById('txDesc').value = '';
+    document.getElementById('txError').style.display = 'none';
+    toggleModal(true);
+  }
+
+  async function save() {
+    const errEl = document.getElementById('txError');
+    const payload = {
+      cash_account_id: document.getElementById('txAccount').value,
+      transaction_type: document.getElementById('txType').value,
+      amount: Number(document.getElementById('txAmount').value),
+      category: document.getElementById('txCategory').value.trim() || null,
+      description: document.getElementById('txDesc').value.trim() || null,
+    };
+
+    if (!payload.cash_account_id || !payload.amount || payload.amount <= 0) {
+      errEl.textContent = 'Select an account and enter a positive amount.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await adminFetch('/api/admin/cash-transactions', { method: 'POST', body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save transaction.');
+      toggleModal(false);
+      loadAccounts();
+      load();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Point of Sale — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+<style>
+  .pos-layout { display: grid; grid-template-columns: 1fr 460px; gap: 20px; align-items: start; }
+  @media (max-width: 1000px) { .pos-layout { grid-template-columns: 1fr; } }
+
+  .pos-search-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .pos-search-row input[type="text"] {
+    flex: 1; padding: 11px 14px; border: 1px solid var(--line); border-radius: 6px;
+    font-family: 'Inter', sans-serif; font-size: 0.88rem; background: var(--component-bg); color: var(--ink);
+  }
+  .pos-search-row select {
+    padding: 11px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--component-bg);
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--ink); min-width: 200px;
+  }
+
+  .pos-list { background: var(--component-bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .pos-list-row {
+    display: flex; align-items: center; justify-content: space-between; padding: 14px 18px;
+    border-bottom: 1px solid var(--line); cursor: pointer; transition: background .15s ease;
+  }
+  .pos-list-row:last-child { border-bottom: none; }
+  .pos-list-row:hover { background: var(--stone); }
+  .pos-list-row .n { font-weight: 600; font-size: 0.9rem; }
+  .pos-list-row .cat { font-size: 0.72rem; opacity: 0.5; margin-top: 2px; }
+  .pos-list-row .p { font-family: 'Space Mono', monospace; color: var(--brass-dark); font-weight: 700; font-size: 0.9rem; }
+
+  .pos-right-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .pos-right-head h3 { margin: 0; font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 0.95rem; }
+  .pos-right-head select {
+    padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bone);
+    font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--ink);
+  }
+
+  .pos-order-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .pos-order-table th {
+    text-align: left; padding: 10px 16px; font-family: 'Space Mono', monospace; font-size: 0.62rem;
+    text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.5; border-bottom: 1px solid var(--line);
+  }
+  .pos-order-table th:last-child, .pos-order-table td:last-child { text-align: right; }
+  .pos-order-table td { padding: 10px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .pos-order-table .item-notes { display: block; font-size: 0.72rem; opacity: 0.55; margin-top: 2px; }
+  .qty-controls { display: flex; align-items: center; gap: 6px; }
+  .qty-controls button {
+    width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--line); background: var(--component-bg);
+    cursor: pointer; font-weight: 700; color: var(--ink); line-height: 1;
+  }
+  .qty-controls span { font-family: 'Space Mono', monospace; min-width: 18px; text-align: center; }
+  .remove-line-btn { border: none; background: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; }
+
+  .pos-empty-orders { padding: 40px 20px; text-align: center; opacity: 0.5; font-size: 0.85rem; }
+
+  .pos-summary { padding: 14px 20px; border-top: 1px solid var(--line); }
+  .pos-summary .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 0.86rem; }
+  .pos-summary .row.grand { font-weight: 700; font-size: 1rem; border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 12px; }
+  .pos-summary .row input[type="number"] {
+    width: 100px; text-align: right; padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px;
+    font-family: 'Space Mono', monospace; font-size: 0.85rem; background: var(--bone); color: var(--ink);
+  }
+
+  .pos-actions { padding: 16px 20px; border-top: 1px solid var(--line); }
+  .pos-actions input[type="number"] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 10px;
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bone); color: var(--ink);
+  }
+  .pos-actions-row { display: flex; gap: 10px; }
+  .pos-actions-row button { flex: 1; }
+
+  .cust-search-wrap { position: relative; }
+  .cust-results {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 20;
+    background: var(--component-bg); border: 1px solid var(--line); border-radius: 6px;
+    margin-top: 4px; max-height: 220px; overflow-y: auto; box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+  }
+  .cust-result-row { padding: 10px 12px; cursor: pointer; font-size: 0.85rem; border-bottom: 1px solid var(--line); }
+  .cust-result-row:last-child { border-bottom: none; }
+  .cust-result-row:hover { background: var(--stone); }
+  .cust-result-row .cn { font-weight: 700; }
+  .cust-result-row .ce { font-size: 0.75rem; opacity: 0.6; font-family: 'Space Mono', monospace; }
+  .cust-empty-hint { padding: 10px 12px; font-size: 0.8rem; opacity: 0.55; }
+  .cust-selected {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--stone); border: 1px solid var(--line); border-radius: 6px;
+    padding: 10px 12px; font-size: 0.85rem; margin-bottom: 10px;
+  }
+  .cust-selected .cn { font-weight: 700; }
+  .cust-selected .ce { font-size: 0.72rem; opacity: 0.6; font-family: 'Space Mono', monospace; }
+  .cust-selected button { border: none; background: none; color: var(--brass-dark); font-size: 0.72rem; text-transform: uppercase; font-family: 'Space Mono', monospace; cursor: pointer; font-weight: 700; }
+  .pos-actions input[type="text"] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px;
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bone); color: var(--ink);
+  }
+</style>
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, peso, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'pos', title: 'Point of Sale' });
+  if (session) init();
+
+  let menuItems = [];
+  let categories = [];
+  let cart = []; // { uniqueId, menu_id, name, price, notes, qty }
+  let searchTerm = '';
+  let activeCategoryId = 'all';
+  let selectedCustomer = null; // { id, name, email }
+  let custSearchDebounce = null;
+
+  function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="pos-layout">
+        <div>
+          <div class="pos-search-row">
+            <input type="text" id="posSearch" placeholder="Search by product name...">
+            <select id="catFilterSelect"><option value="all">All Categories</option></select>
+          </div>
+          <div class="pos-list" id="posListWrap"><div class="admin-loading">Loading menu…</div></div>
+        </div>
+
+        <div class="admin-panel">
+          <div class="pos-right-head">
+            <h3>Orders</h3>
+            <select id="posOrderType">
+              <option value="dine_in">Dine In</option>
+              <option value="pickup">Takeout</option>
+            </select>
+          </div>
+
+          <table class="pos-order-table">
+            <thead>
+              <tr><th>Description</th><th>Unit Price</th><th>Qty</th><th>Subtotal</th><th></th></tr>
+            </thead>
+            <tbody id="cartTableBody"></tbody>
+          </table>
+          <div id="cartEmptyState" class="pos-empty-orders">Select from the menu to add orders</div>
+
+          <div class="pos-summary">
+            <div class="row"><span>Total Amount</span><span id="sumTotal">₱0.00</span></div>
+            <div class="row"><span>Delivery Fee</span><input type="number" id="deliveryFeeInput" value="0" min="0" step="0.01"></div>
+            <div class="row grand"><span>Grand Total</span><span id="sumGrand">₱0.00</span></div>
+          </div>
+
+          <div class="pos-actions">
+            <div id="custSelectedWrap" style="display:none;"></div>
+            <div id="custSearchWrap" class="cust-search-wrap">
+              <input type="text" id="custSearchInput" placeholder="Optional: search customer by name, email, or phone…" autocomplete="off">
+              <div class="cust-results" id="custResults" style="display:none;"></div>
+            </div>
+            <p style="font-size:0.72rem; opacity:0.5; margin:8px 0 0;">No customer attached? Orders are logged under "Walk-in Customer" automatically.</p>
+            <div class="pos-actions-row" style="margin-top:10px;">
+              <button class="btn btn-outline" id="clearOrderBtn">Clear</button>
+              <button class="btn" id="submitOrderBtn">Place Order</button>
+            </div>
+            <div class="admin-error" id="posError" style="display:none; margin-top:10px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="customizeModal">
+        <div class="modal-box">
+          <h3 id="customizeModalTitle">Customize Item</h3>
+          <div class="form-field">
+            <label>Special Instructions (optional)</label>
+            <textarea id="customizeNotes" placeholder="e.g. No onions, extra spicy, less ice..."></textarea>
+          </div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="customizeCancelBtn">Cancel</button>
+            <button class="btn" id="customizeAddBtn">Add to Order</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('posSearch').addEventListener('input', (e) => { searchTerm = e.target.value.toLowerCase(); renderList(); });
+    document.getElementById('catFilterSelect').addEventListener('change', (e) => { activeCategoryId = e.target.value; renderList(); });
+    document.getElementById('deliveryFeeInput').addEventListener('input', renderCart);
+    document.getElementById('clearOrderBtn').addEventListener('click', clearOrder);
+    document.getElementById('submitOrderBtn').addEventListener('click', submitOrder);
+    document.getElementById('customizeCancelBtn').addEventListener('click', () => toggleModal(false));
+    document.getElementById('customizeAddBtn').addEventListener('click', confirmAddToCart);
+    document.getElementById('custSearchInput').addEventListener('input', onCustomerSearchInput);
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('custSearchWrap');
+      if (wrap && !wrap.contains(e.target)) document.getElementById('custResults').style.display = 'none';
+    });
+
+    loadCategories();
+    loadMenu();
+  }
+
+  function toggleModal(show) { document.getElementById('customizeModal').classList.toggle('active', show); }
+
+  function onCustomerSearchInput(e) {
+    const q = e.target.value.trim();
+    clearTimeout(custSearchDebounce);
+    if (q.length < 2) {
+      document.getElementById('custResults').style.display = 'none';
+      return;
+    }
+    custSearchDebounce = setTimeout(() => searchCustomers(q), 250);
+  }
+
+  async function searchCustomers(q) {
+    const resultsEl = document.getElementById('custResults');
+    try {
+      const res = await adminFetch(`/api/admin/customers/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Search failed.');
+
+      const customers = data.customers || [];
+      resultsEl.innerHTML = customers.length
+        ? customers.map(c => `
+            <div class="cust-result-row" data-id="${c.id}" data-name="${escapeHtml(c.name)}" data-email="${escapeHtml(c.email || '')}">
+              <div class="cn">${escapeHtml(c.name)}</div>
+              <div class="ce">${escapeHtml(c.email || c.phone || '')}</div>
+            </div>`).join('')
+        : `<div class="cust-empty-hint">No matching customers.</div>`;
+      resultsEl.style.display = 'block';
+
+      resultsEl.querySelectorAll('.cust-result-row[data-id]').forEach(row => {
+        row.addEventListener('click', () => selectCustomer(row.dataset.id, row.dataset.name, row.dataset.email));
+      });
+    } catch (err) {
+      resultsEl.innerHTML = `<div class="cust-empty-hint">⚠ ${err.message}</div>`;
+      resultsEl.style.display = 'block';
+    }
+  }
+
+  function selectCustomer(id, name, email) {
+    selectedCustomer = { id, name, email };
+    document.getElementById('custResults').style.display = 'none';
+    document.getElementById('custSearchInput').value = '';
+    document.getElementById('custSearchWrap').style.display = 'none';
+
+    const selectedWrap = document.getElementById('custSelectedWrap');
+    selectedWrap.style.display = 'block';
+    selectedWrap.innerHTML = `
+      <div class="cust-selected">
+        <div><div class="cn">${escapeHtml(name)}</div><div class="ce">${escapeHtml(email || '')}</div></div>
+        <button id="custChangeBtn">Change</button>
+      </div>
+    `;
+    document.getElementById('custChangeBtn').addEventListener('click', clearSelectedCustomer);
+  }
+
+  function clearSelectedCustomer() {
+    selectedCustomer = null;
+    document.getElementById('custSelectedWrap').style.display = 'none';
+    document.getElementById('custSelectedWrap').innerHTML = '';
+    document.getElementById('custSearchWrap').style.display = 'block';
+  }
+
+  async function loadCategories() {
+    try {
+      const res = await adminFetch('/api/admin/products/categories');
+      const data = await res.json();
+      if (!res.ok) return;
+      categories = data.data || [];
+      const select = document.getElementById('catFilterSelect');
+      select.innerHTML = `<option value="all">All Categories</option>` +
+        categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    } catch { /* non-fatal */ }
+  }
+
+  async function loadMenu() {
+    try {
+      const res = await adminFetch('/api/admin/products/menuitems');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load menu.');
+      menuItems = (data.items || []).filter(i => i.status === 'available');
+      renderList();
+    } catch (err) {
+      document.getElementById('posListWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function renderList() {
+    let visible = menuItems;
+    if (activeCategoryId !== 'all') visible = visible.filter(i => String(i.category_id) === String(activeCategoryId));
+    if (searchTerm) visible = visible.filter(i => i.name.toLowerCase().includes(searchTerm));
+
+    const wrap = document.getElementById('posListWrap');
+    if (visible.length === 0) {
+      wrap.innerHTML = `<div class="pos-empty-orders">No items match.</div>`;
+      return;
+    }
+    wrap.innerHTML = visible.map(i => `
+      <div class="pos-list-row" data-id="${i.id}" data-name="${escapeHtml(i.name)}" data-price="${i.price}">
+        <div>
+          <div class="n">${escapeHtml(i.name)}</div>
+          <div class="cat">${escapeHtml(i.category_name || '')}</div>
+        </div>
+        <div class="p">${peso(i.price)}</div>
+      </div>
+    `).join('');
+    wrap.querySelectorAll('.pos-list-row').forEach(el => {
+      el.addEventListener('click', () => openCustomizeModal(el.dataset.id, el.dataset.name, Number(el.dataset.price)));
+    });
+  }
+
+  let pendingItem = null;
+
+  function openCustomizeModal(id, name, price) {
+    pendingItem = { id, name, price };
+    document.getElementById('customizeModalTitle').textContent = `Customize — ${name}`;
+    document.getElementById('customizeNotes').value = '';
+    toggleModal(true);
+  }
+
+  function confirmAddToCart() {
+    if (!pendingItem) return;
+    const notes = document.getElementById('customizeNotes').value.trim() || null;
+
+    // Merge into an existing line only if it's the exact same item AND the
+    // exact same notes - different notes need their own line since they're
+    // genuinely different customizations, but identical repeats just bump
+    // the quantity instead of cluttering the table with duplicate rows.
+    const existing = cart.find(c => c.menu_id == pendingItem.id && c.notes === notes);
+    if (existing) {
+      existing.qty += 1;
+    } else {
+      cart.push({
+        uniqueId: Date.now() + Math.random(),
+        menu_id: pendingItem.id,
+        name: pendingItem.name,
+        price: pendingItem.price,
+        notes,
+        qty: 1,
+      });
+    }
+    pendingItem = null;
+    toggleModal(false);
+    renderCart();
+  }
+
+  function changeQty(uniqueId, delta) {
+    const entry = cart.find(c => c.uniqueId == uniqueId);
+    if (!entry) return;
+    entry.qty += delta;
+    if (entry.qty <= 0) cart = cart.filter(c => c.uniqueId != uniqueId);
+    renderCart();
+  }
+
+  function removeLine(uniqueId) {
+    cart = cart.filter(c => c.uniqueId != uniqueId);
+    renderCart();
+  }
+
+  function clearOrder() {
+    cart = [];
+    clearSelectedCustomer();
+    document.getElementById('deliveryFeeInput').value = '0';
+    renderCart();
+  }
+
+  function renderCart() {
+    const tbody = document.getElementById('cartTableBody');
+    const emptyState = document.getElementById('cartEmptyState');
+
+    if (cart.length === 0) {
+      tbody.innerHTML = '';
+      emptyState.style.display = 'block';
+    } else {
+      emptyState.style.display = 'none';
+      tbody.innerHTML = cart.map(c => `
+        <tr>
+          <td>
+            ${escapeHtml(c.name)}
+            ${c.notes ? `<span class="item-notes">${escapeHtml(c.notes)}</span>` : ''}
+          </td>
+          <td>${peso(c.price)}</td>
+          <td>
+            <div class="qty-controls">
+              <button data-id="${c.uniqueId}" data-delta="-1" class="qty-btn">−</button>
+              <span>${c.qty}</span>
+              <button data-id="${c.uniqueId}" data-delta="1" class="qty-btn">+</button>
+            </div>
+          </td>
+          <td>${peso(c.price * c.qty)}</td>
+          <td><button data-id="${c.uniqueId}" class="remove-line-btn">✕</button></td>
+        </tr>
+      `).join('');
+      tbody.querySelectorAll('.qty-btn').forEach(btn => {
+        btn.addEventListener('click', () => changeQty(btn.dataset.id, Number(btn.dataset.delta)));
+      });
+      tbody.querySelectorAll('.remove-line-btn').forEach(btn => {
+        btn.addEventListener('click', () => removeLine(btn.dataset.id));
+      });
+    }
+
+    const totalAmount = cart.reduce((sum, c) => sum + c.price * c.qty, 0);
+    const deliveryFee = Number(document.getElementById('deliveryFeeInput').value) || 0;
+    document.getElementById('sumTotal').textContent = peso(totalAmount);
+    document.getElementById('sumGrand').textContent = peso(totalAmount + deliveryFee);
+  }
+
+  async function submitOrder() {
+    const errEl = document.getElementById('posError');
+    errEl.style.display = 'none';
+
+    const order_type = document.getElementById('posOrderType').value;
+    const delivery_fee = Number(document.getElementById('deliveryFeeInput').value) || 0;
+
+    if (cart.length === 0) { errEl.textContent = 'Cart is empty.'; errEl.style.display = 'block'; return; }
+
+    try {
+      const res = await adminFetch('/api/admin/sales/pos/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          // Attaching a customer is optional now - walk-ins without an
+          // account get bucketed under a shared "Walk-in Customer" record
+          // server-side. Only send customer_id when staff actually
+          // searched and picked someone.
+          customer_id: selectedCustomer ? Number(selectedCustomer.id) : null,
+          order_type,
+          delivery_fee,
+          cart: cart.map(c => ({ menu_id: c.menu_id, quantity: c.qty, notes: c.notes })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not place order.');
+
+      alert(`Order #${data.order.id} placed successfully.`);
+      clearOrder();
+      loadMenu(); // stock quantities changed
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>

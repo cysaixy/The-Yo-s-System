@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reserve a Table — The~Yo's</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .reserve-section { background: var(--stone); min-height: calc(100vh - 95px); display: flex; align-items: center; }
+  .reserve-wrap { max-width: 520px; margin: 0 auto; width: 100%; padding: 60px 22px; }
+  .reserve-card { background: var(--component-bg); border: 1px solid var(--line); border-radius: 6px; padding: 36px; }
+  @media(max-width:520px) { .reserve-card { padding: 26px 22px; } }
+
+  .reserve-status {
+    font-size: 0.85rem; margin-top: 14px; min-height: 18px; text-align: center;
+    font-family: 'Space Mono', monospace;
+  }
+  .reserve-status.err { color: #e05252; }
+  .reserve-status.ok { color: #4caf7d; }
+  .reserve-status.info { color: var(--brass); }
+
+  .reserve-success {
+    display: none; text-align: center;
+  }
+  .reserve-success.active { display: block; }
+  .reserve-success .check-ring {
+    width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 18px;
+    background: var(--brass); color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+  }
+
+  .my-reservations { margin-bottom: 28px; }
+  .my-reservations-title {
+    font-family: 'Space Mono', monospace; font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.08em; opacity: 0.55; margin-bottom: 12px; display: block;
+  }
+  .res-card {
+    border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+    background: var(--stone);
+  }
+  .res-card .res-info { font-size: 0.85rem; }
+  .res-card .res-info strong { display: block; margin-bottom: 3px; }
+  .res-card .res-info span { opacity: 0.6; font-family: 'Space Mono', monospace; font-size: 0.75rem; }
+  .res-status-pill {
+    padding: 4px 11px; border-radius: 20px; font-size: 0.66rem; font-family: 'Space Mono', monospace;
+    font-weight: 700; text-transform: uppercase; flex-shrink: 0; margin-left: 12px;
+  }
+  .res-status-pending { background: rgba(184,134,11,0.14); color: #b8860b; }
+  .res-status-confirmed { background: rgba(163,132,74,0.15); color: var(--brass); }
+  .res-status-completed { background: rgba(46,125,79,0.14); color: #2e7d4f; }
+  .res-status-cancelled { background: rgba(192,57,43,0.14); color: #c0392b; }
+  .res-loading { font-size: 0.82rem; opacity: 0.5; font-family: 'Space Mono', monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo-link">
+    <img src="../pics&vids/the-yo's_logo.jpg" alt="Logo" class="logo-img">
+    <span class="logo-text">The~Yo's</span>
+  </a>
+  <nav id="siteNav">
+    <ul>
+      <li><a href="about.html">About</a></li>
+      <li><a href="menu.html">Menu</a></li>
+      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="order.html#feedback">Reviews</a></li>
+      <li><a href="reservations.html" style="color:var(--brass);">Reserve</a></li>
+      <li><a href="my-orders.html">My Orders</a></li>
+      <li><a href="account.html">My Account</a></li>
+      <li><a href="order.html" class="nav-btn">Order Now</a></li>
+    </ul>
+  </nav>
+  <button class="nav-toggle" id="navToggle">☰</button>
+</header>
+
+<section class="reserve-section">
+  <div class="reserve-wrap">
+    <div class="reserve-card">
+
+      <div class="my-reservations" id="myReservationsWrap" style="display:none;">
+        <span class="my-reservations-title">Your Reservations</span>
+        <div id="myReservationsList"><div class="res-loading">Loading…</div></div>
+      </div>
+
+      <div id="reserveFormWrap">
+        <p class="eyebrow">Plan Ahead</p>
+        <h2 class="display" style="font-size:1.8rem; margin:8px 0 24px;">Reserve a Table</h2>
+
+        <form id="reservationForm">
+          <div class="form-row">
+            <div><label for="resDate">Date</label><input id="resDate" type="date" required></div>
+            <div><label for="resTime">Time</label><input id="resTime" type="time" required></div>
+          </div>
+          <div class="form-row">
+            <div><label for="resGuests">Number of Guests</label><input id="resGuests" type="number" min="1" required placeholder="e.g. 4"></div>
+            <div><label for="resTable">Table Preference <span style="opacity:.6; text-transform:none;">(optional)</span></label><input id="resTable" type="text" placeholder="e.g. Near the window"></div>
+          </div>
+          <div><label for="resNotes">Notes for the Restaurant <span style="opacity:.6; text-transform:none;">(optional)</span></label><textarea id="resNotes" placeholder="Birthday celebration, dietary needs, etc."></textarea></div>
+
+          <button type="submit" class="btn" style="width:100%; justify-content:center; padding:14px; margin-top:14px; border-radius:6px;">Request Reservation</button>
+          <div class="reserve-status" id="reserveStatus"></div>
+        </form>
+      </div>
+
+      <div class="reserve-success" id="reserveSuccess">
+        <div class="check-ring">✓</div>
+        <h3 style="font-family:'Archivo', sans-serif; text-transform:uppercase; font-size:1.2rem; margin-bottom:8px;">Reservation Requested</h3>
+        <p style="opacity:0.65; font-size:0.9rem; margin-bottom:26px;">We've received your request and it's pending confirmation from the restaurant. We'll be in touch to confirm your table.</p>
+        <a href="index.html" class="btn btn-outline" style="width:100%; justify-content:center; padding:14px; border-radius:6px;">Back to Home</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script type="module">
+  import { auth, onAuthStateChanged, API_BASE_URL } from "./firebase-init.js";
+
+  let currentUser = null;
+
+  const STATUS_LABEL = { pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' };
+
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    if (!user) {
+      window.location.href = 'account.html?redirect=reservations.html';
+      return;
+    }
+    loadMyReservations();
+  });
+
+  async function loadMyReservations() {
+    const wrap = document.getElementById('myReservationsWrap');
+    const list = document.getElementById('myReservationsList');
+    try {
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/customer/reservations`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) return; // stay quiet - the create form still works either way
+
+      const reservations = data.reservations || [];
+      if (reservations.length === 0) return; // nothing to show yet, keep it hidden
+
+      wrap.style.display = 'block';
+      list.innerHTML = reservations.map(r => {
+        const dateStr = r.reservation_date ? new Date(r.reservation_date).toLocaleDateString('en-PH', { dateStyle: 'medium' }) : '';
+        return `
+          <div class="res-card">
+            <div class="res-info">
+              <strong>${dateStr} at ${r.reservation_time || ''}</strong>
+              <span>${r.guests} guest${r.guests == 1 ? '' : 's'}${r.table_no ? ' · ' + r.table_no : ''}</span>
+            </div>
+            <span class="res-status-pill res-status-${r.status}">${STATUS_LABEL[r.status] || r.status}</span>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      // Network error - just leave the list hidden, don't block the form.
+    }
+  }
+
+  document.getElementById('reservationForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUser) {
+      window.location.href = 'account.html?redirect=reservations.html';
+      return;
+    }
+
+    const status = document.getElementById('reserveStatus');
+    const payload = {
+      reservation_date: document.getElementById('resDate').value,
+      reservation_time: document.getElementById('resTime').value,
+      guests: Number(document.getElementById('resGuests').value),
+      table_no: document.getElementById('resTable').value.trim() || null,
+      notes: document.getElementById('resNotes').value.trim() || null,
+    };
+
+    status.textContent = 'Sending your request…';
+    status.className = 'reserve-status info';
+
+    try {
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/customer/reservations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        status.textContent = data.error || 'Could not submit your reservation.';
+        status.className = 'reserve-status err';
+        return;
+      }
+
+      document.getElementById('reserveFormWrap').style.display = 'none';
+      document.getElementById('reserveSuccess').classList.add('active');
+      loadMyReservations();
+    } catch (err) {
+      status.textContent = 'Network error. Please try again.';
+      status.className = 'reserve-status err';
+    }
+  });
+</script>
+<script src="global.js"></script>
+</body>
+</html>

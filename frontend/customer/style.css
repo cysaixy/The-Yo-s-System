@@ -98,14 +98,15 @@ img, video { display: block; max-width: 100%; }
 header {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 22px 40px;
+  padding: 20px 40px;
   background: var(--header-bg) !important;
   border-bottom: 1px solid var(--line);
-  transition: all .3s ease;
+  transition: background .3s ease;
 }
+@media(max-width:1200px) { header { padding: 18px 24px; } }
 @media(max-width:640px) { header { padding: 18px 22px; } }
 
-.logo-link { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+.logo-link { display: flex; align-items: center; gap: 14px; text-decoration: none; flex-shrink: 0; }
 .logo-img { height: 50px; width: 50px; object-fit: cover; border-radius: 50%; }
 
 .logo-text {
@@ -116,12 +117,35 @@ header {
   transition: color 0.3s ease;
 }
 
-nav { display: flex; align-items: center; gap: 34px; }
-nav ul { list-style: none; display: flex; gap: 34px; align-items: center; }
+nav { display: flex; align-items: center; }
+nav ul { 
+  list-style: none; 
+  display: flex; 
+  align-items: center; 
+  gap: 24px; 
+  margin: 0; 
+  padding: 0; 
+}
+
+nav ul li {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/* Hide auth items without collapsing layout space to keep neighboring links locked */
+nav ul li.nav-auth-hidden {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 nav a {
-  color: var(--ink); font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase;
-  font-weight: 500; position: relative; padding-bottom: 3px;
+  color: var(--ink); font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;
+  font-weight: 500; position: relative; padding: 4px 4px;
   transition: color 0.3s ease;
+  white-space: nowrap;
+  display: inline-block;
 }
 nav a::after {
   content: ''; position: absolute; left: 0; bottom: 0; width: 0; height: 1px; background: var(--ink);
@@ -129,10 +153,25 @@ nav a::after {
 }
 nav a:hover::after { width: 100%; }
 
+/* Active link highlight */
+nav ul li a.active {
+  color: var(--brass) !important;
+}
+nav ul li a.active::after {
+  width: 100%;
+  background: var(--brass);
+}
+
+#navAccountLink {
+  min-width: 80px;
+  text-align: center;
+}
+
 .nav-btn {
   background: var(--brass); color: #fff !important;
   padding: 8px 16px; font-size: 0.75rem !important; font-weight: 700;
   letter-spacing: 0.08em; border-radius: 2px;
+  flex-shrink: 0;
 }
 .nav-btn::after { display: none !important; }
 .nav-btn:hover { background: var(--ink); color: var(--bone) !important; }
@@ -144,13 +183,30 @@ nav a:hover::after { width: 100%; }
   transition: color 0.3s ease;
 }
 
-@media(max-width:920px) {
+@media(max-width:1080px) {
   .nav-toggle { display: block; }
   nav {
-    display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: var(--header-bg); flex-direction: column; justify-content: center; align-items: center; z-index: 105;
+    display: flex;
+    opacity: 0;
+    pointer-events: none;
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh;
+    background: var(--header-bg); 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 105;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    visibility: hidden;
   }
-  nav.open { display: flex; }
+  nav.open { 
+    opacity: 1; 
+    pointer-events: auto; 
+    visibility: visible;
+  }
   nav ul { flex-direction: column; gap: 28px; }
   nav a { font-size: 1.2rem; }
 }
@@ -166,13 +222,14 @@ nav a:hover::after { width: 100%; }
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 8px 16px;
-  border-radius: 24px; /* Distinct minimalist capsule shape */
+  border-radius: 24px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-left: 14px;
+  margin-left: 0;
+  flex-shrink: 0;
 }
 .theme-toggle-btn:hover {
   border-color: var(--brass);
@@ -183,7 +240,7 @@ nav a:hover::after { width: 100%; }
 .theme-toggle-btn:active {
   transform: translateY(0);
 }
-@media(max-width:920px) {
+@media(max-width:1080px) {
   .theme-toggle-btn { margin-left: 0; margin-top: 20px; width: auto; padding: 10px 20px; }
 }
 

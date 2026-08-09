@@ -10,9 +10,14 @@ import {
   updateMenuItem,
   deleteMenuItem,
 } from "../../controllers/admin/productsController.js";
-//import { requireAdmin } from "../../middleware/auth.js"; // Adjust import path to your middleware
+import { requireStaffAuth } from "../../middlewares/auth.middleware.js";
+import { requireAdmin } from "../../middlewares/role.middleware.js";
 
 const productrouter = express.Router();
+
+// Require at least a logged-in staff member for every product route — read
+// routes were previously wide open with zero auth check at all.
+productrouter.use(requireStaffAuth);
 
 // --- Staff / POS Read Access ---
 productrouter.get("/categories", listCategories);
@@ -20,13 +25,13 @@ productrouter.get("/menuitems", listAllMenuItems);
 productrouter.get("/menuitems/:id", getMenuItem);
 
 // --- Admin Only Category Management ---
-//productrouter.post("/categories", requireAdmin, createCategory);
-//productrouter.patch("/categories/:id", requireAdmin, updateCategory);
-//productrouter.delete("/categories/:id", requireAdmin, deleteCategory);
+productrouter.post("/categories", requireAdmin, createCategory);
+productrouter.patch("/categories/:id", requireAdmin, updateCategory);
+productrouter.delete("/categories/:id", requireAdmin, deleteCategory);
 
 // --- Admin Only Menu Item Management ---
-//productrouter.post("/menuitems", requireAdmin, createMenuItem);
-//productrouter.patch("/menuitems/:id", requireAdmin, updateMenuItem);
-//productrouter.delete("/menuitems/:id", requireAdmin, deleteMenuItem);
+productrouter.post("/menuitems", requireAdmin, createMenuItem);
+productrouter.patch("/menuitems/:id", requireAdmin, updateMenuItem);
+productrouter.delete("/menuitems/:id", requireAdmin, deleteMenuItem);
 
 export default productrouter;

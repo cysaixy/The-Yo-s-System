@@ -21,6 +21,9 @@ import adminPurchasesRoutes from "./routes/admin/purchasesRoutes.js";
 import adminSalesRoutes from "./routes/admin/salesRoutes.js";
 import adminReservationsRoutes from "./routes/admin/reservationsRoutes.js";
 import adminDashboardRoutes from "./routes/admin/dashboardRoutes.js";
+import adminBudgetRoutes from "./routes/admin/budgetRoutes.js";
+import adminCashAccountsRoutes from "./routes/admin/cashAccountsRoutes.js";
+import adminCashTransactionsRoutes from "./routes/admin/cashTransactionsRoutes.js";
 
 const app = express();
 
@@ -52,6 +55,12 @@ app.use("/api/admin/purchases", adminPurchasesRoutes);
 app.use("/api/admin/sales", adminSalesRoutes);
 app.use("/api/admin/reservations", adminReservationsRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
+// These three were built and even had frontend pages already, but were
+// never mounted here - budget-planner.html, cash-accounts.html, and
+// cash-transactions.html had nowhere to actually send their requests.
+app.use("/api/admin/budgets", adminBudgetRoutes);
+app.use("/api/admin/cash-accounts", adminCashAccountsRoutes);
+app.use("/api/admin/cash-transactions", adminCashTransactionsRoutes);
 
 // 404 for anything unmatched
 app.use((req, res) => res.status(404).json({ error: "Route not found." }));

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Login — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-card {
+    width: 100%; max-width: 380px; background: var(--component-bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 36px 32px;
+  }
+  .login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+  .login-brand .brand-mark {
+    width: 42px; height: 42px; border-radius: 50%; background: var(--dark); color: var(--brass);
+    display: flex; align-items: center; justify-content: center; font-family: 'Archivo', sans-serif;
+    font-weight: 900; font-size: 1.1rem; flex-shrink: 0;
+  }
+  .login-brand h1 { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.2rem; text-transform: uppercase; margin: 0; }
+  .login-brand span { display: block; font-family: 'Space Mono', monospace; font-size: 0.65rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .login-field { margin-bottom: 16px; }
+  .login-field label { display: block; font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; margin-bottom: 6px; }
+  .login-field input {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 6px;
+    font-family: 'Inter', sans-serif; font-size: 0.9rem; background: var(--bone); color: var(--ink);
+  }
+  .login-field input:focus { outline: none; border-color: var(--brass); }
+
+  .login-submit { width: 100%; justify-content: center; padding: 12px; border-radius: 6px; margin-top: 6px; }
+  .login-status { margin-top: 14px; font-size: 0.82rem; text-align: center; font-family: 'Space Mono', monospace; min-height: 18px; }
+  .login-status.err { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="login-brand">
+    <div class="brand-mark">TY</div>
+    <div>
+      <h1>The~Yo's</h1>
+      <span>Staff / Admin Panel</span>
+    </div>
+  </div>
+
+  <form id="loginForm">
+    <div class="login-field">
+      <label for="staffEmail">Email</label>
+      <input id="staffEmail" type="email" required placeholder="staff@theyos.com" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label for="staffPassword">Password</label>
+      <input id="staffPassword" type="password" required placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button type="submit" class="btn login-submit">Sign In</button>
+    <div class="login-status" id="loginStatus"></div>
+  </form>
+</div>
+
+<script type="module">
+  import { API_BASE_URL, setStaffSession, getStaffToken } from "./admin-api.js";
+
+  // Already signed in? Skip straight to the dashboard.
+  if (getStaffToken()) {
+    window.location.href = 'dashboard.html';
+  }
+
+  function getRedirectTarget() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('redirect') || 'dashboard.html';
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('staffEmail').value.trim();
+    const password = document.getElementById('staffPassword').value;
+    const status = document.getElementById('loginStatus');
+
+    status.textContent = 'Signing in…';
+    status.className = 'login-status';
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/staff/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        status.textContent = data.error || 'Sign in failed.';
+        status.className = 'login-status err';
+        return;
+      }
+
+      setStaffSession(data.token, data.staff);
+      window.location.href = getRedirectTarget();
+    } catch (err) {
+      status.textContent = 'Network error. Is the backend running?';
+      status.className = 'login-status err';
+    }
+  });
+</script>
+</body>
+</html>

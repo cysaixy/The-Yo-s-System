@@ -3,14 +3,34 @@ import pool from "../../config/db.js";
 
 const VALID_ORDER_TYPES = ["dine_in", "pickup"];
 
+// orders.customer_id is NOT NULL in the schema, so walk-in POS sales (no
+// account, no lookup) can't just omit it. Instead we reuse a single shared
+// placeholder customers row for every walk-in - created once, then reused
+// on every subsequent order that doesn't have a real customer attached.
+// Staff can still search and attach a real customer when it's useful
+// (repeat customers, loyalty tracking), but it's optional, not required.
+const WALK_IN_EMAIL = "walkin@theyos.pos";
+
+async function getOrCreateWalkInCustomerId(client) {
+  const existing = await client.query(
+    `SELECT id FROM customers WHERE email = $1 LIMIT 1`,
+    [WALK_IN_EMAIL]
+  );
+  if (existing.rows[0]) return existing.rows[0].id;
+
+  const created = await client.query(
+    `INSERT INTO customers (name, email) VALUES ('Walk-in Customer', $1) RETURNING id`,
+    [WALK_IN_EMAIL]
+  );
+  return created.rows[0].id;
+}
+
 export async function createPosOrder(req, res, next) {
   const client = await pool.connect();
   try {
-    const { customer_id, order_type, cart } = req.body;
+    const { customer_id, order_type, cart, delivery_fee } = req.body;
+    const deliveryFee = Number(delivery_fee) || 0;
 
-    if (!customer_id) {
-      return res.status(400).json({ error: "customer_id is required." });
-    }
     if (!VALID_ORDER_TYPES.includes(order_type)) {
       return res.status(400).json({ error: `order_type must be one of: ${VALID_ORDER_TYPES.join(", ")}` });
     }
@@ -35,17 +55,21 @@ export async function createPosOrder(req, res, next) {
         return res.status(409).json({ error: `${menuItem.name} is out of stock.` });
       }
 
-      validatedItems.push({ menu_id: menuItem.id, quantity: line.quantity, price: menuItem.price });
+      validatedItems.push({ menu_id: menuItem.id, quantity: line.quantity, price: menuItem.price, notes: line.notes || null });
       total_amount += menuItem.price * line.quantity;
     }
 
     await client.query("BEGIN");
 
+    // Use the selected customer if staff attached one, otherwise fall back
+    // to the shared walk-in customer row.
+    const resolvedCustomerId = customer_id || await getOrCreateWalkInCustomerId(client);
+
     const orderResult = await client.query(
-      `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, datetime_ordered)
-       VALUES ($1, $2, NULL, $3, 'pending', $4, NOW())
-       RETURNING id, customer_id, staff_id, order_type, status, total_amount, datetime_ordered`,
-      [customer_id, req.staff.id, order_type, total_amount]
+      `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, delivery_fee, datetime_ordered)
+       VALUES ($1, $2, NULL, $3, 'pending', $4, $5, NOW())
+       RETURNING id, customer_id, staff_id, order_type, status, total_amount, delivery_fee, datetime_ordered`,
+      [resolvedCustomerId, req.staff.id, order_type, total_amount + deliveryFee, deliveryFee]
     );
     const order = orderResult.rows[0];
 
@@ -53,9 +77,9 @@ export async function createPosOrder(req, res, next) {
       const subtotal = item.price * item.quantity;
 
       await client.query(
-        `INSERT INTO order_items (order_id, menu_id, quantity, price, subtotal)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [order.id, item.menu_id, item.quantity, item.price, subtotal]
+        `INSERT INTO order_items (order_id, menu_id, quantity, price, subtotal, notes)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [order.id, item.menu_id, item.quantity, item.price, subtotal, item.notes]
       );
 
       const decrement = await client.query(
@@ -119,7 +143,7 @@ export async function getOrder(req, res, next) {
   try {
     const { rows } = await pool.query(
       `SELECT o.*, json_agg(
-          json_build_object('menu_id', oi.menu_id, 'quantity', oi.quantity, 'price', oi.price, 'subtotal', oi.subtotal)
+          json_build_object('menu_id', oi.menu_id, 'quantity', oi.quantity, 'price', oi.price, 'subtotal', oi.subtotal, 'notes', oi.notes)
        ) AS items
        FROM orders o
        JOIN order_items oi ON oi.order_id = o.id

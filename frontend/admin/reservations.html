@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reservations — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, formatDate, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'reservations', title: 'Reservations' });
+  if (session) init();
+
+  let reservations = [];
+
+  const STATUS_PILL = { pending: 'pill-warning', confirmed: 'pill-brass', cancelled: 'pill-danger', completed: 'pill-success' };
+
+  function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="filter-bar">
+        <div><label>Status</label>
+          <select id="filterStatus">
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="admin-panel">
+        <div class="admin-panel-body" style="padding:0;" id="resWrap"><div class="admin-loading">Loading reservations…</div></div>
+      </div>
+    `;
+    document.getElementById('filterStatus').addEventListener('change', render);
+    load();
+  }
+
+  async function load() {
+    try {
+      const res = await adminFetch('/api/admin/reservations');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load reservations.');
+      reservations = data.reservations || [];
+      render();
+    } catch (err) {
+      document.getElementById('resWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function render() {
+    const filter = document.getElementById('filterStatus').value;
+    const rows = reservations.filter(r => filter === 'all' || r.status === filter);
+    const wrap = document.getElementById('resWrap');
+
+    if (rows.length === 0) {
+      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No reservations match this filter.</div>`;
+      return;
+    }
+
+    wrap.innerHTML = `
+      <table class="admin-table">
+        <thead><tr><th>Customer</th><th>Table</th><th>Date</th><th>Time</th><th>Guests</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${escapeHtml(r.customer_name)}</td>
+              <td>${r.table_no || '—'}</td>
+              <td>${r.reservation_date ? new Date(r.reservation_date).toLocaleDateString('en-PH') : '—'}</td>
+              <td>${r.reservation_time || '—'}</td>
+              <td>${r.guests}</td>
+              <td><span class="pill ${STATUS_PILL[r.status] || 'pill-neutral'}">${r.status}</span></td>
+              <td style="max-width:200px; font-size:0.8rem; opacity:0.75;">${escapeHtml(r.notes || '—')}</td>
+              <td><div class="row-actions">${actionButtons(r)}</div></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+    wrap.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => updateStatus(btn.dataset.id, btn.dataset.action));
+    });
+  }
+
+  function actionButtons(r) {
+    if (r.status === 'pending') {
+      return `<button class="primary" data-action="confirmed" data-id="${r.id}">Confirm</button>
+              <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+    }
+    if (r.status === 'confirmed') {
+      return `<button class="primary" data-action="completed" data-id="${r.id}">Mark Completed</button>
+              <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+    }
+    return `<span style="font-size:0.75rem; opacity:0.5;">No further action</span>`;
+  }
+
+  async function updateStatus(id, status) {
+    if (status === 'cancelled' && !confirm('Cancel this reservation?')) return;
+    try {
+      const res = await adminFetch(`/api/admin/reservations/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not update reservation.');
+      const r = reservations.find(x => x.id == id);
+      if (r) r.status = status;
+      render();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+</script>
+</body>
+</html>

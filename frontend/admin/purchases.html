@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purchases — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, formatDate, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'purchases', title: 'Purchases' });
+  if (session) init();
+
+  let menuItems = [];
+
+  function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="admin-panel">
+        <div class="admin-panel-head">
+          <h3>Purchase / Stock-In History</h3>
+          <button class="btn small" id="newPurchaseBtn">+ Record Purchase</button>
+        </div>
+        <div class="admin-panel-body" style="padding:0;" id="purchasesWrap"><div class="admin-loading">Loading…</div></div>
+      </div>
+
+      <div class="modal-backdrop" id="purchaseModal">
+        <div class="modal-box">
+          <h3>Record Purchase (Stock-In)</h3>
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Menu Item</label>
+              <select id="pMenuId"></select>
+            </div>
+            <div class="form-field">
+              <label>Quantity</label><input type="number" id="pQty" min="1">
+            </div>
+            <div class="form-field">
+              <label>Expiration Date (optional)</label><input type="date" id="pExpiry">
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Remarks (optional)</label><input type="text" id="pRemarks" placeholder="Supplier, batch, etc.">
+            </div>
+          </div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="pCancelBtn">Cancel</button>
+            <button class="btn" id="pSaveBtn">Save Purchase</button>
+          </div>
+          <div class="admin-error" id="pError" style="display:none; padding:10px 0 0; text-align:left;"></div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('newPurchaseBtn').addEventListener('click', openModal);
+    document.getElementById('pCancelBtn').addEventListener('click', () => toggleModal(false));
+    document.getElementById('pSaveBtn').addEventListener('click', savePurchase);
+
+    loadPurchases();
+    loadMenuItems();
+  }
+
+  function toggleModal(show) { document.getElementById('purchaseModal').classList.toggle('active', show); }
+
+  async function loadMenuItems() {
+    try {
+      const res = await adminFetch('/api/admin/products/menuitems');
+      const data = await res.json();
+      if (res.ok) menuItems = data.items || [];
+    } catch { /* handled silently - modal will just show empty select */ }
+  }
+
+  async function loadPurchases() {
+    try {
+      const res = await adminFetch('/api/admin/purchases/list');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load purchases.');
+      const rows = data.purchases || [];
+      const wrap = document.getElementById('purchasesWrap');
+      wrap.innerHTML = rows.length
+        ? `<table class="admin-table">
+            <thead><tr><th>Item</th><th>Qty</th><th>Expiration</th><th>Staff</th><th>Date</th><th>Remarks</th></tr></thead>
+            <tbody>${rows.map(p => `
+              <tr>
+                <td>${escapeHtml(p.item_name)}</td>
+                <td>+${p.quantity}</td>
+                <td>${p.expiration_date ? new Date(p.expiration_date).toLocaleDateString('en-PH') : '—'}</td>
+                <td>${p.staff_name || '—'}</td>
+                <td style="font-size:0.78rem; opacity:0.7;">${formatDate(p.stockin_date)}</td>
+                <td style="font-size:0.8rem; opacity:0.75;">${escapeHtml(p.remarks || '—')}</td>
+              </tr>`).join('')}</tbody>
+          </table>`
+        : `<div class="panel-empty" style="padding:20px;">No purchases recorded yet.</div>`;
+    } catch (err) {
+      document.getElementById('purchasesWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function openModal() {
+    document.getElementById('pMenuId').innerHTML = menuItems.map(i => `<option value="${i.id}">${escapeHtml(i.name)}</option>`).join('');
+    document.getElementById('pQty').value = '';
+    document.getElementById('pExpiry').value = '';
+    document.getElementById('pRemarks').value = '';
+    document.getElementById('pError').style.display = 'none';
+    toggleModal(true);
+  }
+
+  async function savePurchase() {
+    const menu_id = document.getElementById('pMenuId').value;
+    const quantity = Number(document.getElementById('pQty').value);
+    const expiration_date = document.getElementById('pExpiry').value || null;
+    const remarks = document.getElementById('pRemarks').value.trim() || null;
+    const errEl = document.getElementById('pError');
+
+    if (!menu_id || !quantity || quantity <= 0) {
+      errEl.textContent = 'Select an item and enter a positive quantity.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await adminFetch('/api/admin/purchases/create', {
+        method: 'POST',
+        body: JSON.stringify({ menu_id, quantity, expiration_date, remarks }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || 'Could not save purchase.');
+      toggleModal(false);
+      loadPurchases();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>

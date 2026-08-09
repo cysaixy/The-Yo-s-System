@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Transactions — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+<style>
+  .filter-bar { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+  .filter-bar select {
+    padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--component-bg);
+    font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--ink);
+  }
+  .filter-bar label { font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; opacity: 0.55; margin-right: 6px; }
+
+  .source-pill {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px;
+    font-size: 0.66rem; font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase;
+  }
+  .source-online { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
+  .source-pos { background: rgba(21,23,26,0.08); color: var(--ink); opacity: 0.7; }
+
+  .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.68rem; font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; }
+  .status-pending { background: rgba(184,134,11,0.14); color: var(--warning); }
+  .status-confirmed { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
+  .status-preparing { background: rgba(52,109,196,0.14); color: #2c5fb0; }
+  .status-completed { background: rgba(46,125,79,0.14); color: var(--success); }
+  .status-cancelled { background: rgba(192,57,43,0.14); color: var(--danger); }
+
+  .needs-action td:first-child { border-left: 3px solid var(--warning); }
+
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .row-actions button {
+    font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; font-weight: 700;
+    border-radius: 5px; padding: 6px 10px; cursor: pointer; border: 1px solid var(--line); background: var(--component-bg); color: var(--ink);
+    transition: all .15s ease;
+  }
+  .row-actions button.primary { background: var(--brass); color: #fff; border-color: var(--brass); }
+  .row-actions button.primary:hover { background: var(--brass-dark); }
+  .row-actions button.danger { color: var(--danger); border-color: rgba(192,57,43,0.3); }
+  .row-actions button.danger:hover { background: rgba(192,57,43,0.08); }
+  .row-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, peso, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'sales', title: 'Sales Transactions' });
+  if (session) init();
+
+  let allOrders = [];
+
+  function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `
+      <div class="admin-section">
+        <div class="filter-bar">
+          <div><label>Source</label>
+            <select id="filterSource">
+              <option value="all">All</option>
+              <option value="online" selected>Online (Customer)</option>
+              <option value="pos">POS (Staff)</option>
+            </select>
+          </div>
+          <div><label>Status</label>
+            <select id="filterStatus">
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="preparing">Preparing</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="admin-panel">
+          <div class="admin-panel-body" style="padding:0;" id="ordersTableWrap">
+            <div class="admin-loading">Loading orders…</div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('filterSource').addEventListener('change', renderTable);
+    document.getElementById('filterStatus').addEventListener('change', renderTable);
+    loadOrders();
+  }
+
+  async function loadOrders() {
+    try {
+      const res = await adminFetch('/api/admin/sales/orders');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load orders.');
+      allOrders = data.orders || [];
+      renderTable();
+    } catch (err) {
+      document.getElementById('ordersTableWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function renderTable() {
+    const sourceFilter = document.getElementById('filterSource').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+
+    const rows = allOrders.filter(o => {
+      const isOnline = !o.staff_name;
+      if (sourceFilter === 'online' && !isOnline) return false;
+      if (sourceFilter === 'pos' && isOnline) return false;
+      if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+      return true;
+    });
+
+    const wrap = document.getElementById('ordersTableWrap');
+    if (rows.length === 0) {
+      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No orders match this filter.</div>`;
+      return;
+    }
+
+    wrap.innerHTML = `
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Order</th><th>Source</th><th>Customer</th><th>Type</th>
+            <th>Total</th><th>Status</th><th>Placed</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(rowHTML).join('')}
+        </tbody>
+      </table>
+    `;
+
+    wrap.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => handleStatusChange(btn.dataset.id, btn.dataset.action));
+    });
+  }
+
+  function rowHTML(o) {
+    const isOnline = !o.staff_name;
+    const needsAction = isOnline && o.status === 'pending';
+    const placed = o.datetime_ordered ? new Date(o.datetime_ordered).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+
+    return `
+      <tr class="${needsAction ? 'needs-action' : ''}">
+        <td>#${o.id}</td>
+        <td>
+          ${isOnline
+            ? `<span class="source-pill source-online">Online</span>`
+            : `<span class="source-pill source-pos">POS · ${escapeHtml(o.staff_name)}</span>`}
+        </td>
+        <td>${escapeHtml(o.customer_name) || '—'}</td>
+        <td>${(o.order_type || '').replace('_', ' ')}</td>
+        <td>${peso(o.total_amount)}</td>
+        <td><span class="status-pill status-${o.status}">${o.status}</span></td>
+        <td style="font-size:0.78rem; opacity:0.7;">${placed}</td>
+        <td><div class="row-actions">${actionButtons(o)}</div></td>
+      </tr>
+    `;
+  }
+
+  function actionButtons(o) {
+    const id = o.id;
+    switch (o.status) {
+      case 'pending':
+        return `
+          <button class="primary" data-action="confirmed" data-id="${id}">Confirm</button>
+          <button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>
+        `;
+      case 'confirmed':
+        return `
+          <button class="primary" data-action="preparing" data-id="${id}">Start Preparing</button>
+          <button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>
+        `;
+      case 'preparing':
+        return `
+          <button class="primary" data-action="completed" data-id="${id}">Mark Ready / Completed</button>
+          <button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>
+        `;
+      case 'completed':
+        return `<span style="font-size:0.75rem; opacity:0.5;">No further action</span>`;
+      case 'cancelled':
+        return `<span style="font-size:0.75rem; opacity:0.5;">Cancelled</span>`;
+      default:
+        return '';
+    }
+  }
+
+  async function handleStatusChange(orderId, newStatus) {
+    if (newStatus === 'cancelled' && !confirm(`Cancel Order #${orderId}? This can't be undone.`)) return;
+
+    try {
+      const res = await adminFetch(`/api/admin/sales/pos/orders/${orderId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not update order status.');
+
+      const order = allOrders.find(o => o.id == orderId);
+      if (order) order.status = newStatus;
+      renderTable();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+</script>
+</body>
+</html>

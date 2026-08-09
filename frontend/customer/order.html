@@ -189,6 +189,52 @@
     background: none; border: none; color: var(--brass, #d4af37); font-family: 'Space Mono', monospace;
     font-size: 0.72rem; text-transform: uppercase; cursor: pointer; text-decoration: underline;
   }
+
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+  /* ---------- FULL-SCREEN CHECKOUT FLOW ---------- */
+  .checkout-overlay {
+    position: fixed; inset: 0; background: var(--bone); z-index: 2000;
+    display: none; flex-direction: column; overflow-y: auto;
+  }
+  .checkout-overlay.active { display: flex; }
+  .checkout-shell {
+    max-width: 620px; margin: 0 auto; width: 100%; min-height: 100%;
+    display: flex; flex-direction: column; padding: 34px 22px 40px;
+  }
+
+  .checkout-topbar { position: relative; padding-bottom: 22px; border-bottom: 1px solid var(--line); margin-bottom: 32px; }
+  .checkout-close {
+    position: absolute; top: -6px; right: 0; background: none; border: none; font-size: 1.4rem;
+    color: var(--ink); cursor: pointer; opacity: 0.55; transition: opacity .2s ease; line-height: 1;
+  }
+  .checkout-close:hover { opacity: 1; }
+  .checkout-step-count {
+    display: block; text-align: center; font-family: 'Space Mono', monospace; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; margin-top: 16px;
+  }
+
+  .checkout-progress { display: flex; align-items: flex-start; justify-content: center; margin-top: 4px; padding: 0 10px; }
+  .progress-step { display: flex; flex-direction: column; align-items: center; gap: 7px; flex-shrink: 0; }
+  .progress-dot {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--component-bg); border: 2px solid var(--line);
+    display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-weight: 700;
+    font-size: 0.8rem; color: var(--ink); opacity: 0.5; transition: all .25s ease;
+  }
+  .progress-label { font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.5; white-space: nowrap; }
+  .progress-line { flex: 1; max-width: 70px; height: 2px; background: var(--line); margin: 14px 4px 0; transition: background .25s ease; }
+  .progress-step.active .progress-dot, .progress-step.done .progress-dot { background: var(--brass); border-color: var(--brass); color: #fff; opacity: 1; }
+  .progress-step.active .progress-label, .progress-step.done .progress-label { opacity: 1; color: var(--brass); font-weight: 700; }
+  .progress-line.done { background: var(--brass); }
+
+  .checkout-body { flex: 1; }
+  .checkout-step-panel { display: none; flex-direction: column; gap: 18px; }
+  .checkout-step-panel.active { display: flex; }
+  .checkout-step-title { font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 1.35rem; margin-bottom: 2px; }
+
+  .checkout-footer { display: flex; justify-content: space-between; gap: 14px; margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .checkout-footer .btn { flex: 1; justify-content: center; padding: 15px; border-radius: 6px; margin-bottom: 0; }
+  @media(max-width:480px) { .progress-label { font-size: 0.55rem; } .progress-line { max-width: 36px; } }
 </style>
 </head>
 <body>
@@ -198,14 +244,16 @@
     <img src="../pics&vids/the-yo's_logo.jpg" alt="Logo" class="logo-img">
     <span class="logo-text">The~Yo's</span>
   </a>
-  <nav id="siteNav">
+ <nav id="siteNav">
     <ul>
       <li><a href="about.html">About</a></li>
       <li><a href="menu.html">Menu</a></li>
       <li><a href="gallery.html">Gallery</a></li>
-      <li><a href="#feedback">Reviews</a></li>
+      <li><a href="order.html#feedback">Reviews</a></li>
+      <li><a href="reservations.html">Reserve</a></li>
       <li><a href="my-orders.html">My Orders</a></li>
-      <li><a href="order.html" class="nav-btn" style="background:#fff; color:var(--dark) !important;">Order Now</a></li>
+      <li><a href="account.html">My Account</a></li>
+      <li><a href="order.html" class="nav-btn">Order Now</a></li>
     </ul>
   </nav>
   <button class="nav-toggle" id="navToggle">☰</button>
@@ -224,81 +272,131 @@
     <div class="kiosk-grid">
       
       <div>
-        <div class="kiosk-tabs">
+        <div class="kiosk-tabs" id="kioskTabs">
           <button class="kiosk-tab-btn active" onclick="filterCatalog('all', this)">All Categories</button>
-          <button class="kiosk-tab-btn" onclick="filterCatalog('rice', this)">🍛 Rice meals</button>
-          <button class="kiosk-tab-btn" onclick="filterCatalog('wings', this)">🍗 Wings & Snacks</button>
-          <button class="kiosk-tab-btn" onclick="filterCatalog('espresso', this)">☕ Espresso</button>
-          <button class="kiosk-tab-btn" onclick="filterBeveragesTab(this)">🍹 Beverages</button>
+          <!-- Category tabs are injected here from /api/customer/menu once loaded -->
         </div>
-        
-        <div class="order-catalog" id="menuCatalog"></div>
+
+        <div class="order-catalog" id="menuCatalog">
+          <div style="opacity:0.6; font-family:'Space Mono', monospace; padding:20px; grid-column:1/-1;">Loading menu…</div>
+        </div>
       </div>
 
       <div class="kiosk-cart-panel">
-        <form onsubmit="return handleReserve(event)">
-          
-          <span class="cart-title">Your Tray</span>
-          <div class="cart-preview" style="border:none; padding:0; margin:0;">
-            <div class="cart-list" id="cartListContainer">
-              <div class="cart-empty">Your shopping cart is currently empty.</div>
-            </div>
+        <span class="cart-title">Your Tray</span>
+        <div class="cart-preview" style="border:none; padding:0; margin:0;">
+          <div class="cart-list" id="cartListContainer">
+            <div class="cart-empty">Your shopping cart is currently empty.</div>
           </div>
+        </div>
 
-          <div class="bogus-protection-alert" id="downpaymentNotice">
-            <p><strong>⚠️ Downpayment Required:</strong> Total balance exceeds ₱300. A 50% downpayment via GCash is mandatory to begin your order preparation.</p>
+        <div class="order-summary-box" style="margin: 0 0 20px 0; padding: 10px 0; border-bottom: 1px solid var(--line);">
+          <div>
+            <span style="font-family:'Space Mono', monospace; font-size:0.75rem; font-weight:700; display:block; text-transform:uppercase;">Grand Total</span>
+            <span class="total-counter" id="runningTotalDisplay" style="font-size:1.6rem;">₱0</span>
           </div>
+        </div>
 
-          <div class="order-summary-box" style="margin: 0 0 20px 0; padding: 10px 0; border-bottom: 1px solid var(--line);">
-            <div>
-              <span style="font-family:'Space Mono', monospace; font-size:0.75rem; font-weight:700; display:block; text-transform:uppercase;">Grand Total</span>
-              <span class="total-counter" id="runningTotalDisplay" style="font-size:1.6rem;">₱0</span>
-            </div>
-          </div>
-
-          <div class="signed-in-banner" id="signedInBanner" style="display:none;">
-            <span>Ordering as <strong id="signedInEmail"></strong></span>
-            <button type="button" onclick="handleSignOutFromOrder()">Not you? Sign out</button>
-          </div>
-          <div class="signed-in-banner" id="signedOutBanner">
-            <span>Sign in to place your order — we'll use your saved details.</span>
-          </div>
-
-          <div class="form-row">
-            <div><label for="name">Name</label><input id="name" type="text" required placeholder="Name"></div>
-            <div><label for="phone">Mobile Number</label><input id="phone" type="text" inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required placeholder="09xxxxxxxxx"></div>
-          </div>
-          
-          <div class="form-row">
-            <div>
-              <label for="orderType">Service</label>
-              <select id="orderType">
-                <option value="Dine-In">Dine-In (At Table)</option>
-                <option value="Takeout">Advanced Takeout Pick-up</option>
-                <option value="Delivery">Delivery</option>
-              </select>
-            </div>
-            <div><label for="timeInput">Table # / Time</label><input id="timeInput" type="text" required placeholder="Table 4 or 2:30 PM"></div>
-          </div>
-
-          <div style="margin-top:10px;">
-            <label style="font-family:'Space Mono', monospace; font-size:0.7rem; font-weight:700;">Payment Method:</label>
-            <div class="payments-badge-wrapper">
-              <label class="payment-label"><input type="radio" name="paymentChoice" value="GCash" required><span class="payment-pill p-gcash">GCash</span></label>
-              <label class="payment-label"><input type="radio" name="paymentChoice" value="Cash"><span class="payment-pill p-cash">Cash</span></label>
-            </div>
-          </div>
-
-          <div style="margin-top:14px;"><label for="notes">Overall Special Prep Instructions</label><textarea id="notes" placeholder="General instructions for the whole order..."></textarea></div>
-
-          <button type="submit" id="btnConfirmOrder" class="btn" style="background:var(--ink); color:var(--bone); border-color:var(--ink); width:100%; justify-content:center; padding:16px; margin-top:15px; border-radius:6px;">Confirm and Send Order</button>
-          <div id="formNote" style="margin-top:10px; text-align:center; font-size:0.85rem;" class="form-note"></div>
-        </form>
+        <button type="button" id="btnProceedCheckout" class="btn" style="width:100%; justify-content:center; padding:16px; border-radius:6px;" onclick="startCheckout()" disabled>Proceed to Checkout</button>
+        <p style="font-size:0.75rem; opacity:0.6; text-align:center; margin-top:10px;">Next: your details, then payment.</p>
       </div>
 
     </div>
   </div>
 </section>
+
+<!-- Full-Screen Checkout Flow: Cart -> Your Info -> Payment -->
+<div class="checkout-overlay" id="checkoutOverlay">
+  <div class="checkout-shell">
+    <div class="checkout-topbar">
+      <button type="button" class="checkout-close" onclick="closeCheckout()" aria-label="Close checkout">✕</button>
+      <div class="checkout-progress">
+        <div class="progress-step" id="progStep1"><span class="progress-dot">1</span><span class="progress-label">Cart</span></div>
+        <div class="progress-line" id="progLine1"></div>
+        <div class="progress-step" id="progStep2"><span class="progress-dot">2</span><span class="progress-label">Your Info</span></div>
+        <div class="progress-line" id="progLine2"></div>
+        <div class="progress-step" id="progStep3"><span class="progress-dot">3</span><span class="progress-label">Payment</span></div>
+      </div>
+      <span class="checkout-step-count" id="checkoutStepCount">Step 1 of 3</span>
+    </div>
+
+    <div class="checkout-body">
+
+      <!-- STEP 1: CART REVIEW -->
+      <div class="checkout-step-panel" id="stepCart">
+        <h3 class="checkout-step-title">Review Your Order</h3>
+        <div class="cart-list" id="checkoutCartList" style="max-height:none;"></div>
+        <div class="order-summary-box" style="border-top:1px dashed var(--line); margin-top:6px; padding-top:16px;">
+          <div>
+            <span style="font-family:'Space Mono', monospace; font-size:0.75rem; font-weight:700; display:block; text-transform:uppercase;">Grand Total</span>
+            <span class="total-counter" id="checkoutTotalDisplay" style="font-size:1.6rem;">₱0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: YOUR INFO -->
+      <div class="checkout-step-panel" id="stepInfo">
+        <h3 class="checkout-step-title">Your Details</h3>
+
+        <div class="signed-in-banner" id="signedInBanner" style="display:none;">
+          <span>Ordering as <strong id="signedInEmail"></strong></span>
+          <button type="button" onclick="handleSignOutFromOrder()">Not you? Sign out</button>
+        </div>
+        <div class="signed-in-banner" id="signedOutBanner">
+          <span>Sign in to place your order — we'll use your saved details.</span>
+        </div>
+
+        <div class="form-row">
+          <div><label for="name">Name</label><input id="name" type="text" required placeholder="Name"></div>
+          <div><label for="phone">Mobile Number</label><input id="phone" type="text" inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required placeholder="09xxxxxxxxx"></div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label for="orderType">Service</label>
+            <select id="orderType">
+              <option value="Dine-In">Dine-In (At Table)</option>
+              <option value="Takeout">Advanced Takeout Pick-up</option>
+              <option value="Delivery">Delivery</option>
+            </select>
+          </div>
+          <div><label for="timeInput">Table # / Time</label><input id="timeInput" type="text" required placeholder="Table 4 or 2:30 PM"></div>
+        </div>
+
+        <div><label for="notes">Overall Special Prep Instructions</label><textarea id="notes" placeholder="General instructions for the whole order..."></textarea></div>
+      </div>
+
+      <!-- STEP 3: PAYMENT -->
+      <div class="checkout-step-panel" id="stepPayment">
+        <h3 class="checkout-step-title">Payment Method</h3>
+
+        <div class="bogus-protection-alert" id="downpaymentNotice">
+          <p><strong>⚠️ Downpayment Required:</strong> Total balance exceeds ₱300. A 50% downpayment via GCash is mandatory to begin your order preparation.</p>
+        </div>
+
+        <div class="payments-badge-wrapper" style="margin-top:6px;">
+          <label class="payment-label"><input type="radio" name="paymentChoice" value="GCash"><span class="payment-pill p-gcash">GCash</span></label>
+          <label class="payment-label"><input type="radio" name="paymentChoice" value="Cash"><span class="payment-pill p-cash">Cash</span></label>
+        </div>
+
+        <div class="order-summary-box" style="border-top:1px dashed var(--line); margin-top:22px; padding-top:16px;">
+          <div>
+            <span style="font-family:'Space Mono', monospace; font-size:0.75rem; font-weight:700; display:block; text-transform:uppercase;">Total Due</span>
+            <span class="total-counter" id="paymentTotalDisplay" style="font-size:1.6rem;">₱0</span>
+          </div>
+        </div>
+
+        <div id="formNote" style="margin-top:10px; text-align:center; font-size:0.85rem;" class="form-note"></div>
+      </div>
+
+    </div>
+
+    <div class="checkout-footer">
+      <button type="button" class="btn btn-outline" id="btnCheckoutBack" onclick="checkoutBack()">Back</button>
+      <button type="button" class="btn" id="btnCheckoutNext" onclick="checkoutNext()">Continue</button>
+    </div>
+  </div>
+</div>
 
 <!-- Item Customization Modal -->
 <div class="modal-overlay" id="customizationModal">
@@ -381,110 +479,86 @@
     await signOut(auth);
   };
 
-  const menuDatabase = [
-    { id: "r1", cat: "rice", name: "Pork Sisig Rice Meal", price: 100 },
-    { id: "r2", cat: "rice", name: "Burger Steak Rice Meal", price: 100 },
-    { id: "r3", cat: "rice", name: "Chicken Katsu Rice Meal", price: 120 },
-    { id: "r4", cat: "rice", name: "Cordon Blue Rice Meal", price: 120 },
-    { id: "r5", cat: "rice", name: "Chicken Mushroom Rice", price: 130 },
-    { id: "r6", cat: "rice", name: "Kare Kare Rice Meal", price: 150 },
-    { id: "r7", cat: "rice", name: "Barbeque Pork Rib Platter", price: 180 },
-    { id: "r8", cat: "rice", name: "Chicken Inasal Platter", price: 165 },
-    { id: "r9", cat: "rice", name: "Braised Pork Rice Meal", price: 120 },
-    { id: "r10", cat: "rice", name: "Beef Tapa Bowl", price: 100 },
-    { id: "r11", cat: "rice", name: "Pork Tocino Bowl", price: 100 },
-    { id: "r12", cat: "rice", name: "Hungarian Sausage Bowl", price: 120 },
-    { id: "r13", cat: "rice", name: "Garlic Longganisa Bowl", price: 120 },
-    { id: "r14", cat: "rice", name: "Sweet & Sour Poppers Bowl", price: 100 },
-    { id: "r15", cat: "rice", name: "Honey Soy Poppers Bowl", price: 100 },
-    { id: "w1", cat: "wings", name: "Dubai Chocolate Truffles", price: 150 },
-    { id: "w2", cat: "wings", name: "Chicken Wings (2 Pcs + Rice/Fries)", price: 125 },
-    { id: "w3", cat: "wings", name: "Chicken Wings (4 Pcs)", price: 145 },
-    { id: "w4", cat: "wings", name: "Chicken Wings (6 Pcs)", price: 180 },
-    { id: "w5", cat: "wings", name: "Spaghetti Pasta", price: 120 },
-    { id: "w6", cat: "wings", name: "Carbonara Pasta", price: 120 },
-    { id: "w7", cat: "wings", name: "Lomi Regular", price: 70 },
-    { id: "w8", cat: "wings", name: "Lomi Overload", price: 100 },
-    { id: "w9", cat: "wings", name: "Batil Patung Balor 100", price: 100 },
-    { id: "w10", cat: "wings", name: "Batil Patung Balor 120", price: 120 },
-    { id: "w11", cat: "wings", name: "Batil Patung Balor 150", price: 150 },
-    { id: "w12", cat: "wings", name: "Batil Patung Bilao Small", price: 300 },
-    { id: "w13", cat: "wings", name: "Batil Patung Bilao Large", price: 500 },
-    { id: "w14", cat: "wings", name: "Fries Regular", price: 70 },
-    { id: "w15", cat: "wings", name: "Fries Overload", price: 200 },
-    { id: "w16", cat: "wings", name: "Nachos Regular", price: 90 },
-    { id: "w17", cat: "wings", name: "Nachos Overload", price: 200 },
-    { id: "w18", cat: "wings", name: "Chic & Fries Basket", price: 100 },
-    { id: "w19", cat: "wings", name: "Classic Burger", price: 60 },
-    { id: "w20", cat: "wings", name: "Cheesy Burger", price: 75 },
-    { id: "w21", cat: "wings", name: "Corndog Classic", price: 55 },
-    { id: "w22", cat: "wings", name: "Corndog Mozzarella", price: 75 },
-    { id: "c1", cat: "espresso", name: "Americano Coffee", price: 90 },
-    { id: "c2", cat: "espresso", name: "Americano Cold Foam", price: 100 },
-    { id: "c3", cat: "espresso", name: "Cafe Latte", price: 100 },
-    { id: "c4", cat: "espresso", name: "Vanilla Latte", price: 110 },
-    { id: "c5", cat: "espresso", name: "Hazelnut Latte", price: 110 },
-    { id: "c6", cat: "espresso", name: "Spanish Latte", price: 110 },
-    { id: "c7", cat: "espresso", name: "Dark Mocha", price: 120 },
-    { id: "c8", cat: "espresso", name: "White Mocha", price: 120 },
-    { id: "c9", cat: "espresso", name: "Caramel Macchiato", price: 120 },
-    { id: "c10", cat: "espresso", name: "Nutty Mocha Blend", price: 120 },
-    { id: "c11", cat: "espresso", name: "Nutty Caramel Blend", price: 120 },
-    { id: "c12", cat: "espresso", name: "Sea Salt Latte Signature", price: 120 },
-    { id: "c13", cat: "espresso", name: "Biscoff Latte Special", price: 140 },
-    { id: "c14", cat: "espresso", name: "Oreo Latte Cream", price: 110 },
-    { id: "c15", cat: "espresso", name: "Java Chip Frappe", price: 165 },
-    { id: "c16", cat: "espresso", name: "Coffee Caramel Frappe", price: 165 },
-    { id: "c17", cat: "espresso", name: "Biscoffee Premium Frappe", price: 180 },
-    { id: "b1", cat: "beverages", name: "Milky Strawberry Drink", price: 100 },
-    { id: "b2", cat: "beverages", name: "Blueberry Fresh Milk", price: 100 },
-    { id: "b3", cat: "beverages", name: "Dark Chocolate Luxury", price: 100 },
-    { id: "b4", cat: "beverages", name: "Choco Berry Fusion", price: 110 },
-    { id: "b5", cat: "beverages", name: "Oreo Cookies Milkshake", price: 100 },
-    { id: "b6", cat: "beverages", name: "Matcha Latte (Classic)", price: 100 },
-    { id: "b7", cat: "beverages", name: "Berry Matcha Blend", price: 100 },
-    { id: "b8", cat: "beverages", name: "Oreo Matcha Fusion", price: 120 },
-    { id: "b9", cat: "beverages", name: "Caramel Matcha Fusion", price: 120 },
-    { id: "b10", cat: "beverages", name: "Biscoff Matcha Delight", price: 130 },
-    { id: "b11", cat: "beverages", name: "Sea Salt Matcha", price: 120 },
-    { id: "b12", cat: "beverages", name: "Espresso Matcha Layered", price: 120 },
-    { id: "b13", cat: "beverages", name: "Wildberry Fruit Tea", price: 120 },
-    { id: "b14", cat: "beverages", name: "Four-Red Fruits Tea", price: 120 },
-    { id: "b15", cat: "beverages", name: "Lemon Ginger Tea", price: 120 },
-    { id: "b16", cat: "beverages", name: "Green Tea Wellness Mix", price: 120 },
-    { id: "b17", cat: "beverages", name: "Fruit Soda Selection", price: 80 },
-    { id: "b18", cat: "beverages", name: "Non-Coffee Fruit Frappe", price: 140 },
-    { id: "b19", cat: "beverages", name: "Biscoff Non-Coffee Frappe", price: 160 }
-  ];
+  // Menu catalog is now loaded live from the database instead of being
+  // hardcoded — see loadMenuFromServer() below. Items use their real
+  // integer menu_items.id so order submission actually matches the DB.
+  let menuDatabase = [];
+  let categoryList = [];
 
   let cart = [];
   let currentCartTotal = 0;
   let currentCategory = 'all';
   let activeSelectedItemId = null;
 
+  async function loadMenuFromServer() {
+    const catalogContainer = document.getElementById('menuCatalog');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/customer/menu`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load menu.');
+
+      categoryList = data.categories || [];
+
+      // Only show items marked available - matches menu_items.status.
+      menuDatabase = (data.items || [])
+        .filter(item => (item.status || 'available').toLowerCase() === 'available')
+        .map(item => ({
+          id: item.id,
+          cat: item.category_id,
+          name: item.name,
+          price: Number(item.price),
+          image_url: item.image_url,
+          description: item.description
+        }));
+
+      buildCategoryTabs();
+      renderCatalog();
+    } catch (err) {
+      console.error('Menu load error:', err);
+      catalogContainer.innerHTML = `<div style="opacity:0.7; padding:20px; grid-column:1/-1;">Couldn't load the menu right now. Please refresh the page.</div>`;
+    }
+  }
+
+  function buildCategoryTabs() {
+    const tabsContainer = document.getElementById('kioskTabs');
+    // Keep the existing "All Categories" button, append one per real category.
+    categoryList.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'kiosk-tab-btn';
+      btn.textContent = cat.name;
+      btn.onclick = () => window.filterCatalog(cat.id, btn);
+      tabsContainer.appendChild(btn);
+    });
+  }
+
   window.filterCatalog = function(category, buttonEl) {
-    currentCategory = category;
+    currentCategory = category; // 'all' or a real categories.id
     const tabs = document.querySelectorAll('.kiosk-tab-btn');
     tabs.forEach(t => t.classList.remove('active'));
     buttonEl.classList.add('active');
     renderCatalog();
   };
 
-  window.filterBeveragesTab = function(buttonEl) {
-    window.filterCatalog('beverages', buttonEl);
-  };
-
   function renderCatalog() {
     const catalogContainer = document.getElementById('menuCatalog');
     if(!catalogContainer) return;
     catalogContainer.innerHTML = '';
-    
-    menuDatabase.forEach(item => {
-      if (currentCategory !== 'all' && item.cat !== currentCategory) return;
-      
+
+    if (menuDatabase.length === 0) return; // still loading, or load failed
+
+    const visibleItems = menuDatabase.filter(item =>
+      currentCategory === 'all' || item.cat === currentCategory
+    );
+
+    if (visibleItems.length === 0) {
+      catalogContainer.innerHTML = `<div style="opacity:0.6; padding:20px; grid-column:1/-1;">No items in this category right now.</div>`;
+      return;
+    }
+
+    visibleItems.forEach(item => {
       const itemElement = document.createElement('div');
       itemElement.className = 'catalog-item';
-      itemElement.setAttribute('onclick', `openCustomizationModal('${item.id}')`);
+      itemElement.setAttribute('onclick', `openCustomizationModal(${item.id})`);
       itemElement.innerHTML = `
         <div class="catalog-info">
           <h4>${item.name}</h4>
@@ -534,29 +608,11 @@
     updateCartDisplay();
   };
 
-  function updateCartDisplay() {
-    const container = document.getElementById('cartListContainer');
-    const totalEl = document.getElementById('runningTotalDisplay');
-    const notice = document.getElementById('downpaymentNotice');
-
+  function buildCartRowsHTML() {
     if (cart.length === 0) {
-      container.innerHTML = '<div class="cart-empty">Your shopping cart is currently empty.</div>';
-      currentCartTotal = 0;
-      totalEl.innerText = '₱0';
-      notice.style.display = 'none';
-      return;
+      return '<div class="cart-empty">Your shopping cart is currently empty.</div>';
     }
-
-    currentCartTotal = cart.reduce((sum, entry) => sum + entry.price, 0);
-    totalEl.innerText = `₱${currentCartTotal}`;
-
-    if (currentCartTotal >= 300) {
-      notice.style.display = 'block';
-    } else {
-      notice.style.display = 'none';
-    }
-
-    container.innerHTML = cart.map(entry => `
+    return cart.map(entry => `
       <div class="cart-row">
         <div>
           <strong>${entry.name}</strong>
@@ -570,16 +626,100 @@
     `).join('');
   }
 
-  // Order Handler
-  window.handleReserve = async function(e) {
-    e.preventDefault();
-    if (cart.length === 0) { alert("Your cart is empty."); return false; }
+  function updateCartDisplay() {
+    const rowsHTML = buildCartRowsHTML();
+    const miniContainer = document.getElementById('cartListContainer');
+    const checkoutContainer = document.getElementById('checkoutCartList');
+    if (miniContainer) miniContainer.innerHTML = rowsHTML;
+    if (checkoutContainer) checkoutContainer.innerHTML = rowsHTML;
+
+    currentCartTotal = cart.reduce((sum, entry) => sum + entry.price, 0);
+    const totalText = `₱${currentCartTotal}`;
+    ['runningTotalDisplay', 'checkoutTotalDisplay', 'paymentTotalDisplay'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = totalText;
+    });
+
+    const notice = document.getElementById('downpaymentNotice');
+    if (notice) notice.style.display = (currentCartTotal >= 300) ? 'block' : 'none';
+
+    const proceedBtn = document.getElementById('btnProceedCheckout');
+    if (proceedBtn) proceedBtn.disabled = cart.length === 0;
+  }
+
+  // ---------- CHECKOUT FLOW: Cart -> Your Info -> Payment ----------
+  let checkoutStep = 1;
+  const STEP_PANEL_IDS = ['stepCart', 'stepInfo', 'stepPayment'];
+
+  function updateCheckoutStep() {
+    STEP_PANEL_IDS.forEach((id, i) => {
+      document.getElementById(id).classList.toggle('active', i + 1 === checkoutStep);
+    });
+    [1, 2, 3].forEach(n => {
+      const stepEl = document.getElementById('progStep' + n);
+      stepEl.classList.remove('active', 'done');
+      if (n < checkoutStep) stepEl.classList.add('done');
+      if (n === checkoutStep) stepEl.classList.add('active');
+    });
+    [1, 2].forEach(n => {
+      document.getElementById('progLine' + n).classList.toggle('done', checkoutStep > n);
+    });
+    document.getElementById('checkoutStepCount').textContent = `Step ${checkoutStep} of 3`;
+    document.getElementById('btnCheckoutBack').style.visibility = checkoutStep === 1 ? 'hidden' : 'visible';
+    document.getElementById('btnCheckoutNext').textContent = checkoutStep === 3 ? 'Place Order' : 'Continue';
+  }
+
+  window.startCheckout = function() {
+    if (cart.length === 0) { alert("Your cart is empty. Add something first!"); return; }
+    if (!currentUser) {
+      window.location.href = 'account.html?redirect=order.html';
+      return;
+    }
+    checkoutStep = 1;
+    updateCartDisplay();
+    updateCheckoutStep();
+    document.getElementById('checkoutOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeCheckout = function() {
+    document.getElementById('checkoutOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+  };
+
+  window.checkoutBack = function() {
+    if (checkoutStep === 1) return;
+    checkoutStep -= 1;
+    updateCheckoutStep();
+  };
+
+  window.checkoutNext = async function() {
+    if (checkoutStep === 1) {
+      if (cart.length === 0) { alert("Your cart is empty."); return; }
+      checkoutStep = 2;
+      updateCheckoutStep();
+      return;
+    }
+    if (checkoutStep === 2) {
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const timeInput = document.getElementById('timeInput').value.trim();
+      if (!name || !phone || !timeInput) {
+        alert("Please fill in your name, mobile number, and table/time before continuing.");
+        return;
+      }
+      checkoutStep = 3;
+      updateCheckoutStep();
+      return;
+    }
+    // Step 3: Payment -> place the order
+    const paymentChosen = document.querySelector('input[name="paymentChoice"]:checked');
+    if (!paymentChosen) { alert("Please select a payment method."); return; }
 
     if (!currentUser) {
       window.location.href = 'account.html?redirect=order.html';
-      return false;
+      return;
     }
-
     try {
       const idToken = await currentUser.getIdToken();
       await executeOrderSubmission(idToken);
@@ -588,22 +728,44 @@
       alert("Session expired. Please sign in again.");
       window.location.href = 'account.html?redirect=order.html';
     }
-    return false;
   };
 
   async function executeOrderSubmission(idToken) {
     const serviceType = document.getElementById('orderType').value;
     const paymentChoice = document.querySelector('input[name="paymentChoice"]:checked')?.value || 'Cash';
     const timeInput = document.getElementById('timeInput').value;
-    const notes = document.getElementById('notes').value;
+    const notesInput = document.getElementById('notes').value.trim();
+
+    // Backend's orders.order_type column only accepts these three values -
+    // map the kiosk's friendly dropdown labels onto them.
+    const ORDER_TYPE_MAP = {
+      'Dine-In': 'dine_in',
+      'Takeout': 'pickup',
+      'Delivery': 'online'
+    };
+    const order_type = ORDER_TYPE_MAP[serviceType];
+    if (!order_type) {
+      alert("Please choose a valid service type (Dine-In, Takeout, or Delivery).");
+      return;
+    }
+
+    // Backend expects `cart` as [{ menu_id, quantity, notes }]. Each cart
+    // entry already represents exactly one unit with its own note, so we
+    // send one line per entry (quantity 1) instead of merging same-item
+    // entries together — merging would lose distinct per-unit notes.
+    const cartLines = cart.map(entry => ({
+      menu_id: isNaN(Number(entry.id)) ? entry.id : Number(entry.id),
+      quantity: 1,
+      notes: entry.notes || null
+    }));
 
     const orderPayload = {
-      items: cart,
-      totalAmount: currentCartTotal,
-      serviceType: serviceType,
-      address: timeInput,
+      order_type,
+      cart: cartLines,
+      serviceType: serviceType,       // kept for any display/logging use
+      tableOrTime: timeInput,
       paymentChoice: paymentChoice,
-      notes: notes
+      notes: notesInput || null
     };
 
     try {
@@ -619,18 +781,28 @@
       const data = await response.json();
 
       if (response.ok) {
-        let finishMsg = `Success! Order #${data.orderId || 'Logged'} created via ${paymentChoice}.`;
+        const orderId = data.order?.id ?? 'Logged';
+        let finishMsg = `Success! Order #${orderId} created via ${paymentChoice}.`;
         if (currentCartTotal >= 300) {
-          finishMsg = `Order #${data.orderId || 'Logged'} Received! A 50% downpayment via GCash is required for totals over ₱300 before kitchen prep begins.`;
+          finishMsg = `Order #${orderId} Received! A 50% downpayment via GCash is required for totals over ₱300 before kitchen prep begins.`;
         }
 
-        document.getElementById('formNote').textContent = finishMsg;
-        alert(finishMsg);
+        document.getElementById('formNote').textContent = finishMsg + " Redirecting you to My Orders to track it...";
 
-        // Reset form and cart
-        document.querySelector('.kiosk-cart-panel form').reset();
+        // Reset cart, fields, and return to browsing
         cart = [];
+        document.getElementById('name').value = '';
+        document.getElementById('phone').value = '';
+        document.getElementById('timeInput').value = '';
+        document.getElementById('notes').value = '';
+        document.getElementById('orderType').selectedIndex = 0;
+        document.querySelectorAll('input[name="paymentChoice"]').forEach(r => r.checked = false);
         updateCartDisplay();
+        window.closeCheckout();
+        checkoutStep = 1;
+
+        // Send them straight to order tracking so they can watch it get confirmed.
+        setTimeout(() => { window.location.href = 'my-orders.html'; }, 1200);
       } else {
         alert("Order submission failed: " + (data.error || data.message));
       }
@@ -674,8 +846,11 @@
     return false;
   };
 
-  renderCatalog();
+  window.renderCatalog = renderCatalog;
+  window.updateCartDisplay = updateCartDisplay;
+  loadMenuFromServer();
 </script>
+<script type="module" src="authNav.js"></script>
 <script src="global.js"></script>
 </body>
 </html>

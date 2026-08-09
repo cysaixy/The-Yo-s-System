@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css">
+<style>
+  .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  .bar-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .bar-row:last-child { border-bottom: none; }
+  .bar-row .name { flex: 1; font-size: 0.85rem; }
+  .bar-row .qty { font-family: 'Space Mono', monospace; font-size: 0.75rem; opacity: 0.6; width: 70px; text-align: right; }
+  .bar-row .amt { font-family: 'Space Mono', monospace; font-size: 0.85rem; width: 90px; text-align: right; color: var(--brass-dark); font-weight: 700; }
+  .stock-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 0.78rem; }
+  .stock-legend span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell } from "./admin-shell.js";
+  import { adminFetch, peso, formatDate, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'home', title: 'Home' });
+  if (session) init();
+
+  async function init() {
+    const content = document.getElementById('adminContent');
+    content.innerHTML = `<div class="admin-loading">Loading…</div>`;
+
+    let summary, stockItems, stockError = null;
+
+    try {
+      const summaryRes = await adminFetch('/api/admin/dashboard');
+      summary = await summaryRes.json();
+      if (!summaryRes.ok) throw new Error(summary.error || 'Could not load summary.');
+    } catch (err) {
+      content.innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+      return;
+    }
+
+    try {
+      const stockRes = await adminFetch('/api/admin/inventory');
+      const stockData = await stockRes.json();
+      if (!stockRes.ok) throw new Error(stockData.error || 'Could not load inventory.');
+      stockItems = stockData.items || [];
+    } catch (err) {
+      stockError = err.message;
+      stockItems = [];
+    }
+
+    let logEntries = [], logError = null;
+    try {
+      const logRes = await adminFetch('/api/admin/inventory/log');
+      const logData = await logRes.json();
+      if (!logRes.ok) throw new Error(logData.error || 'Could not load stock activity.');
+      const todayStr = new Date().toDateString();
+      logEntries = (logData.entries || []).filter(e => e.log_date && new Date(e.log_date).toDateString() === todayStr);
+    } catch (err) {
+      logError = err.message;
+    }
+
+    render(summary, stockItems, stockError, logEntries, logError);
+  }
+
+  function render(summary, stockItems, stockError, logEntries, logError) {
+    const content = document.getElementById('adminContent');
+
+    const counts = { in_stock: 0, below_reorder: 0, low_stock: 0, out_of_stock: 0 };
+    stockItems.forEach(i => { if (counts[i.stock_status] !== undefined) counts[i.stock_status]++; });
+
+    content.innerHTML = `
+      <div class="two-col">
+        <div class="admin-panel">
+          <div class="admin-panel-head"><h3>Top Best Sellers as of Today</h3></div>
+          <div class="admin-panel-body">
+            ${summary.bestSellers.length
+              ? summary.bestSellers.map(b => `
+                  <div class="bar-row">
+                    <span class="name">${escapeHtml(b.name)}</span>
+                    <span class="qty">×${b.qty_sold}</span>
+                    <span class="amt">${peso(b.sales_amount)}</span>
+                  </div>`).join('')
+              : `<div class="panel-empty">No sales recorded yet.</div>`}
+          </div>
+        </div>
+
+        <div class="admin-panel">
+          <div class="admin-panel-head"><h3>Inventory Overview</h3></div>
+          <div class="admin-panel-body">
+            ${stockError
+              ? `<div class="panel-empty">🔒 ${stockError}</div>`
+              : `
+                <div class="stat-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:0;">
+                  <div class="stat-card"><div class="label">Total Items</div><div class="value">${stockItems.length}</div></div>
+                  <div class="stat-card"><div class="label">Needs Attention</div><div class="value ${counts.low_stock + counts.out_of_stock > 0 ? 'danger' : 'success'}">${counts.low_stock + counts.out_of_stock}</div></div>
+                </div>
+                <div class="stock-legend">
+                  <span><i class="dot" style="background:var(--success);"></i>In stock: ${counts.in_stock}</span>
+                  <span><i class="dot" style="background:#2c5fb0;"></i>Below reorder: ${counts.below_reorder}</span>
+                  <span><i class="dot" style="background:var(--warning);"></i>Low stock: ${counts.low_stock}</span>
+                  <span><i class="dot" style="background:var(--danger);"></i>Out of stock: ${counts.out_of_stock}</span>
+                </div>
+              `}
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-panel" style="margin-top:20px;">
+        <div class="admin-panel-head"><h3>Today's Stock Activity</h3></div>
+        <div class="admin-panel-body" style="padding:0;">
+          ${logError
+            ? `<div class="panel-empty" style="padding:20px;">🔒 ${logError}</div>`
+            : logEntries.length
+              ? `<table class="admin-table">
+                  <thead><tr><th>Item</th><th>Type</th><th>Change</th><th>Staff</th><th>Time</th></tr></thead>
+                  <tbody>${logEntries.map(e => `
+                    <tr>
+                      <td>${escapeHtml(e.item_name)}</td>
+                      <td><span class="pill pill-neutral">${e.transaction_type}</span></td>
+                      <td style="color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'}; font-family:'Space Mono';">${e.quantity_change > 0 ? '+' : ''}${e.quantity_change}</td>
+                      <td>${escapeHtml(e.staff_name) || '—'}</td>
+                      <td style="font-size:0.78rem; opacity:0.7;">${formatDate(e.log_date, { timeStyle: 'short' })}</td>
+                    </tr>`).join('')}</tbody>
+                </table>`
+              : `<div class="panel-empty" style="padding:20px;">No stock activity yet today.</div>`}
+        </div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>

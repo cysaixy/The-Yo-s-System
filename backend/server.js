@@ -16,7 +16,11 @@ import purchasesRouter from "./src/routes/admin/purchasesRoutes.js";
 import reservationsRouter from "./src/routes/admin/reservationsRoutes.js";
 import salesRouter from "./src/routes/admin/salesRoutes.js";
 import staffRouter from "./src/routes/admin/staffRoutes.js";
-
+import budgetRouter from "./src/routes/admin/budgetRoutes.js";
+import cashAccountsRouter from "./src/routes/admin/cashAccountsRoutes.js";
+import cashTransactionsRouter from "./src/routes/admin/cashTransactionsRoutes.js";
+import reportsRouter from "./src/routes/admin/reportsRoutes.js";
+import customersRouter from "./src/routes/admin/customersRoutes.js";
 // Customer Routes
 import customerAuthRouter from "./src/routes/customer/auth.routes.js";
 import customerMenuRouter from "./src/routes/customer/menu.routes.js";
@@ -50,14 +54,20 @@ app.use("/api/customer/reservations", customerReservationRouter);
 
 // --- Admin API Routes ---
 app.use("/api/admin/staff/login", authLimiter);
-app.use("/api/admin/products", productRouter);
-app.use("/api/admin/dashboard", dashboardRouter);
-app.use("/api/admin/inventory", inventoryRouter);
-app.use("/api/admin/purchases", purchasesRouter);
-app.use("/api/admin/reservations", reservationsRouter); 
+app.use("/api/admin/products", productRouter);//check
+app.use("/api/admin/dashboard", dashboardRouter);//check
+app.use("/api/admin/inventory", inventoryRouter);//check
+app.use("/api/admin/purchases", purchasesRouter);//check
+app.use("/api/admin/reservations", reservationsRouter);//check
 app.use("/api/admin/sales", salesRouter);
 app.use("/api/admin/staff", staffRouter);
-
+app.use("/api/admin/budget", budgetRouter);
+app.use("/api/admin/cash-transactions", cashTransactionsRouter);
+app.use("/api/admin/reports", reportsRouter);
+app.use("/api/admin/cash-accounts", cashAccountsRouter);
+app.use("/api/admin/cash-transactions", cashTransactionsRouter);
+app.use("/api/admin/budgets", budgetRouter);
+app.use("/api/admin/customers", customersRouter);
 // 404 handler for unmatched routes
 app.use((req, res) => res.status(404).json({ error: "Route not found." }));
 

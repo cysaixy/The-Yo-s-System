@@ -7,7 +7,7 @@ const VALID_PAYMENT_METHODS = ["cash", "gcash", "card", "bank_transfer"];
 export async function createOrder(req, res, next) {
   const client = await pool.connect();
   try {
-    const { reservation_id, order_type, cart } = req.body;
+    const { reservation_id, order_type, cart, notes } = req.body;
     const customer_id = req.user?.customer?.id;
 
     if (!customer_id) {
@@ -46,6 +46,7 @@ export async function createOrder(req, res, next) {
         menu_id: menuItem.id,
         quantity: line.quantity,
         price: menuItem.price,
+        notes: line.notes || null,
       });
       total_amount += menuItem.price * line.quantity;
     }
@@ -53,10 +54,10 @@ export async function createOrder(req, res, next) {
     await client.query("BEGIN");
 
     const orderResult = await client.query(
-      `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, datetime_ordered)
-       VALUES ($1, NULL, $2, $3, 'pending', $4, NOW())
-       RETURNING id, customer_id, reservation_id, order_type, status, total_amount, datetime_ordered`,
-      [customer_id, reservation_id || null, order_type, total_amount]
+      `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, notes, datetime_ordered)
+       VALUES ($1, NULL, $2, $3, 'pending', $4, $5, NOW())
+       RETURNING id, customer_id, reservation_id, order_type, status, total_amount, notes, datetime_ordered`,
+      [customer_id, reservation_id || null, order_type, total_amount, notes || null]
     );
     const order = orderResult.rows[0];
 
@@ -64,9 +65,9 @@ export async function createOrder(req, res, next) {
       const subtotal = item.price * item.quantity;
 
       await client.query(
-        `INSERT INTO order_items (order_id, menu_id, quantity, price, subtotal)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [order.id, item.menu_id, item.quantity, item.price, subtotal]
+        `INSERT INTO order_items (order_id, menu_id, quantity, price, subtotal, notes)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [order.id, item.menu_id, item.quantity, item.price, subtotal, item.notes]
       );
 
       // Decrement stock if stock tracking applies
@@ -92,7 +93,7 @@ export async function getOrder(req, res, next) {
   try {
     const { rows } = await pool.query(
       `SELECT o.*, json_agg(
-          json_build_object('menu_id', oi.menu_id, 'quantity', oi.quantity, 'price', oi.price, 'subtotal', oi.subtotal)
+          json_build_object('menu_id', oi.menu_id, 'quantity', oi.quantity, 'price', oi.price, 'subtotal', oi.subtotal, 'notes', oi.notes)
        ) AS items
        FROM orders o
        LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -129,7 +130,7 @@ export async function getCustomerOrders(req, res, next) {
     const { rows } = await pool.query(
       `SELECT o.*, COALESCE(
           json_agg(
-            json_build_object('menu_id', oi.menu_id, 'quantity', oi.quantity, 'price', oi.price, 'subtotal', oi.subtotal)
+            json_build_object('menu_id', oi.menu_id, 'quantity', oi.quantity, 'price', oi.price, 'subtotal', oi.subtotal, 'notes', oi.notes)
           ) FILTER (WHERE oi.id IS NOT NULL),
           '[]'
        ) AS items
