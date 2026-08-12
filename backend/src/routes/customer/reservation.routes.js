@@ -1,7 +1,7 @@
 import express from "express";
 import { posLimiter, globalLimiter } from "../../middlewares/rateLimit.middleware.js";
 import { verifyFirebaseToken } from "../../middlewares/auth.middleware.js";
-import { createReservation, getCustomerReservations } from "../../controllers/customer/reservation.controller.js";
+import { createReservation, getCustomerReservations, cancelReservation } from "../../controllers/customer/reservation.controller.js";
 
 const reservationrouter = express.Router();
 
@@ -13,5 +13,9 @@ reservationrouter.post("/", posLimiter, verifyFirebaseToken, createReservation);
 // GET /api/customer/reservations - lets a customer check whether their
 // reservation was confirmed or cancelled.
 reservationrouter.get("/", globalLimiter, verifyFirebaseToken, getCustomerReservations);
+
+// PATCH /api/customer/reservations/:id/cancel - customer cancels a pending
+// reservation of their own.
+reservationrouter.patch("/:id/cancel", globalLimiter, verifyFirebaseToken, cancelReservation);
 
 export default reservationrouter;

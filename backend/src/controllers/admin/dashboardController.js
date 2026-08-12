@@ -42,14 +42,14 @@ export async function summary(req, res, next) {
                 COALESCE(SUM(base_cogs + addon_cogs), 0) AS cogs
          FROM today_orders`
       ),
-      // All-time best sellers — kept for backwards compatibility (some
-      // pages still call /api/admin/dashboard and read bestSellers).
+      // Today's best sellers — top 10 menu items by quantity sold for the
+      // Home page. Scoped to CURRENT_DATE so "as of today" stays true.
       pool.query(
-        `SELECT mi.name, SUM(oi.quantity) AS qty_sold, SUM(oi.subtotal) AS sales_amount
+        `SELECT mi.name, SUM(oi.quantity)::int AS qty_sold, SUM(oi.subtotal) AS sales_amount
          FROM order_items oi
          JOIN menu_items mi ON mi.id = oi.menu_id
          JOIN orders o ON o.id = oi.order_id
-         WHERE o.status <> 'cancelled'
+         WHERE o.datetime_ordered::date = CURRENT_DATE AND o.status <> 'cancelled'
          GROUP BY mi.name
          ORDER BY qty_sold DESC
          LIMIT 10`

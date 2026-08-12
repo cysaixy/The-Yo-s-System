@@ -132,6 +132,33 @@
     loadMyReservations();
   });
 
+  // Prevent picking dates in the past - the server enforces this too.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dateInput = document.getElementById('resDate');
+  if (dateInput) dateInput.min = today.toISOString().split('T')[0];
+
+  async function cancelReservation(id) {
+    if (!currentUser) return;
+    if (!confirm('Cancel this reservation? This can only be undone by the restaurant.')) return;
+    try {
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/customer/reservations/${id}/cancel`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Could not cancel this reservation.');
+        return;
+      }
+      loadMyReservations();
+    } catch (err) {
+      alert('Network error while cancelling. Please try again.');
+    }
+  }
+  window.cancelReservation = cancelReservation;
+
   async function loadMyReservations() {
     const wrap = document.getElementById('myReservationsWrap');
     const list = document.getElementById('myReservationsList');
@@ -149,11 +176,16 @@
       wrap.style.display = 'block';
       list.innerHTML = reservations.map(r => {
         const dateStr = r.reservation_date ? new Date(r.reservation_date).toLocaleDateString('en-PH', { dateStyle: 'medium' }) : '';
+        const cancelBtn = r.status === 'pending'
+          ? `<button type="button" class="btn btn-outline" style="padding:7px 12px; font-size:0.68rem; margin:10px 0 0; border-radius:4px;" onclick="cancelReservation(${r.id})">Cancel</button>`
+          : '';
         return `
           <div class="res-card">
             <div class="res-info">
               <strong>${dateStr} at ${r.reservation_time || ''}</strong>
               <span>${r.guests} guest${r.guests == 1 ? '' : 's'}${r.table_no ? ' · ' + r.table_no : ''}</span>
+              ${r.notes ? `<span style="display:block; margin-top:4px;">“${r.notes}”</span>` : ''}
+              ${cancelBtn}
             </div>
             <span class="res-status-pill res-status-${r.status}">${STATUS_LABEL[r.status] || r.status}</span>
           </div>

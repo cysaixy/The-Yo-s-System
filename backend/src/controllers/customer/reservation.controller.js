@@ -19,6 +19,19 @@ export async function createReservation(req, res, next) {
       });
     }
 
+    // Reject past dates server-side too - the picker guards the frontend, but
+    // the API must not trust the client.
+    const [y, m, d] = String(reservation_date).split("-").map(Number);
+    if (!y || !m || !d) {
+      return res.status(400).json({ error: "reservation_date must be YYYY-MM-DD." });
+    }
+    const date = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) {
+      return res.status(400).json({ error: "Reservation date can't be in the past." });
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO reservations (customer_id, table_no, reservation_date, reservation_time, guests, notes, status, datetime_reserved)
        VALUES ($1, $2, $3, $4, $5, $6, 'pending', NOW())
@@ -53,6 +66,42 @@ export async function getCustomerReservations(req, res, next) {
     );
 
     res.json({ reservations: rows });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Lets a customer cancel their own reservation while it's still pending.
+// Already-confirmed or already-cancelled reservations can't be cancelled
+// from the customer side.
+export async function cancelReservation(req, res, next) {
+  try {
+    const customer_id = req.user?.customer?.id;
+    const { id } = req.params;
+
+    const { rows } = await pool.query(
+      `UPDATE reservations
+       SET status = 'cancelled'
+       WHERE id = $1 AND customer_id = $2 AND status = 'pending'
+       RETURNING id, table_no, reservation_date, reservation_time, guests, notes, status, datetime_reserved`,
+      [id, customer_id]
+    );
+
+    if (!rows[0]) {
+      // Distinguish "not found / not yours" from "already decided".
+      const check = await pool.query(
+        `SELECT status FROM reservations WHERE id = $1 AND customer_id = $2`,
+        [id, customer_id]
+      );
+      if (!check.rows[0]) {
+        return res.status(404).json({ error: "Reservation not found." });
+      }
+      return res.status(409).json({
+        error: `This reservation can't be cancelled because it was already ${check.rows[0].status}.`,
+      });
+    }
+
+    res.json({ reservation: rows[0] });
   } catch (err) {
     next(err);
   }

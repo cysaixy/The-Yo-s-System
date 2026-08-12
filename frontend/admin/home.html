@@ -7,16 +7,57 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css">
 <style>
-  .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+  .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
   @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
-  .bar-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
-  .bar-row:last-child { border-bottom: none; }
-  .bar-row .name { flex: 1; font-size: 0.85rem; }
-  .bar-row .qty { font-family: 'Space Mono', monospace; font-size: 0.75rem; opacity: 0.6; width: 70px; text-align: right; }
-  .bar-row .amt { font-family: 'Space Mono', monospace; font-size: 0.85rem; width: 90px; text-align: right; color: var(--brass-dark); font-weight: 700; }
-  .stock-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 0.78rem; }
-  .stock-legend span { display: flex; align-items: center; gap: 6px; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+  .section-gap { margin-top: 20px; }
+  .panel-sub {
+    font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase;
+    letter-spacing: 0.05em; opacity: 0.5;
+  }
+  .panel-body-flush { padding: 0; }
+
+  /* ---------- Inventory overview ---------- */
+  .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .mini-card { background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; }
+  .mini-card .label {
+    font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+    letter-spacing: 0.05em; opacity: 0.55;
+  }
+  .mini-card .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.7rem; margin-top: 4px; }
+  .mini-card .value.danger { color: var(--danger); }
+  .mini-card .value.success { color: var(--success); }
+
+  .stock-legend {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px;
+    font-size: 0.78rem; border-top: 1px solid var(--line); padding-top: 14px;
+  }
+  .stock-legend span { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .legend-count { margin-left: auto; font-family: 'Space Mono', monospace; font-weight: 700; }
+
+  /* ---------- Tables ---------- */
+  .admin-table-wrap { overflow-x: auto; }
+  .admin-table td.r, .admin-table th.r { text-align: right; }
+  .admin-table td.rank { color: var(--brass); font-weight: 800; width: 40px; }
+  .admin-table td.qty { font-family: 'Space Mono', monospace; white-space: nowrap; }
+  .admin-table td.qty .mul { opacity: 0.45; }
+  .admin-table td.amt {
+    font-family: 'Space Mono', monospace; font-weight: 700; color: var(--brass-dark); white-space: nowrap;
+  }
+  .admin-table td.muted { opacity: 0.6; }
+  .admin-table td .sub-line { display: block; font-size: 0.72rem; opacity: 0.55; font-family: 'Space Mono', monospace; }
+
+  /* ---------- Stock alert sub-heading ---------- */
+  .alert-head {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Archivo', sans-serif; font-weight: 700; text-transform: uppercase;
+    font-size: 0.82rem; letter-spacing: 0.03em; margin-bottom: 14px;
+  }
+  .alert-head svg {
+    width: 18px; height: 18px; fill: none; stroke: var(--warning);
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  }
 </style>
 </head>
 <body>
@@ -25,114 +66,182 @@
 
 <script type="module">
   import { renderAdminShell } from "./admin-shell.js";
-  import { adminFetch, peso, formatDate, escapeHtml } from "./admin-api.js";
+  import { adminFetch, peso, escapeHtml } from "./admin-api.js";
 
   const session = renderAdminShell({ active: 'home', title: 'Home' });
   if (session) init();
 
-  async function init() {
-    const content = document.getElementById('adminContent');
-    content.innerHTML = `<div class="admin-loading">Loading…</div>`;
+  const STATUS_LABEL = {
+    in_stock: ['In Stock', 'pill-success'],
+    below_reorder: ['Below Reorder', 'pill-info'],
+    low_stock: ['Low Stock', 'pill-warning'],
+    out_of_stock: ['Out of Stock', 'pill-danger'],
+  };
+  const STATUS_REMARK = {
+    in_stock: 'Stock level is sufficient.',
+    below_reorder: 'Consider replenishing this item.',
+    low_stock: 'Low stock. Replenishment recommended.',
+    out_of_stock: 'Item requires immediate replenishment.',
+  };
 
-    let summary, stockItems, stockError = null;
+  const lockBox = (msg) => `<div class="panel-empty">🔒 ${escapeHtml(msg)}</div>`;
 
-    try {
-      const summaryRes = await adminFetch('/api/admin/dashboard');
-      summary = await summaryRes.json();
-      if (!summaryRes.ok) throw new Error(summary.error || 'Could not load summary.');
-    } catch (err) {
-      content.innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
-      return;
-    }
-
-    try {
-      const stockRes = await adminFetch('/api/admin/inventory');
-      const stockData = await stockRes.json();
-      if (!stockRes.ok) throw new Error(stockData.error || 'Could not load inventory.');
-      stockItems = stockData.items || [];
-    } catch (err) {
-      stockError = err.message;
-      stockItems = [];
-    }
-
-    let logEntries = [], logError = null;
-    try {
-      const logRes = await adminFetch('/api/admin/inventory/log');
-      const logData = await logRes.json();
-      if (!logRes.ok) throw new Error(logData.error || 'Could not load stock activity.');
-      const todayStr = new Date().toDateString();
-      logEntries = (logData.entries || []).filter(e => e.log_date && new Date(e.log_date).toDateString() === todayStr);
-    } catch (err) {
-      logError = err.message;
-    }
-
-    render(summary, stockItems, stockError, logEntries, logError);
+  async function getJSON(path) {
+    const res = await adminFetch(path);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Could not load data.');
+    return data;
   }
 
-  function render(summary, stockItems, stockError, logEntries, logError) {
+  function init() {
+    const today = new Date().toLocaleDateString('en-PH', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    });
     const content = document.getElementById('adminContent');
-
-    const counts = { in_stock: 0, below_reorder: 0, low_stock: 0, out_of_stock: 0 };
-    stockItems.forEach(i => { if (counts[i.stock_status] !== undefined) counts[i.stock_status]++; });
-
     content.innerHTML = `
       <div class="two-col">
         <div class="admin-panel">
-          <div class="admin-panel-head"><h3>Top Best Sellers as of Today</h3></div>
-          <div class="admin-panel-body">
-            ${summary.bestSellers.length
-              ? summary.bestSellers.map(b => `
-                  <div class="bar-row">
-                    <span class="name">${escapeHtml(b.name)}</span>
-                    <span class="qty">×${b.qty_sold}</span>
-                    <span class="amt">${peso(b.sales_amount)}</span>
-                  </div>`).join('')
-              : `<div class="panel-empty">No sales recorded yet.</div>`}
-          </div>
+          <div class="admin-panel-head"><h3>Top 10 Best Sellers as of Today</h3><span class="panel-sub">${today}</span></div>
+          <div class="admin-panel-body panel-body-flush" id="sec-best-sellers"><div class="admin-loading">Loading…</div></div>
         </div>
 
         <div class="admin-panel">
-          <div class="admin-panel-head"><h3>Inventory Overview</h3></div>
-          <div class="admin-panel-body">
-            ${stockError
-              ? `<div class="panel-empty">🔒 ${stockError}</div>`
-              : `
-                <div class="stat-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:0;">
-                  <div class="stat-card"><div class="label">Total Items</div><div class="value">${stockItems.length}</div></div>
-                  <div class="stat-card"><div class="label">Needs Attention</div><div class="value ${counts.low_stock + counts.out_of_stock > 0 ? 'danger' : 'success'}">${counts.low_stock + counts.out_of_stock}</div></div>
-                </div>
-                <div class="stock-legend">
-                  <span><i class="dot" style="background:var(--success);"></i>In stock: ${counts.in_stock}</span>
-                  <span><i class="dot" style="background:#2c5fb0;"></i>Below reorder: ${counts.below_reorder}</span>
-                  <span><i class="dot" style="background:var(--warning);"></i>Low stock: ${counts.low_stock}</span>
-                  <span><i class="dot" style="background:var(--danger);"></i>Out of stock: ${counts.out_of_stock}</span>
-                </div>
-              `}
-          </div>
+          <div class="admin-panel-head"><h3>Inventory Overview</h3><span class="panel-sub">${today}</span></div>
+          <div class="admin-panel-body" id="sec-inventory-overview"><div class="admin-loading">Loading…</div></div>
         </div>
       </div>
 
-      <div class="admin-panel" style="margin-top:20px;">
-        <div class="admin-panel-head"><h3>Today's Stock Activity</h3></div>
-        <div class="admin-panel-body" style="padding:0;">
-          ${logError
-            ? `<div class="panel-empty" style="padding:20px;">🔒 ${logError}</div>`
-            : logEntries.length
-              ? `<table class="admin-table">
-                  <thead><tr><th>Item</th><th>Type</th><th>Change</th><th>Staff</th><th>Time</th></tr></thead>
-                  <tbody>${logEntries.map(e => `
-                    <tr>
-                      <td>${escapeHtml(e.item_name)}</td>
-                      <td><span class="pill pill-neutral">${e.transaction_type}</span></td>
-                      <td style="color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'}; font-family:'Space Mono';">${e.quantity_change > 0 ? '+' : ''}${e.quantity_change}</td>
-                      <td>${escapeHtml(e.staff_name) || '—'}</td>
-                      <td style="font-size:0.78rem; opacity:0.7;">${formatDate(e.log_date, { timeStyle: 'short' })}</td>
-                    </tr>`).join('')}</tbody>
-                </table>`
-              : `<div class="panel-empty" style="padding:20px;">No stock activity yet today.</div>`}
-        </div>
+      <div class="admin-panel section-gap">
+        <div class="admin-panel-head"><h3>Inventory Usage as of Today</h3><span class="panel-sub">${today}</span></div>
+        <div class="admin-panel-body panel-body-flush" id="sec-inventory-usage"><div class="admin-loading">Loading…</div></div>
+      </div>
+
+      <div class="admin-panel section-gap">
+        <div class="admin-panel-head"><h3>Inventory Status</h3><span class="panel-sub">${today}</span></div>
+        <div class="admin-panel-body" id="sec-inventory-status"><div class="admin-loading">Loading…</div></div>
       </div>
     `;
+
+    // Each section loads independently so one slow/failed section never
+    // blanks the rest of the Home page.
+    loadBestSellers();
+    loadInventoryOverview();
+    loadInventoryUsage();
+    loadInventoryStatus();
+  }
+
+  /* ========== 1. Top 10 best sellers as of today ========== */
+  async function loadBestSellers() {
+    const el = document.getElementById('sec-best-sellers');
+    try {
+      const d = await getJSON('/api/admin/dashboard');
+      const items = d.bestSellers || [];
+      el.innerHTML = items.length ? `
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>#</th><th>Product</th><th class="r">Qty Sold</th><th class="r">Sales</th></tr></thead>
+            <tbody>
+              ${items.map((b, i) => `
+                <tr>
+                  <td class="rank">${i + 1}</td>
+                  <td>${escapeHtml(b.name)}</td>
+                  <td class="r qty"><span class="mul">×</span>${b.qty_sold}</td>
+                  <td class="r amt">${peso(b.sales_amount)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`
+      : `<div class="panel-empty">No sales recorded today.</div>`;
+    } catch (err) {
+      el.innerHTML = lockBox(err.message);
+    }
+  }
+
+  /* ========== 2. Inventory overview ========== */
+  async function loadInventoryOverview() {
+    const el = document.getElementById('sec-inventory-overview');
+    try {
+      const d = await getJSON('/api/admin/dashboard/inventory-overview');
+      const needsAttention = d.below_reorder + d.low_stock + d.out_of_stock;
+      el.innerHTML = `
+        <div class="mini-grid">
+          <div class="mini-card"><div class="label">Total Items</div><div class="value">${d.total_items}</div></div>
+          <div class="mini-card"><div class="label">Needs Attention</div><div class="value ${needsAttention > 0 ? 'danger' : 'success'}">${needsAttention}</div></div>
+        </div>
+        <div class="stock-legend">
+          <span><i class="dot" style="background:var(--success);"></i>In Stock<span class="legend-count">${d.in_stock}</span></span>
+          <span><i class="dot" style="background:#2c5fb0;"></i>Below Reorder<span class="legend-count">${d.below_reorder}</span></span>
+          <span><i class="dot" style="background:var(--warning);"></i>Low Stock<span class="legend-count">${d.low_stock}</span></span>
+          <span><i class="dot" style="background:var(--danger);"></i>Out of Stock<span class="legend-count">${d.out_of_stock}</span></span>
+        </div>`;
+    } catch (err) {
+      el.innerHTML = lockBox(err.message);
+    }
+  }
+
+  /* ========== 3. Inventory usage as of today ========== */
+  async function loadInventoryUsage() {
+    const el = document.getElementById('sec-inventory-usage');
+    try {
+      const d = await getJSON('/api/admin/dashboard/inventory-usage');
+      const items = d.items || [];
+      el.innerHTML = items.length ? `
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Description</th><th class="r">Opening Qty</th><th class="r">Closing Qty</th><th class="r">Used Qty</th><th class="r">Usage</th></tr></thead>
+            <tbody>
+              ${items.map((it) => `
+                <tr>
+                  <td>${escapeHtml(it.description)}<span class="sub-line">per ${escapeHtml(it.unit)}</span></td>
+                  <td class="r qty">${it.opening_qty}</td>
+                  <td class="r qty">${it.closing_qty}</td>
+                  <td class="r qty">${it.used_qty}</td>
+                  <td class="r amt">${it.used_qty} ${escapeHtml(it.unit)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`
+      : `<div class="panel-empty">No items available.</div>`;
+    } catch (err) {
+      el.innerHTML = lockBox(err.message);
+    }
+  }
+
+  /* ========== 4. Inventory status ========== */
+  async function loadInventoryStatus() {
+    const el = document.getElementById('sec-inventory-status');
+    try {
+      const d = await getJSON('/api/admin/dashboard/inventory-status');
+      const items = d.items || [];
+      el.innerHTML = `
+        <div class="alert-head">
+          <svg viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+          Stock Alert
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Description</th><th class="r">Quantity</th><th>Status</th><th class="r">Days of Stock</th><th>Remarks</th></tr></thead>
+            <tbody>
+              ${items.length
+                ? items.map((it) => {
+                    const [label, cls] = STATUS_LABEL[it.stock_status] || [it.stock_status, 'pill-neutral'];
+                    const remark = STATUS_REMARK[it.stock_status] || '';
+                    return `
+                      <tr>
+                        <td>${escapeHtml(it.name)}${it.sku ? `<span class="sub-line">${escapeHtml(it.sku)}</span>` : ''}</td>
+                        <td class="r qty">${it.quantity} <span class="muted">${escapeHtml(it.unit)}</span></td>
+                        <td><span class="pill ${cls}">${label}</span></td>
+                        <td class="r muted">${it.days_of_stock != null ? it.days_of_stock : 'N/A'}</td>
+                        <td class="muted">${escapeHtml(remark)}</td>
+                      </tr>`;
+                  }).join('')
+                : `<tr><td colspan="5"><div class="panel-empty">No items available.</div></td></tr>`}
+            </tbody>
+          </table>
+        </div>`;
+    } catch (err) {
+      el.innerHTML = lockBox(err.message);
+    }
   }
 </script>
 </body>

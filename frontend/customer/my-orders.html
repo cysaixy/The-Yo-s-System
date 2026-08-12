@@ -71,6 +71,55 @@
   .orders-empty p { opacity: 0.65; margin: 10px auto 22px; max-width: 340px; }
 
   .orders-loading { text-align: center; padding: 60px 20px; opacity: 0.6; font-family: 'Space Mono', monospace; font-size: 0.85rem; }
+
+  .view-details-btn {
+    margin-top: 12px; padding: 8px 14px; font-size: 0.72rem; border-radius: 4px;
+    font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  /* ---------- ORDER DETAILS MODAL ---------- */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+  .modal-card {
+    background: var(--component-bg); border: 1px solid var(--line);
+    width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+    border-radius: 8px; padding: 28px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: var(--ink);
+  }
+  @media(max-width:520px) { .modal-card { padding: 20px; } }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    margin-bottom: 6px;
+  }
+  .modal-head h3 { font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 1.15rem; }
+  .detail-meta { font-family: 'Space Mono', monospace; font-size: 0.72rem; opacity: 0.6; margin-top: 4px; }
+  .modal-close {
+    background: none; border: none; font-size: 1.4rem; color: var(--ink);
+    cursor: pointer; opacity: 0.55; line-height: 1; transition: opacity .2s ease;
+  }
+  .modal-close:hover { opacity: 1; }
+  .modal-card input, .modal-card select, .modal-card textarea {
+    width: 100%; margin-bottom: 0;
+  }
+  .modal-card .form-row { margin-bottom: 0; }
+  .modal-card .form-row > div { margin-bottom: 14px; }
+  .locked-note {
+    margin-top: 4px; padding: 10px 12px; border-radius: 4px;
+    background: rgba(224,82,82,0.08); border: 1px solid rgba(224,82,82,0.3);
+    color: #e05252; font-family: 'Space Mono', monospace; font-size: 0.72rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .modal-card input:disabled, .modal-card select:disabled, .modal-card textarea:disabled {
+    opacity: 0.55; cursor: not-allowed;
+  }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
+  .modal-actions .btn { padding: 11px 20px; border-radius: 6px; margin-bottom: 0; }
 </style>
 </head>
 <body>
@@ -102,7 +151,10 @@
         <p class="eyebrow">Order Tracking</p>
         <h2 class="display">My Orders</h2>
       </div>
-      <p>Track every order from the moment it lands in the kitchen to the moment it's ready.</p>
+      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+        <p style="margin:0;">Track every order from the moment it lands in the kitchen to the moment it's ready.</p>
+        <button type="button" class="btn btn-outline" style="padding:10px 16px; margin:0; font-size:0.78rem;" onclick="window.refreshOrders()">↻ Refresh</button>
+      </div>
     </div>
 
     <div id="ordersLoading" class="orders-loading">Loading your orders…</div>
@@ -114,6 +166,58 @@
     </div>
   </div>
 </section>
+
+<!-- Order Details Modal: view always, edit while still pending -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h3 id="detailOrderTitle">Order Details</h3>
+        <p class="detail-meta" id="detailOrderMeta"></p>
+      </div>
+      <button type="button" class="modal-close" onclick="closeOrderDetails()" aria-label="Close">✕</button>
+    </div>
+
+    <div id="detailItems" class="order-items" style="margin: 16px 0 22px; padding: 14px; border: 1px dashed var(--line); border-radius: 6px;"></div>
+
+    <div id="detailForm">
+      <div class="form-row">
+        <div><label for="detailName">Name</label><input id="detailName" type="text"></div>
+        <div><label for="detailPhone">Mobile Number</label><input id="detailPhone" type="text" inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '');"></div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="detailService">Service</label>
+          <select id="detailService">
+            <option value="dine_in">Dine-In (At Table)</option>
+            <option value="pickup">Advanced Takeout Pick-up</option>
+            <option value="online">Delivery</option>
+          </select>
+        </div>
+        <div><label for="detailTime">Table # / Time</label><input id="detailTime" type="text"></div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="detailPayment">Payment Method</label>
+          <select id="detailPayment">
+            <option value="gcash">GCash</option>
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="bank_transfer">Bank Transfer</option>
+          </select>
+        </div>
+        <div><label for="detailAddress">Delivery Address</label><input id="detailAddress" type="text"></div>
+      </div>
+      <div><label for="detailNotes">Special Prep Instructions</label><textarea id="detailNotes"></textarea></div>
+      <div id="detailLockedNote" class="locked-note" style="display:none;"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeOrderDetails()">Close</button>
+      <button type="button" class="btn" id="btnSaveDetails" onclick="saveOrderDetails()">Save Changes</button>
+    </div>
+  </div>
+</div>
 
 <script type="module">
   import { auth, onAuthStateChanged, API_BASE_URL } from "./firebase-init.js";
@@ -131,6 +235,128 @@
   function peso(n) {
     return '₱' + Number(n || 0).toLocaleString('en-PH', { maximumFractionDigits: 2 });
   }
+
+  // Escape user-supplied text before injecting it into HTML.
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  const TYPE_LABEL = { online: 'Delivery', pickup: 'Takeout', dine_in: 'Dine-In' };
+  const PAYMENT_LABEL = { gcash: 'GCash', cash: 'Cash', card: 'Card', bank_transfer: 'Bank Transfer' };
+
+  let currentUser = null;
+  let ordersById = new Map();
+  let currentDetailOrder = null;
+
+  // ----- ORDER DETAILS MODAL (view always, edit while pending) -----
+  function setVal(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = (value == null ? '' : value);
+  }
+
+  function setSelect(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = value;
+    // If the stored value isn't one of our options, fall back to the first.
+    if (el.value !== value) el.selectedIndex = 0;
+  }
+
+  window.openOrderDetails = function(id) {
+    const order = ordersById.get(id);
+    if (!order) return;
+    currentDetailOrder = order;
+    const editable = order.status === 'pending';
+
+    document.getElementById('detailOrderTitle').textContent = `Order #${order.id} Details`;
+    document.getElementById('detailOrderMeta').textContent =
+      `Status: ${(order.status || '').toUpperCase()} · ${esc(TYPE_LABEL[order.order_type] || order.order_type)} · Placed ${order.datetime_ordered ? new Date(order.datetime_ordered).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : ''}`;
+
+    // Line items + add-ons (read-only, always).
+    const items = Array.isArray(order.items) ? order.items.filter(it => it && it.menu_id !== null) : [];
+    document.getElementById('detailItems').innerHTML = items.length
+      ? items.map(it => {
+          const addons = (it.add_ons || []).filter(a => a && a.quantity > 0)
+            .map(a => `<span style="display:block; font-size:0.78rem; color:var(--brass); opacity:0.85; margin-top:1px;">+ ${a.quantity}× ${esc(a.name)} <span style="opacity:.7;">(${peso(a.subtotal)})</span></span>`)
+            .join('');
+          return `<div class="order-item-row">
+            <span><span class="qty">×${it.quantity}</span>${esc(it.item_name) || 'Item #' + it.menu_id}${it.notes ? ` <span style="opacity:.6; font-size:0.8em;">(${esc(it.notes)})</span>` : ''}${addons}</span>
+            <span>${peso(it.subtotal)}</span>
+          </div>`;
+        }).join('')
+      : '<div class="order-item-row" style="opacity:.5;">No item details available.</div>';
+
+    // Fill in the details the customer typed at checkout.
+    setVal('detailName', order.customer_name);
+    setVal('detailPhone', order.customer_phone);
+    setVal('detailTime', order.table_time);
+    setVal('detailAddress', order.delivery_address);
+    setVal('detailNotes', order.notes);
+    setSelect('detailService', order.order_type);
+    setSelect('detailPayment', order.payment_method);
+
+    // Lock the form once the restaurant confirms the order.
+    ['detailName', 'detailPhone', 'detailService', 'detailTime', 'detailAddress', 'detailPayment', 'detailNotes'].forEach(sel => {
+      document.getElementById(sel).disabled = !editable;
+    });
+    document.getElementById('btnSaveDetails').style.display = editable ? '' : 'none';
+    const lockedNote = document.getElementById('detailLockedNote');
+    if (!editable) {
+      lockedNote.style.display = 'block';
+      lockedNote.textContent = order.status === 'cancelled'
+        ? 'This order was cancelled and can no longer be edited.'
+        : 'This order has already been confirmed and is locked. You can only view these details.';
+    } else {
+      lockedNote.style.display = 'none';
+    }
+
+    document.getElementById('orderModal').classList.add('active');
+  };
+
+  window.closeOrderDetails = function() {
+    document.getElementById('orderModal').classList.remove('active');
+    currentDetailOrder = null;
+  };
+
+  window.saveOrderDetails = async function() {
+    const order = currentDetailOrder;
+    if (!order || order.status !== 'pending') return;
+    if (!currentUser) return;
+
+    const payload = {
+      customer_name: document.getElementById('detailName').value.trim(),
+      customer_phone: document.getElementById('detailPhone').value.trim(),
+      order_type: document.getElementById('detailService').value,
+      table_time: document.getElementById('detailTime').value.trim(),
+      delivery_address: document.getElementById('detailAddress').value.trim(),
+      payment_method: document.getElementById('detailPayment').value,
+      notes: document.getElementById('detailNotes').value.trim(),
+    };
+
+    try {
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/customer/orders/${order.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Could not save your changes.');
+        return;
+      }
+      alert('Your details were updated.');
+      window.closeOrderDetails();
+      window.refreshOrders();
+    } catch (err) {
+      alert('Network error while saving. Please try again.');
+    }
+  };
 
   function renderTracker(status) {
     const normalized = STEP_ALIASES[status] || status;
@@ -163,16 +389,26 @@
         <div>
           <div class="order-id">Order #${order.id}</div>
           <div class="order-meta">${date} · ${(order.order_type || '').replace('_', ' ')}</div>
+          ${order.delivery_address ? `<div class="order-meta">Deliver to: ${order.delivery_address}</div>` : ''}
         </div>
         <div class="order-total">
           <span class="amount">${peso(order.total_amount)}</span>
           <span class="label">Total</span>
+          <button type="button" class="btn btn-outline view-details-btn" onclick="openOrderDetails(${order.id})">View Details</button>
         </div>
       </div>
       ${renderTracker(order.status)}
       <div class="order-items">
         ${items.length
-          ? items.map(it => `<div class="order-item-row"><span><span class="qty">×${it.quantity}</span>Item #${it.menu_id}${it.notes ? ` <span style="opacity:.6; font-size:0.8em;">(${it.notes})</span>` : ''}</span><span>${peso(it.subtotal)}</span></div>`).join('')
+          ? items.map(it => {
+              const addons = (it.add_ons || []).filter(a => a && a.quantity > 0)
+                .map(a => `<span style="display:block; font-size:0.78rem; color:var(--brass); opacity:0.85; margin-top:1px;">+ ${a.quantity}× ${a.name} <span style="opacity:.7;">(${peso(a.subtotal)})</span></span>`)
+                .join('');
+              return `<div class="order-item-row">
+                <span><span class="qty">×${it.quantity}</span>${esc(it.item_name) || 'Item #' + it.menu_id}${it.notes ? ` <span style="opacity:.6; font-size:0.8em;">(${esc(it.notes)})</span>` : ''}${addons}</span>
+                <span>${peso(it.subtotal)}</span>
+              </div>`;
+            }).join('')
           : '<div class="order-item-row" style="opacity:.5;">No item details available.</div>'}
       </div>
     </div>`;
@@ -200,6 +436,7 @@
         empty.style.display = 'block';
         return;
       }
+      ordersById = new Map(orders.map(o => [o.id, o]));
       list.innerHTML = orders.map(renderOrder).join('');
     } catch (err) {
       loading.style.display = 'none';
@@ -207,12 +444,25 @@
     }
   }
 
+  let lastIdToken = null;
+
+  window.refreshOrders = async function() {
+    if (!lastIdToken) return;
+    const loading = document.getElementById('ordersLoading');
+    const list = document.getElementById('ordersList');
+    if (loading) loading.style.display = 'block';
+    if (list) list.innerHTML = '';
+    await loadOrders(lastIdToken);
+  };
+
   onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
     if (!user) {
       window.location.href = 'account.html?redirect=my-orders.html';
       return;
     }
     const idToken = await user.getIdToken();
+    lastIdToken = idToken;
     loadOrders(idToken);
   });
 </script>

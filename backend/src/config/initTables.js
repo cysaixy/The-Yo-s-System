@@ -86,6 +86,24 @@ export async function initTables() {
     await pool.query(
       `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS cost NUMERIC(10,2) NOT NULL DEFAULT 0`
     );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee NUMERIC(10,2) NOT NULL DEFAULT 0`
+    );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT`
+    );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name TEXT`
+    );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone TEXT`
+    );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS table_time TEXT`
+    );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)`
+    );
 
     // 8. order_item_add_ons — snapshots of the add-ons sold on each order
     //    line. name/price/cost are stored at sale time so historical

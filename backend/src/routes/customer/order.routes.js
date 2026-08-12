@@ -6,6 +6,7 @@ import {
   createOrder,
   getOrder,
   getCustomerOrders,
+  updateOrder,
   createPayment,
   getPayment,
 } from "../../controllers/customer/order.controller.js";
@@ -20,6 +21,9 @@ router.get("/", globalLimiter, verifyFirebaseToken, getCustomerOrders);
 
 // Fetch a single order (only if it belongs to the logged-in customer)
 router.get("/:id", globalLimiter, verifyFirebaseToken, getOrder);
+
+// Edit checkout details while the order is still pending
+router.patch("/:id", globalLimiter, verifyFirebaseToken, updateOrder);
 
 router.post("/:id/payment", globalLimiter, verifyFirebaseToken, createPayment);
 router.get("/:id/payment", globalLimiter, verifyFirebaseToken, getPayment);

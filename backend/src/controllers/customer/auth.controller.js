@@ -6,6 +6,32 @@ import { auth } from "../../config/firebase.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Returns the currently authenticated customer profile. Called on page load
+// so the frontend can prefill forms and hide/show account-gated sections.
+export async function getMe(req, res) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized: User context missing." });
+    }
+
+    if (req.user.customer) {
+      const { rows } = await pool.query(
+        `SELECT id, name, email, phone, address, firebase_uid
+         FROM customers WHERE id = $1`,
+        [req.user.customer.id]
+      );
+      if (rows[0]) {
+        return res.json({ customer: rows[0] });
+      }
+    }
+
+    return res.json({ customer: null });
+  } catch (error) {
+    console.error("getMe error:", error);
+    return res.status(500).json({ error: "Couldn't load profile." });
+  }
+}
+
 export async function syncCustomerProfile(req, res) {
   try {
     if (!req.user) {

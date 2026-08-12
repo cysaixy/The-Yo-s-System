@@ -192,6 +192,44 @@
 
   .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
+  /* ---------- QUANTITY STEPPER & ADD-ON PICKER ---------- */
+  .stepper {
+    display: inline-flex; align-items: center; gap: 0;
+    border: 1px solid var(--line, #333); border-radius: 6px; overflow: hidden;
+  }
+  .stepper button {
+    width: 34px; height: 34px; background: none; border: none; cursor: pointer;
+    color: var(--ink, #fff); font-family: 'Space Mono', monospace; font-size: 1.05rem; line-height: 1;
+  }
+  .stepper button:hover:not(:disabled) { background: rgba(163,132,74,0.15); color: var(--brass, #d4af37); }
+  .stepper button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .stepper span {
+    min-width: 38px; text-align: center; font-family: 'Space Mono', monospace;
+    font-size: 0.95rem; font-weight: 700;
+  }
+  .modal-price-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px; font-family: 'Space Mono', monospace; font-size: 1.05rem; font-weight: 700;
+    color: var(--brass, #d4af37);
+  }
+  .addon-section { margin: 4px 0; }
+  .addon-section-label {
+    font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    color: var(--brass, #d4af37); display: block; margin-bottom: 4px;
+  }
+  .addon-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 8px 0; border-bottom: 1px dashed var(--line, #333);
+  }
+  .addon-row:last-child { border-bottom: none; }
+  .addon-name { font-size: 0.85rem; }
+  .addon-name small { display: block; opacity: 0.5; font-size: 0.72rem; line-height: 1.35; }
+  .addon-right { display: flex; align-items: center; gap: 12px; }
+  .addon-price { font-family: 'Space Mono', monospace; font-size: 0.78rem; color: var(--brass, #d4af37); font-weight: 700; white-space: nowrap; }
+  .addon-empty { font-size: 0.78rem; opacity: 0.45; font-style: italic; }
+  .addon-row .stepper button { width: 28px; height: 28px; }
+  .addon-row .stepper span { min-width: 30px; font-size: 0.85rem; }
+
   /* ---------- FULL-SCREEN CHECKOUT FLOW ---------- */
   .checkout-overlay {
     position: fixed; inset: 0; background: var(--bone); z-index: 2000;
@@ -402,8 +440,21 @@
 <div class="modal-overlay" id="customizationModal">
   <div class="modal-card">
     <h3 id="modalItemName">Item Name</h3>
-    <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 14px;">Specify changes (e.g., "no onions", "extra spicy", "less ice") or leave blank for default instructions.</p>
-    <div>
+    <div class="modal-price-row">
+      <span id="modalItemPrice">₱0</span>
+      <div class="stepper">
+        <button type="button" onclick="changeModalQty(-1)" aria-label="Decrease quantity">−</button>
+        <span id="modalQtyDisplay">1</span>
+        <button type="button" onclick="changeModalQty(1)" aria-label="Increase quantity">+</button>
+      </div>
+    </div>
+
+    <div class="addon-section">
+      <span class="addon-section-label">Add-Ons</span>
+      <div id="modalAddonList"></div>
+    </div>
+
+    <div style="margin-top:6px;">
       <label for="modalItemComments" style="font-family:'Space Mono'; font-size:0.7rem; font-weight:700;">Ingredient Adjustments:</label>
       <input type="text" id="modalItemComments" placeholder="Add or remove ingredients..." style="font-size:0.9rem; margin-bottom:16px;">
     </div>
@@ -469,11 +520,35 @@
       signedInBanner.style.display = 'flex';
       signedOutBanner.style.display = 'none';
       document.getElementById('signedInEmail').textContent = user.email || user.displayName || 'you';
+      prefillUserProfile(user);
     } else {
       signedInBanner.style.display = 'none';
       signedOutBanner.style.display = 'flex';
     }
   });
+
+  // Fills the checkout name/phone fields from the customer profile stored in
+  // the database (GET /api/customer/auth/me). Fields the user already typed
+  // in are never overwritten. The saved address is stashed so the delivery
+  // field can be prefilled too.
+  async function prefillUserProfile(user) {
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/customer/auth/me`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.customer) return;
+      const c = data.customer;
+      const nameEl = document.getElementById('name');
+      const phoneEl = document.getElementById('phone');
+      if (nameEl && !nameEl.value.trim()) nameEl.value = c.name || '';
+      if (phoneEl && !phoneEl.value.trim()) phoneEl.value = c.phone || '';
+      if (c.address) sessionStorage.setItem('yo-customer-address', c.address);
+    } catch (err) {
+      // profile prefill is best-effort; ignore failures
+    }
+  }
 
   window.handleSignOutFromOrder = async function () {
     await signOut(auth);
@@ -488,7 +563,9 @@
   let cart = [];
   let currentCartTotal = 0;
   let currentCategory = 'all';
-  let activeSelectedItemId = null;
+
+  // Modal state while customizing an item before adding it to the tray.
+  let modalState = { itemId: null, quantity: 1, addons: {}, notes: '', editingId: null };
 
   async function loadMenuFromServer() {
     const catalogContainer = document.getElementById('menuCatalog');
@@ -499,7 +576,8 @@
 
       categoryList = data.categories || [];
 
-      // Only show items marked available - matches menu_items.status.
+      // Only show items marked available - matches menu_items.status. The
+      // API returns each item's eligible add-ons alongside it.
       menuDatabase = (data.items || [])
         .filter(item => (item.status || 'available').toLowerCase() === 'available')
         .map(item => ({
@@ -508,7 +586,14 @@
           name: item.name,
           price: Number(item.price),
           image_url: item.image_url,
-          description: item.description
+          description: item.description,
+          add_ons: (item.add_ons || []).map(a => ({
+            addon_id: a.id,
+            name: a.name,
+            description: a.description,
+            price: Number(a.price),
+            category: a.category
+          }))
         }));
 
       buildCategoryTabs();
@@ -570,35 +655,135 @@
     });
   }
 
-  window.openCustomizationModal = function(id) {
-    activeSelectedItemId = id;
+  window.openCustomizationModal = function(id, uniqueCartId = null) {
     const item = menuDatabase.find(i => i.id === id);
     if (!item) return;
+
+    if (uniqueCartId) {
+      // Editing an existing tray line - restore its qty, add-ons and note.
+      const entry = cart.find(e => e.uniqueCartId === uniqueCartId);
+      if (!entry) return;
+      modalState = {
+        itemId: id,
+        quantity: entry.quantity,
+        addons: { ...(entry.add_ons || []).reduce((map, a) => { map[a.addon_id] = a.quantity; return map; }, {}) },
+        notes: entry.notes || '',
+        editingId: uniqueCartId
+      };
+    } else {
+      modalState = { itemId: id, quantity: 1, addons: {}, notes: '', editingId: null };
+    }
+
     document.getElementById('modalItemName').innerText = item.name;
-    document.getElementById('modalItemComments').value = '';
+    document.getElementById('modalItemPrice').innerText = '₱' + item.price;
+    document.getElementById('modalItemComments').value = modalState.notes;
+    renderModalAddons();
+    updateModalQtyDisplay();
     document.getElementById('customizationModal').classList.add('active');
+  };
+
+  function renderModalAddons() {
+    const item = menuDatabase.find(i => i.id === modalState.itemId);
+    const container = document.getElementById('modalAddonList');
+    if (!item || !container) return;
+    const addons = item.add_ons || [];
+    if (addons.length === 0) {
+      container.innerHTML = `<span class="addon-empty">No add-ons for this item.</span>`;
+      return;
+    }
+    container.innerHTML = addons.map(a => `
+      <div class="addon-row">
+        <div class="addon-name">${a.name}<small>${a.description || ''}</small></div>
+        <div class="addon-right">
+          <span class="addon-price">₱${a.price}</span>
+          <div class="stepper">
+            <button type="button" onclick="changeAddonQty(${a.addon_id}, -1)" ${(modalState.addons[a.addon_id] || 0) <= 0 ? 'disabled' : ''} aria-label="Decrease add-on quantity">−</button>
+            <span id="addonQty_${a.addon_id}">${modalState.addons[a.addon_id] || 0}</span>
+            <button type="button" onclick="changeAddonQty(${a.addon_id}, 1)" aria-label="Increase add-on quantity">+</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.changeModalQty = function(delta) {
+    const next = modalState.quantity + delta;
+    if (next < 1 || next > 99) return;
+    modalState.quantity = next;
+    updateModalQtyDisplay();
+  };
+
+  function updateModalQtyDisplay() {
+    document.getElementById('modalQtyDisplay').textContent = modalState.quantity;
+  }
+
+  window.changeAddonQty = function(addonId, delta) {
+    const next = (modalState.addons[addonId] || 0) + delta;
+    if (next < 0 || next > 99) return;
+    modalState.addons[addonId] = next;
+    renderModalAddons();
   };
 
   window.closeModal = function() {
     document.getElementById('customizationModal').classList.remove('active');
-    activeSelectedItemId = null;
+    modalState = { itemId: null, quantity: 1, addons: {}, notes: '', editingId: null };
   };
 
+  // Returns a stable key for merging identical tray lines together (same
+  // item, same add-ons, same note).
+  function cartLineKey(entry) {
+    const addonKey = (entry.add_ons || [])
+      .filter(a => a.quantity > 0)
+      .slice()
+      .sort((a, b) => a.addon_id - b.addon_id)
+      .map(a => `${a.addon_id}:${a.quantity}`)
+      .join('|');
+    return `${entry.id}|${addonKey}|${entry.notes || ''}`;
+  }
+
   window.confirmAddToCart = function() {
-    if (!activeSelectedItemId) return;
-    const item = menuDatabase.find(i => i.id === activeSelectedItemId);
+    if (!modalState.itemId) return;
+    const item = menuDatabase.find(i => i.id === modalState.itemId);
     if (!item) return;
 
-    const notes = document.getElementById('modalItemComments').value.trim();
-    const cartEntry = {
-      uniqueCartId: Date.now() + Math.random(),
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      notes: notes
-    };
+    const addons = (item.add_ons || [])
+      .filter(a => (modalState.addons[a.addon_id] || 0) > 0)
+      .map(a => ({
+        addon_id: a.addon_id,
+        name: a.name,
+        quantity: modalState.addons[a.addon_id],
+        price: a.price
+      }));
 
-    cart.push(cartEntry);
+    const notes = document.getElementById('modalItemComments').value.trim();
+
+    if (modalState.editingId) {
+      const entry = cart.find(e => e.uniqueCartId === modalState.editingId);
+      if (entry) {
+        entry.quantity = modalState.quantity;
+        entry.notes = notes;
+        entry.add_ons = addons;
+      }
+    } else {
+      const candidate = {
+        uniqueCartId: Date.now() + Math.random(),
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: modalState.quantity,
+        notes: notes,
+        add_ons: addons
+      };
+      // Identical lines merge into a single tray entry with combined qty.
+      const key = cartLineKey(candidate);
+      const existing = cart.find(e => cartLineKey(e) === key);
+      if (existing) {
+        existing.quantity += candidate.quantity;
+      } else {
+        cart.push(candidate);
+      }
+    }
+
     window.closeModal();
     updateCartDisplay();
   };
@@ -608,22 +793,37 @@
     updateCartDisplay();
   };
 
+  function lineSubtotal(entry) {
+    const base = Number(entry.price) * entry.quantity;
+    const addonTotal = (entry.add_ons || []).reduce((sum, a) => sum + a.price * a.quantity, 0);
+    return base + addonTotal;
+  }
+
   function buildCartRowsHTML() {
     if (cart.length === 0) {
       return '<div class="cart-empty">Your shopping cart is currently empty.</div>';
     }
-    return cart.map(entry => `
+    return cart.map(entry => {
+      const modsHTML = entry.notes ? `<span class="cart-item-mods">Note: ${entry.notes}</span>` : '';
+      const addonsHTML = (entry.add_ons || []).filter(a => a.quantity > 0).map(a =>
+        `<span class="cart-item-mods" style="opacity:0.8;">+ ${a.quantity}× ${a.name}</span>`
+      ).join('');
+      return `
       <div class="cart-row">
-        <div>
+        <div style="max-width:75%; cursor:pointer;" onclick="openCustomizationModal(${entry.id}, ${entry.uniqueCartId})" title="Tap to edit">
           <strong>${entry.name}</strong>
-          ${entry.notes ? `<span class="cart-item-mods">Note: ${entry.notes}</span>` : ''}
+          <span style="color:var(--brass); margin-left:6px; font-family:'Space Mono'; font-weight:700;">x${entry.quantity}</span>
+          ${modsHTML}
+          ${addonsHTML}
+          <span style="display:block; font-size:0.7rem; color:var(--ink); opacity:0.4; margin-top:2px;">✏️ Tap to edit details</span>
         </div>
-        <div>
-          <span>₱${entry.price}</span>
-          <button type="button" class="remove-item" onclick="removeCartRow(${entry.uniqueCartId})">✕</button>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-family:'Space Mono';">₱${lineSubtotal(entry)}</span>
+          <button type="button" class="remove-item" onclick="removeCartRow(${entry.uniqueCartId})" title="Remove item">✕</button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   function updateCartDisplay() {
@@ -633,7 +833,7 @@
     if (miniContainer) miniContainer.innerHTML = rowsHTML;
     if (checkoutContainer) checkoutContainer.innerHTML = rowsHTML;
 
-    currentCartTotal = cart.reduce((sum, entry) => sum + entry.price, 0);
+    currentCartTotal = cart.reduce((sum, entry) => sum + lineSubtotal(entry), 0);
     const totalText = `₱${currentCartTotal}`;
     ['runningTotalDisplay', 'checkoutTotalDisplay', 'paymentTotalDisplay'].forEach(id => {
       const el = document.getElementById(id);
@@ -708,6 +908,13 @@
         alert("Please fill in your name, mobile number, and table/time before continuing.");
         return;
       }
+      if (document.getElementById('orderType').value === 'Delivery') {
+        const addrEl = document.getElementById('deliveryAddress');
+        if (!addrEl || !addrEl.value.trim()) {
+          alert("Please enter your delivery address before continuing.");
+          return;
+        }
+      }
       checkoutStep = 3;
       updateCheckoutStep();
       return;
@@ -749,15 +956,25 @@
       return;
     }
 
-    // Backend expects `cart` as [{ menu_id, quantity, notes }]. Each cart
-    // entry already represents exactly one unit with its own note, so we
-    // send one line per entry (quantity 1) instead of merging same-item
-    // entries together — merging would lose distinct per-unit notes.
+    // Backend expects `cart` as [{ menu_id, quantity, notes, add_ons }].
+    // Each tray entry already carries its own quantity and add-ons, so we
+    // send them through as-is.
     const cartLines = cart.map(entry => ({
-      menu_id: isNaN(Number(entry.id)) ? entry.id : Number(entry.id),
-      quantity: 1,
-      notes: entry.notes || null
+      menu_id: Number(entry.id),
+      quantity: entry.quantity,
+      notes: entry.notes || null,
+      add_ons: (entry.add_ons || []).filter(a => a.quantity > 0).map(a => ({
+        addon_id: a.addon_id,
+        quantity: a.quantity
+      }))
     }));
+
+    // Prefill the delivery address from the saved profile if the field was
+    // created after checkout opened (Delivery selected on step 2).
+    const addrEl = document.getElementById('deliveryAddress');
+    if (addrEl && !addrEl.value.trim()) {
+      addrEl.value = sessionStorage.getItem('yo-customer-address') || '';
+    }
 
     const orderPayload = {
       order_type,
@@ -765,7 +982,12 @@
       serviceType: serviceType,       // kept for any display/logging use
       tableOrTime: timeInput,
       paymentChoice: paymentChoice,
-      notes: notesInput || null
+      notes: notesInput || null,
+      delivery_address: (addrEl && addrEl.value.trim()) || null,
+      customer_name: document.getElementById('name').value.trim() || null,
+      customer_phone: document.getElementById('phone').value.trim() || null,
+      table_time: timeInput || null,
+      payment_method: (paymentChoice || '').toLowerCase() || null
     };
 
     try {
@@ -795,6 +1017,8 @@
         document.getElementById('phone').value = '';
         document.getElementById('timeInput').value = '';
         document.getElementById('notes').value = '';
+        const addrResetEl = document.getElementById('deliveryAddress');
+        if (addrResetEl) addrResetEl.value = '';
         document.getElementById('orderType').selectedIndex = 0;
         document.querySelectorAll('input[name="paymentChoice"]').forEach(r => r.checked = false);
         updateCartDisplay();
