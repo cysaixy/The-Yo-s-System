@@ -6,6 +6,70 @@
 <title>Reservations — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css">
+<style>
+  .res-counts { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .res-count {
+    font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase;
+    letter-spacing: 0.05em; padding: 7px 12px; border: 1px solid var(--line);
+    border-radius: 20px; opacity: 0.85;
+  }
+  .res-count b { font-size: 0.82rem; margin-left: 4px; }
+  .res-count.pending { border-color: rgba(184,134,11,0.35); color: var(--warning); }
+  .res-count.today { border-color: rgba(163,132,74,0.4); color: var(--brass-dark); }
+  .res-count.overdue { border-color: rgba(192,57,43,0.35); color: var(--danger); }
+
+  /* Urgency: overdue pending/confirmed rows get red, today's get amber. */
+  tr.urgency-overdue td { background: rgba(192,57,43,0.06); }
+  tr.urgency-overdue:hover td { background: rgba(192,57,43,0.1); }
+  tr.urgency-today td { background: rgba(184,134,11,0.07); }
+  tr.urgency-today:hover td { background: rgba(184,134,11,0.11); }
+  .urgency-tag {
+    font-family: 'Space Mono', monospace; font-size: 0.6rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em; margin-left: 6px; padding: 1px 6px;
+    border-radius: 10px;
+  }
+  .urgency-tag.today { background: rgba(163,132,74,0.2); color: var(--brass-dark); }
+  .urgency-tag.overdue { background: rgba(192,57,43,0.15); color: var(--danger); }
+
+  /* Notes truncation: keep the row a fixed height, hover for full text. */
+  .notes-cell {
+    max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-size: 0.8rem; opacity: 0.75; cursor: help;
+  }
+  .notes-cell.empty { opacity: 0.4; font-style: italic; }
+
+  .clickable { cursor: pointer; }
+  .clickable:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+  .contact-row { display: flex; flex-direction: column; gap: 2px; }
+  .contact-row .sub { font-size: 0.72rem; opacity: 0.6; }
+
+  .detail-list { display: grid; grid-template-columns: 130px 1fr; gap: 8px 14px; font-size: 0.85rem; }
+  .detail-list dt { font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase; opacity: 0.55; align-self: center; }
+  .detail-list dd { margin: 0; }
+  .detail-list a { color: var(--brass-dark); }
+
+  .confirm-capacity { margin-top: 8px; font-size: 0.78rem; opacity: 0.75; }
+  .confirm-capacity.bad { color: var(--danger); opacity: 1; font-weight: 600; }
+  .modal-error {
+    margin-top: 12px; padding: 10px 12px; border-radius: 5px; font-size: 0.8rem;
+    background: rgba(192,57,43,0.1); color: var(--danger); display: none;
+  }
+  .modal-error.show { display: block; }
+
+  .pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .pager-info { font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; opacity: 0.6; }
+
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; z-index: 200;
+    background: var(--ink); color: var(--bone); padding: 12px 18px; border-radius: 6px;
+    font-size: 0.84rem; font-family: 'Inter', sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    opacity: 0; transform: translateY(8px); pointer-events: none; transition: all .2s ease;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-left: 3px solid var(--success); }
+  .toast.error { border-left: 3px solid var(--danger); }
+</style>
 </head>
 <body>
 
@@ -19,13 +83,20 @@
   if (session) init();
 
   let reservations = [];
+  let tables = [];
+  const PAGE_SIZE = 8;
+  let page = 1;
 
   const STATUS_PILL = { pending: 'pill-warning', confirmed: 'pill-brass', cancelled: 'pill-danger', completed: 'pill-success' };
+  const TERMINAL = ['cancelled', 'completed'];
 
   function init() {
     const content = document.getElementById('adminContent');
     content.innerHTML = `
       <div class="filter-bar">
+        <div><label>Search</label>
+          <input type="text" id="filterQ" placeholder="Name, email, table, notes…" style="min-width:220px;">
+        </div>
         <div><label>Status</label>
           <select id="filterStatus">
             <option value="all">All</option>
@@ -35,58 +106,141 @@
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
+        <div><label>From</label><input type="date" id="filterFrom"></div>
+        <div><label>To</label><input type="date" id="filterTo"></div>
       </div>
+      <div class="res-counts" id="resCounts"></div>
       <div class="admin-panel">
         <div class="admin-panel-body" style="padding:0;" id="resWrap"><div class="admin-loading">Loading reservations…</div></div>
       </div>
     `;
-    document.getElementById('filterStatus').addEventListener('change', render);
+    ['filterQ', 'filterStatus', 'filterFrom', 'filterTo'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => { page = 1; render(); });
+    });
     load();
   }
 
   async function load() {
     try {
-      const res = await adminFetch('/api/admin/reservations');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not load reservations.');
-      reservations = data.reservations || [];
+      const [resData, tableData] = await Promise.all([
+        adminFetch('/api/admin/reservations'),
+        adminFetch('/api/admin/reservations/tables'),
+      ]);
+      const resJson = await resData.json();
+      const tableJson = await tableData.json();
+      if (!resData.ok) throw new Error(resJson.error || 'Could not load reservations.');
+      if (!tableData.ok) throw new Error(tableJson.error || 'Could not load tables.');
+      reservations = resJson.reservations || [];
+      tables = tableJson.tables || [];
       render();
     } catch (err) {
-      document.getElementById('resWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+      document.getElementById('resWrap').innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
     }
   }
 
+  function filteredRows() {
+    const q = (document.getElementById('filterQ').value || '').toLowerCase().trim();
+    const status = document.getElementById('filterStatus').value;
+    const from = document.getElementById('filterFrom').value;
+    const to = document.getElementById('filterTo').value;
+    return reservations.filter(r => {
+      if (status !== 'all' && r.status !== status) return false;
+      const d = r.reservation_date || '';
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      if (q) {
+        const hay = [r.customer_name, r.customer_email, r.customer_phone, r.table_no, r.notes]
+          .map(x => (x || '').toLowerCase()).join(' ');
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
   function render() {
-    const filter = document.getElementById('filterStatus').value;
-    const rows = reservations.filter(r => filter === 'all' || r.status === filter);
+    const rows = filteredRows();
     const wrap = document.getElementById('resWrap');
+
+    const pending = reservations.filter(r => r.status === 'pending').length;
+    const today = startOfDay(new Date());
+    const open = rows.filter(r => !TERMINAL.includes(r.status));
+    const todayCount = open.filter(r => dayDiff(r.reservation_date, today) === 0).length;
+    const overdueCount = open.filter(r => dayDiff(r.reservation_date, today) < 0).length;
+    document.getElementById('resCounts').innerHTML = `
+      <span class="res-count pending">Pending <b>${pending}</b></span>
+      <span class="res-count today">Today <b>${todayCount}</b></span>
+      <span class="res-count overdue">Overdue <b>${overdueCount}</b></span>
+    `;
 
     if (rows.length === 0) {
       wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No reservations match this filter.</div>`;
       return;
     }
 
+    const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if (page > pageCount) page = pageCount;
+    const slice = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
     wrap.innerHTML = `
       <table class="admin-table">
-        <thead><tr><th>Customer</th><th>Table</th><th>Date</th><th>Time</th><th>Guests</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead>
+        <thead><tr>
+          <th>Customer</th><th>Table</th><th>Date</th><th>Time</th><th>Guests</th>
+          <th>Requested</th><th>Status</th><th>Notes</th><th>Actions</th>
+        </tr></thead>
         <tbody>
-          ${rows.map(r => `
-            <tr>
-              <td>${escapeHtml(r.customer_name)}</td>
-              <td>${r.table_no || '—'}</td>
-              <td>${r.reservation_date ? new Date(r.reservation_date).toLocaleDateString('en-PH') : '—'}</td>
-              <td>${r.reservation_time || '—'}</td>
-              <td>${r.guests}</td>
-              <td><span class="pill ${STATUS_PILL[r.status] || 'pill-neutral'}">${r.status}</span></td>
-              <td style="max-width:200px; font-size:0.8rem; opacity:0.75;">${escapeHtml(r.notes || '—')}</td>
-              <td><div class="row-actions">${actionButtons(r)}</div></td>
-            </tr>`).join('')}
+          ${slice.map(r => rowHtml(r, today)).join('')}
         </tbody>
       </table>
+      <div class="pager">
+        <span class="pager-info">${rows.length} result${rows.length === 1 ? '' : 's'} · Page ${page} of ${pageCount}</span>
+        <div class="row-actions">
+          <button type="button" ${page <= 1 ? 'disabled' : ''} data-nav="prev">‹ Prev</button>
+          <button type="button" ${page >= pageCount ? 'disabled' : ''} data-nav="next">Next ›</button>
+        </div>
+      </div>
     `;
-    wrap.querySelectorAll('button[data-action]').forEach(btn => {
-      btn.addEventListener('click', () => updateStatus(btn.dataset.id, btn.dataset.action));
+
+    wrap.querySelectorAll('button[data-nav]').forEach(btn => {
+      btn.addEventListener('click', () => { page += btn.dataset.nav === 'next' ? 1 : -1; render(); });
     });
+    wrap.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if (btn.dataset.action === 'confirmed') openConfirmModal(id);
+        else updateStatus(id, btn.dataset.action);
+      });
+    });
+    wrap.querySelectorAll('[data-customer]').forEach(el => {
+      el.addEventListener('click', () => openDetailsModal(el.dataset.customer));
+    });
+  }
+
+  function rowHtml(r, today) {
+    const diff = dayDiff(r.reservation_date, today);
+    const terminal = TERMINAL.includes(r.status);
+    const urgency = !terminal && diff < 0 ? 'urgency-overdue'
+                  : !terminal && diff === 0 ? 'urgency-today' : '';
+    const tag = !terminal && diff === 0 ? '<span class="urgency-tag today">Today</span>'
+              : !terminal && diff < 0 ? '<span class="urgency-tag overdue">Overdue</span>' : '';
+    const notes = r.notes || '';
+    return `
+      <tr class="${urgency}">
+        <td>
+          <div class="contact-row">
+            <span class="clickable" data-customer="${r.id}" title="View contact details">${escapeHtml(r.customer_name)}</span>
+            ${r.customer_phone ? `<span class="sub">${escapeHtml(r.customer_phone)}</span>` : ''}
+          </div>
+        </td>
+        <td>${r.table_no ? escapeHtml(r.table_no) : '<span style="opacity:0.4;">—</span>'}</td>
+        <td>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}${tag}</td>
+        <td>${r.reservation_time ? String(r.reservation_time).slice(0, 5) : '—'}</td>
+        <td>${r.guests}</td>
+        <td title="${formatDate(r.datetime_reserved)}" style="white-space:nowrap;">${formatDate(r.datetime_reserved, { dateStyle: 'medium', timeStyle: 'short' })}</td>
+        <td><span class="pill ${STATUS_PILL[r.status] || 'pill-neutral'}">${escapeHtml(r.status)}</span></td>
+        <td><div class="notes-cell${notes ? '' : ' empty'}" title="${escapeHtml(notes)}">${notes ? escapeHtml(notes) : '—'}</div></td>
+        <td><div class="row-actions">${actionButtons(r)}</div></td>
+      </tr>
+    `;
   }
 
   function actionButtons(r) {
@@ -101,8 +255,129 @@
     return `<span style="font-size:0.75rem; opacity:0.5;">No further action</span>`;
   }
 
+  // ---- Confirm modal: table assignment is mandatory, capacity checked live ----
+
+  function openConfirmModal(id) {
+    const r = reservations.find(x => x.id == id);
+    if (!r) return;
+    const options = tables.map(t => {
+      const selected = r.table_no === t.table_no ? ' selected' : '';
+      return `<option value="${escapeHtml(t.table_no)}" data-cap="${t.capacity}"${selected}>${escapeHtml(t.table_no)} — seats ${t.capacity}</option>`;
+    }).join('') || `<option value="">No active tables</option>`;
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop active';
+    backdrop.innerHTML = `
+      <div class="modal-box" style="max-width:520px;">
+        <h3>Confirm reservation</h3>
+        <div class="detail-list">
+          <dt>Customer</dt><dd>${escapeHtml(r.customer_name)}</dd>
+          <dt>Date</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dt>Guests</dt><dd>${r.guests}</dd>
+        </div>
+        <div class="form-field" style="margin-top:16px;">
+          <label for="confirmTable">Assign table</label>
+          <select id="confirmTable">${options}</select>
+          <div class="confirm-capacity" id="confirmCapacity"></div>
+        </div>
+        <div class="modal-error" id="confirmError"></div>
+        <div class="modal-close-row">
+          <button class="btn btn-outline" id="confirmClose">Back</button>
+          <button class="btn" id="confirmSubmit">Confirm</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    const sel = backdrop.querySelector('#confirmTable');
+    const capEl = backdrop.querySelector('#confirmCapacity');
+    function refreshCapacity() {
+      const opt = sel.options[sel.selectedIndex];
+      const cap = opt ? Number(opt.dataset.cap) : 0;
+      if (!cap) {
+        capEl.textContent = 'No active tables available.';
+        capEl.className = 'confirm-capacity bad';
+      } else if (cap >= r.guests) {
+        capEl.textContent = `Seats ${cap} — fits your ${r.guests} guests.`;
+        capEl.className = 'confirm-capacity';
+      } else {
+        capEl.textContent = `Only seats ${cap}, but this reservation is for ${r.guests}. Pick a bigger table.`;
+        capEl.className = 'confirm-capacity bad';
+      }
+    }
+    sel.addEventListener('change', refreshCapacity);
+    refreshCapacity();
+
+    backdrop.querySelector('#confirmClose').addEventListener('click', close);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    backdrop.querySelector('#confirmSubmit').addEventListener('click', async () => {
+      const btn = backdrop.querySelector('#confirmSubmit');
+      const errEl = backdrop.querySelector('#confirmError');
+      errEl.classList.remove('show');
+      btn.disabled = true;
+      try {
+        const res = await adminFetch(`/api/admin/reservations/${id}/confirm`, {
+          method: 'PATCH',
+          body: JSON.stringify({ table_no: sel.value }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.textContent = data.error || 'Could not confirm this reservation.';
+          errEl.classList.add('show');
+          btn.disabled = false;
+          return;
+        }
+        const r0 = reservations.find(x => x.id == id);
+        if (r0) { r0.status = 'confirmed'; r0.table_no = data.reservation.table_no; }
+        close();
+        toast(`Confirmed — ${data.reservation.table_no} assigned.`, 'success');
+        render();
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.add('show');
+        btn.disabled = false;
+      }
+    });
+
+    function close() { backdrop.remove(); }
+  }
+
+  // ---- Customer details modal (contact info for follow-up calls) ----
+
+  function openDetailsModal(id) {
+    const r = reservations.find(x => x.id == id);
+    if (!r) return;
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop active';
+    backdrop.innerHTML = `
+      <div class="modal-box" style="max-width:520px;">
+        <h3>${escapeHtml(r.customer_name)}</h3>
+        <div class="detail-list">
+          <dt>Email</dt>
+          <dd>${r.customer_email ? `<a href="mailto:${escapeHtml(r.customer_email)}">${escapeHtml(r.customer_email)}</a>` : '—'}</dd>
+          <dt>Phone</dt>
+          <dd>${r.customer_phone ? `<a href="tel:${escapeHtml(r.customer_phone)}">${escapeHtml(r.customer_phone)}</a>` : '—'}</dd>
+          <dt>Reservation</dt>
+          <dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dt>Guests</dt><dd>${r.guests}</dd>
+          <dt>Table</dt><dd>${r.table_no ? escapeHtml(r.table_no) : 'Not yet assigned'}</dd>
+          <dt>Status</dt><dd><span class="pill ${STATUS_PILL[r.status] || 'pill-neutral'}">${escapeHtml(r.status)}</span></dd>
+          <dt>Requested</dt><dd>${formatDate(r.datetime_reserved)}</dd>
+          <dt>Notes</dt><dd style="white-space:pre-wrap;">${r.notes ? escapeHtml(r.notes) : '—'}</dd>
+        </div>
+        <div class="modal-close-row"><button class="btn" id="detailsClose">Close</button></div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+    backdrop.querySelector('#detailsClose').addEventListener('click', () => backdrop.remove());
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
+  }
+
   async function updateStatus(id, status) {
-    if (status === 'cancelled' && !confirm('Cancel this reservation?')) return;
+    const r = reservations.find(x => x.id == id);
+    if (!r) return;
+    const verb = status === 'cancelled' ? 'Cancel this reservation?' : 'Mark this reservation as completed?';
+    if (!confirm(verb)) return;
     try {
       const res = await adminFetch(`/api/admin/reservations/${id}/status`, {
         method: 'PATCH',
@@ -110,12 +385,48 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not update reservation.');
-      const r = reservations.find(x => x.id == id);
-      if (r) r.status = status;
+      r.status = status;
+      toast(status === 'cancelled' ? 'Reservation cancelled.' : 'Reservation completed.', 'success');
       render();
     } catch (err) {
-      alert(err.message);
+      toast(err.message, 'error');
     }
+  }
+
+  // ---- Shared helpers ----
+
+  function toast(msg, kind = '') {
+    let el = document.querySelector('.toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.className = `toast show ${kind}`;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+
+  function parseDateOnly(s) {
+    if (!s) return null;
+    const [y, m, d] = String(s).split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  }
+
+  // Whole-day difference; date-only strings avoid the UTC/local TZ mismatch
+  // you get from `new Date('YYYY-MM-DD')`.
+  function dayDiff(dateStr, today) {
+    const d = parseDateOnly(dateStr);
+    if (!d) return Infinity;
+    return Math.round((startOfDay(d) - today) / 86400000);
+  }
+
+  function fmtDate(dateStr) {
+    const d = parseDateOnly(dateStr);
+    return d ? d.toLocaleDateString('en-PH') : '—';
   }
 </script>
 </body>

@@ -52,6 +52,47 @@
   .res-status-completed { background: rgba(46,125,79,0.14); color: #2e7d4f; }
   .res-status-cancelled { background: rgba(192,57,43,0.14); color: #c0392b; }
   .res-loading { font-size: 0.82rem; opacity: 0.5; font-family: 'Space Mono', monospace; }
+
+  /* Booking-as account summary */
+  .account-summary {
+    background: rgba(163,132,74,0.06); border: 1px solid var(--line);
+    border-radius: 6px; padding: 14px; margin-bottom: 22px;
+  }
+  .account-summary .form-row > div { margin-bottom: 10px; }
+  .account-summary .form-row > div:last-child { margin-bottom: 0; }
+  .account-summary input { font-size: 0.85rem; }
+
+  /* Guest stepper */
+  .stepper {
+    display: flex; align-items: center; gap: 0;
+    border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  }
+  .stepper button {
+    width: 36px; height: 38px; background: none; border: none; cursor: pointer;
+    color: var(--ink); font-family: 'Space Mono', monospace; font-size: 1.05rem; line-height: 1;
+  }
+  .stepper button:hover { background: rgba(163,132,74,0.15); color: var(--brass); }
+  .stepper input {
+    border: none; border-radius: 0; text-align: center; width: 56px; margin: 0;
+    -moz-appearance: textfield;
+  }
+  .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .reserve-guests-hint { font-size: 0.7rem; opacity: 0.5; margin-top: 5px; font-family: 'Space Mono', monospace; }
+
+  /* Warnings / expectation-setting */
+  .reserve-warn {
+    display: none; margin: 14px 0 2px; padding: 11px 13px; border-radius: 4px;
+    background: rgba(184,134,11,0.12); border: 1px solid rgba(184,134,11,0.4);
+    color: #b8860b; font-size: 0.8rem; line-height: 1.5;
+  }
+  .reserve-note { font-size: 0.78rem; opacity: 0.6; margin-top: 8px; font-family: 'Space Mono', monospace; }
+  .reserve-divider { border: none; border-top: 1px dashed var(--line); margin: 22px 0 6px; }
+
+  /* Post-submit reference */
+  .reserve-ref {
+    font-family: 'Space Mono', monospace; font-size: 0.9rem; font-weight: 700;
+    color: var(--brass); margin: 0 0 10px; line-height: 1.6;
+  }
 </style>
 </head>
 <body>
@@ -89,26 +130,51 @@
         <p class="eyebrow">Plan Ahead</p>
         <h2 class="display" style="font-size:1.8rem; margin:8px 0 24px;">Reserve a Table</h2>
 
+        <div class="account-summary">
+          <span class="my-reservations-title" style="margin-bottom:10px;">Booking as</span>
+          <div class="form-row">
+            <div><label for="acctName">Name</label><input id="acctName" type="text" disabled placeholder="Loading…"></div>
+            <div><label for="acctEmail">Email</label><input id="acctEmail" type="email" disabled placeholder="Loading…"></div>
+          </div>
+          <div class="form-row">
+            <div><label for="acctPhone">Mobile Number</label><input id="acctPhone" type="text" disabled placeholder="Loading…"></div>
+          </div>
+        </div>
+
         <form id="reservationForm">
           <div class="form-row">
             <div><label for="resDate">Date</label><input id="resDate" type="date" required></div>
-            <div><label for="resTime">Time</label><input id="resTime" type="time" required></div>
+            <div><label for="resTime">Time</label><input id="resTime" type="time" min="09:00" max="21:00" required></div>
           </div>
           <div class="form-row">
-            <div><label for="resGuests">Number of Guests</label><input id="resGuests" type="number" min="1" required placeholder="e.g. 4"></div>
-            <div><label for="resTable">Table Preference <span style="opacity:.6; text-transform:none;">(optional)</span></label><input id="resTable" type="text" placeholder="e.g. Near the window"></div>
+            <div>
+              <label for="resGuests">Number of Guests</label>
+              <div class="stepper">
+                <button type="button" onclick="stepGuests(-1)" aria-label="Fewer guests">−</button>
+                <input id="resGuests" type="number" min="1" max="20" value="2" required>
+                <button type="button" onclick="stepGuests(1)" aria-label="More guests">+</button>
+              </div>
+              <p class="reserve-guests-hint">1 – 20 guests</p>
+            </div>
+            <div><label for="resTable">Table Preference <span style="opacity:.6; text-transform:none;">(optional)</span></label><input id="resTable" type="text" maxlength="50" placeholder="e.g. Near the window"></div>
           </div>
-          <div><label for="resNotes">Notes for the Restaurant <span style="opacity:.6; text-transform:none;">(optional)</span></label><textarea id="resNotes" placeholder="Birthday celebration, dietary needs, etc."></textarea></div>
+          <div><label for="resNotes">Notes for the Restaurant <span style="opacity:.6; text-transform:none;">(optional)</span></label><textarea id="resNotes" maxlength="500" placeholder="Birthday celebration, dietary needs, etc."></textarea></div>
 
-          <button type="submit" class="btn" style="width:100%; justify-content:center; padding:14px; margin-top:14px; border-radius:6px;">Request Reservation</button>
+          <div id="reserveWarn" class="reserve-warn"></div>
+
+          <hr class="reserve-divider">
+          <button type="submit" class="btn" style="width:100%; justify-content:center; padding:14px; margin-top:6px; border-radius:6px;">Request Reservation</button>
+          <p class="reserve-note" style="text-align:center;">We'll confirm your reservation within 24 hours.</p>
           <div class="reserve-status" id="reserveStatus"></div>
         </form>
       </div>
 
       <div class="reserve-success" id="reserveSuccess">
         <div class="check-ring">✓</div>
-        <h3 style="font-family:'Archivo', sans-serif; text-transform:uppercase; font-size:1.2rem; margin-bottom:8px;">Reservation Requested</h3>
-        <p style="opacity:0.65; font-size:0.9rem; margin-bottom:26px;">We've received your request and it's pending confirmation from the restaurant. We'll be in touch to confirm your table.</p>
+        <h3 style="font-family:'Archivo', sans-serif; text-transform:uppercase; font-size:1.2rem; margin-bottom:10px;">Reservation Requested</h3>
+        <div class="reserve-ref" id="reserveRef"></div>
+        <p style="opacity:0.65; font-size:0.9rem; margin-bottom:12px;">We've received your request and it's pending confirmation from the restaurant.</p>
+        <p class="reserve-note" style="text-align:center; margin-bottom:26px;">Track its status in the "Your Reservations" list above.</p>
         <a href="index.html" class="btn btn-outline" style="width:100%; justify-content:center; padding:14px; border-radius:6px;">Back to Home</a>
       </div>
 
@@ -122,6 +188,15 @@
   let currentUser = null;
 
   const STATUS_LABEL = { pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' };
+  // Mirrors the server: the room is open 9:00 AM - 9:00 PM.
+  const OPENING_MINUTES = 9 * 60;
+  const CLOSING_MINUTES = 21 * 60;
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
   onAuthStateChanged(auth, (user) => {
     currentUser = user;
@@ -129,14 +204,119 @@
       window.location.href = 'account.html?redirect=reservations.html';
       return;
     }
+    prefillAccount();
     loadMyReservations();
+    loadBlockedDates();
   });
+
+  // Pulls the logged-in customer's name/email/phone from the database and
+  // shows it on the form (booking is always attached to this account).
+  async function prefillAccount() {
+    const nameEl = document.getElementById('acctName');
+    const emailEl = document.getElementById('acctEmail');
+    const phoneEl = document.getElementById('acctPhone');
+    if (!nameEl || !currentUser) return;
+    try {
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/customer/auth/me`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.customer) {
+        nameEl.placeholder = emailEl.placeholder = phoneEl.placeholder = 'Profile incomplete';
+        return;
+      }
+      const c = data.customer;
+      nameEl.value = c.name || '';
+      emailEl.value = c.email || currentUser.email || '';
+      phoneEl.value = c.phone || '';
+      // Reset placeholders once a real value is present.
+      nameEl.placeholder = emailEl.placeholder = phoneEl.placeholder = '';
+    } catch (err) {
+      nameEl.placeholder = emailEl.placeholder = phoneEl.placeholder = 'Could not load';
+    }
+  }
+
+  // Guest stepper (+/-), clamped to 1 - 20.
+  window.stepGuests = function(delta) {
+    const input = document.getElementById('resGuests');
+    let val = Math.round(Number(input.value) || 0);
+    if (val < 1) val = 1;
+    const next = val + delta;
+    if (next >= 1 && next <= 20) input.value = next;
+  };
 
   // Prevent picking dates in the past - the server enforces this too.
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const dateInput = document.getElementById('resDate');
   if (dateInput) dateInput.min = today.toISOString().split('T')[0];
+
+  // Dates (next 90 days) that are already fully booked - the server computes
+  // and enforces this; here it just stops the picker from letting you keep
+  // a full day selected.
+  let blockedDates = new Set();
+  async function loadBlockedDates() {
+    try {
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/customer/reservations/availability`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (res.ok) blockedDates = new Set(data.blocked_dates || []);
+    } catch (err) {
+      // Leave the set empty - the server still rejects full dates on submit.
+    }
+  }
+
+  // Live warnings: past dates, short-notice bookings (within 3 days), and
+  // times outside opening hours.
+  function updateWarnings() {
+    const warn = document.getElementById('reserveWarn');
+    if (!warn) return;
+    const msg = [];
+
+    const dateVal = dateInput && dateInput.value;
+    if (dateVal) {
+      const [yy, mm, dd] = dateVal.split('-').map(Number);
+      const selected = new Date(yy, mm - 1, dd);
+      selected.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((selected - today) / 86400000);
+      if (blockedDates.has(dateVal)) msg.push("Sorry — we're fully booked on that date. Please pick another day.");
+      else if (diffDays < 0) msg.push('That date is in the past.');
+      else if (diffDays === 0) msg.push('Same-day reservations may not be accommodated. Please call ahead.');
+      else if (diffDays <= 3) msg.push(`Only ${diffDays} day${diffDays > 1 ? 's' : ''} away — short notice may not be accommodated. We'll confirm as soon as possible.`);
+    }
+
+    const timeVal = document.getElementById('resTime').value;
+    if (timeVal) {
+      const [hh, mmm] = timeVal.split(':').map(Number);
+      const minutes = hh * 60 + mmm;
+      if (minutes < OPENING_MINUTES || minutes > CLOSING_MINUTES) {
+        msg.push("We're open from 9:00 AM to 9:00 PM. Please pick a time within those hours.");
+      }
+    }
+
+    if (msg.length) {
+      warn.textContent = '⚠️ ' + msg.join(' ');
+      warn.style.display = 'block';
+    } else {
+      warn.style.display = 'none';
+    }
+  }
+  // Refuse fully-booked dates outright: clear the picker so the customer
+  // can't keep a full day selected, and explain why.
+  if (dateInput) dateInput.addEventListener('change', function () {
+    if (this.value && blockedDates.has(this.value)) {
+      this.value = '';
+      const warn = document.getElementById('reserveWarn');
+      warn.textContent = '⚠️ Sorry — we\'re fully booked on that date. Please pick another day.';
+      warn.style.display = 'block';
+      return;
+    }
+    updateWarnings();
+  });
+  document.getElementById('resTime').addEventListener('change', updateWarnings);
 
   async function cancelReservation(id) {
     if (!currentUser) return;
@@ -182,9 +362,9 @@
         return `
           <div class="res-card">
             <div class="res-info">
-              <strong>${dateStr} at ${r.reservation_time || ''}</strong>
-              <span>${r.guests} guest${r.guests == 1 ? '' : 's'}${r.table_no ? ' · ' + r.table_no : ''}</span>
-              ${r.notes ? `<span style="display:block; margin-top:4px;">“${r.notes}”</span>` : ''}
+              <strong>${dateStr} at ${(r.reservation_time || '').slice(0, 5)}</strong>
+              <span>${r.guests} guest${r.guests == 1 ? '' : 's'}${r.table_no ? ' · ' + esc(r.table_no) : ''}</span>
+              ${r.notes ? `<span style="display:block; margin-top:4px;">“${esc(r.notes)}”</span>` : ''}
               ${cancelBtn}
             </div>
             <span class="res-status-pill res-status-${r.status}">${STATUS_LABEL[r.status] || r.status}</span>
@@ -232,6 +412,14 @@
         status.className = 'reserve-status err';
         return;
       }
+
+      // Confirmation state with a reference the customer can track.
+      const r = data.reservation || {};
+      const dateStr = r.reservation_date
+        ? new Date(r.reservation_date + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
+        : '';
+      document.getElementById('reserveRef').textContent =
+        `Ref #${r.id} · ${dateStr} at ${(r.reservation_time || '').slice(0, 5)} · Status: Pending confirmation`;
 
       document.getElementById('reserveFormWrap').style.display = 'none';
       document.getElementById('reserveSuccess').classList.add('active');

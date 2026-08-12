@@ -15,7 +15,9 @@ export async function createOrder(req, res, next) {
       cart,
       notes,
       delivery_address,
-      delivery_fee,
+      delivery_barangay,
+      delivery_city,
+      delivery_landmark,
       customer_name,
       customer_phone,
       table_time,
@@ -42,7 +44,23 @@ export async function createOrder(req, res, next) {
       });
     }
 
-    const deliveryFee = round2(delivery_fee || 0);
+    // Delivery (order_type 'online') requires the customer to provide a
+    // delivery location and a contact number. Customers can NEVER set the
+    // delivery fee themselves — it starts pending and the Admin assigns it
+    // later after checking the location. Any delivery_fee value the client
+    // sends is deliberately ignored (never trusted from the browser).
+    const isDelivery = order_type === "online";
+    if (isDelivery) {
+      if (!delivery_address || !String(delivery_address).trim()) {
+        return res.status(400).json({ error: "Please enter your delivery address." });
+      }
+      if (!customer_phone || !String(customer_phone).trim()) {
+        return res.status(400).json({ error: "Please enter your contact number." });
+      }
+    }
+
+    const deliveryFee = 0;
+    const deliveryFeeStatus = isDelivery ? "pending" : null;
     let total_amount = 0;
     const validatedItems = [];
 

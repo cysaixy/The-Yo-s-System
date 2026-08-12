@@ -105,6 +105,50 @@ export async function initTables() {
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)`
     );
 
+    // Delivery-fee tracking columns. delivery_fee_status is NULL for
+    // non-delivery orders, 'pending' while the Admin still has to assign a
+    // fee, and 'confirmed' once a fee has been set. delivery_fee itself stays
+    // 0 until an Admin assigns it — the frontend must never treat that 0 as
+    // "free delivery" and instead render the delivery_fee_status.
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee_status VARCHAR(20)`
+    );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee_assigned_by INTEGER REFERENCES staff(id)`
+    );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee_assigned_at TIMESTAMP`
+    );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_barangay TEXT`
+    );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_city TEXT`
+    );
+    await pool.query(
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_landmark TEXT`
+    );
+
+    // Backend/database-layer validation for the ₱20.00 – ₱150.00 range.
+    // 0 is allowed (no fee on dine-in/pickup, or a delivery order whose fee
+    // hasn't been assigned yet); every other value must be inside the range.
+    // NOT VALID so legacy rows aren't re-scanned (all current ones are 0).
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'orders_delivery_fee_range' AND conrelid = 'orders'::regclass
+        ) THEN
+          ALTER TABLE orders
+            ADD CONSTRAINT orders_delivery_fee_range
+            CHECK (delivery_fee = 0 OR (delivery_fee >= 20 AND delivery_fee <= 150))
+            NOT VALID;
+        END IF;
+      END
+      $$;
+    `);
+
     // 8. order_item_add_ons — snapshots of the add-ons sold on each order
     //    line. name/price/cost are stored at sale time so historical
     //    transactions stay accurate even if an add-on is edited or deleted.
@@ -132,6 +176,38 @@ export async function initTables() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // 10. tables — the room's physical tables and their seating capacity.
+    //     Reservations keep a snapshot of the assigned table in
+    //     reservations.table_no, but this registry is the source of truth
+    //     for capacity checks and double-booking prevention on confirm.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tables (
+        id SERIAL PRIMARY KEY,
+        table_no VARCHAR(50) NOT NULL UNIQUE,
+        capacity INTEGER NOT NULL CHECK (capacity > 0),
+        status VARCHAR(20) NOT NULL DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed the floor plan once. Kept INSERT-free afterward so staff can
+    // manage tables without the server overwriting their edits.
+    const seedCheck = await pool.query(`SELECT COUNT(*)::int AS n FROM tables`);
+    if (seedCheck.rows[0].n === 0) {
+      await pool.query(`
+        INSERT INTO tables (table_no, capacity, status) VALUES
+          ('T1', 2, 'active'),
+          ('T2', 2, 'active'),
+          ('T3', 4, 'active'),
+          ('T4', 4, 'active'),
+          ('T5', 4, 'active'),
+          ('T6', 6, 'active'),
+          ('T7', 8, 'active'),
+          ('T8', 10, 'active')
+      `);
+      console.log("Seeded default table registry (T1 - T8).");
+    }
 
     console.log("Database tables initialized successfully.");
   } catch (err) {

@@ -3,7 +3,11 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import pool from "./config/db.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import errorHandler from "./src/middlewares/error.middleware.js";
 import { globalLimiter, authLimiter } from "./src/middlewares/rateLimit.middleware.js";
@@ -38,6 +42,20 @@ app.set("trust proxy", 1);
 
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || "*" }));
 app.use(express.json());
+
+// Serve the frontend from the same server as the API, so the pages load
+// from http://localhost:3000 instead of a separate static server.
+//   /frontend/admin/reservations.html  -> frontend/admin/reservations.html
+//   /frontend/customer/reservations.html -> frontend/customer/reservations.html
+//   /admin/... and /customer/... are aliases so relative asset links
+//   (admin-shell.css, global.js, etc.) resolve the same way they do when
+//   the folder is opened directly.
+app.use("/frontend", express.static(path.join(__dirname, "..", "frontend")));
+app.use("/admin", express.static(path.join(__dirname, "..", "frontend", "admin")));
+app.use("/customer", express.static(path.join(__dirname, "..", "frontend", "customer")));
+// Bare paths work too: http://localhost:3000/ serves the customer site and
+// http://localhost:3000/reservations.html resolves to the customer page.
+app.use("/", express.static(path.join(__dirname, "..", "frontend", "customer")));
 
 // Apply global rate limit to all /api routes
 app.use("/api", globalLimiter);
