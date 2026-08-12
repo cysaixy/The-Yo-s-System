@@ -7,40 +7,162 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css">
 <style>
-  .filter-bar { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
-  .filter-bar select {
-    padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--component-bg);
-    font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--ink);
+  /* ============================================================
+     SALES TRANSACTIONS — scoped design system (gold/brown theme)
+     ============================================================ */
+  .stx-tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--line); margin-bottom: 22px; }
+  .stx-tab {
+    padding: 11px 20px; font-family: 'Inter', sans-serif; font-size: 0.86rem; font-weight: 600;
+    color: var(--ink); opacity: 0.55; cursor: pointer; border: none; background: none;
+    border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s ease;
+    display: inline-flex; align-items: center; gap: 8px;
   }
-  .filter-bar label { font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; opacity: 0.55; margin-right: 6px; }
+  .stx-tab:hover { opacity: 0.9; }
+  .stx-tab.active { opacity: 1; color: var(--brass-dark); border-bottom-color: var(--brass); }
+  .stx-tab svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
+  /* ---- Summary cards ---- */
+  .stx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .stx-card {
+    background: var(--component-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  }
+  .stx-card .label { font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
+  .stx-card .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.55rem; line-height: 1.15; color: var(--ink); margin-top: 5px; }
+  .stx-card .value.brass { color: var(--brass-dark); }
+  .stx-card .value.green { color: var(--success); }
+  .stx-card .sub { font-size: 0.72rem; opacity: 0.45; margin-top: 4px; }
+  .stx-ring { flex-shrink: 0; color: var(--ink); }
+
+  /* ---- Period controls ---- */
+  .stx-controls { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; }
+  .stx-field label { display: block; font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.5; margin-bottom: 6px; }
+  .stx-field select, .stx-field input[type="date"] {
+    padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--component-bg);
+    font-family: 'Inter', sans-serif; font-size: 0.84rem; color: var(--ink); min-width: 190px; cursor: pointer;
+  }
+  .stx-range { display: flex; gap: 8px; align-items: center; }
+  .stx-range input[type="date"] { min-width: 0; }
+
+  /* ---- Secondary tabs ---- */
+  .stx-subtabs { display: inline-flex; gap: 4px; background: var(--stone); border: 1px solid var(--line); border-radius: 9px; padding: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stx-subtab {
+    padding: 7px 16px; border-radius: 7px; border: none; background: none;
+    font-family: 'Inter', sans-serif; font-size: 0.80rem; font-weight: 600;
+    color: var(--ink); opacity: 0.55; cursor: pointer; transition: all .15s ease; white-space: nowrap;
+  }
+  .stx-subtab:hover { opacity: 0.9; }
+  .stx-subtab.active { background: var(--component-bg); color: var(--brass-dark); opacity: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  /* ---- Toolbar ---- */
+  .stx-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .stx-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .stx-filters .fb { font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.5; }
+  .stx-filters input, .stx-filters select {
+    padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--component-bg);
+    font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--ink); cursor: pointer;
+  }
+  .stx-filters input[type="search"] { width: 240px; cursor: text; }
+  .stx-actions { display: flex; align-items: center; gap: 8px; }
+  .stx-icon-btn {
+    width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); background: var(--component-bg); border-radius: 8px;
+    cursor: pointer; color: var(--ink); transition: all .15s ease;
+  }
+  .stx-icon-btn:hover { border-color: var(--brass); color: var(--brass-dark); }
+  .stx-icon-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .stx-pos { position: relative; }
+  .stx-pop {
+    position: absolute; right: 0; top: calc(100% + 8px); background: var(--component-bg);
+    border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    min-width: 230px; z-index: 60; padding: 8px; display: none;
+  }
+  .stx-pop.open { display: block; }
+  .stx-pop-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    padding: 9px 10px; border: none; background: none; border-radius: 7px;
+    font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--ink); cursor: pointer;
+  }
+  .stx-pop-item:hover { background: var(--stone); }
+  .stx-pop-item svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .stx-pop-divider { height: 1px; background: var(--line); margin: 6px 4px; }
+  .stx-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; font-size: 0.82rem; color: var(--ink); }
+  .stx-toggle input { accent-color: var(--brass); cursor: pointer; }
+
+  /* ---- Table ---- */
+  .stx-table-wrap { overflow-x: auto; background: var(--component-bg); border: 1px solid var(--line); border-radius: 10px; }
+  .stx-table-wrap .admin-table { min-width: 980px; }
+  .stx-table-wrap .admin-table th { background: #faf8f4; white-space: nowrap; }
+  .stx-table-wrap th.sortable { cursor: pointer; user-select: none; }
+  .stx-table-wrap th.sortable:hover { color: var(--brass-dark); opacity: 1; }
+  .stx-table-wrap .caret {
+    display: inline-block; width: 0; height: 0; margin-left: 5px; vertical-align: middle;
+    border-left: 4px solid transparent; border-right: 4px solid transparent; opacity: 0.4;
+  }
+  .stx-table-wrap th.sortable.asc .caret { border-bottom: 5px solid var(--brass-dark); border-top: none; opacity: 1; }
+  .stx-table-wrap th.sortable.desc .caret { border-top: 5px solid var(--brass-dark); border-bottom: none; opacity: 1; }
+  .stx-table-wrap td.mono, .stx-table-wrap td.right { font-family: 'Space Mono', monospace; }
+  .stx-table-wrap td.right, .stx-table-wrap th.right { text-align: right; }
+  .stx-empty { padding: 52px 20px; text-align: center; color: var(--ink); opacity: 0.55; font-size: 0.88rem; }
+  .stx-empty svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 10px; opacity: 0.5; }
+
+  /* ---- Pills ---- */
   .source-pill {
     display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px;
     font-size: 0.66rem; font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase;
   }
   .source-online { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
   .source-pos { background: rgba(21,23,26,0.08); color: var(--ink); opacity: 0.7; }
-
-  .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.68rem; font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; }
+  .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.66rem; font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
   .status-pending { background: rgba(184,134,11,0.14); color: var(--warning); }
   .status-confirmed { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
   .status-preparing { background: rgba(52,109,196,0.14); color: #2c5fb0; }
   .status-completed { background: rgba(46,125,79,0.14); color: var(--success); }
   .status-cancelled { background: rgba(192,57,43,0.14); color: var(--danger); }
-
   .needs-action td:first-child { border-left: 3px solid var(--warning); }
 
-  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
   .row-actions button {
-    font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; font-weight: 700;
-    border-radius: 5px; padding: 6px 10px; cursor: pointer; border: 1px solid var(--line); background: var(--component-bg); color: var(--ink);
-    transition: all .15s ease;
+    font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase; font-weight: 700;
+    border-radius: 5px; padding: 6px 10px; cursor: pointer; border: 1px solid var(--line);
+    background: var(--component-bg); color: var(--ink); transition: all .15s ease;
   }
+  .row-actions button:hover { border-color: var(--brass); color: var(--brass-dark); }
   .row-actions button.primary { background: var(--brass); color: #fff; border-color: var(--brass); }
-  .row-actions button.primary:hover { background: var(--brass-dark); }
+  .row-actions button.primary:hover { background: var(--brass-dark); color: #fff; }
   .row-actions button.danger { color: var(--danger); border-color: rgba(192,57,43,0.3); }
   .row-actions button.danger:hover { background: rgba(192,57,43,0.08); }
   .row-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ---- Order detail modal ---- */
+  .order-modal-box { max-width: 680px; width: 100%; max-height: 92vh; overflow-y: auto; }
+  .om-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; font-size: 0.84rem; margin-bottom: 16px; }
+  .om-meta .row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  .om-meta .row span:first-child { opacity: 0.55; font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase; padding-top: 2px; }
+  .om-items { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 16px; }
+  .om-items th { text-align: left; padding: 8px 10px; background: var(--stone); font-family: 'Space Mono', monospace; font-size: 0.6rem; text-transform: uppercase; opacity: 0.55; }
+  .om-items td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .om-items td.right, .om-items th.right { text-align: right; }
+  .om-totals { width: 100%; font-size: 0.84rem; margin-bottom: 18px; }
+  .om-totals .row { display: flex; justify-content: space-between; padding: 4px 0; }
+  .om-totals .row.grand { font-weight: 700; border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 10px; font-size: 0.95rem; }
+  .addon-line-list { color: var(--brass-dark); opacity: 0.85; }
+  .money-neg { color: var(--danger); }
+  .profit-pos { color: var(--success); font-weight: 700; }
+
+  /* ---- Reports ---- */
+  .report-section-title {
+    font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 0.85rem;
+    margin: 0 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+
+  @media (max-width: 900px) {
+    .stx-cards { grid-template-columns: 1fr; }
+    .stx-toolbar { align-items: stretch; }
+    .stx-filters { width: 100%; }
+    .stx-filters input[type="search"] { flex: 1; width: auto; }
+    .stx-actions { margin-left: auto; }
+  }
 </style>
 </head>
 <body>
@@ -49,84 +171,491 @@
 
 <script type="module">
   import { renderAdminShell } from "./admin-shell.js";
-  import { adminFetch, peso, escapeHtml } from "./admin-api.js";
+  import { adminFetch, peso, formatDate, escapeHtml } from "./admin-api.js";
 
   const session = renderAdminShell({ active: 'sales', title: 'Sales Transactions' });
-  if (session) init();
+
+  // Admins bypass the report flag; everyone else needs it for summaries/reports.
+  const canReports = session ? (session.staff.role === 'Admin' || !!session.staff.can_access_reports) : false;
 
   let allOrders = [];
+  let currentPeriod = { from: null, to: null };
+  let sortState = { key: 'datetime', dir: 'desc' };
+  let showCancelled = true;
+
+  const PAYMENT_LABELS = { cash: 'Cash', card: 'Card', gcash: 'GCash', bank_transfer: 'Bank Transfer', other: 'Other' };
+
+  if (session) init();
+
+  function orderTypeLabel(v) {
+    const map = { dine_in: 'Dine-in', pickup: 'Takeout', takeout: 'Takeout', delivery: 'Delivery', online: 'Online Order' };
+    return map[v] || String(v || '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()) || '—';
+  }
+
+  function statusLabel(s) { return String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1); }
+
+  function ringSVG(pct) {
+    const r = 18, c = 2 * Math.PI * r;
+    const val = Math.max(0, Math.min(100, Number(pct) || 0));
+    const filled = (val / 100) * c;
+    return `<svg class="stx-ring" viewBox="0 0 48 48" width="50" height="50" aria-hidden="true">
+      <circle cx="24" cy="24" r="${r}" fill="none" stroke="var(--line)" stroke-width="4.5"/>
+      <circle cx="24" cy="24" r="${r}" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"
+              stroke-dasharray="${filled} ${c - filled}" transform="rotate(-90 24 24)"/>
+      <text x="24" y="27" text-anchor="middle" font-size="10.5" font-weight="700" fill="currentColor">${val}%</text>
+    </svg>`;
+  }
 
   function init() {
     const content = document.getElementById('adminContent');
     content.innerHTML = `
-      <div class="admin-section">
-        <div class="filter-bar">
-          <div><label>Source</label>
-            <select id="filterSource">
-              <option value="all">All</option>
-              <option value="online" selected>Online (Customer)</option>
-              <option value="pos">POS (Staff)</option>
+      <div class="admin-section stx">
+
+        <div class="stx-tabs">
+          <button class="stx-tab active" data-vtab="transactions">
+            <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
+            Transactions
+          </button>
+          <button class="stx-tab" data-vtab="reports">
+            <svg viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-6"/><path d="M2 20h20"/></svg>
+            Reports
+          </button>
+        </div>
+
+        ${canReports ? `
+        <div class="stx-cards">
+          <div class="stx-card">
+            <div>
+              <div class="label">Sales</div>
+              <div class="value" id="sumSales">₱0.00</div>
+              <div class="sub" id="sumSalesSub">—</div>
+            </div>
+          </div>
+          <div class="stx-card">
+            <div>
+              <div class="label">Cost of Goods Sold</div>
+              <div class="value" id="sumCogs">₱0.00</div>
+              <div class="sub">ingredients + add-ons</div>
+            </div>
+            <span id="sumCogsRing" style="color:var(--brass-dark);">${ringSVG(0)}</span>
+          </div>
+          <div class="stx-card">
+            <div>
+              <div class="label">Margin</div>
+              <div class="value green" id="sumMargin">₱0.00</div>
+              <div class="sub" id="sumMarginSub">gross profit</div>
+            </div>
+            <span id="sumMarginRing" style="color:var(--success);">${ringSVG(0)}</span>
+          </div>
+        </div>` : ''}
+
+        <div class="stx-controls">
+          <div class="stx-field">
+            <label>Report Duration</label>
+            <select id="periodSelect">
+              <option value="today" selected>Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="custom">Custom Date Range</option>
             </select>
           </div>
-          <div><label>Status</label>
-            <select id="filterStatus">
-              <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="preparing">Preparing</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+          <div class="stx-field" id="anchorDateWrap">
+            <label>Date</label>
+            <input type="date" id="anchorDate">
+          </div>
+          <div class="stx-field" id="customRangeWrap" style="display:none;">
+            <label>Custom Range</label>
+            <div class="stx-range">
+              <input type="date" id="fromDate"><span style="opacity:0.5;">—</span><input type="date" id="toDate">
+            </div>
           </div>
         </div>
-        <div class="admin-panel">
-          <div class="admin-panel-body" style="padding:0;" id="ordersTableWrap">
-            <div class="admin-loading">Loading orders…</div>
+
+        <div id="stxView-transactions">
+          <div class="stx-subtabs">
+            <button class="stx-subtab active" data-sub="transactions">Transactions</button>
+            <button class="stx-subtab" data-sub="daily">Daily Sales</button>
+            <button class="stx-subtab" data-sub="archives">Archives</button>
+          </div>
+
+          <div id="stxSub-transactions">
+            <div class="stx-toolbar">
+              <div class="stx-filters">
+                <span class="fb">Filter by</span>
+                <input type="search" id="filterSearch" placeholder="Customer, cashier or order #…">
+                <select id="filterOrderType">
+                  <option value="all">All Order Types</option>
+                  <option value="dine_in">Dine-in</option>
+                  <option value="pickup">Takeout</option>
+                  <option value="online">Online Order</option>
+                </select>
+                <select id="filterStatus">
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="preparing">Preparing</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div class="stx-actions">
+                <div class="stx-pos">
+                  <button class="stx-icon-btn" id="settingsBtn" title="Settings">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.5 1.5M7.1 16.9l-1.5 1.5M18.4 18.4l-1.5-1.5M7.1 7.1 5.6 5.6"/></svg>
+                  </button>
+                  <div class="stx-pop" id="settingsPop">
+                    <div class="stx-toggle">
+                      <span>Show cancelled / voided orders</span>
+                      <input type="checkbox" id="showCancelledToggle" checked>
+                    </div>
+                  </div>
+                </div>
+                <button class="stx-icon-btn" id="exportBtn" title="Export CSV">
+                  <svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                </button>
+                <div class="stx-pos">
+                  <button class="stx-icon-btn" id="moreBtn" title="More">
+                    <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                  </button>
+                  <div class="stx-pop" id="morePop">
+                    <button class="stx-pop-item" data-more="refresh">
+                      <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
+                      Refresh data
+                    </button>
+                    <button class="stx-pop-item" data-more="print">
+                      <svg viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      Print view
+                    </button>
+                    <div class="stx-pop-divider"></div>
+                    <button class="stx-pop-item" data-more="reports">
+                      <svg viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-6"/><path d="M2 20h20"/></svg>
+                      Go to Reports
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="stx-table-wrap" id="ordersTableWrap">
+              <div class="admin-loading">Loading transactions…</div>
+            </div>
+          </div>
+
+          <div id="stxSub-daily" style="display:none;">
+            <div class="stx-table-wrap" id="dailyWrap">
+              <div class="admin-loading">Loading daily sales…</div>
+            </div>
+          </div>
+
+          <div id="stxSub-archives" style="display:none;">
+            <div class="stx-table-wrap">
+              <div class="stx-empty">
+                <svg viewBox="0 0 24 24"><path d="M3 8h18l-1.5 12h-15L3 8Z"/><path d="M3 8l1.8-4h14.4L21 8M9 12h6"/></svg>
+                <div>No archived transactions yet.</div>
+                <div style="font-size:0.78rem;">Archived records will appear here once archiving is enabled.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="stxView-reports" style="display:none;">
+          ${canReports ? `
+          <div class="stx-subtabs">
+            <button class="stx-subtab active" data-rtab="topaddons">Top Add-Ons</button>
+            <button class="stx-subtab" data-rtab="products">Product Sales</button>
+            <button class="stx-subtab" data-rtab="categories">Categories</button>
+            <button class="stx-subtab" data-rtab="payments">Payments</button>
+            <button class="stx-subtab" data-rtab="ordertypes">Order Types</button>
+          </div>
+          <div class="stx-table-wrap" id="reportWrap">
+            <div class="admin-loading">Loading reports…</div>
+          </div>` : `
+          <div class="stx-table-wrap">
+            <div class="stx-empty">You need the "Access Reports" permission to view sales reports. Ask an Admin to grant it.</div>
+          </div>`}
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="orderModal">
+        <div class="modal-box order-modal-box">
+          <h3 id="orderModalTitle">Order Details</h3>
+          <div id="orderModalBody"><div class="admin-loading">Loading…</div></div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="orderModalCloseBtn">Close</button>
           </div>
         </div>
       </div>
     `;
-    document.getElementById('filterSource').addEventListener('change', renderTable);
+
+    // Default the date field to today (dynamic, not hardcoded).
+    document.getElementById('anchorDate').value = toDateParam(new Date());
+
+    /* ---- Period controls ---- */
+    document.getElementById('periodSelect').addEventListener('change', (e) => {
+      const custom = e.target.value === 'custom';
+      document.getElementById('customRangeWrap').style.display = custom ? '' : 'none';
+      document.getElementById('anchorDateWrap').style.display = custom ? 'none' : '';
+      refresh();
+    });
+    document.getElementById('anchorDate').addEventListener('change', refresh);
+    document.getElementById('fromDate').addEventListener('change', refresh);
+    document.getElementById('toDate').addEventListener('change', refresh);
+
+    /* ---- Primary tabs ---- */
+    document.querySelectorAll('.stx-tab').forEach(btn => btn.addEventListener('click', () => {
+      document.querySelectorAll('.stx-tab').forEach(b => b.classList.toggle('active', b === btn));
+      const view = btn.dataset.vtab;
+      document.getElementById('stxView-transactions').style.display = view === 'transactions' ? '' : 'none';
+      document.getElementById('stxView-reports').style.display = view === 'reports' ? '' : 'none';
+      if (view === 'reports') loadActiveReport();
+      else loadSubView();
+    }));
+
+    /* ---- Secondary tabs (Transactions / Daily Sales / Archives) ---- */
+    document.querySelectorAll('.stx-subtab[data-sub]').forEach(btn => btn.addEventListener('click', () => {
+      document.querySelectorAll('.stx-subtab[data-sub]').forEach(b => b.classList.toggle('active', b === btn));
+      loadSubView();
+    }));
+
+    /* ---- Report sub-tabs ---- */
+    if (canReports) {
+      document.querySelectorAll('.stx-subtab[data-rtab]').forEach(btn => btn.addEventListener('click', () => {
+        document.querySelectorAll('.stx-subtab[data-rtab]').forEach(b => b.classList.toggle('active', b === btn));
+        loadActiveReport();
+      }));
+    }
+
+    /* ---- Filters ---- */
+    document.getElementById('filterOrderType').addEventListener('change', renderTable);
     document.getElementById('filterStatus').addEventListener('change', renderTable);
-    loadOrders();
+    document.getElementById('filterSearch').addEventListener('input', renderTable);
+
+    /* ---- Toolbar actions ---- */
+    document.getElementById('settingsBtn').addEventListener('click', (e) => { e.stopPropagation(); togglePop('settingsPop'); });
+    document.getElementById('moreBtn').addEventListener('click', (e) => { e.stopPropagation(); togglePop('morePop'); });
+    document.getElementById('showCancelledToggle').addEventListener('change', (e) => { showCancelled = e.target.checked; renderTable(); });
+    document.getElementById('exportBtn').addEventListener('click', exportCSV);
+    document.querySelectorAll('.stx-pop-item[data-more]').forEach(btn => btn.addEventListener('click', () => {
+      const act = btn.dataset.more;
+      document.getElementById('morePop').classList.remove('open');
+      if (act === 'refresh') refresh();
+      else if (act === 'print') window.print();
+      else if (act === 'reports') {
+        document.querySelector('.stx-tab[data-vtab="reports"]').click();
+      }
+    }));
+    document.addEventListener('click', () => {
+      document.getElementById('settingsPop').classList.remove('open');
+      document.getElementById('morePop').classList.remove('open');
+    });
+    document.querySelectorAll('.stx-pop').forEach(p => p.addEventListener('click', (e) => e.stopPropagation()));
+
+    /* ---- Order modal ---- */
+    document.getElementById('orderModalCloseBtn').addEventListener('click', () => {
+      document.getElementById('orderModal').classList.remove('active');
+    });
+    document.getElementById('orderModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) e.currentTarget.classList.remove('active');
+    });
+
+    refresh();
   }
 
-  async function loadOrders() {
+  function togglePop(id) {
+    const pop = document.getElementById(id);
+    const wasOpen = pop.classList.contains('open');
+    document.querySelectorAll('.stx-pop').forEach(p => p.classList.remove('open'));
+    if (!wasOpen) pop.classList.add('open');
+  }
+
+  /* ================================================================
+     PERIOD
+     ================================================================ */
+  function toDateParam(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function computePeriod() {
+    const dur = document.getElementById('periodSelect').value;
+    const anchorVal = document.getElementById('anchorDate').value;
+    const anchor = anchorVal ? new Date(`${anchorVal}T00:00:00`) : new Date();
+    const a = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+
+    let from, to;
+    if (dur === 'today') { from = a; to = a; }
+    else if (dur === 'yesterday') {
+      from = new Date(a); from.setDate(a.getDate() - 1);
+      to = new Date(a); to.setDate(a.getDate() - 1);
+    } else if (dur === 'week') {
+      const start = new Date(a);
+      const day = a.getDay();
+      start.setDate(a.getDate() - (day === 0 ? 6 : day - 1)); // Monday start
+      from = start; to = a;
+    } else if (dur === 'month') {
+      from = new Date(a.getFullYear(), a.getMonth(), 1); to = a;
+    } else { // custom
+      const fv = document.getElementById('fromDate').value;
+      const tv = document.getElementById('toDate').value;
+      from = fv ? new Date(`${fv}T00:00:00`) : null;
+      to = tv ? new Date(`${tv}T00:00:00`) : null;
+    }
+    return { from, to };
+  }
+
+  function applyPeriod() {
+    const { from, to } = computePeriod();
+    currentPeriod = { from: from ? toDateParam(from) : null, to: to ? toDateParam(to) : null };
+  }
+
+  function periodQuery() {
+    const q = new URLSearchParams();
+    if (currentPeriod.from) q.set('from', currentPeriod.from);
+    if (currentPeriod.to) q.set('to', currentPeriod.to);
+    return q.toString();
+  }
+
+  function refresh() {
+    applyPeriod();
+    loadSummary();
+    loadSubView();
+    if (document.getElementById('stxView-reports').style.display !== 'none') loadActiveReport();
+  }
+
+  function loadSubView() {
+    const active = document.querySelector('.stx-subtab[data-sub].active');
+    const sub = active ? active.dataset.sub : 'transactions';
+    document.getElementById('stxSub-transactions').style.display = sub === 'transactions' ? '' : 'none';
+    document.getElementById('stxSub-daily').style.display = sub === 'daily' ? '' : 'none';
+    document.getElementById('stxSub-archives').style.display = sub === 'archives' ? '' : 'none';
+    if (sub === 'daily') loadDaily();
+    else if (sub === 'transactions') loadOrders();
+  }
+
+  /* ================================================================
+     SUMMARY CARDS
+     ================================================================ */
+  async function loadSummary() {
+    if (!canReports) return;
     try {
-      const res = await adminFetch('/api/admin/sales/orders');
+      const res = await adminFetch(`/api/admin/sales/summary?${periodQuery()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load summary.');
+      const s = data.summary;
+      const sales = Number(s.gross_sales) || 0;
+      const cogs = Number(s.cogs) || 0;
+      const profit = Number(s.profit) || 0;
+      const marginPct = Number(s.margin) || 0;
+
+      document.getElementById('sumSales').textContent = peso(sales);
+      document.getElementById('sumSalesSub').textContent = `${s.order_count} orders · avg ${peso(s.aov)}`;
+      document.getElementById('sumCogs').textContent = peso(cogs);
+      document.getElementById('sumCogsRing').innerHTML = ringSVG(sales > 0 ? (cogs / sales) * 100 : 0);
+      document.getElementById('sumMargin').textContent = peso(profit);
+      document.getElementById('sumMarginRing').innerHTML = ringSVG(marginPct);
+      document.getElementById('sumMarginSub').textContent = `Margin ${marginPct}%`;
+    } catch (err) {
+      console.error('Summary error:', err.message);
+    }
+  }
+
+  /* ================================================================
+     TRANSACTIONS TABLE
+     ================================================================ */
+  async function loadOrders() {
+    const wrap = document.getElementById('ordersTableWrap');
+    wrap.innerHTML = `<div class="admin-loading">Loading transactions…</div>`;
+    try {
+      // The report period is the only server-side boundary; everything else
+      // (order-type/status/search) is filtered client-side so switching
+      // filters is instant and doesn't re-hit the API.
+      const res = await adminFetch(`/api/admin/sales/orders?${periodQuery()}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not load orders.');
       allOrders = data.orders || [];
       renderTable();
     } catch (err) {
-      document.getElementById('ordersTableWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+      wrap.innerHTML = `<div class="stx-empty">⚠ ${err.message}</div>`;
     }
   }
 
-  function renderTable() {
-    const sourceFilter = document.getElementById('filterSource').value;
+  function getFilteredRows() {
+    const orderTypeFilter = document.getElementById('filterOrderType').value;
     const statusFilter = document.getElementById('filterStatus').value;
+    const search = document.getElementById('filterSearch').value.trim().toLowerCase();
 
-    const rows = allOrders.filter(o => {
-      const isOnline = !o.staff_name;
-      if (sourceFilter === 'online' && !isOnline) return false;
-      if (sourceFilter === 'pos' && isOnline) return false;
+    return allOrders.filter(o => {
+      if (!showCancelled && o.status === 'cancelled') return false;
+      if (orderTypeFilter !== 'all' && o.order_type !== orderTypeFilter) return false;
       if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+      if (search) {
+        const hay = `${o.customer_name || ''} ${o.staff_name || ''} #${o.id} ${orderTypeLabel(o.order_type)}`.toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
       return true;
     });
+  }
 
+  function sortRows(rows) {
+    const { key, dir } = sortState;
+    const mul = dir === 'asc' ? 1 : -1;
+    const value = (o) => {
+      switch (key) {
+        case 'id': return o.id;
+        case 'datetime': return o.datetime_ordered || '';
+        case 'order_type': return orderTypeLabel(o.order_type);
+        case 'customer': return o.customer_name || '';
+        case 'cashier': return o.staff_name || '';
+        case 'items': return Number(o.item_count) || 0;
+        case 'subtotal': return Number(o.total_amount) - Number(o.delivery_fee || 0);
+        case 'payment': return PAYMENT_LABELS[o.payment_method] || o.payment_method || '';
+        case 'total': return Number(o.total_amount) || 0;
+        case 'status': return o.status || '';
+        default: return '';
+      }
+    };
+    return [...rows].sort((a, b) => {
+      const va = value(a), vb = value(b);
+      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * mul;
+      return String(va).localeCompare(String(vb)) * mul;
+    });
+  }
+
+  function renderTable() {
+    const rows = sortRows(getFilteredRows());
     const wrap = document.getElementById('ordersTableWrap');
     if (rows.length === 0) {
-      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No orders match this filter.</div>`;
+      wrap.innerHTML = `<div class="stx-empty">No entries found for this period.</div>`;
       return;
     }
+
+    const sortable = ['id', 'datetime', 'order_type', 'customer', 'cashier', 'items', 'subtotal', 'payment', 'total', 'status'];
+    const th = (label, key, align) => {
+      const cls = [];
+      if (sortable.includes(key)) {
+        cls.push('sortable');
+        if (sortState.key === key) cls.push(sortState.dir);
+      }
+      if (align) cls.push('right');
+      const clsStr = cls.length ? ` class="${cls.join(' ')}"` : '';
+      const caret = sortState.key === key ? `<span class="caret"></span>` : '';
+      return `<th${clsStr} data-sort="${key || ''}">${label}${caret}</th>`;
+    };
 
     wrap.innerHTML = `
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Order</th><th>Source</th><th>Customer</th><th>Type</th>
-            <th>Total</th><th>Status</th><th>Placed</th><th>Actions</th>
+            ${th('Transaction ID', 'id')}
+            ${th('Date & Time', 'datetime')}
+            ${th('Order Type', 'order_type')}
+            ${th('Customer', 'customer')}
+            ${th('Cashier', 'cashier')}
+            ${th('Items', 'items', true)}
+            ${th('Subtotal', 'subtotal', true)}
+            ${th('Payment Method', 'payment')}
+            ${th('Total', 'total', true)}
+            ${th('Status', 'status')}
+            <th class="right">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -135,29 +664,44 @@
       </table>
     `;
 
+    wrap.querySelectorAll('th.sortable').forEach(thEl => thEl.addEventListener('click', () => {
+      const key = thEl.dataset.sort;
+      if (sortState.key === key) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+      else sortState = { key, dir: key === 'datetime' || key === 'id' ? 'desc' : 'asc' };
+      renderTable();
+    }));
+
     wrap.querySelectorAll('button[data-action]').forEach(btn => {
       btn.addEventListener('click', () => handleStatusChange(btn.dataset.id, btn.dataset.action));
+    });
+    wrap.querySelectorAll('button[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => openOrderModal(btn.dataset.view));
     });
   }
 
   function rowHTML(o) {
-    const isOnline = !o.staff_name;
+    const isOnline = o.source === 'online';
     const needsAction = isOnline && o.status === 'pending';
-    const placed = o.datetime_ordered ? new Date(o.datetime_ordered).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+    const subtotal = (Number(o.total_amount) || 0) - (Number(o.delivery_fee) || 0);
+    const cashier = isOnline ? '—' : escapeHtml(o.staff_name || 'Staff');
 
     return `
       <tr class="${needsAction ? 'needs-action' : ''}">
-        <td>#${o.id}</td>
+        <td class="mono">#${o.id}</td>
+        <td style="white-space:nowrap;">${formatDate(o.datetime_ordered)}</td>
         <td>
           ${isOnline
             ? `<span class="source-pill source-online">Online</span>`
-            : `<span class="source-pill source-pos">POS · ${escapeHtml(o.staff_name)}</span>`}
+            : `<span class="source-pill source-pos">POS · ${cashier}</span>`}
+          <div style="font-size:0.74rem; opacity:0.6; margin-top:2px;">${orderTypeLabel(o.order_type)}</div>
         </td>
         <td>${escapeHtml(o.customer_name) || '—'}</td>
-        <td>${(o.order_type || '').replace('_', ' ')}</td>
-        <td>${peso(o.total_amount)}</td>
-        <td><span class="status-pill status-${o.status}">${o.status}</span></td>
-        <td style="font-size:0.78rem; opacity:0.7;">${placed}</td>
+        <td>${cashier}</td>
+        <td class="right">${Number(o.item_count) || 0}</td>
+        <td class="right">${peso(subtotal)}</td>
+        <td>${escapeHtml(PAYMENT_LABELS[o.payment_method] || o.payment_method || '—')}</td>
+        <td class="right"><b>${peso(o.total_amount)}</b></td>
+        <td><span class="status-pill status-${o.status}">${statusLabel(o.status)}</span></td>
         <td><div class="row-actions">${actionButtons(o)}</div></td>
       </tr>
     `;
@@ -165,33 +709,25 @@
 
   function actionButtons(o) {
     const id = o.id;
+    const view = `<button data-view="${id}">View</button>`;
     switch (o.status) {
       case 'pending':
-        return `
-          <button class="primary" data-action="confirmed" data-id="${id}">Confirm</button>
-          <button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>
-        `;
+        return `${view}<button class="primary" data-action="confirmed" data-id="${id}">Confirm</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
       case 'confirmed':
-        return `
-          <button class="primary" data-action="preparing" data-id="${id}">Start Preparing</button>
-          <button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>
-        `;
+        return `${view}<button class="primary" data-action="preparing" data-id="${id}">Prepare</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
       case 'preparing':
-        return `
-          <button class="primary" data-action="completed" data-id="${id}">Mark Ready / Completed</button>
-          <button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>
-        `;
+        return `${view}<button class="primary" data-action="completed" data-id="${id}">Complete</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
       case 'completed':
-        return `<span style="font-size:0.75rem; opacity:0.5;">No further action</span>`;
+        return `${view}<button class="danger" data-action="cancelled" data-id="${id}">Void</button>`;
       case 'cancelled':
-        return `<span style="font-size:0.75rem; opacity:0.5;">Cancelled</span>`;
+        return `${view}`;
       default:
-        return '';
+        return view;
     }
   }
 
   async function handleStatusChange(orderId, newStatus) {
-    if (newStatus === 'cancelled' && !confirm(`Cancel Order #${orderId}? This can't be undone.`)) return;
+    if (newStatus === 'cancelled' && !confirm(`Cancel/Void Order #${orderId}? This can't be undone.`)) return;
 
     try {
       const res = await adminFetch(`/api/admin/sales/pos/orders/${orderId}/status`, {
@@ -201,12 +737,346 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not update order status.');
 
-      const order = allOrders.find(o => o.id == orderId);
-      if (order) order.status = newStatus;
-      renderTable();
+      loadOrders();
+      loadSummary();
     } catch (err) {
       alert(err.message);
     }
+  }
+
+  /* ================================================================
+     EXPORT (currently filtered rows → CSV)
+     ================================================================ */
+  function exportCSV() {
+    const rows = sortRows(getFilteredRows());
+    if (rows.length === 0) {
+      alert('Nothing to export — no transactions match the current filters.');
+      return;
+    }
+    const cols = [
+      ['Transaction ID', o => `#${o.id}`],
+      ['Date & Time', o => formatDate(o.datetime_ordered)],
+      ['Order Type', o => orderTypeLabel(o.order_type)],
+      ['Customer', o => o.customer_name || ''],
+      ['Cashier', o => o.source === 'online' ? '' : (o.staff_name || 'Staff')],
+      ['Items', o => Number(o.item_count) || 0],
+      ['Subtotal', o => ((Number(o.total_amount) || 0) - (Number(o.delivery_fee) || 0)).toFixed(2)],
+      ['Payment Method', o => PAYMENT_LABELS[o.payment_method] || o.payment_method || ''],
+      ['Total', o => (Number(o.total_amount) || 0).toFixed(2)],
+      ['Status', o => o.status || ''],
+    ];
+    const csv = [cols.map(c => c[0]).join(',')]
+      .concat(rows.map(o => cols.map(([, fn]) => {
+        const v = String(fn(o) ?? '');
+        return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+      }).join(',')))
+      .join('\n');
+
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    const stamp = currentPeriod.from || 'all';
+    a.href = URL.createObjectURL(blob);
+    a.download = `sales-transactions-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
+  /* ================================================================
+     ORDER DETAIL MODAL
+     ================================================================ */
+  async function openOrderModal(orderId) {
+    const modal = document.getElementById('orderModal');
+    modal.classList.add('active');
+    document.getElementById('orderModalTitle').textContent = `Order #${orderId}`;
+    document.getElementById('orderModalBody').innerHTML = `<div class="admin-loading">Loading…</div>`;
+
+    try {
+      const res = await adminFetch(`/api/admin/sales/orders/${orderId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load order.');
+      renderOrderDetail(data.order);
+    } catch (err) {
+      document.getElementById('orderModalBody').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function renderOrderDetail(o) {
+    const source = o.source === 'online' ? 'Online (Customer)' : `POS · ${escapeHtml(o.staff_name || 'Staff')}`;
+    const payment = o.payments && o.payments.length
+      ? o.payments.map(p => `${escapeHtml(PAYMENT_LABELS[p.payment_method] || p.payment_method)} · ${peso(p.amount)} · ${escapeHtml(p.status)}`).join('<br>')
+      : '—';
+
+    const itemsRows = (o.items || []).map(it => `
+      <tr>
+        <td>
+          ${escapeHtml(it.product_name || `Menu #${it.menu_id}`)}
+          ${it.notes ? `<div style="font-size:0.72rem; opacity:0.55;">${escapeHtml(it.notes)}</div>` : ''}
+          ${(it.add_ons || []).length ? `
+            <div class="addon-line-list" style="font-size:0.76rem;">
+              + ${it.add_ons.map(a => `${escapeHtml(a.name)} ×${a.quantity} (${peso(a.subtotal)})`).join(', ')}
+            </div>` : ''}
+        </td>
+        <td class="right">${peso(it.price)}</td>
+        <td class="right">${it.quantity}</td>
+        <td class="right">${peso(Number(it.subtotal) + (it.add_ons || []).reduce((s, a) => s + Number(a.subtotal), 0))}</td>
+      </tr>`).join('');
+
+    const body = document.getElementById('orderModalBody');
+    body.innerHTML = `
+      <div class="om-meta">
+        <div class="row"><span>Customer</span><b>${escapeHtml(o.customer_name) || '—'}</b></div>
+        <div class="row"><span>Source</span><b>${source}</b></div>
+        <div class="row"><span>Order Type</span><b>${orderTypeLabel(o.order_type)}</b></div>
+        <div class="row"><span>Status</span><b>${statusLabel(o.status)}</b></div>
+        <div class="row"><span>Payment</span><b>${payment}</b></div>
+        <div class="row"><span>Placed</span><b>${formatDate(o.datetime_ordered)}</b></div>
+      </div>
+
+      <table class="om-items">
+        <thead><tr><th>Item</th><th class="right">Unit Price</th><th class="right">Qty</th><th class="right">Total</th></tr></thead>
+        <tbody>${itemsRows}</tbody>
+      </table>
+
+      <div class="om-totals">
+        <div class="row"><span>Subtotal (items + add-ons)</span><span>${peso(Number(o.total_amount) - Number(o.delivery_fee || 0))}</span></div>
+        <div class="row"><span>Delivery Fee</span><span>${peso(o.delivery_fee || 0)}</span></div>
+        <div class="row grand"><span>Grand Total</span><span>${peso(o.total_amount)}</span></div>
+        ${o.cogs !== undefined ? `
+          <div class="row"><span>COGS</span><span>${peso(o.cogs)}</span></div>
+          <div class="row"><span>Gross Profit</span><span class="${o.profit >= 0 ? 'profit-pos' : 'money-neg'}">${peso(o.profit)}</span></div>
+          <div class="row"><span>Margin</span><span>${o.margin}%</span></div>` : ''}
+      </div>
+
+      <div class="row-actions" id="orderModalActions" style="justify-content:flex-end;">
+        ${modalActionButtons(o)}
+      </div>
+    `;
+
+    body.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await handleStatusChange(btn.dataset.id, btn.dataset.action);
+        openOrderModal(btn.dataset.id);
+      });
+    });
+  }
+
+  function modalActionButtons(o) {
+    const id = o.id;
+    switch (o.status) {
+      case 'pending':
+        return `<button class="primary" data-action="confirmed" data-id="${id}">Confirm Order</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel Order</button>`;
+      case 'confirmed':
+        return `<button class="primary" data-action="preparing" data-id="${id}">Start Preparing</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
+      case 'preparing':
+        return `<button class="primary" data-action="completed" data-id="${id}">Mark Completed</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
+      case 'completed':
+        return `<button class="danger" data-action="cancelled" data-id="${id}">Void Order</button>`;
+      default:
+        return `<span style="font-size:0.75rem; opacity:0.5;">No further action</span>`;
+    }
+  }
+
+  /* ================================================================
+     DAILY SALES
+     ================================================================ */
+  async function loadDaily() {
+    const wrap = document.getElementById('dailyWrap');
+    if (!canReports) {
+      wrap.innerHTML = `<div class="stx-empty">You need the "Access Reports" permission to view daily sales.</div>`;
+      return;
+    }
+    wrap.innerHTML = `<div class="admin-loading">Loading daily sales…</div>`;
+    try {
+      const res = await adminFetch(`/api/admin/sales/daily?${periodQuery()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load daily sales.');
+      wrap.innerHTML = dailyHTML(data.daily || []);
+    } catch (err) {
+      wrap.innerHTML = `<div class="stx-empty">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function dailyHTML(days) {
+    if (!days.length) return `<div class="stx-empty">No entries found for this period.</div>`;
+    return `
+      <table class="admin-table" style="min-width:760px;">
+        <thead><tr>
+          <th>Date</th><th>Orders</th><th class="right">Gross Sales</th>
+          <th class="right">COGS</th><th class="right">Profit</th>
+          <th class="right">Margin</th><th class="right">AOV</th>
+        </tr></thead>
+        <tbody>
+          ${days.map(d => `
+            <tr>
+              <td class="mono">${escapeHtml(String(d.date).slice(0, 10))}</td>
+              <td>${d.order_count}</td>
+              <td class="right">${peso(d.gross_sales)}</td>
+              <td class="right">${peso(d.cogs)}</td>
+              <td class="right ${d.profit >= 0 ? 'profit-pos' : 'money-neg'}">${peso(d.profit)}</td>
+              <td class="right">${d.margin}%</td>
+              <td class="right">${peso(d.aov)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  /* ================================================================
+     REPORTS
+     ================================================================ */
+  function activeReportTab() {
+    const active = document.querySelector('.stx-subtab[data-rtab].active');
+    return active ? active.dataset.rtab : 'topaddons';
+  }
+
+  async function loadActiveReport() {
+    if (!canReports) return;
+    const tab = activeReportTab();
+    const wrap = document.getElementById('reportWrap');
+    wrap.innerHTML = `<div class="admin-loading">Loading…</div>`;
+    try {
+      const q = periodQuery();
+      let html = '';
+      if (tab === 'topaddons') {
+        const res = await adminFetch(`/api/admin/sales/report/top-addons?${q}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        html = topAddonsHTML(data.addons || []);
+      } else if (tab === 'products') {
+        const res = await adminFetch(`/api/admin/sales/report/products?${q}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        html = productsHTML(data.products || []);
+      } else if (tab === 'categories') {
+        const res = await adminFetch(`/api/admin/sales/report/categories?${q}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        html = categoriesHTML(data.categories || []);
+      } else if (tab === 'payments') {
+        const res = await adminFetch(`/api/admin/sales/report?${q}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        html = paymentsHTML(data.byPaymentMethod || []);
+      } else if (tab === 'ordertypes') {
+        const res = await adminFetch(`/api/admin/sales/report/order-types?${q}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        html = orderTypesHTML(data.orderTypes || []);
+      }
+      wrap.innerHTML = html;
+    } catch (err) {
+      wrap.innerHTML = `<div class="stx-empty">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function topAddonsHTML(addons) {
+    if (!addons.length) return `<div class="stx-empty">No entries found for this period.</div>`;
+    return `
+      <table class="admin-table" style="min-width:720px;">
+        <thead><tr>
+          <th>Add-On</th><th>Units Sold</th><th>Orders</th>
+          <th class="right">Revenue</th><th class="right">COGS</th>
+          <th class="right">Profit</th><th class="right">Margin</th>
+        </tr></thead>
+        <tbody>
+          ${addons.map(a => `
+            <tr>
+              <td>${escapeHtml(a.name)}</td>
+              <td>${a.quantity_sold}</td>
+              <td>${a.order_count}</td>
+              <td class="right">${peso(a.revenue)}</td>
+              <td class="right">${peso(a.cogs)}</td>
+              <td class="right ${a.profit >= 0 ? 'profit-pos' : 'money-neg'}">${peso(a.profit)}</td>
+              <td class="right">${a.margin}%</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function productsHTML(products) {
+    if (!products.length) return `<div class="stx-empty">No entries found for this period.</div>`;
+    return `
+      <table class="admin-table" style="min-width:900px;">
+        <thead><tr>
+          <th>Product</th><th>Category</th><th>Units</th>
+          <th class="right">Base Sales</th><th class="right">Add-On Sales</th>
+          <th class="right">Total Sales</th><th class="right">COGS</th>
+          <th class="right">Profit</th><th class="right">Margin</th>
+        </tr></thead>
+        <tbody>
+          ${products.map(p => `
+            <tr>
+              <td>${escapeHtml(p.product_name || `Menu #${p.menu_id}`)}</td>
+              <td>${escapeHtml(p.category_name || '—')}</td>
+              <td>${p.quantity_sold}</td>
+              <td class="right">${peso(p.revenue)}</td>
+              <td class="right">${peso(p.addon_revenue)}</td>
+              <td class="right">${peso(p.total_revenue)}</td>
+              <td class="right">${peso(p.cogs)}</td>
+              <td class="right ${p.profit >= 0 ? 'profit-pos' : 'money-neg'}">${peso(p.profit)}</td>
+              <td class="right">${p.margin}%</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function categoriesHTML(categories) {
+    if (!categories.length) return `<div class="stx-empty">No entries found for this period.</div>`;
+    return `
+      <table class="admin-table" style="min-width:620px;">
+        <thead><tr>
+          <th>Category</th><th>Units Sold</th><th class="right">Revenue</th>
+          <th class="right">COGS</th><th class="right">Profit</th><th class="right">Margin</th>
+        </tr></thead>
+        <tbody>
+          ${categories.map(c => `
+            <tr>
+              <td>${escapeHtml(c.category_name)}</td>
+              <td>${c.quantity_sold}</td>
+              <td class="right">${peso(c.revenue)}</td>
+              <td class="right">${peso(c.cogs)}</td>
+              <td class="right ${c.profit >= 0 ? 'profit-pos' : 'money-neg'}">${peso(c.profit)}</td>
+              <td class="right">${c.margin}%</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function paymentsHTML(payments) {
+    if (!payments.length) return `<div class="stx-empty">No entries found for this period.</div>`;
+    return `
+      <table class="admin-table" style="min-width:420px;">
+        <thead><tr>
+          <th>Payment Method</th><th>Transactions</th><th class="right">Total Collected</th>
+        </tr></thead>
+        <tbody>
+          ${payments.map(p => `
+            <tr>
+              <td>${escapeHtml(PAYMENT_LABELS[p.payment_method] || p.payment_method)}</td>
+              <td>${p.transaction_count}</td>
+              <td class="right">${peso(p.total_amount)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function orderTypesHTML(types) {
+    if (!types.length) return `<div class="stx-empty">No entries found for this period.</div>`;
+    return `
+      <table class="admin-table" style="min-width:420px;">
+        <thead><tr>
+          <th>Order Type</th><th>Orders</th><th class="right">Total Sales</th>
+        </tr></thead>
+        <tbody>
+          ${types.map(t => `
+            <tr>
+              <td>${escapeHtml(orderTypeLabel(t.order_type))}</td>
+              <td>${t.order_count}</td>
+              <td class="right">${peso(t.total_amount)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
   }
 </script>
 </body>

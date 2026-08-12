@@ -60,3 +60,9 @@ export function checkCode(email, submittedCode) {
   codes.delete(email); // one-time use
   return { success: true };
 }
+
+// Invalidates any outstanding code for an email (e.g., when sending failed),
+// so the customer can immediately request a fresh one.
+export function deleteCode(email) {
+  codes.delete(email);
+}

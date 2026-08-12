@@ -29,9 +29,14 @@
   .pos-list-row:hover { background: var(--stone); }
   .pos-list-row .n { font-weight: 600; font-size: 0.9rem; }
   .pos-list-row .cat { font-size: 0.72rem; opacity: 0.5; margin-top: 2px; }
-  .pos-list-row .p { font-family: 'Space Mono', monospace; color: var(--brass-dark); font-weight: 700; font-size: 0.9rem; }
+  .pos-list-row .p { font-family: 'Space Mono', monospace; color: var(--brass-dark); font-weight: 700; font-size: 0.9rem; text-align: right; }
+  .addon-flag {
+    display: inline-block; margin-left: 8px; padding: 2px 7px; border-radius: 20px;
+    font-family: 'Space Mono', monospace; font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
+    background: rgba(163,132,74,0.15); color: var(--brass-dark); vertical-align: middle;
+  }
 
-  .pos-right-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .pos-right-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
   .pos-right-head h3 { margin: 0; font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 0.95rem; }
   .pos-right-head select {
     padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bone);
@@ -44,8 +49,17 @@
     text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.5; border-bottom: 1px solid var(--line);
   }
   .pos-order-table th:last-child, .pos-order-table td:last-child { text-align: right; }
+  .pos-order-table th:nth-child(2), .pos-order-table td:nth-child(2) { text-align: right; }
   .pos-order-table td { padding: 10px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
   .pos-order-table .item-notes { display: block; font-size: 0.72rem; opacity: 0.55; margin-top: 2px; }
+  .pos-order-table .addon-notes { color: var(--brass-dark); opacity: 0.85; }
+  .cart-item-head { display: flex; align-items: center; gap: 6px; }
+  .cart-item-head .nm { font-weight: 600; }
+  .edit-line-btn {
+    border: 1px solid var(--line); background: var(--bone); border-radius: 4px; cursor: pointer;
+    width: 20px; height: 20px; font-size: 0.72rem; line-height: 1; color: var(--brass-dark); flex-shrink: 0;
+  }
+  .edit-line-btn:hover { border-color: var(--brass); }
   .qty-controls { display: flex; align-items: center; gap: 6px; }
   .qty-controls button {
     width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--line); background: var(--component-bg);
@@ -68,6 +82,10 @@
   .pos-actions input[type="number"] {
     width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 10px;
     font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bone); color: var(--ink);
+  }
+  .pos-payment {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 10px;
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bone); color: var(--ink); cursor: pointer;
   }
   .pos-actions-row { display: flex; gap: 10px; }
   .pos-actions-row button { flex: 1; }
@@ -96,6 +114,33 @@
     width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px;
     font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bone); color: var(--ink);
   }
+
+  /* ---- Customize modal ---- */
+  .cust-qty-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .cust-qty-row label { font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase; opacity: 0.55; }
+  .cust-qty-row .qty-controls button { width: 30px; height: 30px; font-size: 1rem; }
+
+  .cust-addon-section { margin-bottom: 16px; }
+  .cust-addon-section > label { font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase; opacity: 0.55; display: block; margin-bottom: 6px; }
+  .cust-addon-list { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .cust-addon-row {
+    display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid var(--line); transition: background .12s;
+  }
+  .cust-addon-row:last-child { border-bottom: none; }
+  .cust-addon-row.is-selected { background: rgba(163,132,74,0.06); }
+  .cust-addon-row.is-disabled { opacity: 0.5; }
+  .cust-addon-check { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .cust-addon-check input { width: 16px; height: 16px; accent-color: var(--brass-dark); flex-shrink: 0; }
+  .cust-addon-check .cn { font-size: 0.86rem; font-weight: 600; }
+  .cust-addon-check .cs { font-size: 0.72rem; opacity: 0.55; margin-top: 1px; }
+  .cust-addon-row .cp { font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 700; color: var(--brass-dark); }
+  .cust-addon-row .qty-controls button { width: 22px; height: 22px; }
+
+  .modal-box.cust-modal { max-width: 520px; width: 100%; }
+  .cust-totals { background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 16px 0; }
+  .cust-totals .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.84rem; }
+  .cust-totals .row.grand { font-weight: 700; border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 10px; font-size: 0.95rem; }
 </style>
 </head>
 <body>
@@ -110,12 +155,18 @@
   if (session) init();
 
   let menuItems = [];
+  let addons = [];
   let categories = [];
-  let cart = []; // { uniqueId, menu_id, name, price, notes, qty }
+  // cart line: { uniqueId, menu_id, name, price, qty, notes, add_ons: [{ addon_id, name, price, qty }] }
+  let cart = [];
   let searchTerm = '';
   let activeCategoryId = 'all';
   let selectedCustomer = null; // { id, name, email }
   let custSearchDebounce = null;
+
+  // Customize modal state.
+  let customize = null; // { menu_id, name, base_price, qty, notes, selected: Map(addon_id -> qty) }
+  let editingUniqueId = null;
 
   function init() {
     const content = document.getElementById('adminContent');
@@ -140,7 +191,7 @@
 
           <table class="pos-order-table">
             <thead>
-              <tr><th>Description</th><th>Unit Price</th><th>Qty</th><th>Subtotal</th><th></th></tr>
+              <tr><th>Description</th><th>Unit Price</th><th>Qty</th><th>Total</th><th></th></tr>
             </thead>
             <tbody id="cartTableBody"></tbody>
           </table>
@@ -153,6 +204,12 @@
           </div>
 
           <div class="pos-actions">
+            <select id="posPayment" class="pos-payment">
+              <option value="cash">Payment Method — Cash</option>
+              <option value="card">Payment Method — Card</option>
+              <option value="gcash">Payment Method — GCash</option>
+              <option value="other">Payment Method — Other</option>
+            </select>
             <div id="custSelectedWrap" style="display:none;"></div>
             <div id="custSearchWrap" class="cust-search-wrap">
               <input type="text" id="custSearchInput" placeholder="Optional: search customer by name, email, or phone…" autocomplete="off">
@@ -169,12 +226,34 @@
       </div>
 
       <div class="modal-backdrop" id="customizeModal">
-        <div class="modal-box">
+        <div class="modal-box cust-modal">
           <h3 id="customizeModalTitle">Customize Item</h3>
+
+          <div class="cust-qty-row">
+            <label>Quantity</label>
+            <div class="qty-controls">
+              <button id="custQtyMinus">−</button>
+              <span id="custQty" style="min-width:28px; font-size:1rem;">1</span>
+              <button id="custQtyPlus">+</button>
+            </div>
+          </div>
+
+          <div class="cust-addon-section" id="custAddonsWrap">
+            <label>Add-Ons</label>
+            <div class="cust-addon-list" id="custAddonList"></div>
+          </div>
+
           <div class="form-field">
             <label>Special Instructions (optional)</label>
             <textarea id="customizeNotes" placeholder="e.g. No onions, extra spicy, less ice..."></textarea>
           </div>
+
+          <div class="cust-totals">
+            <div class="row"><span>Item Total</span><span id="custItemTotal">₱0.00</span></div>
+            <div class="row"><span>Add-Ons Total</span><span id="custAddonsTotal">₱0.00</span></div>
+            <div class="row grand"><span>Line Total</span><span id="custLineTotal">₱0.00</span></div>
+          </div>
+
           <div class="modal-close-row">
             <button class="btn btn-outline" id="customizeCancelBtn">Cancel</button>
             <button class="btn" id="customizeAddBtn">Add to Order</button>
@@ -188,8 +267,11 @@
     document.getElementById('deliveryFeeInput').addEventListener('input', renderCart);
     document.getElementById('clearOrderBtn').addEventListener('click', clearOrder);
     document.getElementById('submitOrderBtn').addEventListener('click', submitOrder);
-    document.getElementById('customizeCancelBtn').addEventListener('click', () => toggleModal(false));
+    document.getElementById('customizeCancelBtn').addEventListener('click', () => { resetCustomize(); toggleModal(false); });
     document.getElementById('customizeAddBtn').addEventListener('click', confirmAddToCart);
+    document.getElementById('custQtyMinus').addEventListener('click', () => changeCustomizeQty(-1));
+    document.getElementById('custQtyPlus').addEventListener('click', () => changeCustomizeQty(1));
+    document.getElementById('customizeNotes').addEventListener('input', updateCustomizeTotals);
     document.getElementById('custSearchInput').addEventListener('input', onCustomerSearchInput);
     document.addEventListener('click', (e) => {
       const wrap = document.getElementById('custSearchWrap');
@@ -198,10 +280,359 @@
 
     loadCategories();
     loadMenu();
+    loadAddons();
   }
 
+  /* ================================================================
+     DATA LOADING
+     ================================================================ */
   function toggleModal(show) { document.getElementById('customizeModal').classList.toggle('active', show); }
 
+  async function loadCategories() {
+    try {
+      const res = await adminFetch('/api/admin/products/categories');
+      const data = await res.json();
+      if (!res.ok) return;
+      categories = data.data || [];
+      const select = document.getElementById('catFilterSelect');
+      select.innerHTML = `<option value="all">All Categories</option>` +
+        categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    } catch { /* non-fatal */ }
+  }
+
+  async function loadMenu() {
+    try {
+      const res = await adminFetch('/api/admin/products/menuitems');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load menu.');
+      menuItems = (data.items || []).filter(i => i.status === 'available');
+      renderList();
+    } catch (err) {
+      document.getElementById('posListWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  async function loadAddons() {
+    try {
+      const res = await adminFetch('/api/admin/products/addons');
+      const data = await res.json();
+      if (!res.ok) return;
+      addons = data.addons || [];
+      renderList(); // refresh "add-ons available" badges
+    } catch { /* non-fatal */ }
+  }
+
+  // Add-ons that can go on a given product. An add-on with no product links
+  // is a global add-on and applies to everything; otherwise it must be
+  // explicitly linked to the product.
+  function getAddonsForProduct(menuId) {
+    return addons.filter(a => {
+      if (!a.products || a.products.length === 0) return true;
+      return a.products.some(p => String(p.menu_id) === String(menuId));
+    });
+  }
+
+  /* ================================================================
+     MENU LIST
+     ================================================================ */
+  function renderList() {
+    let visible = menuItems;
+    if (activeCategoryId !== 'all') visible = visible.filter(i => String(i.category_id) === String(activeCategoryId));
+    if (searchTerm) visible = visible.filter(i => i.name.toLowerCase().includes(searchTerm));
+
+    const wrap = document.getElementById('posListWrap');
+    if (visible.length === 0) {
+      wrap.innerHTML = `<div class="pos-empty-orders">No items match.</div>`;
+      return;
+    }
+    wrap.innerHTML = visible.map(i => {
+      const hasAddons = getAddonsForProduct(i.id).length > 0;
+      return `
+        <div class="pos-list-row" data-id="${i.id}" data-name="${escapeHtml(i.name)}" data-price="${i.price}">
+          <div>
+            <div class="n">${escapeHtml(i.name)}${hasAddons ? '<span class="addon-flag">Add-ons</span>' : ''}</div>
+            <div class="cat">${escapeHtml(i.category_name || '')}</div>
+          </div>
+          <div class="p">${peso(i.price)}</div>
+        </div>
+      `;
+    }).join('');
+    wrap.querySelectorAll('.pos-list-row').forEach(el => {
+      el.addEventListener('click', () => openCustomizeModal(el.dataset.id, el.dataset.name, Number(el.dataset.price)));
+    });
+  }
+
+  /* ================================================================
+     CUSTOMIZE MODAL
+     ================================================================ */
+  function openCustomizeModal(menuId, name, price, line = null) {
+    editingUniqueId = line ? line.uniqueId : null;
+    customize = {
+      menu_id: menuId,
+      name,
+      base_price: Number(price),
+      qty: line ? line.qty : 1,
+      notes: line ? (line.notes || '') : '',
+      selected: new Map(),
+    };
+    if (line) {
+      (line.add_ons || []).forEach(a => customize.selected.set(String(a.addon_id), a.qty));
+    }
+
+    document.getElementById('customizeModalTitle').textContent = `Customize — ${name}`;
+    document.getElementById('customizeNotes').value = customize.notes;
+    document.getElementById('customizeAddBtn').textContent = line ? 'Update Item' : 'Add to Order';
+    renderAddonList();
+    updateCustomizeTotals();
+    toggleModal(true);
+  }
+
+  function renderAddonList() {
+    const wrap = document.getElementById('custAddonsWrap');
+    const list = document.getElementById('custAddonList');
+    const applicable = getAddonsForProduct(customize.menu_id);
+
+    if (!applicable.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+
+    list.innerHTML = applicable.map(a => {
+      const selected = customize.selected.has(String(a.id));
+      const disabled = a.status !== 'available';
+      const qty = customize.selected.get(String(a.id)) || 1;
+      return `
+        <div class="cust-addon-row ${disabled ? 'is-disabled' : ''} ${selected ? 'is-selected' : ''}">
+          <label class="cust-addon-check">
+            <input type="checkbox" data-aid="${a.id}" ${disabled ? 'disabled' : ''} ${selected ? 'checked' : ''}>
+            <div>
+              <div class="cn">${escapeHtml(a.name)}</div>
+              <div class="cs">${disabled ? 'Unavailable / out of stock' : escapeHtml(a.category || 'Add-On')}</div>
+            </div>
+          </label>
+          <div class="cp">${peso(a.price)}</div>
+          <div class="qty-controls addon-qty" ${selected && !disabled ? '' : 'style="display:none"'}>
+            <button data-aid="${a.id}" data-d="-1">−</button>
+            <span>${qty}</span>
+            <button data-aid="${a.id}" data-d="1">+</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) customize.selected.set(cb.dataset.aid, 1);
+        else customize.selected.delete(cb.dataset.aid);
+        renderAddonList();
+        updateCustomizeTotals();
+      });
+    });
+    list.querySelectorAll('.addon-qty button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const aid = btn.dataset.aid;
+        const cur = customize.selected.get(aid) || 1;
+        const next = Math.max(1, cur + Number(btn.dataset.d));
+        customize.selected.set(aid, next);
+        btn.parentElement.querySelector('span').textContent = next;
+        updateCustomizeTotals();
+      });
+    });
+  }
+
+  function changeCustomizeQty(delta) {
+    if (!customize) return;
+    customize.qty = Math.max(1, customize.qty + delta);
+    document.getElementById('custQty').textContent = customize.qty;
+    updateCustomizeTotals();
+  }
+
+  function updateCustomizeTotals() {
+    if (!customize) return;
+    const itemTotal = customize.base_price * customize.qty;
+    let addonsTotal = 0;
+    customize.selected.forEach((q, id) => {
+      const a = addons.find(x => String(x.id) === String(id));
+      if (a) addonsTotal += Number(a.price) * q;
+    });
+    document.getElementById('custItemTotal').textContent = peso(itemTotal);
+    document.getElementById('custAddonsTotal').textContent = peso(addonsTotal);
+    document.getElementById('custLineTotal').textContent = peso(itemTotal + addonsTotal);
+  }
+
+  function resetCustomize() {
+    customize = null;
+    editingUniqueId = null;
+  }
+
+  /* ================================================================
+     CART
+     ================================================================ */
+  function cartLineKey(c) {
+    const addonKey = (c.add_ons || []).slice()
+      .sort((x, y) => x.addon_id - y.addon_id)
+      .map(a => `${a.addon_id}x${a.qty}`).join(',');
+    return `${c.menu_id}|${addonKey}|${c.notes || ''}`;
+  }
+
+  function lineTotal(c) {
+    const addons = (c.add_ons || []).reduce((s, a) => s + Number(a.price) * Number(a.qty), 0);
+    return Number(c.price) * Number(c.qty) + addons;
+  }
+
+  function confirmAddToCart() {
+    if (!customize) return;
+    const notes = document.getElementById('customizeNotes').value.trim() || null;
+    const addOns = [...customize.selected.entries()].map(([id, q]) => {
+      const a = addons.find(x => String(x.id) === String(id));
+      return { addon_id: Number(id), name: a ? a.name : 'Add-On', price: a ? Number(a.price) : 0, qty: q };
+    });
+
+    const line = {
+      menu_id: customize.menu_id,
+      name: customize.name,
+      price: customize.base_price,
+      qty: customize.qty,
+      notes,
+      add_ons: addOns,
+    };
+
+    if (editingUniqueId) {
+      const idx = cart.findIndex(c => c.uniqueId === editingUniqueId);
+      if (idx >= 0) cart[idx] = { ...line, uniqueId: editingUniqueId };
+    } else {
+      const key = cartLineKey(line);
+      const existing = cart.find(c => cartLineKey(c) === key);
+      if (existing) existing.qty += line.qty;
+      else cart.push({ ...line, uniqueId: Date.now() + Math.random() });
+    }
+
+    resetCustomize();
+    toggleModal(false);
+    renderCart();
+  }
+
+  function changeQty(uniqueId, delta) {
+    const entry = cart.find(c => c.uniqueId == uniqueId);
+    if (!entry) return;
+    entry.qty += delta;
+    if (entry.qty <= 0) cart = cart.filter(c => c.uniqueId != uniqueId);
+    renderCart();
+  }
+
+  function removeLine(uniqueId) {
+    cart = cart.filter(c => c.uniqueId != uniqueId);
+    renderCart();
+  }
+
+  function clearOrder() {
+    cart = [];
+    clearSelectedCustomer();
+    document.getElementById('deliveryFeeInput').value = '0';
+    document.getElementById('posPayment').value = 'cash';
+    renderCart();
+  }
+
+  function renderCart() {
+    const tbody = document.getElementById('cartTableBody');
+    const emptyState = document.getElementById('cartEmptyState');
+
+    if (cart.length === 0) {
+      tbody.innerHTML = '';
+      emptyState.style.display = 'block';
+    } else {
+      emptyState.style.display = 'none';
+      tbody.innerHTML = cart.map(c => `
+        <tr>
+          <td>
+            <div class="cart-item-head">
+              <span class="nm">${escapeHtml(c.name)}</span>
+              <button class="edit-line-btn" data-id="${c.uniqueId}" title="Customize">✎</button>
+            </div>
+            ${c.notes ? `<span class="item-notes">${escapeHtml(c.notes)}</span>` : ''}
+            ${(c.add_ons || []).length ? `
+              <span class="item-notes addon-notes">+ ${c.add_ons.map(a => `${escapeHtml(a.name)} ×${a.qty} (${peso(a.price * a.qty)})`).join(', ')}</span>
+            ` : ''}
+          </td>
+          <td>${peso(c.price)}</td>
+          <td>
+            <div class="qty-controls">
+              <button data-id="${c.uniqueId}" data-delta="-1" class="qty-btn">−</button>
+              <span>${c.qty}</span>
+              <button data-id="${c.uniqueId}" data-delta="1" class="qty-btn">+</button>
+            </div>
+          </td>
+          <td>${peso(lineTotal(c))}</td>
+          <td><button data-id="${c.uniqueId}" class="remove-line-btn">✕</button></td>
+        </tr>
+      `).join('');
+      tbody.querySelectorAll('.qty-btn').forEach(btn => {
+        btn.addEventListener('click', () => changeQty(btn.dataset.id, Number(btn.dataset.delta)));
+      });
+      tbody.querySelectorAll('.remove-line-btn').forEach(btn => {
+        btn.addEventListener('click', () => removeLine(btn.dataset.id));
+      });
+      tbody.querySelectorAll('.edit-line-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const line = cart.find(c => c.uniqueId == btn.dataset.id);
+          if (line) openCustomizeModal(line.menu_id, line.name, line.price, line);
+        });
+      });
+    }
+
+    const totalAmount = cart.reduce((sum, c) => sum + lineTotal(c), 0);
+    const deliveryFee = Number(document.getElementById('deliveryFeeInput').value) || 0;
+    document.getElementById('sumTotal').textContent = peso(totalAmount);
+    document.getElementById('sumGrand').textContent = peso(totalAmount + deliveryFee);
+  }
+
+  /* ================================================================
+     SUBMIT ORDER
+     ================================================================ */
+  async function submitOrder() {
+    const errEl = document.getElementById('posError');
+    errEl.style.display = 'none';
+
+    const order_type = document.getElementById('posOrderType').value;
+    const delivery_fee = Number(document.getElementById('deliveryFeeInput').value) || 0;
+    const payment_method = document.getElementById('posPayment').value;
+
+    if (cart.length === 0) { errEl.textContent = 'Cart is empty.'; errEl.style.display = 'block'; return; }
+
+    const submitBtn = document.getElementById('submitOrderBtn');
+    submitBtn.disabled = true; submitBtn.textContent = 'Placing…';
+
+    try {
+      const res = await adminFetch('/api/admin/sales/pos/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          customer_id: selectedCustomer ? Number(selectedCustomer.id) : null,
+          order_type,
+          delivery_fee,
+          payment_method,
+          cart: cart.map(c => ({
+            menu_id: c.menu_id,
+            quantity: c.qty,
+            notes: c.notes,
+            add_ons: (c.add_ons || []).map(a => ({ addon_id: a.addon_id, quantity: a.qty })),
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not place order.');
+
+      alert(`Order #${data.order.id} placed successfully (${peso(data.order.total_amount)}).`);
+      clearOrder();
+      loadMenu();   // stock quantities changed
+      loadAddons(); // add-on stock may have changed too
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false; submitBtn.textContent = 'Place Order';
+    }
+  }
+
+  /* ================================================================
+     CUSTOMER SEARCH (walk-ins optional)
+     ================================================================ */
   function onCustomerSearchInput(e) {
     const q = e.target.value.trim();
     clearTimeout(custSearchDebounce);
@@ -260,185 +691,6 @@
     document.getElementById('custSelectedWrap').style.display = 'none';
     document.getElementById('custSelectedWrap').innerHTML = '';
     document.getElementById('custSearchWrap').style.display = 'block';
-  }
-
-  async function loadCategories() {
-    try {
-      const res = await adminFetch('/api/admin/products/categories');
-      const data = await res.json();
-      if (!res.ok) return;
-      categories = data.data || [];
-      const select = document.getElementById('catFilterSelect');
-      select.innerHTML = `<option value="all">All Categories</option>` +
-        categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-    } catch { /* non-fatal */ }
-  }
-
-  async function loadMenu() {
-    try {
-      const res = await adminFetch('/api/admin/products/menuitems');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not load menu.');
-      menuItems = (data.items || []).filter(i => i.status === 'available');
-      renderList();
-    } catch (err) {
-      document.getElementById('posListWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
-    }
-  }
-
-  function renderList() {
-    let visible = menuItems;
-    if (activeCategoryId !== 'all') visible = visible.filter(i => String(i.category_id) === String(activeCategoryId));
-    if (searchTerm) visible = visible.filter(i => i.name.toLowerCase().includes(searchTerm));
-
-    const wrap = document.getElementById('posListWrap');
-    if (visible.length === 0) {
-      wrap.innerHTML = `<div class="pos-empty-orders">No items match.</div>`;
-      return;
-    }
-    wrap.innerHTML = visible.map(i => `
-      <div class="pos-list-row" data-id="${i.id}" data-name="${escapeHtml(i.name)}" data-price="${i.price}">
-        <div>
-          <div class="n">${escapeHtml(i.name)}</div>
-          <div class="cat">${escapeHtml(i.category_name || '')}</div>
-        </div>
-        <div class="p">${peso(i.price)}</div>
-      </div>
-    `).join('');
-    wrap.querySelectorAll('.pos-list-row').forEach(el => {
-      el.addEventListener('click', () => openCustomizeModal(el.dataset.id, el.dataset.name, Number(el.dataset.price)));
-    });
-  }
-
-  let pendingItem = null;
-
-  function openCustomizeModal(id, name, price) {
-    pendingItem = { id, name, price };
-    document.getElementById('customizeModalTitle').textContent = `Customize — ${name}`;
-    document.getElementById('customizeNotes').value = '';
-    toggleModal(true);
-  }
-
-  function confirmAddToCart() {
-    if (!pendingItem) return;
-    const notes = document.getElementById('customizeNotes').value.trim() || null;
-
-    // Merge into an existing line only if it's the exact same item AND the
-    // exact same notes - different notes need their own line since they're
-    // genuinely different customizations, but identical repeats just bump
-    // the quantity instead of cluttering the table with duplicate rows.
-    const existing = cart.find(c => c.menu_id == pendingItem.id && c.notes === notes);
-    if (existing) {
-      existing.qty += 1;
-    } else {
-      cart.push({
-        uniqueId: Date.now() + Math.random(),
-        menu_id: pendingItem.id,
-        name: pendingItem.name,
-        price: pendingItem.price,
-        notes,
-        qty: 1,
-      });
-    }
-    pendingItem = null;
-    toggleModal(false);
-    renderCart();
-  }
-
-  function changeQty(uniqueId, delta) {
-    const entry = cart.find(c => c.uniqueId == uniqueId);
-    if (!entry) return;
-    entry.qty += delta;
-    if (entry.qty <= 0) cart = cart.filter(c => c.uniqueId != uniqueId);
-    renderCart();
-  }
-
-  function removeLine(uniqueId) {
-    cart = cart.filter(c => c.uniqueId != uniqueId);
-    renderCart();
-  }
-
-  function clearOrder() {
-    cart = [];
-    clearSelectedCustomer();
-    document.getElementById('deliveryFeeInput').value = '0';
-    renderCart();
-  }
-
-  function renderCart() {
-    const tbody = document.getElementById('cartTableBody');
-    const emptyState = document.getElementById('cartEmptyState');
-
-    if (cart.length === 0) {
-      tbody.innerHTML = '';
-      emptyState.style.display = 'block';
-    } else {
-      emptyState.style.display = 'none';
-      tbody.innerHTML = cart.map(c => `
-        <tr>
-          <td>
-            ${escapeHtml(c.name)}
-            ${c.notes ? `<span class="item-notes">${escapeHtml(c.notes)}</span>` : ''}
-          </td>
-          <td>${peso(c.price)}</td>
-          <td>
-            <div class="qty-controls">
-              <button data-id="${c.uniqueId}" data-delta="-1" class="qty-btn">−</button>
-              <span>${c.qty}</span>
-              <button data-id="${c.uniqueId}" data-delta="1" class="qty-btn">+</button>
-            </div>
-          </td>
-          <td>${peso(c.price * c.qty)}</td>
-          <td><button data-id="${c.uniqueId}" class="remove-line-btn">✕</button></td>
-        </tr>
-      `).join('');
-      tbody.querySelectorAll('.qty-btn').forEach(btn => {
-        btn.addEventListener('click', () => changeQty(btn.dataset.id, Number(btn.dataset.delta)));
-      });
-      tbody.querySelectorAll('.remove-line-btn').forEach(btn => {
-        btn.addEventListener('click', () => removeLine(btn.dataset.id));
-      });
-    }
-
-    const totalAmount = cart.reduce((sum, c) => sum + c.price * c.qty, 0);
-    const deliveryFee = Number(document.getElementById('deliveryFeeInput').value) || 0;
-    document.getElementById('sumTotal').textContent = peso(totalAmount);
-    document.getElementById('sumGrand').textContent = peso(totalAmount + deliveryFee);
-  }
-
-  async function submitOrder() {
-    const errEl = document.getElementById('posError');
-    errEl.style.display = 'none';
-
-    const order_type = document.getElementById('posOrderType').value;
-    const delivery_fee = Number(document.getElementById('deliveryFeeInput').value) || 0;
-
-    if (cart.length === 0) { errEl.textContent = 'Cart is empty.'; errEl.style.display = 'block'; return; }
-
-    try {
-      const res = await adminFetch('/api/admin/sales/pos/orders', {
-        method: 'POST',
-        body: JSON.stringify({
-          // Attaching a customer is optional now - walk-ins without an
-          // account get bucketed under a shared "Walk-in Customer" record
-          // server-side. Only send customer_id when staff actually
-          // searched and picked someone.
-          customer_id: selectedCustomer ? Number(selectedCustomer.id) : null,
-          order_type,
-          delivery_fee,
-          cart: cart.map(c => ({ menu_id: c.menu_id, quantity: c.qty, notes: c.notes })),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not place order.');
-
-      alert(`Order #${data.order.id} placed successfully.`);
-      clearOrder();
-      loadMenu(); // stock quantities changed
-    } catch (err) {
-      errEl.textContent = err.message;
-      errEl.style.display = 'block';
-    }
   }
 </script>
 </body>

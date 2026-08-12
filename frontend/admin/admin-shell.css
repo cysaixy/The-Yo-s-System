@@ -52,18 +52,27 @@ body {
 
 .nav-group-label {
   font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase;
-  letter-spacing: 0.08em; opacity: 0.45; padding: 14px 10px 6px;
+  letter-spacing: 0.08em; opacity: 0.45; padding: 18px 12px 8px;
 }
 
 .admin-nav-link {
+  position: relative;
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 10px; border-radius: 6px; margin-bottom: 2px;
+  padding: 11px 12px; border-radius: 8px; margin-bottom: 2px;
   text-decoration: none; color: var(--ink); opacity: 0.65;
   font-size: 0.86rem; font-weight: 600;
   transition: all .15s ease;
 }
 .admin-nav-link:hover { opacity: 1; background: var(--stone); }
-.admin-nav-link.active { background: var(--brass); color: #fff; opacity: 1; }
+.admin-nav-link.active {
+  background: rgba(163,132,74,0.10);
+  color: var(--brass-dark); opacity: 1; font-weight: 700;
+}
+.admin-nav-link.active::before {
+  content: ""; position: absolute; left: 0; top: 50%;
+  transform: translateY(-50%); height: 55%;
+  width: 3px; border-radius: 2px; background: var(--brass);
+}
 .admin-nav-link .icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .admin-nav-link .icon svg {
   width: 18px; height: 18px; fill: none; stroke: currentColor;

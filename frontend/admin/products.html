@@ -3,19 +3,282 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Products — The~Yo's Admin</title>
+<title>Products, Add-Ons & Bundles — The~Yo's Admin</title>
+<meta name="description" content="Manage The~Yo's menu products, add-ons, and combo bundles with inventory connections.">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css">
 <style>
-  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-  .tabs button {
-    padding: 9px 16px; border-radius: 6px; border: 1px solid var(--line); background: var(--component-bg);
-    font-family: 'Space Mono', monospace; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;
-    cursor: pointer; color: var(--ink); opacity: 0.6;
-  }
-  .tabs button.active { background: var(--brass); color: #fff; border-color: var(--brass); opacity: 1; }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+/* ================================================================
+   PRODUCTS PAGE — Scoped styles (.prd-* namespace)
+   ================================================================ */
+
+.prd-page { display: flex; flex-direction: column; gap: 0; }
+
+/* ---- Header row ---- */
+.prd-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+}
+.prd-header-row h2 {
+  font-family: 'Archivo', sans-serif; font-size: 1.4rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.02em; margin: 0;
+}
+.prd-header-actions { display: flex; align-items: center; gap: 10px; }
+.prd-header-search { position: relative; }
+.prd-header-search svg {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; fill: none; stroke: var(--ink); opacity: 0.35;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+}
+.prd-header-search input {
+  padding: 9px 12px 9px 32px; border: 1px solid var(--line); border-radius: 7px;
+  background: #fff; font-family: 'Inter', sans-serif; font-size: 0.83rem;
+  color: var(--ink); outline: none; width: 230px; transition: border-color .15s;
+}
+.prd-header-search input:focus { border-color: var(--brass); }
+
+/* ---- Buttons ---- */
+.prd-btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px;
+  border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.83rem;
+  font-weight: 600; cursor: pointer; border: 1px solid; transition: all .15s; white-space: nowrap;
+}
+.prd-btn-gold  { background: var(--brass); color: #fff; border-color: var(--brass); }
+.prd-btn-gold:hover  { background: var(--brass-dark); border-color: var(--brass-dark); }
+.prd-btn-ghost { background: none; color: var(--ink); border-color: var(--line); }
+.prd-btn-ghost:hover { border-color: var(--brass); color: var(--brass); }
+.prd-btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.prd-btn-danger:hover { background: #a3271b; }
+.prd-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.prd-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
+
+/* ---- Summary cards ---- */
+.prd-summary-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;
+}
+.prd-stat-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  padding: 18px 20px; display: flex; flex-direction: column; gap: 6px;
+}
+.prd-stat-card .psc-label {
+  font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--ink); opacity: 0.5;
+}
+.prd-stat-card .psc-value {
+  font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.9rem; line-height: 1; color: var(--ink);
+}
+.prd-stat-card .psc-value.gold   { color: var(--brass-dark); }
+.prd-stat-card .psc-value.green  { color: var(--success); }
+.prd-stat-card .psc-sub { font-size: 0.74rem; opacity: 0.45; margin-top: 1px; }
+
+/* ---- Main page tabs ---- */
+.prd-tabs {
+  display: flex; align-items: center; gap: 2px;
+  border-bottom: 2px solid var(--line); margin-bottom: 22px;
+}
+.prd-tab {
+  padding: 10px 20px; font-family: 'Inter', sans-serif; font-size: 0.84rem; font-weight: 600;
+  color: var(--ink); opacity: 0.5; cursor: pointer; border: none; background: none;
+  border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; white-space: nowrap;
+}
+.prd-tab:hover { opacity: 0.85; }
+.prd-tab.active { opacity: 1; color: var(--brass); border-bottom-color: var(--brass); }
+
+/* ---- Panel visibility ---- */
+.prd-panel { display: none; }
+.prd-panel.active { display: block; }
+
+/* ---- Secondary tabs (Menu Items / Categories) ---- */
+.prd-sub-tabs {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--stone); border: 1px solid var(--line); border-radius: 8px;
+  padding: 4px; width: fit-content; margin-bottom: 18px;
+}
+.prd-sub-tab {
+  padding: 7px 16px; border-radius: 6px; border: none; background: none;
+  font-family: 'Inter', sans-serif; font-size: 0.80rem; font-weight: 600;
+  color: var(--ink); opacity: 0.55; cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.prd-sub-tab:hover { opacity: 0.85; }
+.prd-sub-tab.active {
+  background: #fff; color: var(--brass-dark); opacity: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ---- Toolbar ---- */
+.prd-toolbar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.prd-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 320px; }
+.prd-search-wrap svg {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; stroke: var(--ink); opacity: 0.35; fill: none;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+}
+.prd-search {
+  width: 100%; padding: 9px 12px 9px 33px; border: 1px solid var(--line); border-radius: 7px;
+  background: #fff; font-family: 'Inter', sans-serif; font-size: 0.84rem; color: var(--ink);
+  outline: none; transition: border-color .15s;
+}
+.prd-search:focus { border-color: var(--brass); }
+.prd-filter-group { display: flex; align-items: center; gap: 8px; }
+.prd-filter-label {
+  font-family: 'Space Mono', monospace; font-size: 0.63rem; text-transform: uppercase;
+  letter-spacing: 0.06em; opacity: 0.45;
+}
+.prd-select {
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px;
+  background: #fff; font-family: 'Inter', sans-serif; font-size: 0.82rem;
+  color: var(--ink); cursor: pointer; outline: none; transition: border-color .15s;
+}
+.prd-select:focus { border-color: var(--brass); }
+.prd-toolbar-right { margin-left: auto; }
+
+/* ---- Product / Add-on / Bundle table ---- */
+.prd-table-wrap {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+}
+.prd-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.prd-table thead tr { background: var(--stone); border-bottom: 1px solid var(--line); }
+.prd-table th {
+  padding: 11px 16px; text-align: left; font-family: 'Space Mono', monospace;
+  font-size: 0.61rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55;
+  font-weight: 700; white-space: nowrap;
+}
+.prd-table th.right, .prd-table td.right { text-align: right; }
+.prd-table td {
+  padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; color: var(--ink);
+}
+.prd-table tbody tr:last-child td { border-bottom: none; }
+.prd-table tbody tr:hover td { background: rgba(163,132,74,0.04); }
+.prd-table .item-name { font-weight: 600; }
+.prd-table .item-desc { font-size: 0.76rem; opacity: 0.5; margin-top: 2px; }
+.prd-table .price-val { font-family: 'Space Mono', monospace; font-size: 0.84rem; }
+.prd-table .stock-qty { font-family: 'Space Mono', monospace; font-weight: 700; }
+
+/* ---- Status badges ---- */
+.prd-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-family: 'Space Mono', monospace;
+  font-size: 0.60rem; font-weight: 700; text-transform: uppercase; white-space: nowrap;
+}
+.badge-available { background: rgba(46,125,79,0.12);  color: #1e6b41; }
+.badge-unavailable { background: rgba(21,23,26,0.08); color: var(--ink); opacity: 0.65; }
+.badge-low      { background: rgba(192,125,11,0.14); color: #8a5c00; }
+.badge-out      { background: rgba(192,57,43,0.12);  color: #a3271b; }
+
+/* ---- Three-dot action menu ---- */
+.prd-action-wrap { position: relative; }
+.prd-action-btn {
+  width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--line);
+  background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.prd-action-btn:hover { border-color: var(--brass); background: rgba(163,132,74,0.07); }
+.prd-action-btn svg { width: 15px; height: 15px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
+.prd-action-dropdown {
+  position: absolute; right: 0; top: 36px; z-index: 40;
+  background: #fff; border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10); min-width: 160px; overflow: hidden; display: none;
+}
+.prd-action-dropdown.open { display: block; }
+.prd-action-dropdown button {
+  width: 100%; text-align: left; padding: 10px 14px; border: none; background: none;
+  font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500; cursor: pointer;
+  color: var(--ink); display: flex; align-items: center; gap: 9px; transition: background .1s;
+}
+.prd-action-dropdown button:hover { background: var(--stone); }
+.prd-action-dropdown button svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.prd-action-dropdown button.danger { color: var(--danger); }
+.prd-action-dropdown .dd-sep { height: 1px; background: var(--line); margin: 3px 0; }
+
+/* ---- Item avatar ---- */
+.prd-item-avatar {
+  width: 34px; height: 34px; border-radius: 8px; background: var(--stone);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 0.78rem;
+  color: var(--brass-dark); flex-shrink: 0;
+}
+
+/* ---- Component / Product Selectors in Modals ---- */
+.multi-comp-box {
+  background: var(--stone); border: 1px solid var(--line); border-radius: 8px;
+  padding: 12px; margin-top: 6px; display: flex; flex-direction: column; gap: 10px;
+}
+.multi-comp-row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 30px; gap: 8px; align-items: center;
+}
+.remove-row-btn {
+  width: 28px; height: 28px; border: 1px solid rgba(192,57,43,0.3); border-radius: 6px;
+  background: #fff; color: var(--danger); font-size: 1.1rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.remove-row-btn:hover { background: rgba(192,57,43,0.08); }
+
+.prod-checkbox-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px;
+  max-height: 160px; overflow-y: auto; background: var(--stone); padding: 10px;
+  border: 1px solid var(--line); border-radius: 8px; margin-top: 4px;
+}
+.prod-checkbox-item {
+  display: flex; align-items: center; gap: 8px; font-size: 0.80rem; cursor: pointer;
+}
+
+/* ---- Modals ---- */
+.prd-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(15,16,18,0.55);
+  display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px;
+}
+.prd-modal-backdrop.open { display: flex; }
+.prd-modal {
+  background: #fff; border-radius: 12px; padding: 28px;
+  width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+}
+.prd-modal.wide { max-width: 660px; }
+.prd-modal.narrow { max-width: 440px; }
+.prd-modal-head {
+  display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px;
+}
+.prd-modal-head h2 {
+  margin: 0; font-family: 'Archivo', sans-serif; font-size: 1.1rem;
+  text-transform: uppercase; letter-spacing: 0.02em;
+}
+.prd-modal-head .close-btn {
+  width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 6px;
+  background: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all .15s;
+}
+.prd-modal-head .close-btn:hover { border-color: var(--danger); color: var(--danger); }
+.prd-modal-head .close-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.prd-modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;
+  padding-top: 20px; border-top: 1px solid var(--line);
+}
+
+/* ---- Form ---- */
+.prd-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.prd-form-field { display: flex; flex-direction: column; gap: 5px; }
+.prd-form-field.span2 { grid-column: 1 / -1; }
+.prd-form-field label {
+  font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+  letter-spacing: 0.06em; opacity: 0.55;
+}
+.prd-form-field input, .prd-form-field select, .prd-form-field textarea {
+  padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px;
+  font-family: 'Inter', sans-serif; font-size: 0.84rem; background: var(--bone);
+  color: var(--ink); outline: none; transition: border-color .15s;
+}
+.prd-form-field input:focus, .prd-form-field select:focus, .prd-form-field textarea:focus {
+  border-color: var(--brass);
+}
+.prd-form-field textarea { resize: vertical; min-height: 70px; }
+
+.prd-error-msg {
+  background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.2);
+  color: var(--danger); border-radius: 7px; padding: 10px 14px;
+  font-size: 0.82rem; margin-top: 14px; display: none;
+}
+.prd-error-msg.show { display: block; }
 </style>
 </head>
 <body>
@@ -23,305 +286,1177 @@
 <div id="adminShell"></div>
 
 <script type="module">
-  import { renderAdminShell } from "./admin-shell.js";
-  import { adminFetch, peso, escapeHtml } from "./admin-api.js";
+import { renderAdminShell } from "./admin-shell.js";
+import { adminFetch, peso, escapeHtml } from "./admin-api.js";
 
-  const session = renderAdminShell({ active: 'products', title: 'Products' });
-  if (session) init();
+const session = renderAdminShell({ active: 'products', title: 'Products' });
+if (session) init();
 
-  let categories = [];
-  let items = [];
+/* ================================================================
+   STATE
+   ================================================================ */
+let categories   = [];   // [{ id, name }]
+let menuItems    = [];   // [{ id, name, price, stock_quantity, status }]
+let inventoryItems = []; // [{ id, name, category, stock_quantity, unit, unit_cost }]
+let addons       = [];   // [{ id, name, price, cost, category, status, inventory_components, products }]
+let bundles      = [];   // [{ id, name, bundle_price, savings, status, products }]
 
-  function init() {
-    const content = document.getElementById('adminContent');
-    content.innerHTML = `
-      <div class="tabs">
-        <button class="active" data-tab="items">Menu Items</button>
-        <button data-tab="categories">Categories</button>
+let deletingTarget = null; // { type, id, name }
+
+/* ================================================================
+   INIT
+   ================================================================ */
+function init() {
+  document.getElementById('adminContent').innerHTML = buildPageHTML();
+  bindAll();
+  loadAll();
+}
+
+/* ================================================================
+   PAGE HTML SKELETON
+   ================================================================ */
+function buildPageHTML() {
+  return `
+<div class="prd-page">
+
+  <!-- ===== HEADER ===== -->
+  <div class="prd-header-row">
+    <h2>Products & Menu Management</h2>
+    <div class="prd-header-actions">
+      <div class="prd-header-search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="hdrSearch" placeholder="Search menu & add-ons…" autocomplete="off">
+      </div>
+      <button class="prd-btn prd-btn-gold" id="topActionBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Add Product
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== SUMMARY CARDS ===== -->
+  <div class="prd-summary-row">
+    <div class="prd-stat-card">
+      <div class="psc-label">Menu Products</div>
+      <div class="psc-value" id="statProducts">—</div>
+      <div class="psc-sub">Standalone menu items</div>
+    </div>
+    <div class="prd-stat-card">
+      <div class="psc-label">Add-Ons</div>
+      <div class="psc-value gold" id="statAddons">—</div>
+      <div class="psc-sub">Optional extras</div>
+    </div>
+    <div class="prd-stat-card">
+      <div class="psc-label">Bundles & Deals</div>
+      <div class="psc-value green" id="statBundles">—</div>
+      <div class="psc-sub">Combo packages</div>
+    </div>
+    <div class="prd-stat-card">
+      <div class="psc-label">Categories</div>
+      <div class="psc-value" id="statCategories">—</div>
+      <div class="psc-sub">Product categories</div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN PAGE TABS ===== -->
+  <div class="prd-tabs" role="tablist">
+    <button class="prd-tab active" data-ptab="products"      role="tab">Products</button>
+    <button class="prd-tab"        data-ptab="addons"        role="tab">Add-Ons</button>
+    <button class="prd-tab"        data-ptab="bundles"       role="tab">Bundles</button>
+    <button class="prd-tab"        data-ptab="profitability" role="tab">Profitability</button>
+    <button class="prd-tab"        data-ptab="analysis"      role="tab">Analysis</button>
+  </div>
+
+  <!-- ===== PRODUCTS PANEL ===== -->
+  <div class="prd-panel active" id="ptab-products">
+    <div class="prd-sub-tabs" role="tablist">
+      <button class="prd-sub-tab active" data-stab="items"      role="tab">Menu Items</button>
+      <button class="prd-sub-tab"        data-stab="categories" role="tab">Categories</button>
+    </div>
+
+    <!-- Menu Items -->
+    <div id="stab-items">
+      <div class="prd-table-wrap">
+        <table class="prd-table">
+          <thead><tr>
+            <th>Product Name</th>
+            <th>Category</th>
+            <th class="right">Selling Price</th>
+            <th class="right">Stock Qty</th>
+            <th>Status</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="itemsTbody">
+            <tr><td colspan="6"><div class="admin-loading">Loading products…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div id="stab-categories" style="display:none;">
+      <div style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.95rem;">Product Categories</h3>
+        <button class="prd-btn prd-btn-gold" id="openAddCatBtn">+ Add Category</button>
+      </div>
+      <div class="prd-table-wrap">
+        <table class="prd-table">
+          <thead><tr>
+            <th>Category Name</th>
+            <th>Products Count</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="catsTbody">
+            <tr><td colspan="3"><div class="admin-loading">Loading categories…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADD-ONS PANEL ===== -->
+  <div class="prd-panel" id="ptab-addons">
+    <div style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div>
+        <h3 style="margin:0; font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.95rem;">Optional Extras & Add-Ons</h3>
+        <span style="font-size:0.78rem; opacity:0.55;">Add-ons linked to inventory ingredients and applicable products.</span>
+      </div>
+      <button class="prd-btn prd-btn-gold" id="openAddAddonBtn">+ Add Add-On</button>
+    </div>
+
+    <div class="prd-table-wrap">
+      <table class="prd-table">
+        <thead><tr>
+          <th>Add-On Name</th>
+          <th class="right">Price</th>
+          <th class="right">Cost</th>
+          <th>Inventory Components</th>
+          <th>Available Products</th>
+          <th>Status</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="addonsTbody">
+          <tr><td colspan="7"><div class="admin-loading">Loading add-ons…</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== BUNDLES PANEL ===== -->
+  <div class="prd-panel" id="ptab-bundles">
+    <div style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div>
+        <h3 style="margin:0; font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.95rem;">Combo Deals & Bundles</h3>
+        <span style="font-size:0.78rem; opacity:0.55;">Group existing menu products together with special package pricing.</span>
+      </div>
+      <button class="prd-btn prd-btn-gold" id="openAddBundleBtn">+ Add Bundle</button>
+    </div>
+
+    <div class="prd-table-wrap">
+      <table class="prd-table">
+        <thead><tr>
+          <th>Bundle Name</th>
+          <th>Included Products</th>
+          <th class="right">Regular Total</th>
+          <th class="right">Bundle Price</th>
+          <th class="right">Savings</th>
+          <th>Status</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="bundlesTbody">
+          <tr><td colspan="7"><div class="admin-loading">Loading bundles…</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== PROFITABILITY PANEL ===== -->
+  <div class="prd-panel" id="ptab-profitability">
+    <div style="margin-bottom:14px;">
+      <h3 style="margin:0; font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.95rem;">Product Profitability & Margins</h3>
+    </div>
+    <div class="prd-table-wrap">
+      <table class="prd-table">
+        <thead><tr>
+          <th>Product</th>
+          <th>Category</th>
+          <th class="right">Selling Price</th>
+          <th class="right">Stock Qty</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody id="profTbody">
+          <tr><td colspan="5"><div class="admin-loading">Loading…</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== ANALYSIS PANEL ===== -->
+  <div class="prd-panel" id="ptab-analysis">
+    <div style="margin-bottom:14px;"><h3 style="margin:0; font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.95rem;">Product Overview & Analysis</h3></div>
+    <div id="analysisGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;"></div>
+  </div>
+
+</div><!-- /prd-page -->
+
+<!-- ================================================================
+     MODAL — ADD / EDIT MENU ITEM (PRODUCT)
+     ================================================================ -->
+<div class="prd-modal-backdrop" id="itemModal">
+  <div class="prd-modal wide">
+    <div class="prd-modal-head">
+      <h2 id="itemModalTitle">Add Product</h2>
+      <button class="close-btn" id="itemModalCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <input type="hidden" id="itemId">
+    <div class="prd-form-grid">
+      <div class="prd-form-field span2">
+        <label>Product Name *</label>
+        <input type="text" id="itemName" placeholder="e.g. Americano Coffee">
+      </div>
+      <div class="prd-form-field">
+        <label>Category *</label>
+        <select id="itemCategory"></select>
+      </div>
+      <div class="prd-form-field">
+        <label>Status</label>
+        <select id="itemStatus">
+          <option value="available">Available</option>
+          <option value="unavailable">Unavailable</option>
+        </select>
+      </div>
+      <div class="prd-form-field">
+        <label>Selling Price (₱) *</label>
+        <input type="number" step="0.01" min="0" id="itemPrice" placeholder="90.00">
+      </div>
+      <div class="prd-form-field">
+        <label>Cost (₱)</label>
+        <input type="number" step="0.01" min="0" id="itemCost" placeholder="35.00">
+      </div>
+      <div class="prd-form-field">
+        <label>Stock Quantity</label>
+        <input type="number" min="0" id="itemStock" placeholder="0">
+      </div>
+      <div class="prd-form-field span2">
+        <label>Description (optional)</label>
+        <textarea id="itemDesc" placeholder="Short description…"></textarea>
+      </div>
+    </div>
+    <div class="prd-error-msg" id="itemError"></div>
+    <div class="prd-modal-footer">
+      <button class="prd-btn prd-btn-ghost" id="itemCancelBtn">Cancel</button>
+      <button class="prd-btn prd-btn-gold"  id="itemSaveBtn">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     MODAL — ADD / EDIT ADD-ON
+     ================================================================ -->
+<div class="prd-modal-backdrop" id="addonModal">
+  <div class="prd-modal wide">
+    <div class="prd-modal-head">
+      <h2 id="addonModalTitle">Add Add-On</h2>
+      <button class="close-btn" id="addonCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <input type="hidden" id="addonId">
+    <div class="prd-form-grid">
+      <div class="prd-form-field span2">
+        <label>Add-On Name *</label>
+        <input type="text" id="addonName" placeholder="e.g. Extra Shot">
+      </div>
+      <div class="prd-form-field">
+        <label>Price (₱) *</label>
+        <input type="number" step="0.01" min="0" id="addonPrice" placeholder="30.00">
+      </div>
+      <div class="prd-form-field">
+        <label>Cost (₱)</label>
+        <input type="number" step="0.01" min="0" id="addonCost" placeholder="12.00">
+      </div>
+      <div class="prd-form-field">
+        <label>Category</label>
+        <input type="text" id="addonCat" placeholder="e.g. Coffee Add-On">
+      </div>
+      <div class="prd-form-field">
+        <label>Status</label>
+        <select id="addonStatus">
+          <option value="available">Available</option>
+          <option value="unavailable">Unavailable</option>
+        </select>
+      </div>
+      <div class="prd-form-field span2">
+        <label>Description</label>
+        <input type="text" id="addonDesc" placeholder="Additional espresso shot">
       </div>
 
-      <div class="tab-panel active" id="tabItems">
-        <div class="admin-panel">
-          <div class="admin-panel-head">
-            <h3>Menu Items</h3>
-            <button class="btn small" id="newItemBtn">+ New Item</button>
+      <!-- Linked Inventory Components -->
+      <div class="prd-form-field span2">
+        <label>Consumes Inventory Items (Ingredients)</label>
+        <div class="multi-comp-box" id="addonInvBox"></div>
+        <button class="prd-btn prd-btn-ghost" id="addAddonInvRowBtn" type="button" style="margin-top:6px; font-size:0.76rem; padding:5px 10px;">
+          + Add Inventory Component
+        </button>
+      </div>
+
+      <!-- Applicable Products -->
+      <div class="prd-form-field span2">
+        <label>Available For Products</label>
+        <div class="prod-checkbox-grid" id="addonProdGrid"></div>
+      </div>
+    </div>
+    <div class="prd-error-msg" id="addonError"></div>
+    <div class="prd-modal-footer">
+      <button class="prd-btn prd-btn-ghost" id="addonCancelBtn">Cancel</button>
+      <button class="prd-btn prd-btn-gold"  id="addonSaveBtn">Save Add-On</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     MODAL — ADD / EDIT BUNDLE
+     ================================================================ -->
+<div class="prd-modal-backdrop" id="bundleModal">
+  <div class="prd-modal wide">
+    <div class="prd-modal-head">
+      <h2 id="bundleModalTitle">Add Bundle</h2>
+      <button class="close-btn" id="bundleCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <input type="hidden" id="bundleId">
+    <div class="prd-form-grid">
+      <div class="prd-form-field span2">
+        <label>Bundle Name *</label>
+        <input type="text" id="bundleName" placeholder="e.g. Breakfast Bundle">
+      </div>
+      <div class="prd-form-field span2">
+        <label>Description</label>
+        <input type="text" id="bundleDesc" placeholder="Coffee and breakfast meal combo">
+      </div>
+
+      <!-- Included Products Selector -->
+      <div class="prd-form-field span2">
+        <label>Products Included *</label>
+        <div class="multi-comp-box" id="bundleProdBox"></div>
+        <button class="prd-btn prd-btn-ghost" id="addBundleProdRowBtn" type="button" style="margin-top:6px; font-size:0.76rem; padding:5px 10px;">
+          + Add Product
+        </button>
+      </div>
+
+      <div class="prd-form-field">
+        <label>Regular Price Total</label>
+        <input type="text" id="bundleRegTotal" readonly style="background:var(--stone); font-family:'Space Mono',monospace; font-weight:700;" value="₱0.00">
+      </div>
+
+      <div class="prd-form-field">
+        <label>Discount % (Optional)</label>
+        <input type="number" id="bundleDiscount" min="0" max="100" placeholder="e.g. 10">
+      </div>
+
+      <div class="prd-form-field">
+        <label>Bundle Price (₱) *</label>
+        <input type="number" step="0.01" min="0" id="bundlePrice" placeholder="170.00">
+      </div>
+
+      <div class="prd-form-field">
+        <label>Customer Savings</label>
+        <input type="text" id="bundleSavings" readonly style="background:var(--stone); font-family:'Space Mono',monospace; color:var(--success); font-weight:700;" value="₱0.00">
+      </div>
+    </div>
+    <div class="prd-error-msg" id="bundleError"></div>
+    <div class="prd-modal-footer">
+      <button class="prd-btn prd-btn-ghost" id="bundleCancelBtn">Cancel</button>
+      <button class="prd-btn prd-btn-gold"  id="bundleSaveBtn">Save Bundle</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     MODAL — ADD / EDIT CATEGORY
+     ================================================================ -->
+<div class="prd-modal-backdrop" id="catModal">
+  <div class="prd-modal narrow">
+    <div class="prd-modal-head">
+      <h2 id="catModalTitle">Add Category</h2>
+      <button class="close-btn" id="catCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <input type="hidden" id="catId">
+    <div class="prd-form-field">
+      <label>Category Name *</label>
+      <input type="text" id="catName" placeholder="e.g. Espresso & Coffee">
+    </div>
+    <div class="prd-error-msg" id="catError"></div>
+    <div class="prd-modal-footer">
+      <button class="prd-btn prd-btn-ghost" id="catCancelBtn">Cancel</button>
+      <button class="prd-btn prd-btn-gold"  id="catSaveBtn">Save Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     MODAL — DELETE CONFIRMATION
+     ================================================================ -->
+<div class="prd-modal-backdrop" id="deleteModal">
+  <div class="prd-modal narrow">
+    <div class="prd-modal-head">
+      <h2>Confirm Delete</h2>
+      <button class="close-btn" id="delCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <p id="delMsg">Are you sure you want to delete this item?</p>
+    <div class="prd-error-msg" id="delError"></div>
+    <div class="prd-modal-footer">
+      <button class="prd-btn prd-btn-ghost"  id="delCancelBtn">Cancel</button>
+      <button class="prd-btn prd-btn-danger" id="delConfirmBtn">Delete</button>
+    </div>
+  </div>
+</div>
+  `;
+}
+
+/* ================================================================
+   BIND ALL EVENTS
+   ================================================================ */
+function bindAll() {
+  // Main tabs
+  document.querySelectorAll('.prd-tab').forEach(btn =>
+    btn.addEventListener('click', () => switchMainTab(btn.dataset.ptab)));
+
+  // Secondary tabs
+  document.querySelectorAll('.prd-sub-tab').forEach(btn =>
+    btn.addEventListener('click', () => switchSubTab(btn.dataset.stab)));
+
+  // Top Action button updates based on tab
+  document.getElementById('topActionBtn').addEventListener('click', () => {
+    const activeTab = document.querySelector('.prd-tab.active').dataset.ptab;
+    if (activeTab === 'addons')  openAddonModal();
+    else if (activeTab === 'bundles') openBundleModal();
+    else openItemModal();
+  });
+
+  // Modal triggers
+  document.getElementById('openAddCatBtn').addEventListener('click', () => openCatModal());
+  document.getElementById('openAddAddonBtn').addEventListener('click', () => openAddonModal());
+  document.getElementById('openAddBundleBtn').addEventListener('click', () => openBundleModal());
+
+  // Item modal
+  document.getElementById('itemModalCloseBtn').addEventListener('click', () => closeModal('itemModal'));
+  document.getElementById('itemCancelBtn').addEventListener('click',     () => closeModal('itemModal'));
+  document.getElementById('itemSaveBtn').addEventListener('click', saveItem);
+
+  // Addon modal
+  document.getElementById('addonCloseBtn').addEventListener('click', () => closeModal('addonModal'));
+  document.getElementById('addonCancelBtn').addEventListener('click', () => closeModal('addonModal'));
+  document.getElementById('addAddonInvRowBtn').addEventListener('click', () => addAddonInvRow());
+  document.getElementById('addonSaveBtn').addEventListener('click', saveAddon);
+
+  // Bundle modal
+  document.getElementById('bundleCloseBtn').addEventListener('click', () => closeModal('bundleModal'));
+  document.getElementById('bundleCancelBtn').addEventListener('click', () => closeModal('bundleModal'));
+  document.getElementById('addBundleProdRowBtn').addEventListener('click', () => addBundleProdRow());
+  document.getElementById('bundleDiscount').addEventListener('input', updateBundlePriceFromDiscount);
+  document.getElementById('bundlePrice').addEventListener('input', recalculateBundleSavings);
+  document.getElementById('bundleSaveBtn').addEventListener('click', saveBundle);
+
+  // Category modal
+  document.getElementById('catCloseBtn').addEventListener('click',   () => closeModal('catModal'));
+  document.getElementById('catCancelBtn').addEventListener('click',  () => closeModal('catModal'));
+  document.getElementById('catSaveBtn').addEventListener('click', saveCategory);
+
+  // Delete modal
+  document.getElementById('delCloseBtn').addEventListener('click',   () => closeModal('deleteModal'));
+  document.getElementById('delCancelBtn').addEventListener('click',  () => closeModal('deleteModal'));
+  document.getElementById('delConfirmBtn').addEventListener('click', confirmDelete);
+
+  // Close dropdowns
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.prd-action-wrap')) {
+      document.querySelectorAll('.prd-action-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+  });
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+/* ================================================================
+   TAB SWITCHING
+   ================================================================ */
+function switchMainTab(tab) {
+  document.querySelectorAll('.prd-tab').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
+  document.querySelectorAll('.prd-panel').forEach(p => p.classList.toggle('active', p.id === `ptab-${tab}`));
+
+  const topBtn = document.getElementById('topActionBtn');
+  if (tab === 'addons') {
+    topBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add Add-On';
+  } else if (tab === 'bundles') {
+    topBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add Bundle';
+  } else {
+    topBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add Product';
+  }
+
+  if (tab === 'profitability') renderProfitability();
+  if (tab === 'analysis')      renderAnalysis();
+}
+
+function switchSubTab(stab) {
+  document.querySelectorAll('.prd-sub-tab').forEach(b => b.classList.toggle('active', b.dataset.stab === stab));
+  document.getElementById('stab-items').style.display      = stab === 'items'      ? '' : 'none';
+  document.getElementById('stab-categories').style.display = stab === 'categories' ? '' : 'none';
+}
+
+/* ================================================================
+   LOAD ALL DATA
+   ================================================================ */
+async function loadAll() {
+  try {
+    const [cRes, mRes, iRes, aRes, bRes] = await Promise.all([
+      adminFetch('/api/admin/products/categories'),
+      adminFetch('/api/admin/products/menuitems'),
+      adminFetch('/api/admin/inventory'),
+      adminFetch('/api/admin/products/addons'),
+      adminFetch('/api/admin/products/bundles'),
+    ]);
+
+    const cData = await cRes.json();
+    const mData = await mRes.json();
+    const iData = await iRes.json();
+    const aData = await aRes.json();
+    const bData = await bRes.json();
+
+    categories     = cData.data || [];
+    menuItems      = mData.items || [];
+    inventoryItems = iData.items || [];
+    addons         = aData.addons || [];
+    bundles        = bData.bundles || [];
+
+    updateSummaryCards();
+    renderMenuItems();
+    renderCategories();
+    renderAddons();
+    renderBundles();
+  } catch (err) {
+    console.error("Error loading products data:", err);
+  }
+}
+
+function updateSummaryCards() {
+  document.getElementById('statProducts').textContent   = menuItems.length;
+  document.getElementById('statAddons').textContent     = addons.length;
+  document.getElementById('statBundles').textContent    = bundles.length;
+  document.getElementById('statCategories').textContent = categories.length;
+}
+
+/* ================================================================
+   RENDER TABLES
+   ================================================================ */
+function renderMenuItems() {
+  const tbody = document.getElementById('itemsTbody');
+  if (!menuItems.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="prd-empty"><p>No menu products found.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = menuItems.map(i => `
+    <tr>
+      <td><span class="item-name">${escapeHtml(i.name)}</span></td>
+      <td><span style="font-size:0.80rem;">${escapeHtml(i.category_name || '—')}</span></td>
+      <td class="right"><span class="price-val">${peso(i.price)}</span></td>
+      <td class="right"><span class="stock-qty">${i.stock_quantity ?? '0'}</span></td>
+      <td><span class="prd-badge ${i.status === 'available' ? 'badge-available' : 'badge-unavailable'}">${escapeHtml(i.status)}</span></td>
+      <td>
+        <div class="prd-action-wrap">
+          <button class="prd-action-btn action-toggle" data-id="item-${i.id}"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/></svg></button>
+          <div class="prd-action-dropdown" id="dropdown-item-${i.id}">
+            <button class="edit-item-btn" data-id="${i.id}">Edit</button>
+            <div class="dd-sep"></div>
+            <button class="del-item-btn danger" data-id="${i.id}" data-name="${escapeHtml(i.name)}">Delete</button>
           </div>
-          <div class="admin-panel-body" style="padding:0;" id="itemsWrap"><div class="admin-loading">Loading…</div></div>
         </div>
-      </div>
+      </td>
+    </tr>`).join('');
 
-      <div class="tab-panel" id="tabCategories">
-        <div class="admin-panel">
-          <div class="admin-panel-head">
-            <h3>Categories</h3>
-            <button class="btn small" id="newCatBtn">+ New Category</button>
+  bindActions(tbody, 'item');
+}
+
+function renderCategories() {
+  const tbody = document.getElementById('catsTbody');
+  if (!categories.length) {
+    tbody.innerHTML = `<tr><td colspan="3"><div class="prd-empty"><p>No categories found.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = categories.map(c => {
+    const count = menuItems.filter(i => i.category_id === c.id).length;
+    return `
+    <tr>
+      <td><span style="font-weight:600;">${escapeHtml(c.name)}</span></td>
+      <td><span style="font-family:'Space Mono',monospace;">${count} products</span></td>
+      <td>
+        <div class="prd-action-wrap">
+          <button class="prd-action-btn action-toggle" data-id="cat-${c.id}"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/></svg></button>
+          <div class="prd-action-dropdown" id="dropdown-cat-${c.id}">
+            <button class="edit-cat-btn" data-id="${c.id}" data-name="${escapeHtml(c.name)}">Edit</button>
+            <div class="dd-sep"></div>
+            <button class="del-cat-btn danger" data-id="${c.id}" data-name="${escapeHtml(c.name)}">Delete</button>
           </div>
-          <div class="admin-panel-body" style="padding:0;" id="catsWrap"><div class="admin-loading">Loading…</div></div>
         </div>
-      </div>
+      </td>
+    </tr>`;
+  }).join('');
 
-      <div class="modal-backdrop" id="itemModal">
-        <div class="modal-box">
-          <h3 id="itemModalTitle">New Menu Item</h3>
-          <input type="hidden" id="itemId">
-          <div class="form-grid">
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Name</label><input type="text" id="itemName">
-            </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Category</label>
-              <select id="itemCategory"></select>
-            </div>
-            <div class="form-field">
-              <label>Price (₱)</label><input type="number" step="0.01" id="itemPrice">
-            </div>
-            <div class="form-field">
-              <label>Stock Qty</label><input type="number" id="itemStock">
-            </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Status</label>
-              <select id="itemStatus">
-                <option value="available">Available</option>
-                <option value="unavailable">Unavailable</option>
-              </select>
-            </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Description (optional)</label><textarea id="itemDesc"></textarea>
-            </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Image URL (optional)</label><input type="text" id="itemImage">
-            </div>
+  bindActions(tbody, 'cat');
+}
+
+function renderAddons() {
+  const tbody = document.getElementById('addonsTbody');
+  if (!addons.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="prd-empty"><p>No add-ons created yet.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = addons.map(a => {
+    const invStr  = a.inventory_components?.map(c => `${escapeHtml(c.inventory_name)} (${c.quantity}${c.unit})`).join(', ') || 'None';
+    const prodStr = a.products?.map(p => escapeHtml(p.product_name)).join(', ') || 'All Products';
+    const stBadge = a.status === 'available' ? 'badge-available' : 'badge-unavailable';
+
+    return `
+    <tr>
+      <td><span class="item-name">${escapeHtml(a.name)}</span></td>
+      <td class="right"><span class="price-val">${peso(a.price)}</span></td>
+      <td class="right"><span class="price-val">${peso(a.cost)}</span></td>
+      <td><span style="font-size:0.78rem; opacity:0.75;">${invStr}</span></td>
+      <td><span style="font-size:0.78rem; opacity:0.75;">${prodStr}</span></td>
+      <td><span class="prd-badge ${stBadge}">${a.status === 'available' ? 'Available' : 'Unavailable / Out of Stock'}</span></td>
+      <td>
+        <div class="prd-action-wrap">
+          <button class="prd-action-btn action-toggle" data-id="addon-${a.id}"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/></svg></button>
+          <div class="prd-action-dropdown" id="dropdown-addon-${a.id}">
+            <button class="edit-addon-btn" data-id="${a.id}">Edit</button>
+            <div class="dd-sep"></div>
+            <button class="del-addon-btn danger" data-id="${a.id}" data-name="${escapeHtml(a.name)}">Delete</button>
           </div>
-          <div class="modal-close-row">
-            <button class="btn btn-outline" id="itemCancelBtn">Cancel</button>
-            <button class="btn" id="itemSaveBtn">Save Item</button>
-          </div>
-          <div class="admin-error" id="itemError" style="display:none; padding:10px 0 0; text-align:left;"></div>
         </div>
-      </div>
+      </td>
+    </tr>`;
+  }).join('');
 
-      <div class="modal-backdrop" id="catModal">
-        <div class="modal-box">
-          <h3 id="catModalTitle">New Category</h3>
-          <input type="hidden" id="catId">
-          <div class="form-field"><label>Name</label><input type="text" id="catName"></div>
-          <div class="modal-close-row">
-            <button class="btn btn-outline" id="catCancelBtn">Cancel</button>
-            <button class="btn" id="catSaveBtn">Save Category</button>
+  bindActions(tbody, 'addon');
+}
+
+function renderBundles() {
+  const tbody = document.getElementById('bundlesTbody');
+  if (!bundles.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="prd-empty"><p>No combo bundles created yet.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = bundles.map(b => {
+    const prodStr = b.products?.map(p => `${escapeHtml(p.product_name)} × ${p.quantity}`).join(', ') || 'None';
+    const stBadge = b.status === 'available' ? 'badge-available' : 'badge-unavailable';
+
+    return `
+    <tr>
+      <td><span class="item-name">${escapeHtml(b.name)}</span></td>
+      <td><span style="font-size:0.78rem; opacity:0.8;">${prodStr}</span></td>
+      <td class="right"><span class="price-val">${peso(b.regular_total)}</span></td>
+      <td class="right"><span class="price-val" style="font-weight:700; color:var(--brass-dark);">${peso(b.bundle_price)}</span></td>
+      <td class="right"><span class="price-val" style="color:var(--success); font-weight:700;">${peso(b.savings)}</span></td>
+      <td><span class="prd-badge ${stBadge}">${b.status === 'available' ? 'Available' : 'Unavailable'}</span></td>
+      <td>
+        <div class="prd-action-wrap">
+          <button class="prd-action-btn action-toggle" data-id="bundle-${b.id}"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/></svg></button>
+          <div class="prd-action-dropdown" id="dropdown-bundle-${b.id}">
+            <button class="edit-bundle-btn" data-id="${b.id}">Edit</button>
+            <div class="dd-sep"></div>
+            <button class="del-bundle-btn danger" data-id="${b.id}" data-name="${escapeHtml(b.name)}">Delete</button>
           </div>
-          <div class="admin-error" id="catError" style="display:none; padding:10px 0 0; text-align:left;"></div>
         </div>
-      </div>
-    `;
+      </td>
+    </tr>`;
+  }).join('');
 
-    document.querySelectorAll('.tabs button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(btn.dataset.tab === 'items' ? 'tabItems' : 'tabCategories').classList.add('active');
-      });
+  bindActions(tbody, 'bundle');
+}
+
+function bindActions(tbody, type) {
+  tbody.querySelectorAll('.action-toggle').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const dd = document.getElementById(`dropdown-${btn.dataset.id}`);
+      document.querySelectorAll('.prd-action-dropdown.open').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+      dd.classList.toggle('open');
     });
+  });
 
-    document.getElementById('newItemBtn').addEventListener('click', () => openItemModal());
-    document.getElementById('itemCancelBtn').addEventListener('click', () => toggleModal('itemModal', false));
-    document.getElementById('itemSaveBtn').addEventListener('click', saveItem);
+  tbody.querySelectorAll(`.edit-${type}-btn`).forEach(btn =>
+    btn.addEventListener('click', () => {
+      closeDropdowns();
+      const id = btn.dataset.id;
+      if (type === 'item') openItemModal(menuItems.find(i => String(i.id) === String(id)));
+      if (type === 'cat')  openCatModal(id, btn.dataset.name);
+      if (type === 'addon') openAddonModal(addons.find(a => String(a.id) === String(id)));
+      if (type === 'bundle') openBundleModal(bundles.find(b => String(b.id) === String(id)));
+    }));
 
-    document.getElementById('newCatBtn').addEventListener('click', () => openCatModal());
-    document.getElementById('catCancelBtn').addEventListener('click', () => toggleModal('catModal', false));
-    document.getElementById('catSaveBtn').addEventListener('click', saveCategory);
+  tbody.querySelectorAll(`.del-${type}-btn`).forEach(btn =>
+    btn.addEventListener('click', () => {
+      closeDropdowns();
+      openDeleteModal(type, btn.dataset.id, btn.dataset.name);
+    }));
+}
 
-    loadAll();
+function closeDropdowns() {
+  document.querySelectorAll('.prd-action-dropdown.open').forEach(d => d.classList.remove('open'));
+}
+
+/* ================================================================
+   MODAL — PRODUCT (MENU ITEM)
+   ================================================================ */
+function openItemModal(item = null) {
+  document.getElementById('itemModalTitle').textContent = item ? `Edit — ${item.name}` : 'Add Product';
+  document.getElementById('itemId').value     = item ? item.id : '';
+  document.getElementById('itemName').value   = item ? item.name : '';
+  document.getElementById('itemPrice').value  = item ? item.price : '';
+  document.getElementById('itemCost').value   = item ? (item.cost ?? '') : '';
+  document.getElementById('itemStock').value  = item ? (item.stock_quantity ?? '') : '';
+  document.getElementById('itemStatus').value = item ? item.status : 'available';
+  document.getElementById('itemDesc').value   = item ? (item.description || '') : '';
+
+  const catSel = document.getElementById('itemCategory');
+  catSel.innerHTML = categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  if (item?.category_id) catSel.value = item.category_id;
+
+  document.getElementById('itemError').classList.remove('show');
+  openModal('itemModal');
+}
+
+async function saveItem() {
+  const id   = document.getElementById('itemId').value;
+  const name = document.getElementById('itemName').value.trim();
+  const cat  = document.getElementById('itemCategory').value;
+  const price = parseFloat(document.getElementById('itemPrice').value);
+  const cost  = document.getElementById('itemCost').value === '' ? 0 : Number(document.getElementById('itemCost').value);
+  const stock = document.getElementById('itemStock').value === '' ? null : Number(document.getElementById('itemStock').value);
+  const status = document.getElementById('itemStatus').value;
+  const desc  = document.getElementById('itemDesc').value.trim();
+  const errEl = document.getElementById('itemError');
+
+  if (!name || !cat || isNaN(price)) {
+    errEl.textContent = 'Name, category, and valid price are required.';
+    errEl.classList.add('show');
+    return;
   }
 
-  function toggleModal(id, show) { document.getElementById(id).classList.toggle('active', show); }
+  const saveBtn = document.getElementById('itemSaveBtn');
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
 
-  async function loadAll() {
-    try {
-      const [catsRes, itemsRes] = await Promise.all([
-        adminFetch('/api/admin/products/categories'),
-        adminFetch('/api/admin/products/menuitems'),
-      ]);
-      const catsData = await catsRes.json();
-      const itemsData = await itemsRes.json();
-      if (!catsRes.ok) throw new Error(catsData.error || 'Could not load categories.');
-      if (!itemsRes.ok) throw new Error(itemsData.error || 'Could not load items.');
+  try {
+    const url = id ? `/api/admin/products/menuitems/${id}` : '/api/admin/products/menuitems';
+    const method = id ? 'PATCH' : 'POST';
 
-      categories = catsData.data || [];
-      items = itemsData.items || [];
-      renderCategories();
-      renderItems();
-    } catch (err) {
-      document.getElementById('itemsWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
-      document.getElementById('catsWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    const res = await adminFetch(url, {
+      method,
+      body: JSON.stringify({ name, category_id: cat, price, cost, stock_quantity: stock, status, description: desc }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not save product.');
+
+    closeModal('itemModal');
+    await loadAll();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  } finally {
+    saveBtn.disabled = false; saveBtn.textContent = 'Save Product';
+  }
+}
+
+/* ================================================================
+   MODAL — ADD-ON
+   ================================================================ */
+function openAddonModal(addon = null) {
+  document.getElementById('addonModalTitle').textContent = addon ? `Edit Add-On — ${addon.name}` : 'Add Add-On';
+  document.getElementById('addonId').value     = addon ? addon.id : '';
+  document.getElementById('addonName').value   = addon ? addon.name : '';
+  document.getElementById('addonPrice').value  = addon ? addon.price : '';
+  document.getElementById('addonCost').value   = addon ? addon.cost : '';
+  document.getElementById('addonCat').value    = addon ? (addon.category || '') : 'Coffee Add-On';
+  document.getElementById('addonStatus').value = addon ? addon.status : 'available';
+  document.getElementById('addonDesc').value   = addon ? (addon.description || '') : '';
+
+  // Render inventory components builder
+  const box = document.getElementById('addonInvBox');
+  box.innerHTML = '';
+  if (addon && addon.inventory_components?.length) {
+    addon.inventory_components.forEach(c => addAddonInvRow(c.inventory_id, c.quantity, c.unit));
+  } else {
+    addAddonInvRow();
+  }
+
+  // Render applicable products checkboxes
+  const prodGrid = document.getElementById('addonProdGrid');
+  const selectedProdIds = addon?.products?.map(p => p.menu_id) || [];
+
+  prodGrid.innerHTML = menuItems.map(m => `
+    <label class="prod-checkbox-item">
+      <input type="checkbox" class="addon-prod-chk" value="${m.id}" ${selectedProdIds.includes(m.id) ? 'checked' : ''}>
+      <span>${escapeHtml(m.name)}</span>
+    </label>
+  `).join('');
+
+  document.getElementById('addonError').classList.remove('show');
+  openModal('addonModal');
+}
+
+function addAddonInvRow(invId = '', qty = '', unit = 'g') {
+  const box = document.getElementById('addonInvBox');
+  const div = document.createElement('div');
+  div.className = 'multi-comp-row';
+
+  const invOptions = inventoryItems.map(i => `<option value="${i.id}">${escapeHtml(i.name)} (${i.unit})</option>`).join('');
+
+  div.innerHTML = `
+    <select class="addon-inv-id"><option value="">Select Inventory Item…</option>${invOptions}</select>
+    <input type="number" step="0.01" min="0.01" class="addon-inv-qty" placeholder="Qty" value="${qty}">
+    <input type="text" class="addon-inv-unit" placeholder="Unit" value="${unit}">
+    <button class="remove-row-btn" type="button" onclick="this.parentElement.remove()">×</button>
+  `;
+  if (invId) div.querySelector('.addon-inv-id').value = invId;
+  box.appendChild(div);
+}
+
+async function saveAddon() {
+  const id    = document.getElementById('addonId').value;
+  const name  = document.getElementById('addonName').value.trim();
+  const price = parseFloat(document.getElementById('addonPrice').value);
+  const cost  = parseFloat(document.getElementById('addonCost').value) || 0;
+  const cat   = document.getElementById('addonCat').value.trim();
+  const status = document.getElementById('addonStatus').value;
+  const desc  = document.getElementById('addonDesc').value.trim();
+  const errEl = document.getElementById('addonError');
+
+  if (!name || isNaN(price)) {
+    errEl.textContent = 'Add-on name and valid price are required.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  // Gather inventory components
+  const invComponents = [];
+  document.querySelectorAll('#addonInvBox .multi-comp-row').forEach(row => {
+    const invId = row.querySelector('.addon-inv-id').value;
+    const q     = parseFloat(row.querySelector('.addon-inv-qty').value);
+    const u     = row.querySelector('.addon-inv-unit').value.trim();
+    if (invId && !isNaN(q) && q > 0) {
+      invComponents.push({ inventory_id: Number(invId), quantity: q, unit: u || 'g' });
     }
+  });
+
+  // Gather applicable products
+  const productIds = [];
+  document.querySelectorAll('.addon-prod-chk:checked').forEach(chk => productIds.push(Number(chk.value)));
+
+  const payload = {
+    name, price, cost, category: cat, status, description: desc,
+    inventory_components: invComponents,
+    product_ids: productIds
+  };
+
+  const saveBtn = document.getElementById('addonSaveBtn');
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+
+  try {
+    const url = id ? `/api/admin/products/addons/${id}` : '/api/admin/products/addons';
+    const method = id ? 'PATCH' : 'POST';
+
+    const res = await adminFetch(url, { method, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not save add-on.');
+
+    closeModal('addonModal');
+    await loadAll();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  } finally {
+    saveBtn.disabled = false; saveBtn.textContent = 'Save Add-On';
+  }
+}
+
+/* ================================================================
+   MODAL — BUNDLE
+   ================================================================ */
+function openBundleModal(bundle = null) {
+  document.getElementById('bundleModalTitle').textContent = bundle ? `Edit Bundle — ${bundle.name}` : 'Add Bundle';
+  document.getElementById('bundleId').value       = bundle ? bundle.id : '';
+  document.getElementById('bundleName').value     = bundle ? bundle.name : '';
+  document.getElementById('bundleDesc').value     = bundle ? (bundle.description || '') : '';
+  document.getElementById('bundleDiscount').value = bundle ? (bundle.discount_percent || '') : '';
+  document.getElementById('bundlePrice').value    = bundle ? bundle.bundle_price : '';
+
+  const box = document.getElementById('bundleProdBox');
+  box.innerHTML = '';
+  if (bundle && bundle.products?.length) {
+    bundle.products.forEach(p => addBundleProdRow(p.menu_id, p.quantity));
+  } else {
+    addBundleProdRow();
   }
 
-  function renderItems() {
-    const wrap = document.getElementById('itemsWrap');
-    if (items.length === 0) {
-      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No menu items yet.</div>`;
-      return;
+  recalculateBundleRegTotal();
+  document.getElementById('bundleError').classList.remove('show');
+  openModal('bundleModal');
+}
+
+function addBundleProdRow(menuId = '', qty = '1') {
+  const box = document.getElementById('bundleProdBox');
+  const div = document.createElement('div');
+  div.className = 'multi-comp-row';
+
+  const menuOptions = menuItems.map(m => `<option value="${m.id}" data-price="${m.price}">${escapeHtml(m.name)} (₱${m.price})</option>`).join('');
+
+  div.innerHTML = `
+    <select class="bundle-prod-id"><option value="">Select Menu Product…</option>${menuOptions}</select>
+    <input type="number" min="1" class="bundle-prod-qty" placeholder="Qty" value="${qty}">
+    <div></div>
+    <button class="remove-row-btn" type="button" onclick="this.parentElement.remove(); window.recalculateBundleRegTotal();">×</button>
+  `;
+  if (menuId) div.querySelector('.bundle-prod-id').value = menuId;
+
+  div.querySelector('.bundle-prod-id').addEventListener('change', recalculateBundleRegTotal);
+  div.querySelector('.bundle-prod-qty').addEventListener('input', recalculateBundleRegTotal);
+
+  box.appendChild(div);
+  recalculateBundleRegTotal();
+}
+
+window.recalculateBundleRegTotal = function() {
+  let regTotal = 0;
+  document.querySelectorAll('#bundleProdBox .multi-comp-row').forEach(row => {
+    const sel = row.querySelector('.bundle-prod-id');
+    const qty = parseInt(row.querySelector('.bundle-prod-qty').value) || 0;
+    const opt = sel.options[sel.selectedIndex];
+    if (opt && opt.dataset.price && qty > 0) {
+      regTotal += parseFloat(opt.dataset.price) * qty;
     }
-    wrap.innerHTML = `
-      <table class="admin-table">
-        <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody>
-          ${items.map(i => `
-            <tr>
-              <td>${escapeHtml(i.name)}</td>
-              <td>${escapeHtml(i.category_name || '—')}</td>
-              <td>${peso(i.price)}</td>
-              <td>${i.stock_quantity === null ? 'Untracked' : i.stock_quantity}</td>
-              <td><span class="pill ${i.status === 'available' ? 'pill-success' : 'pill-neutral'}">${i.status}</span></td>
-              <td><div class="row-actions">
-                <button class="edit-item-btn" data-id="${i.id}">Edit</button>
-                <button class="danger del-item-btn" data-id="${i.id}">Delete</button>
-              </div></td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-    `;
-    wrap.querySelectorAll('.edit-item-btn').forEach(btn => btn.addEventListener('click', () => openItemModal(btn.dataset.id)));
-    wrap.querySelectorAll('.del-item-btn').forEach(btn => btn.addEventListener('click', () => deleteItem(btn.dataset.id)));
-  }
+  });
+  document.getElementById('bundleRegTotal').value = peso(regTotal);
+  recalculateBundleSavings();
+};
 
-  function renderCategories() {
-    const wrap = document.getElementById('catsWrap');
-    if (categories.length === 0) {
-      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No categories yet.</div>`;
-      return;
+function updateBundlePriceFromDiscount() {
+  const disc = parseFloat(document.getElementById('bundleDiscount').value);
+  let regTotal = 0;
+  document.querySelectorAll('#bundleProdBox .multi-comp-row').forEach(row => {
+    const sel = row.querySelector('.bundle-prod-id');
+    const qty = parseInt(row.querySelector('.bundle-prod-qty').value) || 0;
+    const opt = sel.options[sel.selectedIndex];
+    if (opt && opt.dataset.price && qty > 0) {
+      regTotal += parseFloat(opt.dataset.price) * qty;
     }
-    wrap.innerHTML = `
-      <table class="admin-table">
-        <thead><tr><th>Name</th><th>Actions</th></tr></thead>
-        <tbody>
-          ${categories.map(c => `
-            <tr>
-              <td>${escapeHtml(c.name)}</td>
-              <td><div class="row-actions">
-                <button class="edit-cat-btn" data-id="${c.id}" data-name="${escapeHtml(c.name)}">Edit</button>
-                <button class="danger del-cat-btn" data-id="${c.id}">Delete</button>
-              </div></td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-    `;
-    wrap.querySelectorAll('.edit-cat-btn').forEach(btn => btn.addEventListener('click', () => openCatModal(btn.dataset.id, btn.dataset.name)));
-    wrap.querySelectorAll('.del-cat-btn').forEach(btn => btn.addEventListener('click', () => deleteCategory(btn.dataset.id)));
+  });
+
+  if (!isNaN(disc) && disc > 0 && regTotal > 0) {
+    const discountedPrice = regTotal * (1 - (disc / 100));
+    document.getElementById('bundlePrice').value = discountedPrice.toFixed(2);
   }
+  recalculateBundleSavings();
+}
 
-  function openItemModal(id) {
-    const item = id ? items.find(i => i.id == id) : null;
-    document.getElementById('itemModalTitle').textContent = item ? `Edit — ${item.name}` : 'New Menu Item';
-    document.getElementById('itemId').value = id || '';
-    document.getElementById('itemName').value = item?.name || '';
-    document.getElementById('itemPrice').value = item?.price || '';
-    document.getElementById('itemStock').value = item?.stock_quantity ?? '';
-    document.getElementById('itemStatus').value = item?.status || 'available';
-    document.getElementById('itemDesc').value = item?.description || '';
-    document.getElementById('itemImage').value = item?.image_url || '';
-
-    const catSelect = document.getElementById('itemCategory');
-    catSelect.innerHTML = categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-    if (item?.category_id) catSelect.value = item.category_id;
-
-    document.getElementById('itemError').style.display = 'none';
-    toggleModal('itemModal', true);
-  }
-
-  async function saveItem() {
-    const id = document.getElementById('itemId').value;
-    const payload = {
-      name: document.getElementById('itemName').value.trim(),
-      category_id: document.getElementById('itemCategory').value,
-      price: Number(document.getElementById('itemPrice').value),
-      stock_quantity: document.getElementById('itemStock').value === '' ? null : Number(document.getElementById('itemStock').value),
-      status: document.getElementById('itemStatus').value,
-      description: document.getElementById('itemDesc').value.trim() || null,
-      image_url: document.getElementById('itemImage').value.trim() || null,
-    };
-    const errEl = document.getElementById('itemError');
-    if (!payload.name || !payload.category_id || !payload.price) {
-      errEl.textContent = 'Name, category, and price are required.';
-      errEl.style.display = 'block';
-      return;
+function recalculateBundleSavings() {
+  let regTotal = 0;
+  document.querySelectorAll('#bundleProdBox .multi-comp-row').forEach(row => {
+    const sel = row.querySelector('.bundle-prod-id');
+    const qty = parseInt(row.querySelector('.bundle-prod-qty').value) || 0;
+    const opt = sel.options[sel.selectedIndex];
+    if (opt && opt.dataset.price && qty > 0) {
+      regTotal += parseFloat(opt.dataset.price) * qty;
     }
+  });
 
-    try {
-      const res = await adminFetch(id ? `/api/admin/products/menuitems/${id}` : '/api/admin/products/menuitems', {
-        method: id ? 'PATCH' : 'POST',
-        body: JSON.stringify(payload),
-      });
+  const bundlePrice = parseFloat(document.getElementById('bundlePrice').value) || 0;
+  const savings = Math.max(0, regTotal - bundlePrice);
+  document.getElementById('bundleSavings').value = peso(savings);
+}
+
+async function saveBundle() {
+  const id          = document.getElementById('bundleId').value;
+  const name        = document.getElementById('bundleName').value.trim();
+  const desc        = document.getElementById('bundleDesc').value.trim();
+  const bundlePrice = parseFloat(document.getElementById('bundlePrice').value);
+  const discount    = parseFloat(document.getElementById('bundleDiscount').value) || 0;
+  const errEl       = document.getElementById('bundleError');
+
+  if (!name || isNaN(bundlePrice)) {
+    errEl.textContent = 'Bundle name and valid bundle price are required.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const prods = [];
+  document.querySelectorAll('#bundleProdBox .multi-comp-row').forEach(row => {
+    const mId = row.querySelector('.bundle-prod-id').value;
+    const q   = parseInt(row.querySelector('.bundle-prod-qty').value);
+    if (mId && !isNaN(q) && q > 0) {
+      prods.push({ menu_id: Number(mId), quantity: q });
+    }
+  });
+
+  if (!prods.length) {
+    errEl.textContent = 'Please add at least one product to the bundle.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const payload = {
+    name, description: desc, bundle_price: bundlePrice, discount_percent: discount, products: prods
+  };
+
+  const saveBtn = document.getElementById('bundleSaveBtn');
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+
+  try {
+    const url = id ? `/api/admin/products/bundles/${id}` : '/api/admin/products/bundles';
+    const method = id ? 'PATCH' : 'POST';
+
+    const res = await adminFetch(url, { method, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not save bundle.');
+
+    closeModal('bundleModal');
+    await loadAll();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  } finally {
+    saveBtn.disabled = false; saveBtn.textContent = 'Save Bundle';
+  }
+}
+
+/* ================================================================
+   MODAL — CATEGORY
+   ================================================================ */
+function openCatModal(id = '', name = '') {
+  document.getElementById('catModalTitle').textContent = id ? 'Edit Category' : 'Add Category';
+  document.getElementById('catId').value   = id;
+  document.getElementById('catName').value = name;
+  document.getElementById('catError').classList.remove('show');
+  openModal('catModal');
+}
+
+async function saveCategory() {
+  const id   = document.getElementById('catId').value;
+  const name = document.getElementById('catName').value.trim();
+  const errEl = document.getElementById('catError');
+
+  if (!name) {
+    errEl.textContent = 'Category name is required.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const saveBtn = document.getElementById('catSaveBtn');
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+
+  try {
+    const url = id ? `/api/admin/products/categories/${id}` : '/api/admin/products/categories';
+    const method = id ? 'PATCH' : 'POST';
+
+    const res = await adminFetch(url, { method, body: JSON.stringify({ name }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not save category.');
+
+    closeModal('catModal');
+    await loadAll();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  } finally {
+    saveBtn.disabled = false; saveBtn.textContent = 'Save Category';
+  }
+}
+
+/* ================================================================
+   DELETE MODAL
+   ================================================================ */
+function openDeleteModal(type, id, name) {
+  deletingTarget = { type, id, name };
+  document.getElementById('delMsg').innerHTML = `Are you sure you want to delete ${type} <strong>"${escapeHtml(name)}"</strong>?`;
+  document.getElementById('delError').classList.remove('show');
+  openModal('deleteModal');
+}
+
+async function confirmDelete() {
+  if (!deletingTarget) return;
+  const { type, id } = deletingTarget;
+  const errEl = document.getElementById('delError');
+  const delBtn = document.getElementById('delConfirmBtn');
+
+  delBtn.disabled = true; delBtn.textContent = 'Deleting…';
+
+  let url = '';
+  if (type === 'item')   url = `/api/admin/products/menuitems/${id}`;
+  if (type === 'cat')    url = `/api/admin/products/categories/${id}`;
+  if (type === 'addon')  url = `/api/admin/products/addons/${id}`;
+  if (type === 'bundle') url = `/api/admin/products/bundles/${id}`;
+
+  try {
+    const res = await adminFetch(url, { method: 'DELETE' });
+    if (res.status !== 204) {
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not save item.');
-      toggleModal('itemModal', false);
-      loadAll();
-    } catch (err) {
-      errEl.textContent = err.message;
-      errEl.style.display = 'block';
+      throw new Error(data.error || 'Could not delete item.');
     }
+
+    closeModal('deleteModal');
+    deletingTarget = null;
+    await loadAll();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  } finally {
+    delBtn.disabled = false; delBtn.textContent = 'Delete';
+  }
+}
+
+/* ================================================================
+   PROFITABILITY & ANALYSIS
+   ================================================================ */
+function renderProfitability() {
+  const tbody = document.getElementById('profTbody');
+  if (!menuItems.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="prd-empty"><p>No products available.</p></div></td></tr>`;
+    return;
   }
 
-  async function deleteItem(id) {
-    if (!confirm('Delete this menu item?')) return;
-    try {
-      const res = await adminFetch(`/api/admin/products/menuitems/${id}`, { method: 'DELETE' });
-      if (res.status !== 204) {
-        const data = await res.json();
-        throw new Error(data.error || 'Could not delete item.');
-      }
-      loadAll();
-    } catch (err) {
-      alert(err.message);
-    }
-  }
+  tbody.innerHTML = menuItems.map(i => `
+    <tr>
+      <td><span class="item-name">${escapeHtml(i.name)}</span></td>
+      <td>${escapeHtml(i.category_name || '—')}</td>
+      <td class="right"><span class="price-val">${peso(i.price)}</span></td>
+      <td class="right"><span class="stock-qty">${i.stock_quantity ?? '0'}</span></td>
+      <td><span class="prd-badge ${i.status === 'available' ? 'badge-available' : 'badge-unavailable'}">${escapeHtml(i.status)}</span></td>
+    </tr>`).join('');
+}
 
-  function openCatModal(id, name) {
-    document.getElementById('catModalTitle').textContent = id ? 'Edit Category' : 'New Category';
-    document.getElementById('catId').value = id || '';
-    document.getElementById('catName').value = name || '';
-    document.getElementById('catError').style.display = 'none';
-    toggleModal('catModal', true);
-  }
+function renderAnalysis() {
+  const grid = document.getElementById('analysisGrid');
+  const totalProducts = menuItems.length;
+  const totalAddons   = addons.length;
+  const totalBundles  = bundles.length;
 
-  async function saveCategory() {
-    const id = document.getElementById('catId').value;
-    const name = document.getElementById('catName').value.trim();
-    const errEl = document.getElementById('catError');
-    if (!name) {
-      errEl.textContent = 'Name is required.';
-      errEl.style.display = 'block';
-      return;
-    }
-    try {
-      const res = await adminFetch(id ? `/api/admin/products/categories/${id}` : '/api/admin/products/categories', {
-        method: id ? 'PATCH' : 'POST',
-        body: JSON.stringify({ name }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not save category.');
-      toggleModal('catModal', false);
-      loadAll();
-    } catch (err) {
-      errEl.textContent = err.message;
-      errEl.style.display = 'block';
-    }
-  }
-
-  async function deleteCategory(id) {
-    if (!confirm('Delete this category? Items using it must be reassigned first.')) return;
-    try {
-      const res = await adminFetch(`/api/admin/products/categories/${id}`, { method: 'DELETE' });
-      if (res.status !== 204) {
-        const data = await res.json();
-        throw new Error(data.error || 'Could not delete category.');
-      }
-      loadAll();
-    } catch (err) {
-      alert(err.message);
-    }
-  }
+  grid.innerHTML = `
+    <div style="background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px;">
+      <h4 style="margin:0 0 10px; font-family:'Archivo',sans-serif; text-transform:uppercase;">Menu Composition</h4>
+      <div style="display:flex; flex-direction:column; gap:8px; font-size:0.85rem;">
+        <div style="display:flex; justify-content:space-between;"><span>Standalone Products:</span><strong>${totalProducts}</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>Optional Add-Ons:</span><strong>${totalAddons}</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>Combo Bundles:</span><strong>${totalBundles}</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>Categories:</span><strong>${categories.length}</strong></div>
+      </div>
+    </div>
+    <div style="background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px;">
+      <h4 style="margin:0 0 10px; font-family:'Archivo',sans-serif; text-transform:uppercase;">Inventory Integrations</h4>
+      <div style="display:flex; flex-direction:column; gap:8px; font-size:0.85rem;">
+        <div style="display:flex; justify-content:space-between;"><span>Tracked Raw Ingredients:</span><strong>${inventoryItems.length}</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>Add-Ons linked to Inventory:</span><strong>${addons.filter(a => a.inventory_components?.length).length}</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>Bundles linked to Products:</span><strong>${bundles.filter(b => b.products?.length).length}</strong></div>
+      </div>
+    </div>
+  `;
+}
 </script>
 </body>
 </html>

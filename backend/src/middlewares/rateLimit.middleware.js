@@ -26,6 +26,21 @@ export const authLimiter = rateLimit({
   },
 });
 
+// Dedicated limiter for OTP send/verify endpoints. Has its own counter
+// (independent of admin login) and a higher limit so a shared cafe IP
+// can't accidentally lock out customers' verification codes.
+export const otpLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 30, // Limit each IP to 30 OTP requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    return res.status(429).json({
+      error: "Too many verification requests. Please try again in a few minutes.",
+    });
+  },
+});
+
 // Moderate limiter for transactional endpoints (e.g., POS order creation)
 export const posLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute

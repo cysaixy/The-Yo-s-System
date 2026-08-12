@@ -42,7 +42,7 @@ app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 // --- Customer API ---
 app.use("/api/customer/menu", customerMenuRoutes);
-app.use("/api/customer/auth", authLimiter, customerAuthRoutes);
+app.use("/api/customer/auth", customerAuthRoutes);
 app.use("/api/customer/orders", customerOrderRoutes);
 app.use("/api/customer/reservations", customerReservationRoutes);
 

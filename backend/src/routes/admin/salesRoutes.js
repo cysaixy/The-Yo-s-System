@@ -1,6 +1,20 @@
 import express from "express";
 const salesRouter = express.Router();
-import {createPosOrder, getOrder, updateOrderStatus, listOrders, listPayments,updatePaymentStatus, salesReport} from "../../controllers/admin/salesController.js";
+import {
+  createPosOrder,
+  getOrder,
+  updateOrderStatus,
+  listOrders,
+  listPayments,
+  updatePaymentStatus,
+  salesReport,
+  salesSummary,
+  dailySales,
+  topAddonsReport,
+  productSalesReport,
+  categorySalesReport,
+  orderTypesReport,
+} from "../../controllers/admin/salesController.js";
 import { requireStaffAuth } from "../../middlewares/auth.middleware.js";
 import { requirePermission } from "../../middlewares/role.middleware.js";
 
@@ -21,5 +35,11 @@ salesRouter.get("/orders/:id", getOrder);
 salesRouter.get("/payments", requirePermission("can_access_reports"), listPayments);
 salesRouter.patch("/payments/:id/status", requirePermission("can_access_reports"), updatePaymentStatus);
 salesRouter.get("/report", requirePermission("can_access_reports"), salesReport);
+salesRouter.get("/summary", requirePermission("can_access_reports"), salesSummary);
+salesRouter.get("/daily", requirePermission("can_access_reports"), dailySales);
+salesRouter.get("/report/top-addons", requirePermission("can_access_reports"), topAddonsReport);
+salesRouter.get("/report/products", requirePermission("can_access_reports"), productSalesReport);
+salesRouter.get("/report/categories", requirePermission("can_access_reports"), categorySalesReport);
+salesRouter.get("/report/order-types", requirePermission("can_access_reports"), orderTypesReport);
 
 export default salesRouter;

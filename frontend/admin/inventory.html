@@ -4,189 +4,1126 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventory — The~Yo's Admin</title>
+<meta name="description" content="Manage The~Yo's inventory — ingredients, raw materials, packaging, and supplies.">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css">
+<style>
+/* ================================================================
+   INVENTORY PAGE — Scoped styles (.inv-* namespace)
+   ================================================================ */
+
+.inv-page { display: flex; flex-direction: column; gap: 0; }
+
+/* ---- Top tab bar ---- */
+.inv-tabs {
+  display: flex; align-items: center; gap: 2px;
+  border-bottom: 2px solid var(--line);
+  margin-bottom: 24px;
+}
+.inv-tab {
+  padding: 10px 20px; font-family: 'Inter', sans-serif; font-size: 0.84rem;
+  font-weight: 600; color: var(--ink); opacity: 0.55; cursor: pointer;
+  border: none; background: none; border-bottom: 2px solid transparent;
+  margin-bottom: -2px; transition: all .15s ease; white-space: nowrap;
+}
+.inv-tab:hover { opacity: 0.85; }
+.inv-tab.active { opacity: 1; color: var(--brass); border-bottom-color: var(--brass); }
+
+/* ---- Tab panels ---- */
+.inv-panel { display: none; }
+.inv-panel.active { display: block; }
+
+/* ---- Summary cards ---- */
+.inv-summary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.inv-stat-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  padding: 20px 22px; display: flex; flex-direction: column; gap: 6px;
+}
+.inv-stat-card .isc-label {
+  font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--ink); opacity: 0.5;
+}
+.inv-stat-card .isc-value {
+  font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 2rem;
+  line-height: 1; color: var(--ink);
+}
+.inv-stat-card .isc-value.gold { color: var(--brass-dark); }
+.inv-stat-card .isc-value.sm { font-size: 1.05rem; font-weight: 600; font-family: 'Inter', sans-serif; opacity: 0.75; }
+.inv-stat-card .isc-sub { font-size: 0.76rem; opacity: 0.5; margin-top: 2px; }
+
+/* ---- Status strip ---- */
+.inv-status-strip {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 22px; display: flex; gap: 28px; flex-wrap: wrap;
+  align-items: center; margin-bottom: 22px;
+}
+.inv-status-strip .strip-label {
+  font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+  letter-spacing: 0.07em; opacity: 0.45; margin-right: 4px;
+}
+.inv-status-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.82rem; font-weight: 600; color: var(--ink);
+}
+.inv-status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-green { background: #2e7d4f; }
+.dot-yellow { background: #c07d0b; }
+.dot-blue { background: #2c5fb0; }
+.dot-red { background: #c0392b; }
+.inv-status-item .count { font-family: 'Archivo', sans-serif; font-weight: 900; }
+
+/* ---- Sub-tabs (Stock / Cost / Activities / Bulk Add) ---- */
+.inv-sub-tabs {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--stone); border: 1px solid var(--line);
+  border-radius: 8px; padding: 4px; width: fit-content;
+  margin-bottom: 18px;
+}
+.inv-sub-tab {
+  padding: 7px 16px; border-radius: 6px; border: none; background: none;
+  font-family: 'Inter', sans-serif; font-size: 0.80rem; font-weight: 600;
+  color: var(--ink); opacity: 0.55; cursor: pointer; transition: all .15s ease;
+  white-space: nowrap;
+}
+.inv-sub-tab:hover { opacity: 0.85; }
+.inv-sub-tab.active {
+  background: #fff; color: var(--brass-dark); opacity: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ---- Toolbar ---- */
+.inv-toolbar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; flex-wrap: wrap;
+}
+.inv-search-wrap {
+  position: relative; flex: 1; min-width: 200px; max-width: 340px;
+}
+.inv-search-wrap svg {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  width: 15px; height: 15px; stroke: var(--ink); opacity: 0.35;
+  fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  pointer-events: none;
+}
+.inv-search {
+  width: 100%; padding: 9px 12px 9px 34px; border: 1px solid var(--line);
+  border-radius: 7px; background: #fff; font-family: 'Inter', sans-serif;
+  font-size: 0.84rem; color: var(--ink); outline: none; transition: border-color .15s;
+}
+.inv-search:focus { border-color: var(--brass); }
+.inv-filter-group {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.inv-filter-label {
+  font-family: 'Space Mono', monospace; font-size: 0.63rem; text-transform: uppercase;
+  letter-spacing: 0.06em; opacity: 0.45;
+}
+.inv-select {
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px;
+  background: #fff; font-family: 'Inter', sans-serif; font-size: 0.82rem;
+  color: var(--ink); cursor: pointer; outline: none; transition: border-color .15s;
+}
+.inv-select:focus { border-color: var(--brass); }
+
+/* ---- Inventory table ---- */
+.inv-table-wrap {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden;
+}
+.inv-table {
+  width: 100%; border-collapse: collapse; font-size: 0.84rem;
+}
+.inv-table thead tr {
+  background: var(--stone); border-bottom: 1px solid var(--line);
+}
+.inv-table th {
+  padding: 11px 16px; text-align: left;
+  font-family: 'Space Mono', monospace; font-size: 0.61rem;
+  text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55;
+  font-weight: 700; white-space: nowrap;
+}
+.inv-table th.right, .inv-table td.right { text-align: right; }
+.inv-table td {
+  padding: 13px 16px; border-bottom: 1px solid var(--line);
+  vertical-align: middle; color: var(--ink);
+}
+.inv-table tbody tr:last-child td { border-bottom: none; }
+.inv-table tbody tr:hover td { background: rgba(163,132,74,0.04); }
+.inv-table .item-name { font-weight: 600; }
+.inv-table .item-cat { font-size: 0.77rem; opacity: 0.5; margin-top: 2px; }
+.inv-table .stock-qty {
+  font-family: 'Space Mono', monospace; font-weight: 700; font-size: 0.9rem;
+}
+.inv-table .price-val {
+  font-family: 'Space Mono', monospace; font-size: 0.82rem;
+}
+.inv-table .unit-label {
+  font-size: 0.75rem; opacity: 0.65; font-family: 'Space Mono', monospace;
+}
+.inv-table .reorder-val { font-size: 0.78rem; opacity: 0.6; font-family: 'Space Mono', monospace; }
+
+/* ---- Status badges ---- */
+.inv-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px;
+  font-family: 'Space Mono', monospace; font-size: 0.60rem;
+  font-weight: 700; text-transform: uppercase; white-space: nowrap;
+}
+.badge-instock  { background: rgba(46,125,79,0.12);   color: #1e6b41; }
+.badge-reorder  { background: rgba(44,95,176,0.12);   color: #2c5fb0; }
+.badge-low      { background: rgba(192,125,11,0.14);  color: #8a5c00; }
+.badge-out      { background: rgba(192,57,43,0.12);   color: #a3271b; }
+
+/* ---- Action menu ---- */
+.inv-action-wrap { position: relative; }
+.inv-action-btn {
+  width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--line);
+  background: #fff; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all .15s ease; flex-shrink: 0;
+}
+.inv-action-btn:hover { border-color: var(--brass); background: rgba(163,132,74,0.07); }
+.inv-action-btn svg { width: 15px; height: 15px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
+.inv-action-dropdown {
+  position: absolute; right: 0; top: 36px; z-index: 40;
+  background: #fff; border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10); min-width: 150px;
+  overflow: hidden; display: none;
+}
+.inv-action-dropdown.open { display: block; }
+.inv-action-dropdown button {
+  width: 100%; text-align: left; padding: 10px 14px; border: none;
+  background: none; font-family: 'Inter', sans-serif; font-size: 0.82rem;
+  font-weight: 500; cursor: pointer; color: var(--ink);
+  display: flex; align-items: center; gap: 9px; transition: background .1s;
+}
+.inv-action-dropdown button:hover { background: var(--stone); }
+.inv-action-dropdown button svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.inv-action-dropdown button.danger { color: var(--danger); }
+.inv-action-dropdown .dd-sep { height: 1px; background: var(--line); margin: 4px 0; }
+
+/* ---- Empty state ---- */
+.inv-empty {
+  padding: 64px 20px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.inv-empty-icon {
+  width: 64px; height: 64px; border-radius: 16px;
+  background: var(--stone); display: flex; align-items: center; justify-content: center;
+  margin-bottom: 4px;
+}
+.inv-empty-icon svg { width: 30px; height: 30px; fill: none; stroke: var(--brass); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.inv-empty h3 { margin: 0; font-family: 'Archivo', sans-serif; font-size: 1.05rem; }
+.inv-empty p { margin: 0; font-size: 0.84rem; opacity: 0.55; max-width: 280px; line-height: 1.5; }
+
+/* ---- Modals ---- */
+.inv-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(15,16,18,0.55);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200; padding: 20px;
+}
+.inv-modal-backdrop.open { display: flex; }
+.inv-modal {
+  background: #fff; border-radius: 12px; padding: 28px;
+  width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+}
+.inv-modal.wide { max-width: 680px; }
+.inv-modal-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 22px;
+}
+.inv-modal-head h2 {
+  margin: 0; font-family: 'Archivo', sans-serif; font-size: 1.1rem;
+  text-transform: uppercase; letter-spacing: 0.02em;
+}
+.inv-modal-head .close-btn {
+  width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 6px;
+  background: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all .15s;
+}
+.inv-modal-head .close-btn:hover { border-color: var(--danger); color: var(--danger); }
+.inv-modal-head .close-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+
+.inv-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.inv-form-field { display: flex; flex-direction: column; gap: 5px; }
+.inv-form-field.span2 { grid-column: 1 / -1; }
+.inv-form-field label {
+  font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+  letter-spacing: 0.06em; opacity: 0.55;
+}
+.inv-form-field input, .inv-form-field select, .inv-form-field textarea {
+  padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px;
+  font-family: 'Inter', sans-serif; font-size: 0.84rem; background: var(--bone);
+  color: var(--ink); outline: none; transition: border-color .15s;
+}
+.inv-form-field input:focus, .inv-form-field select:focus, .inv-form-field textarea:focus {
+  border-color: var(--brass);
+}
+.inv-form-field textarea { resize: vertical; min-height: 72px; }
+
+.inv-modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;
+  padding-top: 20px; border-top: 1px solid var(--line);
+}
+
+.inv-error-msg {
+  background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.2);
+  color: var(--danger); border-radius: 7px; padding: 10px 14px;
+  font-size: 0.82rem; margin-top: 14px; display: none;
+}
+.inv-error-msg.show { display: block; }
+
+/* ---- Header row ---- */
+.inv-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+}
+.inv-header-row h2 {
+  font-family: 'Archivo', sans-serif; font-size: 1.4rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.02em; margin: 0;
+}
+.inv-header-actions { display: flex; align-items: center; gap: 10px; }
+.inv-header-search { position: relative; }
+.inv-header-search svg {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; fill: none; stroke: var(--ink); opacity: 0.35;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+}
+.inv-header-search input {
+  padding: 9px 12px 9px 32px; border: 1px solid var(--line); border-radius: 7px;
+  background: #fff; font-family: 'Inter', sans-serif; font-size: 0.83rem;
+  color: var(--ink); outline: none; width: 220px; transition: border-color .15s;
+}
+.inv-header-search input:focus { border-color: var(--brass); }
+
+/* ---- Buttons ---- */
+.inv-add-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--brass); color: #fff; border: 1px solid var(--brass);
+  padding: 9px 16px; border-radius: 7px; font-family: 'Inter', sans-serif;
+  font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: all .15s;
+  white-space: nowrap;
+}
+.inv-add-btn:hover { background: var(--brass-dark); border-color: var(--brass-dark); }
+.inv-add-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
+
+.inv-btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px;
+  border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.83rem;
+  font-weight: 600; cursor: pointer; border: 1px solid; transition: all .15s;
+}
+.inv-btn-gold { background: var(--brass); color: #fff; border-color: var(--brass); }
+.inv-btn-gold:hover { background: var(--brass-dark); border-color: var(--brass-dark); }
+.inv-btn-ghost { background: none; color: var(--ink); border-color: var(--line); }
+.inv-btn-ghost:hover { border-color: var(--brass); color: var(--brass); }
+.inv-btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.inv-btn-danger:hover { background: #a3271b; }
+.inv-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (max-width: 900px) {
+  .inv-summary-row { grid-template-columns: 1fr 1fr; }
+  .inv-status-strip { gap: 16px; }
+  .inv-header-search input { width: 160px; }
+}
+@media (max-width: 640px) {
+  .inv-summary-row { grid-template-columns: 1fr; }
+  .inv-tabs { overflow-x: auto; }
+  .inv-form-grid { grid-template-columns: 1fr; }
+  .inv-header-row { flex-direction: column; align-items: flex-start; }
+}
+</style>
 </head>
 <body>
 
 <div id="adminShell"></div>
 
 <script type="module">
-  import { renderAdminShell } from "./admin-shell.js";
-  import { adminFetch, formatDate, escapeHtml } from "./admin-api.js";
+import { renderAdminShell } from "./admin-shell.js";
+import { adminFetch, formatDate, escapeHtml, peso } from "./admin-api.js";
 
-  const session = renderAdminShell({ active: 'inventory', title: 'Inventory' });
-  if (session) init();
+/* ================================================================
+   PREDEFINED CATEGORIES & UNITS FOR CAFÉ/RESTAURANT INVENTORY
+   ================================================================ */
+const INVENTORY_CATEGORIES = [
+  "Coffee & Espresso",
+  "Milk & Dairy",
+  "Non-Dairy & Plant-Based",
+  "Tea & Matcha",
+  "Syrups & Flavorings",
+  "Powders & Blends",
+  "Sauces & Toppings",
+  "Sweeteners",
+  "Fruits & Fresh Ingredients",
+  "Rice, Grains & Noodles",
+  "Meat & Protein",
+  "Vegetables",
+  "Bread & Bakery",
+  "Condiments",
+  "Packaging",
+  "Cleaning & Sanitation",
+  "Other Supplies"
+];
 
-  let items = [];
+const PREDEFINED_UNITS = [
+  "pcs", "kg", "g", "L", "ml", "pack", "box", "bottle", "can", "sachet", "tray", "dozen"
+];
 
-  function init() {
-    const content = document.getElementById('adminContent');
-    content.innerHTML = `
-      <div class="admin-panel">
-        <div class="admin-panel-head">
-          <h3>Stock Overview</h3>
-          <button class="btn small" id="openLogBtn">View Full Log</button>
-        </div>
-        <div class="admin-panel-body" style="padding:0;" id="stockWrap">
-          <div class="admin-loading">Loading stock overview…</div>
-        </div>
+const session = renderAdminShell({ active: 'inventory', title: 'Inventory' });
+if (session) init();
+
+/* ================================================================
+   STATE
+   ================================================================ */
+let allItems = [];      // raw items from API
+let filtered  = [];     // after search+filter
+let editingItem = null;
+let viewItem = null;
+let deletingItem = null;
+
+const STATUS_META = {
+  in_stock:      { label: 'In Stock',       cls: 'badge-instock' },
+  low_stock:     { label: 'Low Stock',       cls: 'badge-low'     },
+  below_reorder: { label: 'Below Reorder',   cls: 'badge-reorder' },
+  out_of_stock:  { label: 'Out of Stock',    cls: 'badge-out'     },
+};
+
+/* ================================================================
+   INIT
+   ================================================================ */
+function init() {
+  document.getElementById('adminContent').innerHTML = buildPageHTML();
+  bindAll();
+  loadStock();
+}
+
+/* ================================================================
+   PAGE HTML SKELETON
+   ================================================================ */
+function buildPageHTML() {
+  return `
+<div class="inv-page">
+
+  <!-- ===== HEADER ROW ===== -->
+  <div class="inv-header-row">
+    <h2>Inventory</h2>
+    <div class="inv-header-actions">
+      <div class="inv-header-search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="hdrSearch" placeholder="Search inventory…" autocomplete="off">
       </div>
+      <button class="inv-add-btn" id="openAddBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Add Item
+      </button>
+    </div>
+  </div>
 
-      <div class="modal-backdrop" id="adjustModal">
-        <div class="modal-box">
-          <h3 id="adjustModalTitle">Adjust Stock</h3>
-          <div class="form-grid">
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Quantity Change</label>
-              <input type="number" id="adjQty" placeholder="e.g. -5 to remove, 10 to add">
-            </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Remarks (optional)</label>
-              <input type="text" id="adjRemarks" placeholder="Reason for adjustment">
-            </div>
-          </div>
-          <div class="modal-close-row">
-            <button class="btn btn-outline" id="adjCancelBtn">Cancel</button>
-            <button class="btn" id="adjSaveBtn">Save Adjustment</button>
-          </div>
-          <div class="admin-error" id="adjError" style="display:none; padding:10px 0 0; text-align:left;"></div>
-        </div>
+  <!-- ===== PAGE TABS ===== -->
+  <div class="inv-tabs" role="tablist">
+    <button class="inv-tab active" data-tab="overview"     role="tab">Overview</button>
+    <button class="inv-tab"        data-tab="audits"       role="tab">Audits</button>
+    <button class="inv-tab"        data-tab="usage"        role="tab">Usage</button>
+    <button class="inv-tab"        data-tab="adjustments"  role="tab">Adjustments</button>
+  </div>
+
+  <!-- ===== OVERVIEW PANEL ===== -->
+  <div class="inv-panel active" id="panel-overview">
+
+    <!-- Summary cards -->
+    <div class="inv-summary-row" id="summaryCards">
+      <div class="inv-stat-card">
+        <div class="isc-label">Total Inventory Items</div>
+        <div class="isc-value" id="statTotal">—</div>
+        <div class="isc-sub">Ingredients & supplies</div>
       </div>
-
-      <div class="modal-backdrop" id="logModal">
-        <div class="modal-box" style="max-width:720px;">
-          <h3>Inventory Log</h3>
-          <div id="logWrap"><div class="admin-loading">Loading log…</div></div>
-          <div class="modal-close-row">
-            <button class="btn btn-outline" id="logCloseBtn">Close</button>
-          </div>
-        </div>
+      <div class="inv-stat-card">
+        <div class="isc-label">Current Stock Value</div>
+        <div class="isc-value gold" id="statValue">—</div>
+        <div class="isc-sub">SUM(stock × unit cost)</div>
       </div>
-    `;
+      <div class="inv-stat-card">
+        <div class="isc-label">Last Inventory Audit</div>
+        <div class="isc-value sm" id="statLastAudit">Loading…</div>
+      </div>
+    </div>
 
-    document.getElementById('openLogBtn').addEventListener('click', openLog);
-    document.getElementById('logCloseBtn').addEventListener('click', () => toggleModal('logModal', false));
-    document.getElementById('adjCancelBtn').addEventListener('click', () => toggleModal('adjustModal', false));
-    document.getElementById('adjSaveBtn').addEventListener('click', saveAdjustment);
+    <!-- Status strip -->
+    <div class="inv-status-strip">
+      <span class="strip-label">Status</span>
+      <div class="inv-status-item"><span class="inv-status-dot dot-green"></span><span class="count" id="cntInStock">—</span>&nbsp;In Stock</div>
+      <div class="inv-status-item"><span class="inv-status-dot dot-blue"></span><span class="count" id="cntBelow">—</span>&nbsp;Below Reorder</div>
+      <div class="inv-status-item"><span class="inv-status-dot dot-yellow"></span><span class="count" id="cntLow">—</span>&nbsp;Low Stock</div>
+      <div class="inv-status-item"><span class="inv-status-dot dot-red"></span><span class="count" id="cntOut">—</span>&nbsp;Out of Stock</div>
+    </div>
 
-    loadStock();
-  }
+    <!-- Toolbar -->
+    <div class="inv-toolbar">
+      <div class="inv-search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input class="inv-search" type="text" id="stockSearch" placeholder="Search by name, SKU, or category…" autocomplete="off">
+      </div>
+      <div class="inv-filter-group">
+        <span class="inv-filter-label">Filter:</span>
+        <select class="inv-select" id="catFilter">
+          <option value="">All Categories</option>
+          ${INVENTORY_CATEGORIES.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+        </select>
+        <select class="inv-select" id="statusFilter">
+          <option value="">All Status</option>
+          <option value="in_stock">In Stock</option>
+          <option value="below_reorder">Below Reorder</option>
+          <option value="low_stock">Low Stock</option>
+          <option value="out_of_stock">Out of Stock</option>
+        </select>
+      </div>
+    </div>
 
-  function toggleModal(id, show) {
-    document.getElementById(id).classList.toggle('active', show);
-  }
-
-  const STATUS_LABELS = {
-    out_of_stock: { label: 'Out of Stock', pill: 'pill-danger' },
-    low_stock: { label: 'Low Stock', pill: 'pill-warning' },
-    below_reorder: { label: 'Below Reorder', pill: 'pill-info' },
-    in_stock: { label: 'In Stock', pill: 'pill-success' },
-  };
-
-  async function loadStock() {
-    try {
-      const res = await adminFetch('/api/admin/inventory');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not load inventory.');
-      items = data.items || [];
-      renderStock();
-    } catch (err) {
-      document.getElementById('stockWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
-    }
-  }
-
-  function renderStock() {
-    const wrap = document.getElementById('stockWrap');
-    if (items.length === 0) {
-      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No menu items found.</div>`;
-      return;
-    }
-    wrap.innerHTML = `
-      <table class="admin-table">
-        <thead><tr><th>Item</th><th>Stock Qty</th><th>Status</th><th>Item Status</th><th>Actions</th></tr></thead>
-        <tbody>
-          ${items.map(i => {
-            const s = STATUS_LABELS[i.stock_status] || STATUS_LABELS.in_stock;
-            return `<tr>
-              <td>${escapeHtml(i.name)}</td>
-              <td>${i.stock_quantity === null ? 'Untracked' : i.stock_quantity}</td>
-              <td><span class="pill ${s.pill}">${s.label}</span></td>
-              <td><span class="pill pill-neutral">${i.status}</span></td>
-              <td><div class="row-actions"><button data-id="${i.id}" data-name="${escapeHtml(i.name)}" class="primary adj-btn">Adjust</button></div></td>
-            </tr>`;
-          }).join('')}
+    <!-- Table -->
+    <div class="inv-table-wrap">
+      <table class="inv-table" id="stockTable">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Category</th>
+            <th class="right">Stock</th>
+            <th>Unit</th>
+            <th class="right">Unit Cost</th>
+            <th class="right">Total Value</th>
+            <th>Status</th>
+            <th>Reorder Level</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="stockTbody">
+          <tr><td colspan="9"><div class="admin-loading">Loading inventory…</div></td></tr>
         </tbody>
       </table>
-    `;
-    wrap.querySelectorAll('.adj-btn').forEach(btn => {
-      btn.addEventListener('click', () => openAdjust(btn.dataset.id, btn.dataset.name));
+    </div>
+
+  </div><!-- /overview panel -->
+
+  <!-- ===== AUDITS PANEL ===== -->
+  <div class="inv-panel" id="panel-audits">
+    <div style="margin-bottom:18px;">
+      <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Inventory Audits</div>
+      <div style="font-size:0.80rem; opacity:0.5; margin-top:2px;">Consolidated history of inventory entries and adjustments.</div>
+    </div>
+    <div class="inv-table-wrap" id="auditsWrap"><div class="admin-loading">Loading audit log…</div></div>
+  </div>
+
+  <!-- ===== USAGE PANEL ===== -->
+  <div class="inv-panel" id="panel-usage">
+    <div style="margin-bottom:18px;">
+      <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Usage History</div>
+      <div style="font-size:0.80rem; opacity:0.5; margin-top:2px;">Stock consumed by POS sales, recipes, and add-ons.</div>
+    </div>
+    <div class="inv-table-wrap" id="usageWrap"><div class="admin-loading">Loading usage data…</div></div>
+  </div>
+
+  <!-- ===== ADJUSTMENTS PANEL ===== -->
+  <div class="inv-panel" id="panel-adjustments">
+    <div style="margin-bottom:18px;">
+      <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Adjustments Log</div>
+      <div style="font-size:0.80rem; opacity:0.5; margin-top:2px;">Manual stock quantity changes and corrections.</div>
+    </div>
+    <div class="inv-table-wrap" id="adjustmentsWrap"><div class="admin-loading">Loading adjustments…</div></div>
+  </div>
+
+</div><!-- /inv-page -->
+
+<!-- ================================================================
+     ADD / EDIT INVENTORY ITEM MODAL
+     ================================================================ -->
+<div class="inv-modal-backdrop" id="itemModal">
+  <div class="inv-modal wide">
+    <div class="inv-modal-head">
+      <h2 id="itemModalTitle">Add Inventory Item</h2>
+      <button class="close-btn" id="itemCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <input type="hidden" id="itemId">
+    <div class="inv-form-grid">
+      <div class="inv-form-field span2">
+        <label>Item Name *</label>
+        <input type="text" id="itemName" placeholder="e.g. Espresso Beans">
+      </div>
+      <div class="inv-form-field">
+        <label>Category *</label>
+        <select id="itemCategory">
+          <option value="">Select category…</option>
+          ${INVENTORY_CATEGORIES.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="inv-form-field">
+        <label>SKU / Item Code</label>
+        <input type="text" id="itemSku" placeholder="e.g. COF-001">
+      </div>
+      <div class="inv-form-field">
+        <label>Current Stock *</label>
+        <input type="number" id="itemStock" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="inv-form-field">
+        <label>Unit *</label>
+        <select id="itemUnit">
+          ${PREDEFINED_UNITS.map(u => `<option value="${u}">${u}</option>`).join('')}
+          <option value="custom">+ Custom Unit</option>
+        </select>
+        <input type="text" id="itemUnitCustom" placeholder="Enter unit (e.g. roll)" style="display:none; margin-top:6px;">
+      </div>
+      <div class="inv-form-field">
+        <label>Unit Cost (₱) *</label>
+        <input type="number" id="itemUnitCost" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="inv-form-field">
+        <label>Reorder Level *</label>
+        <input type="number" id="itemReorder" min="0" step="0.01" placeholder="5">
+      </div>
+      <div class="inv-form-field span2">
+        <label>Supplier</label>
+        <input type="text" id="itemSupplier" placeholder="e.g. ABC Coffee Supplier">
+      </div>
+      <div class="inv-form-field span2">
+        <label>Notes / Remarks</label>
+        <textarea id="itemNotes" placeholder="Optional notes…"></textarea>
+      </div>
+    </div>
+    <div class="inv-error-msg" id="itemError"></div>
+    <div class="inv-modal-footer">
+      <button class="inv-btn inv-btn-ghost" id="itemCancelBtn">Cancel</button>
+      <button class="inv-btn inv-btn-gold"  id="itemSaveBtn">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     ADJUST STOCK MODAL
+     ================================================================ -->
+<div class="inv-modal-backdrop" id="adjustModal">
+  <div class="inv-modal">
+    <div class="inv-modal-head">
+      <h2>Adjust Stock</h2>
+      <button class="close-btn" id="adjustCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="inv-form-grid">
+      <div class="inv-form-field span2">
+        <label>Adjustment Type</label>
+        <select id="adjType">
+          <option value="stock_in">Stock In (Add)</option>
+          <option value="stock_out">Stock Out (Remove)</option>
+        </select>
+      </div>
+      <div class="inv-form-field span2">
+        <label>Quantity Change *</label>
+        <input type="number" id="adjQty" min="0.01" step="0.01" placeholder="e.g. 5">
+      </div>
+      <div class="inv-form-field span2">
+        <label>Remarks / Reason</label>
+        <input type="text" id="adjRemarks" placeholder="Reason for adjustment">
+      </div>
+    </div>
+    <div class="inv-error-msg" id="adjError"></div>
+    <div class="inv-modal-footer">
+      <button class="inv-btn inv-btn-ghost" id="adjCancelBtn">Cancel</button>
+      <button class="inv-btn inv-btn-gold"  id="adjSaveBtn">Save Adjustment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     DELETE CONFIRMATION MODAL
+     ================================================================ -->
+<div class="inv-modal-backdrop" id="deleteModal">
+  <div class="inv-modal">
+    <div class="inv-modal-head">
+      <h2>Confirm Delete</h2>
+      <button class="close-btn" id="delCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <p id="delMsg">Are you sure you want to delete this inventory item?</p>
+    <div class="inv-error-msg" id="delError"></div>
+    <div class="inv-modal-footer">
+      <button class="inv-btn inv-btn-ghost"  id="delCancelBtn">Cancel</button>
+      <button class="inv-btn inv-btn-danger" id="delConfirmBtn">Delete Item</button>
+    </div>
+  </div>
+</div>
+  `;
+}
+
+/* ================================================================
+   BIND ALL EVENTS
+   ================================================================ */
+function bindAll() {
+  // Tabs
+  document.querySelectorAll('.inv-tab').forEach(btn =>
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+  // Searches & filters
+  document.getElementById('hdrSearch').addEventListener('input', e => {
+    document.getElementById('stockSearch').value = e.target.value;
+    applyFilters();
+  });
+  document.getElementById('stockSearch').addEventListener('input', e => {
+    document.getElementById('hdrSearch').value = e.target.value;
+    applyFilters();
+  });
+  document.getElementById('catFilter').addEventListener('change', applyFilters);
+  document.getElementById('statusFilter').addEventListener('change', applyFilters);
+
+  // Unit dropdown toggle for custom unit
+  document.getElementById('itemUnit').addEventListener('change', e => {
+    const customInp = document.getElementById('itemUnitCustom');
+    customInp.style.display = e.target.value === 'custom' ? 'block' : 'none';
+  });
+
+  // Open Add modal
+  document.getElementById('openAddBtn').addEventListener('click', () => openItemModal());
+
+  // Item modal controls
+  document.getElementById('itemCloseBtn').addEventListener('click', () => closeModal('itemModal'));
+  document.getElementById('itemCancelBtn').addEventListener('click', () => closeModal('itemModal'));
+  document.getElementById('itemSaveBtn').addEventListener('click', saveItem);
+
+  // Adjust modal controls
+  document.getElementById('adjustCloseBtn').addEventListener('click', () => closeModal('adjustModal'));
+  document.getElementById('adjCancelBtn').addEventListener('click',    () => closeModal('adjustModal'));
+  document.getElementById('adjSaveBtn').addEventListener('click', saveAdjustment);
+
+  // Delete modal controls
+  document.getElementById('delCloseBtn').addEventListener('click',   () => closeModal('deleteModal'));
+  document.getElementById('delCancelBtn').addEventListener('click',  () => closeModal('deleteModal'));
+  document.getElementById('delConfirmBtn').addEventListener('click', confirmDelete);
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.inv-action-wrap')) {
+      document.querySelectorAll('.inv-action-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+  });
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+/* ================================================================
+   TAB SWITCHING
+   ================================================================ */
+function switchTab(tab) {
+  document.querySelectorAll('.inv-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.inv-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${tab}`));
+
+  if (tab === 'audits')      loadAudits();
+  if (tab === 'usage')       loadUsage();
+  if (tab === 'adjustments') loadAdjustmentsLog();
+}
+
+/* ================================================================
+   LOAD STOCK DATA
+   ================================================================ */
+async function loadStock() {
+  try {
+    const res  = await adminFetch('/api/admin/inventory');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not load inventory.');
+
+    allItems = data.items || [];
+    updateSummaryCards();
+    applyFilters();
+    loadLastAudit();
+  } catch (err) {
+    document.getElementById('stockTbody').innerHTML = `<tr><td colspan="9"><div class="admin-error">⚠ ${escapeHtml(err.message)}</div></td></tr>`;
+  }
+}
+
+function updateSummaryCards() {
+  const total = allItems.length;
+  const value = allItems.reduce((sum, i) => sum + (Number(i.stock_quantity || 0) * Number(i.unit_cost || 0)), 0);
+
+  const inStock = allItems.filter(i => i.stock_status === 'in_stock').length;
+  const below   = allItems.filter(i => i.stock_status === 'below_reorder').length;
+  const low     = allItems.filter(i => i.stock_status === 'low_stock').length;
+  const out     = allItems.filter(i => i.stock_status === 'out_of_stock').length;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statValue').textContent = peso(value);
+  document.getElementById('cntInStock').textContent = inStock;
+  document.getElementById('cntBelow').textContent   = below;
+  document.getElementById('cntLow').textContent     = low;
+  document.getElementById('cntOut').textContent     = out;
+}
+
+async function loadLastAudit() {
+  try {
+    const res  = await adminFetch('/api/admin/inventory/log');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const entries = data.entries || [];
+    document.getElementById('statLastAudit').textContent =
+      entries.length ? formatDate(entries[0].log_date, { dateStyle: 'medium', timeStyle: 'short' }) : 'No audits yet';
+  } catch {
+    document.getElementById('statLastAudit').textContent = '—';
+  }
+}
+
+/* ================================================================
+   FILTER & RENDER
+   ================================================================ */
+function applyFilters() {
+  const q      = (document.getElementById('stockSearch').value || '').toLowerCase().trim();
+  const cat    = document.getElementById('catFilter').value;
+  const status = document.getElementById('statusFilter').value;
+
+  filtered = allItems.filter(i => {
+    const matchQ = !q || i.name.toLowerCase().includes(q) || (i.category || '').toLowerCase().includes(q) || (i.sku || '').toLowerCase().includes(q);
+    const matchC = !cat    || i.category === cat;
+    const matchS = !status || i.stock_status === status;
+    return matchQ && matchC && matchS;
+  });
+
+  renderStockTable();
+}
+
+function renderStockTable() {
+  const tbody = document.getElementById('stockTbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="inv-empty"><p>No inventory items found.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(i => {
+    const s    = STATUS_META[i.stock_status] || STATUS_META.in_stock;
+    const cost = Number(i.unit_cost || 0);
+    const val  = Number(i.stock_quantity || 0) * cost;
+    const init = (i.name || '?')[0].toUpperCase();
+
+    return `
+    <tr data-id="${i.id}">
+      <td>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;border-radius:7px;background:var(--stone);display:flex;align-items:center;justify-content:center;font-family:'Archivo',sans-serif;font-weight:900;font-size:0.78rem;color:var(--brass-dark);flex-shrink:0;">${escapeHtml(init)}</div>
+          <div>
+            <div class="item-name">${escapeHtml(i.name)}</div>
+            ${i.sku ? `<div class="item-cat">SKU: ${escapeHtml(i.sku)}</div>` : ''}
+          </div>
+        </div>
+      </td>
+      <td><span style="font-size:0.80rem;">${escapeHtml(i.category)}</span></td>
+      <td class="right"><span class="stock-qty">${i.stock_quantity}</span></td>
+      <td><span class="unit-label">${escapeHtml(i.unit || 'pcs')}</span></td>
+      <td class="right"><span class="price-val">${peso(cost)}</span></td>
+      <td class="right"><span class="price-val" style="color:var(--brass-dark);font-weight:700;">${peso(val)}</span></td>
+      <td><span class="inv-badge ${s.cls}">${s.label}</span></td>
+      <td><span class="reorder-val">${i.reorder_level} ${escapeHtml(i.unit || 'pcs')}</span></td>
+      <td>
+        <div class="inv-action-wrap">
+          <button class="inv-action-btn action-toggle" data-id="${i.id}" title="Actions">
+            <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/></svg>
+          </button>
+          <div class="inv-action-dropdown" id="dropdown-${i.id}">
+            <button class="edit-btn" data-id="${i.id}">
+              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit Item
+            </button>
+            <button class="adj-btn" data-id="${i.id}">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              Adjust Stock
+            </button>
+            <div class="dd-sep"></div>
+            <button class="del-btn danger" data-id="${i.id}" data-name="${escapeHtml(i.name)}">
+              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Bind menu triggers
+  tbody.querySelectorAll('.action-toggle').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const dd = document.getElementById(`dropdown-${btn.dataset.id}`);
+      document.querySelectorAll('.inv-action-dropdown.open').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+      dd.classList.toggle('open');
     });
-  }
+  });
 
-  let adjustingId = null;
+  tbody.querySelectorAll('.edit-btn').forEach(btn =>
+    btn.addEventListener('click', () => {
+      closeDropdowns();
+      const item = allItems.find(i => String(i.id) === String(btn.dataset.id));
+      if (item) openItemModal(item);
+    }));
 
-  function openAdjust(id, name) {
-    adjustingId = id;
-    document.getElementById('adjustModalTitle').textContent = `Adjust Stock — ${name}`;
-    document.getElementById('adjQty').value = '';
-    document.getElementById('adjRemarks').value = '';
-    document.getElementById('adjError').style.display = 'none';
-    toggleModal('adjustModal', true);
-  }
+  tbody.querySelectorAll('.adj-btn').forEach(btn =>
+    btn.addEventListener('click', () => {
+      closeDropdowns();
+      const item = allItems.find(i => String(i.id) === String(btn.dataset.id));
+      if (item) openAdjustModal(item);
+    }));
 
-  async function saveAdjustment() {
-    const qty = Number(document.getElementById('adjQty').value);
-    const remarks = document.getElementById('adjRemarks').value.trim();
-    const errEl = document.getElementById('adjError');
+  tbody.querySelectorAll('.del-btn').forEach(btn =>
+    btn.addEventListener('click', () => {
+      closeDropdowns();
+      openDeleteModal(btn.dataset.id, btn.dataset.name);
+    }));
+}
 
-    if (!qty) {
-      errEl.textContent = 'Enter a non-zero quantity change.';
-      errEl.style.display = 'block';
-      return;
+function closeDropdowns() {
+  document.querySelectorAll('.inv-action-dropdown.open').forEach(d => d.classList.remove('open'));
+}
+
+/* ================================================================
+   ITEM MODAL — ADD / EDIT
+   ================================================================ */
+function openItemModal(item = null) {
+  editingItem = item;
+
+  document.getElementById('itemModalTitle').textContent = item ? `Edit — ${item.name}` : 'Add Inventory Item';
+  document.getElementById('itemId').value       = item ? item.id : '';
+  document.getElementById('itemName').value     = item ? item.name : '';
+  document.getElementById('itemCategory').value = item ? item.category : '';
+  document.getElementById('itemSku').value      = item ? (item.sku || '') : '';
+  document.getElementById('itemStock').value    = item ? item.stock_quantity : '';
+  document.getElementById('itemUnitCost').value = item ? item.unit_cost : '';
+  document.getElementById('itemReorder').value  = item ? item.reorder_level : '5';
+  document.getElementById('itemSupplier').value = item ? (item.supplier || '') : '';
+  document.getElementById('itemNotes').value    = item ? (item.notes || '') : '';
+
+  const unitSel = document.getElementById('itemUnit');
+  const customInp = document.getElementById('itemUnitCustom');
+
+  if (item && item.unit) {
+    if (PREDEFINED_UNITS.includes(item.unit)) {
+      unitSel.value = item.unit;
+      customInp.style.display = 'none';
+    } else {
+      unitSel.value = 'custom';
+      customInp.value = item.unit;
+      customInp.style.display = 'block';
     }
+  } else {
+    unitSel.value = 'pcs';
+    customInp.style.display = 'none';
+  }
 
-    try {
-      const res = await adminFetch('/api/admin/inventory/adjustments', {
-        method: 'POST',
-        body: JSON.stringify({ menu_id: adjustingId, quantity_change: qty, remarks: remarks || null }),
-      });
+  document.getElementById('itemError').classList.remove('show');
+  openModal('itemModal');
+}
+
+async function saveItem() {
+  const id     = document.getElementById('itemId').value;
+  const name   = document.getElementById('itemName').value.trim();
+  const cat    = document.getElementById('itemCategory').value.trim();
+  const stock  = parseFloat(document.getElementById('itemStock').value);
+  const cost   = parseFloat(document.getElementById('itemUnitCost').value);
+  const reorder = parseFloat(document.getElementById('itemReorder').value);
+  const unitSel = document.getElementById('itemUnit').value;
+  const unitCustom = document.getElementById('itemUnitCustom').value.trim();
+  const errEl  = document.getElementById('itemError');
+
+  const unit = unitSel === 'custom' ? unitCustom : unitSel;
+
+  if (!name)             { errEl.textContent = 'Item name is required.'; errEl.classList.add('show'); return; }
+  if (!cat)              { errEl.textContent = 'Category is required.'; errEl.classList.add('show'); return; }
+  if (isNaN(stock) || stock < 0) { errEl.textContent = 'Enter valid stock quantity.'; errEl.classList.add('show'); return; }
+  if (isNaN(cost) || cost < 0)   { errEl.textContent = 'Enter valid unit cost.'; errEl.classList.add('show'); return; }
+  if (isNaN(reorder) || reorder < 0) { errEl.textContent = 'Enter valid reorder level.'; errEl.classList.add('show'); return; }
+
+  const payload = {
+    name,
+    category: cat,
+    sku: document.getElementById('itemSku').value.trim() || null,
+    stock_quantity: stock,
+    unit: unit || 'pcs',
+    unit_cost: cost,
+    reorder_level: reorder,
+    supplier: document.getElementById('itemSupplier').value.trim() || null,
+    notes: document.getElementById('itemNotes').value.trim() || null,
+  };
+
+  const saveBtn = document.getElementById('itemSaveBtn');
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+
+  try {
+    const url = id ? `/api/admin/inventory/items/${id}` : '/api/admin/inventory/items';
+    const method = id ? 'PATCH' : 'POST';
+
+    const res  = await adminFetch(url, { method, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not save inventory item.');
+
+    closeModal('itemModal');
+    await loadStock();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  } finally {
+    saveBtn.disabled = false; saveBtn.textContent = 'Save Item';
+  }
+}
+
+/* ================================================================
+   ADJUST MODAL
+   ================================================================ */
+let adjustingItem = null;
+
+function openAdjustModal(item) {
+  adjustingItem = item;
+  document.getElementById('adjQty').value = '';
+  document.getElementById('adjRemarks').value = '';
+  document.getElementById('adjError').classList.remove('show');
+  openModal('adjustModal');
+}
+
+async function saveAdjustment() {
+  if (!adjustingItem) return;
+  const type    = document.getElementById('adjType').value;
+  const rawQty  = parseFloat(document.getElementById('adjQty').value);
+  const remarks = document.getElementById('adjRemarks').value.trim();
+  const errEl   = document.getElementById('adjError');
+
+  if (isNaN(rawQty) || rawQty <= 0) {
+    errEl.textContent = 'Enter a positive quantity change.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const change = type === 'stock_in' ? rawQty : -rawQty;
+
+  const saveBtn = document.getElementById('adjSaveBtn');
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+
+  try {
+    const res = await adminFetch('/api/admin/inventory/adjustments', {
+      method: 'POST',
+      body: JSON.stringify({ inventory_id: adjustingItem.id, quantity_change: change, remarks }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Adjustment failed.');
+
+    closeModal('adjustModal');
+    await loadStock();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  } finally {
+    saveBtn.disabled = false; saveBtn.textContent = 'Save Adjustment';
+  }
+}
+
+/* ================================================================
+   DELETE MODAL
+   ================================================================ */
+function openDeleteModal(id, name) {
+  deletingItem = { id, name };
+  document.getElementById('delMsg').innerHTML = `Are you sure you want to delete inventory item <strong>"${escapeHtml(name)}"</strong>?`;
+  document.getElementById('delError').classList.remove('show');
+  openModal('deleteModal');
+}
+
+async function confirmDelete() {
+  if (!deletingItem) return;
+  const errEl  = document.getElementById('delError');
+  const delBtn = document.getElementById('delConfirmBtn');
+
+  delBtn.disabled = true; delBtn.textContent = 'Deleting…';
+
+  try {
+    const res = await adminFetch(`/api/admin/inventory/items/${deletingItem.id}`, { method: 'DELETE' });
+    if (res.status !== 204) {
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not save adjustment.');
-      toggleModal('adjustModal', false);
-      loadStock();
-    } catch (err) {
-      errEl.textContent = err.message;
-      errEl.style.display = 'block';
+      throw new Error(data.error || 'Could not delete item.');
     }
-  }
 
-  async function openLog() {
-    toggleModal('logModal', true);
-    const wrap = document.getElementById('logWrap');
-    wrap.innerHTML = `<div class="admin-loading">Loading log…</div>`;
-    try {
-      const res = await adminFetch('/api/admin/inventory/log');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not load log.');
-      const entries = data.entries || [];
-      wrap.innerHTML = entries.length
-        ? `<table class="admin-table">
-            <thead><tr><th>Item</th><th>Type</th><th>Change</th><th>Staff</th><th>Date</th></tr></thead>
-            <tbody>${entries.map(e => `
-              <tr>
-                <td>${escapeHtml(e.item_name)}</td>
-                <td><span class="pill pill-neutral">${e.transaction_type}</span></td>
-                <td style="color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'}; font-family:'Space Mono';">${e.quantity_change > 0 ? '+' : ''}${e.quantity_change}</td>
-                <td>${e.staff_name || '—'}</td>
-                <td style="font-size:0.78rem; opacity:0.7;">${formatDate(e.log_date)}</td>
-              </tr>`).join('')}</tbody>
-          </table>`
-        : `<div class="panel-empty">No log entries yet.</div>`;
-    } catch (err) {
-      wrap.innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
-    }
+    closeModal('deleteModal');
+    deletingItem = null;
+    await loadStock();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  } finally {
+    delBtn.disabled = false; delBtn.textContent = 'Delete Item';
   }
+}
+
+/* ================================================================
+   LOG TABLES
+   ================================================================ */
+async function loadAudits() {
+  const wrap = document.getElementById('auditsWrap');
+  wrap.innerHTML = '<div class="admin-loading">Loading audit log…</div>';
+  try {
+    const res  = await adminFetch('/api/admin/inventory/log');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    renderLogTable(wrap, data.entries || []);
+  } catch (err) {
+    wrap.innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadUsage() {
+  const wrap = document.getElementById('usageWrap');
+  wrap.innerHTML = '<div class="admin-loading">Loading usage data…</div>';
+  try {
+    const res  = await adminFetch('/api/admin/inventory/log?transaction_type=sale');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    renderLogTable(wrap, data.entries || []);
+  } catch (err) {
+    wrap.innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadAdjustmentsLog() {
+  const wrap = document.getElementById('adjustmentsWrap');
+  wrap.innerHTML = '<div class="admin-loading">Loading adjustments…</div>';
+  try {
+    const res  = await adminFetch('/api/admin/inventory/log?transaction_type=adjustment');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    renderLogTable(wrap, data.entries || []);
+  } catch (err) {
+    wrap.innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderLogTable(wrap, entries) {
+  if (!entries.length) {
+    wrap.innerHTML = '<div class="inv-empty"><p>No log records found.</p></div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <table class="inv-table">
+      <thead><tr>
+        <th>Date</th>
+        <th>Item</th>
+        <th>Transaction Type</th>
+        <th>Qty Change</th>
+        <th>Staff</th>
+        <th>Remarks</th>
+      </tr></thead>
+      <tbody>${entries.map(e => `
+        <tr>
+          <td style="font-size:0.78rem;opacity:0.65;">${formatDate(e.log_date)}</td>
+          <td><span style="font-weight:600;">${escapeHtml(e.item_name)}</span></td>
+          <td><span class="pill pill-neutral">${escapeHtml(e.transaction_type)}</span></td>
+          <td style="font-family:'Space Mono',monospace;font-weight:700;color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'};">
+            ${e.quantity_change > 0 ? '+' : ''}${e.quantity_change}
+          </td>
+          <td>${escapeHtml(e.staff_name || '—')}</td>
+          <td style="font-size:0.78rem;opacity:0.6;">${escapeHtml(e.remarks || '—')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
 </script>
 </body>
 </html>

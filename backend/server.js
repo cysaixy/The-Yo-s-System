@@ -47,7 +47,7 @@ app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 // --- Customer API Routes ---
 
-app.use("/api/customer/auth", authLimiter, customerAuthRouter);
+app.use("/api/customer/auth", customerAuthRouter);
 app.use("/api/customer/menu", customerMenuRouter);
 app.use("/api/customer/orders", customerOrderRouter);
 app.use("/api/customer/reservations", customerReservationRouter);
@@ -74,10 +74,13 @@ app.use((req, res) => res.status(404).json({ error: "Route not found." }));
 // Global error handler (catches errors passed via next(err))
 app.use(errorHandler);
 
+import { initTables } from "./src/config/initTables.js";
+
 const startServer = async () => {
   try {
     await pool.query("SELECT NOW()");
     console.log("Connected to database");
+    await initTables();
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
