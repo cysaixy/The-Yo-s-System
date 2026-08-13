@@ -1,6 +1,5 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-// import { ProtectedRoute } from "./ProtectedRoute";
 import HomePage from "../pages/customer/HomePage";
 import AuthPage from "../pages/customer/AuthPage";
 import DashboardPage from "../pages/admin/DashboardPage";
@@ -12,13 +11,8 @@ const AppRouter = () => {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<AuthPage />} />
 
-      {/* Bypassed Protected Customer Routes */}
-      <Route>{/* Add customer routes here if needed */}</Route>
-
-      {/* Bypassed Protected Admin Routes */}
-      <Route>
-        <Route path="/admin/dashboard" element={<DashboardPage />} />
-      </Route>
+      {/* Admin Routes */}
+      <Route path="/admin/dashboard" element={<DashboardPage />} />
 
       {/* Wildcard Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

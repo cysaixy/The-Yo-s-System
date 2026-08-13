@@ -1,9 +1,13 @@
 import React from "react";
-// import { Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
-// const ProtectedRoute = () => {
-//   // Bypassing auth: completely skips checks and renders the child routes instantly
-//   return <Outlet />;
-// };
+const ProtectedRoute: React.FC = () => {
+  // do auth checks here (inside the component), e.g. from context or a custom hook
+  // const { user } = useAuth();  <-- ok to call inside component
+  const isAuthenticated = false; // <-- replace with real check
 
-// export default ProtectedRoute;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <Outlet />;
+};
+
+export default ProtectedRoute;
