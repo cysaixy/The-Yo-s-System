@@ -6,6 +6,56 @@
 <title>Menu — The~Yo's</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<style>
+  /* ---------- Menu page: photo cards + add-to-cart ---------- */
+  .menu-grid { grid-template-columns: 1fr 1fr; gap: 16px 32px; }
+  @media(max-width:900px) { .menu-grid { grid-template-columns: 1fr; } }
+
+  .menu-item {
+    flex-direction: row !important;
+    align-items: center;
+    padding: 14px !important;
+    gap: 14px !important;
+  }
+
+  .item-photo {
+    position: relative;
+    width: 76px; height: 76px; flex-shrink: 0;
+    border-radius: 10px; overflow: hidden;
+    background: linear-gradient(150deg, var(--stone), var(--line));
+    display: flex; align-items: center; justify-content: center;
+  }
+  .item-photo img { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 2; }
+  .item-photo-icon { display: none; width: 30px; height: 30px; stroke: var(--brass); fill: none; stroke-width: 1.3; opacity: .7; }
+  .item-photo.no-photo .item-photo-icon { display: block; }
+
+  .item-main { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .item-text { display: flex; flex-direction: column; gap: 3px; }
+  .item-text .name { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 0.98rem; text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink); }
+  .item-text .desc { font-size: 0.8rem; color: var(--ink); opacity: 0.6; font-family: 'Inter', sans-serif; text-transform: none; font-weight: 400; }
+
+  .item-buy { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .item-buy .price { font-family: 'Space Mono', monospace; color: var(--brass); font-size: 0.95rem; white-space: nowrap; }
+  .add-btn {
+    background: transparent; border: 1.5px solid var(--brass); color: var(--brass);
+    font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; padding: 7px 12px; border-radius: 20px;
+    cursor: pointer; white-space: nowrap; transition: all .18s ease;
+  }
+  .add-btn:hover { background: var(--brass); color: #fff; }
+  .add-btn.qc-just-added { background: var(--brass); color: #fff; }
+
+  @media(max-width:480px) {
+    .item-photo { width: 60px; height: 60px; }
+    .menu-item { padding: 12px !important; gap: 10px !important; }
+  }
+
+  /* ---------- Sticky "view cart" hint bar on mobile ---------- */
+  .menu-photo-note {
+    font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--ink); opacity: 0.55;
+    margin-top: -40px; margin-bottom: 40px; letter-spacing: 0.02em;
+  }
+</style>
 </head>
 <body>
 
@@ -35,7 +85,9 @@
       <h2 class="display">Our Menu</h2>
       <p>Explore our complete culinary line-up, featuring satisfying rice courses, premium chicken wing selections, local noodles, and fully loaded specialty drinks.</p>
     </div>
-    
+
+    <p class="menu-photo-note" style="margin-top:-40px; margin-bottom:36px;">Tip: tap <strong style="color:var(--brass);">+ Add</strong> on anything you like — your picks are waiting for you when you check out.</p>
+
     <div class="menu-tabs">
       <button class="tab-btn active" data-tab="rice-meals">Rice Meals & Bowls</button>
       <button class="tab-btn" data-tab="wings-snacks">Wings, Noodles & Snacks</button>
@@ -43,98 +95,1247 @@
       <button class="tab-btn" data-tab="non-coffee-drinks">Specialty Beverages</button>
     </div>
 
-    
     <div class="menu-grid active" id="rice-meals">
-      <div class="menu-item"><div><span class="name">Pork Sisig Rice Meal</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Burger Steak Rice Meal</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Chicken Katsu Rice Meal</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Cordon Blue Rice Meal</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Chicken Mushroom Rice Meal</span></div><span class="price">₱130</span></div>
-      <div class="menu-item"><div><span class="name">Kare Kare Rice Meal</span></div><span class="price">₱150</span></div>
-      <div class="menu-item"><div><span class="name">Barbeque Pork Rib Platter</span></div><span class="price">₱180</span></div>
-      <div class="menu-item"><div><span class="name">Chicken Inasal Platter</span></div><span class="price">₱165</span></div>
-      <div class="menu-item"><div><span class="name">Braised Pork Rice Meal</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Beef Tapa Bowl</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Pork Tocino Bowl</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Hungarian Sausage Bowl</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Garlic Longganisa Bowl</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Sweet & Sour Poppers Bowl</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Honey Soy Poppers Bowl</span></div><span class="price">₱100</span></div>
+      <div class="menu-item" data-id="pork-sisig-rice-meal" data-name="Pork Sisig Rice Meal" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/pork-sisig-rice-meal.jpg" alt="Pork Sisig Rice Meal" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Pork Sisig Rice Meal</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="burger-steak-rice-meal" data-name="Burger Steak Rice Meal" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/burger-steak-rice-meal.jpg" alt="Burger Steak Rice Meal" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Burger Steak Rice Meal</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="chicken-katsu-rice-meal" data-name="Chicken Katsu Rice Meal" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/chicken-katsu-rice-meal.jpg" alt="Chicken Katsu Rice Meal" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Chicken Katsu Rice Meal</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="cordon-blue-rice-meal" data-name="Cordon Blue Rice Meal" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/cordon-blue-rice-meal.jpg" alt="Cordon Blue Rice Meal" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Cordon Blue Rice Meal</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="chicken-mushroom-rice-meal" data-name="Chicken Mushroom Rice Meal" data-price="130">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/chicken-mushroom-rice-meal.jpg" alt="Chicken Mushroom Rice Meal" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Chicken Mushroom Rice Meal</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱130</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="kare-kare-rice-meal" data-name="Kare Kare Rice Meal" data-price="150">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/kare-kare-rice-meal.jpg" alt="Kare Kare Rice Meal" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Kare Kare Rice Meal</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱150</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="barbeque-pork-rib-platter" data-name="Barbeque Pork Rib Platter" data-price="180">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/barbeque-pork-rib-platter.jpg" alt="Barbeque Pork Rib Platter" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Barbeque Pork Rib Platter</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱180</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="chicken-inasal-platter" data-name="Chicken Inasal Platter" data-price="165">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/chicken-inasal-platter.jpg" alt="Chicken Inasal Platter" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Chicken Inasal Platter</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱165</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="braised-pork-rice-meal" data-name="Braised Pork Rice Meal" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/braised-pork-rice-meal.jpg" alt="Braised Pork Rice Meal" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Braised Pork Rice Meal</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="beef-tapa-bowl" data-name="Beef Tapa Bowl" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/beef-tapa-bowl.jpg" alt="Beef Tapa Bowl" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Beef Tapa Bowl</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="pork-tocino-bowl" data-name="Pork Tocino Bowl" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/pork-tocino-bowl.jpg" alt="Pork Tocino Bowl" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Pork Tocino Bowl</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="hungarian-sausage-bowl" data-name="Hungarian Sausage Bowl" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/hungarian-sausage-bowl.jpg" alt="Hungarian Sausage Bowl" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Hungarian Sausage Bowl</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="garlic-longganisa-bowl" data-name="Garlic Longganisa Bowl" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/garlic-longganisa-bowl.jpg" alt="Garlic Longganisa Bowl" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Garlic Longganisa Bowl</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="sweet-sour-poppers-bowl" data-name="Sweet & Sour Poppers Bowl" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/sweet-sour-poppers-bowl.jpg" alt="Sweet & Sour Poppers Bowl" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Sweet & Sour Poppers Bowl</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="honey-soy-poppers-bowl" data-name="Honey Soy Poppers Bowl" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/honey-soy-poppers-bowl.jpg" alt="Honey Soy Poppers Bowl" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Honey Soy Poppers Bowl</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    
     <div class="menu-grid" id="wings-snacks">
-      <div class="menu-item"><div><span class="name">Dubai Chocolate Truffles</span><span class="desc">Premium crunch item</span></div><span class="price">₱150</span></div>
-      <div class="menu-item"><div><span class="name">Chicken Wings (2 Pcs with Rice & Fries)</span></div><span class="price">₱125</span></div>
-      <div class="menu-item"><div><span class="name">Chicken Wings (4 Pcs)</span></div><span class="price">₱145</span></div>
-      <div class="menu-item"><div><span class="name">Chicken Wings (6 Pcs)</span><span class="desc">Flavors: Buffalo, Cheesy Garlic, Garlic Parm, Honey Glaze, Korean BBQ, Salted Egg, Thai Sweet Chili</span></div><span class="price">₱180</span></div>
-      <div class="menu-item"><div><span class="name">Spaghetti Pasta</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Carbonara Pasta</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Lomi (Regular)</span></div><span class="price">₱70</span></div>
-      <div class="menu-item"><div><span class="name">Lomi (Overload)</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Pansit Batil Patung (Balor 100)</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Pansit Batil Patung (Balor 120)</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Pansit Batil Patung (Balor 150)</span></div><span class="price">₱150</span></div>
-      <div class="menu-item"><div><span class="name">Pansit Batil Patung Bilao (Small)</span></div><span class="price">₱300</span></div>
-      <div class="menu-item"><div><span class="name">Pansit Batil Patung Bilao (Large)</span></div><span class="price">₱500</span></div>
-      <div class="menu-item"><div><span class="name">Fries (Regular)</span></div><span class="price">₱70</span></div>
-      <div class="menu-item"><div><span class="name">Fries (Overload)</span></div><span class="price">₱200</span></div>
-      <div class="menu-item"><div><span class="name">Nachos (Regular)</span></div><span class="price">₱90</span></div>
-      <div class="menu-item"><div><span class="name">Nachos (Overload)</span></div><span class="price">₱200</span></div>
-      <div class="menu-item"><div><span class="name">Chic & Fries Basket</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Classic Burger (Regular)</span></div><span class="price">₱60</span></div>
-      <div class="menu-item"><div><span class="name">Cheesy Burger</span></div><span class="price">₱75</span></div>
-      <div class="menu-item"><div><span class="name">Corndog (Classic)</span></div><span class="price">₱55</span></div>
-      <div class="menu-item"><div><span class="name">Corndog (Mozzarella)</span></div><span class="price">₱75</span></div>
+      <div class="menu-item" data-id="dubai-chocolate-truffles" data-name="Dubai Chocolate Truffles" data-price="150">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/dubai-chocolate-truffles.jpg" alt="Dubai Chocolate Truffles" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Dubai Chocolate Truffles</span>
+            <span class="desc">Premium crunch item</span>
+          </div>
+          <div class="item-buy">
+            <span class="price">₱150</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="chicken-wings-2-pcs-with-rice-fries" data-name="Chicken Wings (2 Pcs with Rice & Fries)" data-price="125">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/chicken-wings-2-pcs-with-rice-fries.jpg" alt="Chicken Wings (2 Pcs with Rice & Fries)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Chicken Wings (2 Pcs with Rice & Fries)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱125</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="chicken-wings-4-pcs" data-name="Chicken Wings (4 Pcs)" data-price="145">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/chicken-wings-4-pcs.jpg" alt="Chicken Wings (4 Pcs)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Chicken Wings (4 Pcs)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱145</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="chicken-wings-6-pcs" data-name="Chicken Wings (6 Pcs)" data-price="180">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/chicken-wings-6-pcs.jpg" alt="Chicken Wings (6 Pcs)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Chicken Wings (6 Pcs)</span>
+            <span class="desc">Flavors: Buffalo, Cheesy Garlic, Garlic Parm, Honey Glaze, Korean BBQ, Salted Egg, Thai Sweet Chili</span>
+          </div>
+          <div class="item-buy">
+            <span class="price">₱180</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="spaghetti-pasta" data-name="Spaghetti Pasta" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/spaghetti-pasta.jpg" alt="Spaghetti Pasta" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Spaghetti Pasta</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="carbonara-pasta" data-name="Carbonara Pasta" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/carbonara-pasta.jpg" alt="Carbonara Pasta" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Carbonara Pasta</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="lomi-regular" data-name="Lomi (Regular)" data-price="70">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/lomi-regular.jpg" alt="Lomi (Regular)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Lomi (Regular)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱70</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="lomi-overload" data-name="Lomi (Overload)" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/lomi-overload.jpg" alt="Lomi (Overload)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Lomi (Overload)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="pansit-batil-patung-balor-100" data-name="Pansit Batil Patung (Balor 100)" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/pansit-batil-patung-balor-100.jpg" alt="Pansit Batil Patung (Balor 100)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Pansit Batil Patung (Balor 100)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="pansit-batil-patung-balor-120" data-name="Pansit Batil Patung (Balor 120)" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/pansit-batil-patung-balor-120.jpg" alt="Pansit Batil Patung (Balor 120)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Pansit Batil Patung (Balor 120)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="pansit-batil-patung-balor-150" data-name="Pansit Batil Patung (Balor 150)" data-price="150">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/pansit-batil-patung-balor-150.jpg" alt="Pansit Batil Patung (Balor 150)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Pansit Batil Patung (Balor 150)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱150</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="pansit-batil-patung-bilao-small" data-name="Pansit Batil Patung Bilao (Small)" data-price="300">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/pansit-batil-patung-bilao-small.jpg" alt="Pansit Batil Patung Bilao (Small)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Pansit Batil Patung Bilao (Small)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱300</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="pansit-batil-patung-bilao-large" data-name="Pansit Batil Patung Bilao (Large)" data-price="500">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/pansit-batil-patung-bilao-large.jpg" alt="Pansit Batil Patung Bilao (Large)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Pansit Batil Patung Bilao (Large)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱500</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="fries-regular" data-name="Fries (Regular)" data-price="70">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/fries-regular.jpg" alt="Fries (Regular)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Fries (Regular)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱70</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="fries-overload" data-name="Fries (Overload)" data-price="200">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/fries-overload.jpg" alt="Fries (Overload)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Fries (Overload)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱200</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="nachos-regular" data-name="Nachos (Regular)" data-price="90">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/nachos-regular.jpg" alt="Nachos (Regular)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Nachos (Regular)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱90</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="nachos-overload" data-name="Nachos (Overload)" data-price="200">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/nachos-overload.jpg" alt="Nachos (Overload)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Nachos (Overload)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱200</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="chic-fries-basket" data-name="Chic & Fries Basket" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/chic-fries-basket.jpg" alt="Chic & Fries Basket" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Chic & Fries Basket</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="classic-burger-regular" data-name="Classic Burger (Regular)" data-price="60">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/classic-burger-regular.jpg" alt="Classic Burger (Regular)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Classic Burger (Regular)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱60</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="cheesy-burger" data-name="Cheesy Burger" data-price="75">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/cheesy-burger.jpg" alt="Cheesy Burger" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Cheesy Burger</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱75</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="corndog-classic" data-name="Corndog (Classic)" data-price="55">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/corndog-classic.jpg" alt="Corndog (Classic)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Corndog (Classic)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱55</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="corndog-mozzarella" data-name="Corndog (Mozzarella)" data-price="75">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/corndog-mozzarella.jpg" alt="Corndog (Mozzarella)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Corndog (Mozzarella)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱75</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    
     <div class="menu-grid" id="espresso-bar">
-      <div class="menu-item"><div><span class="name">Americano Coffee</span></div><span class="price">₱90</span></div>
-      <div class="menu-item"><div><span class="name">Americano with Cold Foam</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Cafe Latte</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Vanilla Latte</span></div><span class="price">₱110</span></div>
-      <div class="menu-item"><div><span class="name">Hazelnut Latte</span></div><span class="price">₱110</span></div>
-      <div class="menu-item"><div><span class="name">Spanish Latte</span></div><span class="price">₱110</span></div>
-      <div class="menu-item"><div><span class="name">Dark Mocha Craft</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">White Mocha Craft</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Caramel Macchiato</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Nutty Mocha Blend</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Nutty Caramel Blend</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Sea Salt Latte Signature</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Biscoff Latte Special</span></div><span class="price">₱140</span></div>
-      <div class="menu-item"><div><span class="name">Oreo Latte Cream</span></div><span class="price">₱110</span></div>
-      <div class="menu-item"><div><span class="name">Java Chip Coffee Frappe</span></div><span class="price">₱165</span></div>
-      <div class="menu-item"><div><span class="name">Coffee Caramel Frappe</span></div><span class="price">₱165</span></div>
-      <div class="menu-item"><div><span class="name">Biscoffee Premium Frappe</span></div><span class="price">₱180</span></div>
+      <div class="menu-item" data-id="americano-coffee" data-name="Americano Coffee" data-price="90">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/americano-coffee.jpg" alt="Americano Coffee" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Americano Coffee</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱90</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="americano-with-cold-foam" data-name="Americano with Cold Foam" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/americano-with-cold-foam.jpg" alt="Americano with Cold Foam" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Americano with Cold Foam</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="cafe-latte" data-name="Cafe Latte" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/cafe-latte.jpg" alt="Cafe Latte" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Cafe Latte</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="vanilla-latte" data-name="Vanilla Latte" data-price="110">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/vanilla-latte.jpg" alt="Vanilla Latte" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Vanilla Latte</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱110</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="hazelnut-latte" data-name="Hazelnut Latte" data-price="110">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/hazelnut-latte.jpg" alt="Hazelnut Latte" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Hazelnut Latte</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱110</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="spanish-latte" data-name="Spanish Latte" data-price="110">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/spanish-latte.jpg" alt="Spanish Latte" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Spanish Latte</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱110</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="dark-mocha-craft" data-name="Dark Mocha Craft" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/dark-mocha-craft.jpg" alt="Dark Mocha Craft" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Dark Mocha Craft</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="white-mocha-craft" data-name="White Mocha Craft" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/white-mocha-craft.jpg" alt="White Mocha Craft" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">White Mocha Craft</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="caramel-macchiato" data-name="Caramel Macchiato" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/caramel-macchiato.jpg" alt="Caramel Macchiato" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Caramel Macchiato</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="nutty-mocha-blend" data-name="Nutty Mocha Blend" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/nutty-mocha-blend.jpg" alt="Nutty Mocha Blend" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Nutty Mocha Blend</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="nutty-caramel-blend" data-name="Nutty Caramel Blend" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/nutty-caramel-blend.jpg" alt="Nutty Caramel Blend" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Nutty Caramel Blend</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="sea-salt-latte-signature" data-name="Sea Salt Latte Signature" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/sea-salt-latte-signature.jpg" alt="Sea Salt Latte Signature" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Sea Salt Latte Signature</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="biscoff-latte-special" data-name="Biscoff Latte Special" data-price="140">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/biscoff-latte-special.jpg" alt="Biscoff Latte Special" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Biscoff Latte Special</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱140</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="oreo-latte-cream" data-name="Oreo Latte Cream" data-price="110">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/oreo-latte-cream.jpg" alt="Oreo Latte Cream" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Oreo Latte Cream</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱110</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="java-chip-coffee-frappe" data-name="Java Chip Coffee Frappe" data-price="165">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/java-chip-coffee-frappe.jpg" alt="Java Chip Coffee Frappe" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Java Chip Coffee Frappe</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱165</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="coffee-caramel-frappe" data-name="Coffee Caramel Frappe" data-price="165">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/coffee-caramel-frappe.jpg" alt="Coffee Caramel Frappe" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Coffee Caramel Frappe</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱165</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="biscoffee-premium-frappe" data-name="Biscoffee Premium Frappe" data-price="180">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/biscoffee-premium-frappe.jpg" alt="Biscoffee Premium Frappe" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Biscoffee Premium Frappe</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱180</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-   
     <div class="menu-grid" id="non-coffee-drinks">
-      <div class="menu-item"><div><span class="name">Milky Strawberry Drink</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Blueberry Fresh Milk</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Dark Chocolate Luxury</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Choco Berry Fusion</span></div><span class="price">₱110</span></div>
-      <div class="menu-item"><div><span class="name">Oreo Cookies Milkshake</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Matcha Latte (Classic)</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Berry Matcha Blend</span></div><span class="price">₱100</span></div>
-      <div class="menu-item"><div><span class="name">Oreo Matcha Fusion</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Caramel Matcha Fusion</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Biscoff Matcha Delight</span></div><span class="price">₱130</span></div>
-      <div class="menu-item"><div><span class="name">Sea Salt Matcha Signature</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Espresso Matcha Layered</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Wildberry Fruit Tea</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Four-Red Fruits Tea</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Lemon Ginger Tea Infusion</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Green Tea Wellness Mix</span></div><span class="price">₱120</span></div>
-      <div class="menu-item"><div><span class="name">Fruit Soda (Blueberry / Strawberry / Raspberry)</span></div><span class="price">₱80</span></div>
-      <div class="menu-item"><div><span class="name">Fruit Soda (Green Apple / Kiwi / Peach / Orange)</span></div><span class="price">₱80</span></div>
-      <div class="menu-item"><div><span class="name">Non-Coffee Frappe (Matcha / Strawberry / Blueberry)</span></div><span class="price">₱140</span></div>
-      <div class="menu-item"><div><span class="name">Non-Coffee Frappe (Cookies & Cream / Double Choc Chip)</span></div><span class="price">₱140</span></div>
-      <div class="menu-item"><div><span class="name">Biscoff Non-Coffee Frappe</span></div><span class="price">₱160</span></div>
+      <div class="menu-item" data-id="milky-strawberry-drink" data-name="Milky Strawberry Drink" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/milky-strawberry-drink.jpg" alt="Milky Strawberry Drink" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Milky Strawberry Drink</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="blueberry-fresh-milk" data-name="Blueberry Fresh Milk" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/blueberry-fresh-milk.jpg" alt="Blueberry Fresh Milk" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Blueberry Fresh Milk</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="dark-chocolate-luxury" data-name="Dark Chocolate Luxury" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/dark-chocolate-luxury.jpg" alt="Dark Chocolate Luxury" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Dark Chocolate Luxury</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="choco-berry-fusion" data-name="Choco Berry Fusion" data-price="110">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/choco-berry-fusion.jpg" alt="Choco Berry Fusion" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Choco Berry Fusion</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱110</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="oreo-cookies-milkshake" data-name="Oreo Cookies Milkshake" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/oreo-cookies-milkshake.jpg" alt="Oreo Cookies Milkshake" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Oreo Cookies Milkshake</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="matcha-latte-classic" data-name="Matcha Latte (Classic)" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/matcha-latte-classic.jpg" alt="Matcha Latte (Classic)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Matcha Latte (Classic)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="berry-matcha-blend" data-name="Berry Matcha Blend" data-price="100">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/berry-matcha-blend.jpg" alt="Berry Matcha Blend" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Berry Matcha Blend</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱100</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="oreo-matcha-fusion" data-name="Oreo Matcha Fusion" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/oreo-matcha-fusion.jpg" alt="Oreo Matcha Fusion" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Oreo Matcha Fusion</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="caramel-matcha-fusion" data-name="Caramel Matcha Fusion" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/caramel-matcha-fusion.jpg" alt="Caramel Matcha Fusion" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Caramel Matcha Fusion</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="biscoff-matcha-delight" data-name="Biscoff Matcha Delight" data-price="130">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/biscoff-matcha-delight.jpg" alt="Biscoff Matcha Delight" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Biscoff Matcha Delight</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱130</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="sea-salt-matcha-signature" data-name="Sea Salt Matcha Signature" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/sea-salt-matcha-signature.jpg" alt="Sea Salt Matcha Signature" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Sea Salt Matcha Signature</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="espresso-matcha-layered" data-name="Espresso Matcha Layered" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/espresso-matcha-layered.jpg" alt="Espresso Matcha Layered" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Espresso Matcha Layered</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="wildberry-fruit-tea" data-name="Wildberry Fruit Tea" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/wildberry-fruit-tea.jpg" alt="Wildberry Fruit Tea" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Wildberry Fruit Tea</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="four-red-fruits-tea" data-name="Four-Red Fruits Tea" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/four-red-fruits-tea.jpg" alt="Four-Red Fruits Tea" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Four-Red Fruits Tea</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="lemon-ginger-tea-infusion" data-name="Lemon Ginger Tea Infusion" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/lemon-ginger-tea-infusion.jpg" alt="Lemon Ginger Tea Infusion" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Lemon Ginger Tea Infusion</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="green-tea-wellness-mix" data-name="Green Tea Wellness Mix" data-price="120">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/green-tea-wellness-mix.jpg" alt="Green Tea Wellness Mix" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Green Tea Wellness Mix</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱120</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="fruit-soda-blueberry-strawberry-raspberry" data-name="Fruit Soda (Blueberry / Strawberry / Raspberry)" data-price="80">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/fruit-soda-blueberry-strawberry-raspberry.jpg" alt="Fruit Soda (Blueberry / Strawberry / Raspberry)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Fruit Soda (Blueberry / Strawberry / Raspberry)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱80</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="fruit-soda-green-apple-kiwi-peach-orange" data-name="Fruit Soda (Green Apple / Kiwi / Peach / Orange)" data-price="80">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/fruit-soda-green-apple-kiwi-peach-orange.jpg" alt="Fruit Soda (Green Apple / Kiwi / Peach / Orange)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Fruit Soda (Green Apple / Kiwi / Peach / Orange)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱80</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="non-coffee-frappe-matcha-strawberry-blueberry" data-name="Non-Coffee Frappe (Matcha / Strawberry / Blueberry)" data-price="140">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/non-coffee-frappe-matcha-strawberry-blueberry.jpg" alt="Non-Coffee Frappe (Matcha / Strawberry / Blueberry)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Non-Coffee Frappe (Matcha / Strawberry / Blueberry)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱140</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="non-coffee-frappe-cookies-cream-double-choc-chip" data-name="Non-Coffee Frappe (Cookies & Cream / Double Choc Chip)" data-price="140">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/non-coffee-frappe-cookies-cream-double-choc-chip.jpg" alt="Non-Coffee Frappe (Cookies & Cream / Double Choc Chip)" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Non-Coffee Frappe (Cookies & Cream / Double Choc Chip)</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱140</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item" data-id="biscoff-non-coffee-frappe" data-name="Biscoff Non-Coffee Frappe" data-price="160">
+        <div class="item-photo">
+          <img src="../pics&vids/menu/biscoff-non-coffee-frappe.jpg" alt="Biscoff Non-Coffee Frappe" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
+          <svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="item-main">
+          <div class="item-text">
+            <span class="name">Biscoff Non-Coffee Frappe</span>
+            
+          </div>
+          <div class="item-buy">
+            <span class="price">₱160</span>
+            <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">The~Yo's</div>
+        <p>A comforting community Resto Bar offering delicious meals to Baggao.</p>
+      </div>
+      <div>
+        <h4>Location & Hours</h4>
+        <p>2nd Floor DKB Building, Poblacion, Baggao, Cagayan</p>
+        <p style="color: var(--brass); font-weight:700;">Open Daily: 8:00 AM &ndash; 8:00 PM</p>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <a href="index.html">Home</a>
+        <a href="reservations.html">Reserve a Table</a>
+        <a href="my-orders.html">Track My Order</a>
+        <a href="https://www.facebook.com/profile.php?id=61555628762441" target="_blank">Facebook Page</a>
+        <a href="https://www.tiktok.com/@theyos.restaurant" target="_blank">TikTok</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>&copy; <span id="year"></span> The~Yo's Resto Bar.</span>
+      <span>Baggao, Cagayan &middot; Made with care.</span>
+    </div>
+  </div>
+</footer>
 
 <script>
   const tabs = document.querySelectorAll('.tab-btn');
@@ -149,5 +1350,6 @@
   });
 </script>
 <script src="global.js"></script>
+<script src="cart.js"></script>
 </body>
 </html>

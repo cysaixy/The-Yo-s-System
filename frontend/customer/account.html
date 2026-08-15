@@ -8,15 +8,50 @@
 <link rel="stylesheet" href="style.css">
 <style>
   .account-section { background: var(--stone); min-height: calc(100vh - 95px); display: flex; align-items: center; }
-  .account-wrap { max-width: 500px; margin: 0 auto; width: 100%; padding: 60px 22px; }
+  .account-wrap { max-width: 980px; margin: 0 auto; width: 100%; padding: 60px 22px; }
 
-  .account-card {
-    background: var(--component-bg);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 36px;
+  /* ---------- Split login card (form left, illustration right) ---------- */
+  .login-split {
+    display: grid; grid-template-columns: 1.05fr 1fr;
+    background: var(--component-bg); border: 1px solid var(--line);
+    border-radius: 18px; overflow: hidden;
+    box-shadow: 0 40px 80px -36px rgba(15,12,8,.35);
   }
-  @media(max-width:520px) { .account-card { padding: 26px 22px; } }
+  @media(max-width:840px) { .login-split { grid-template-columns: 1fr; } }
+
+  .login-form-col { padding: 52px 48px; display: flex; flex-direction: column; justify-content: center; }
+  @media(max-width:520px) { .login-form-col { padding: 34px 24px; } }
+
+  .login-heading { margin-bottom: 26px; }
+  .login-heading h1 { font-family: 'Archivo', sans-serif; font-weight: 900; text-transform: uppercase; font-size: 1.6rem; letter-spacing: -0.01em; color: var(--ink); margin-bottom: 8px; }
+  .login-heading p { font-size: 0.9rem; color: var(--ink); opacity: 0.65; }
+
+  .account-card { background: transparent; border: none; padding: 0; }
+
+  /* Illustration side */
+  .login-art-col {
+    position: relative; color: #f4efe6; overflow: hidden;
+    background: radial-gradient(130% 100% at 75% 0%, #c79a55 0%, #8a6d3a 45%, #241a10 100%);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 46px 40px;
+  }
+  @media(max-width:840px) { .login-art-col { order: -1; min-height: 220px; padding: 36px 28px; } }
+  .login-art-col::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(120% 70% at 85% -10%, rgba(255,255,255,.22), transparent 60%);
+  }
+  .login-art-eyebrow { position: relative; z-index: 1; font-family: 'Space Mono', monospace; font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.75; }
+  .login-art-title { position: relative; z-index: 1; font-family: 'Archivo', sans-serif; font-weight: 900; text-transform: uppercase; font-size: 1.7rem; line-height: 1.05; margin: 10px 0 14px; }
+  .login-art-sub { position: relative; z-index: 1; font-size: 0.9rem; opacity: 0.82; max-width: 300px; line-height: 1.5; }
+
+  .login-art-graphic { position: relative; z-index: 1; display: flex; justify-content: center; align-items: center; margin: 18px 0; }
+  .login-art-plate { width: 168px; height: 168px; border-radius: 50%; background: rgba(255,255,255,.14); border: 1.5px solid rgba(255,255,255,.35); display: flex; align-items: center; justify-content: center; }
+  .login-art-plate svg { width: 74px; height: 74px; stroke: #f4efe6; fill: none; stroke-width: 1.1; opacity: 0.9; }
+  @media(max-width:840px) { .login-art-plate { width: 108px; height: 108px; } .login-art-plate svg { width: 48px; height: 48px; } }
+
+  .login-art-stats { position: relative; z-index: 1; display: flex; gap: 22px; font-family: 'Space Mono', monospace; }
+  .login-art-stats div strong { display: block; font-size: 1.15rem; color: #fff; }
+  .login-art-stats div span { display: block; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.65; margin-top: 2px; }
 
   .account-tabs { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; margin-bottom: 28px; }
   .account-tab-btn {
@@ -101,9 +136,15 @@
 
 <section class="account-section">
   <div class="account-wrap">
+    <div class="login-split">
+    <div class="login-form-col">
 
     <!-- SIGNED-OUT CARD -->
     <div class="account-card" id="authCard">
+      <div class="login-heading" id="loginHeading">
+        <h1>Welcome Back</h1>
+        <p>Sign in to track orders, save your delivery address, and book a table faster.</p>
+      </div>
       <div class="account-tabs">
         <button type="button" class="account-tab-btn active" id="tabSignIn" onclick="switchTab('signin')">Sign In</button>
         <button type="button" class="account-tab-btn" id="tabCreate" onclick="switchTab('create')">Create Account</button>
@@ -266,6 +307,27 @@
       </div>
     </div>
 
+    </div>
+
+    <div class="login-art-col">
+      <div>
+        <p class="login-art-eyebrow">The~Yo's Resto Bar</p>
+        <h2 class="login-art-title">Good Food,<br>Good Company.</h2>
+        <p class="login-art-sub">One account gets you faster checkout, live order tracking, and easy table reservations at our Baggao dining room.</p>
+      </div>
+      <div class="login-art-graphic">
+        <div class="login-art-plate">
+          <svg viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="9" ry="3.2"/><path d="M3 15V9a9 3.2 0 0 1 18 0v6"/><path d="M8 6c0-1.4.6-2.2.6-3.4M12 6c0-1.6.6-2.4.6-3.6M16 6c0-1.4.6-2.2.6-3.4" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div class="login-art-stats">
+        <div><strong>8AM&ndash;8PM</strong><span>Open Daily</span></div>
+        <div><strong>20+</strong><span>Beverages</span></div>
+        <div><strong>2nd Flr</strong><span>DKB Building</span></div>
+      </div>
+    </div>
+
+    </div>
   </div>
 </section>
 
@@ -292,6 +354,13 @@
     document.getElementById('tabCreate').classList.toggle('active', tab === 'create');
     document.getElementById('panelSignIn').classList.toggle('active', tab === 'signin');
     document.getElementById('panelCreate').classList.toggle('active', tab === 'create');
+
+    const heading = document.getElementById('loginHeading');
+    if (heading) {
+      heading.innerHTML = tab === 'create'
+        ? '<h1>Create Account</h1><p>Join The~Yo\'s to save your details and order in seconds next time.</p>'
+        : '<h1>Welcome Back</h1><p>Sign in to track orders, save your delivery address, and book a table faster.</p>';
+    }
   };
 
   window.switchAccountView = function (view) {
@@ -643,6 +712,36 @@
     }
   });
 </script>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">The~Yo's</div>
+        <p>A comforting community Resto Bar offering delicious meals to Baggao.</p>
+      </div>
+      <div>
+        <h4>Location & Hours</h4>
+        <p>2nd Floor DKB Building, Poblacion, Baggao, Cagayan</p>
+        <p style="color: var(--brass); font-weight:700;">Open Daily: 8:00 AM &ndash; 8:00 PM</p>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <a href="menu.html">View Full Menu</a>
+        <a href="reservations.html">Reserve a Table</a>
+        <a href="my-orders.html">Track My Order</a>
+        <a href="https://www.facebook.com/profile.php?id=61555628762441" target="_blank">Facebook Page</a>
+        <a href="https://www.tiktok.com/@theyos.restaurant" target="_blank">TikTok</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>&copy; <span id="year"></span> The~Yo's Resto Bar.</span>
+      <span>Baggao, Cagayan &middot; Made with care.</span>
+    </div>
+  </div>
+</footer>
+
 <script src="global.js"></script>
+<script src="cart.js"></script>
 </body>
 </html>

@@ -65,12 +65,12 @@ function navLinkHTML(item, active, staff) {
   const allowed = hasAccess(item, staff);
   if (!allowed) {
     return `<span class="admin-nav-link disabled" title="Ask an Admin to grant you access">
-      <span class="icon">${iconSvg(item.icon)}</span><span>${item.label}</span>
+      <span class="icon">${iconSvg(item.icon)}</span><span class="nav-text">${item.label}</span>
       <span class="lock-icon">${iconSvg('lock')}</span>
     </span>`;
   }
-  return `<a class="admin-nav-link${item.key === active ? ' active' : ''}" href="${item.href}">
-    <span class="icon">${iconSvg(item.icon)}</span><span>${item.label}</span>
+  return `<a class="admin-nav-link${item.key === active ? ' active' : ''}" href="${item.href}" title="${item.label}">
+    <span class="icon">${iconSvg(item.icon)}</span><span class="nav-text">${item.label}</span>
   </a>`;
 }
 
@@ -96,6 +96,161 @@ function clearStaffSessionAndRedirect(reason) {
   localStorage.removeItem('staffInfo');
   const redirect = encodeURIComponent(window.location.pathname.split('/').pop() || 'home.html');
   window.location.href = `login.html?expired=1&redirect=${redirect}`;
+}
+
+// How long before actual expiry to show the warning banner. Staff JWTs
+// are minted with a 1-day expiry (see backend/src/utils/generateToken.js)
+// so this only ever fires for someone who's had a page open ~24h - it's
+// a courtesy heads-up, not a sign anything is broken.
+const SESSION_WARNING_MS = 5 * 60 * 1000;
+const ONLINE_ORDER_SEEN_KEY = 'yo-admin-online-order-seen';
+const ADMIN_API_BASE_URL = 'http://localhost:3000';
+
+function readSeenOnlineOrderIds() {
+  try {
+    const ids = JSON.parse(localStorage.getItem(ONLINE_ORDER_SEEN_KEY));
+    return Array.isArray(ids) ? ids.map(String).slice(-100) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSeenOnlineOrderIds(ids) {
+  localStorage.setItem(ONLINE_ORDER_SEEN_KEY, JSON.stringify([...new Set(ids.map(String))].slice(-100)));
+}
+
+function escapeNotificationHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
+}
+
+function showOnlineOrderToast(order) {
+  const toast = document.createElement('div');
+  toast.className = 'online-order-toast';
+  toast.innerHTML = `<span class="toast-icon">🔔</span><div><strong>New online order</strong><span>Order #${escapeNotificationHtml(order.id)} · ${escapeNotificationHtml(order.customer_name || 'Customer')} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}</span></div><button type="button" aria-label="Dismiss notification">×</button>`;
+  document.body.appendChild(toast);
+  toast.querySelector('button').addEventListener('click', () => toast.remove());
+  window.setTimeout(() => toast.remove(), 8000);
+}
+
+function injectOnlineOrderNotificationStyles() {
+  if (document.getElementById('onlineOrderNotificationStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'onlineOrderNotificationStyles';
+  style.textContent = `
+    .online-order-toast { position:fixed; z-index:1000; right:24px; bottom:24px; width:min(390px, calc(100vw - 32px)); display:flex; align-items:flex-start; gap:11px; padding:15px 42px 15px 15px; border-radius:14px; border:1px solid rgba(163,132,74,.25); background:linear-gradient(135deg,#fff,#fbf7ef); color:var(--ink,#15171a); box-shadow:0 18px 42px rgba(0,0,0,.18); animation:onlineOrderEnter .25s ease both; }
+    .online-order-toast .toast-icon { width:32px; height:32px; flex:0 0 32px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:rgba(163,132,74,.15); font-size:1rem; }
+    .online-order-toast strong { display:block; font:800 .76rem 'Space Mono',monospace; text-transform:uppercase; color:var(--brass-dark,#8a6d3a); }
+    .online-order-toast span { display:block; margin-top:5px; font-size:.8rem; opacity:.7; }
+    .online-order-toast button { position:absolute; right:12px; top:10px; border:0; background:transparent; font-size:1.2rem; cursor:pointer; opacity:.5; }
+    @keyframes onlineOrderEnter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+  `;
+  document.head.appendChild(style);
+}
+
+function initOnlineOrderNotifications(token) {
+  const count = document.getElementById('onlineOrderCount');
+  const button = document.getElementById('adminOnlineOrdersBtn');
+  const panel = document.getElementById('onlineOrderPanel');
+  if (!count || !button || !panel) return;
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    panel.classList.toggle('open');
+  });
+  document.addEventListener('click', event => {
+    if (!panel.contains(event.target) && !button.contains(event.target)) panel.classList.remove('open');
+  });
+
+  const renderPanel = orders => {
+    panel.innerHTML = `
+      <div class="online-order-panel-head"><div><strong>Online Orders</strong><span>${orders.length} pending</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">×</button></div>
+      <div class="online-order-panel-list">${orders.length ? orders.slice(0, 5).map(order => `
+        <a href="sales.html" class="online-order-panel-item"><span class="online-order-dot"></span><div><strong>Order #${escapeNotificationHtml(order.id)}</strong><span>${escapeNotificationHtml(order.customer_name || 'Customer')} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}</span></div></a>`).join('') : '<div class="online-order-panel-empty">No pending online orders.</div>'}</div>
+      <a class="online-order-panel-action" href="sales.html">View sales transactions →</a>`;
+    panel.querySelector('#closeOnlineOrderPanel')?.addEventListener('click', () => panel.classList.remove('open'));
+  };
+
+  let initialized = false;
+  const poll = async () => {
+    try {
+      const res = await fetch(`${ADMIN_API_BASE_URL}/api/admin/sales/orders?status=pending&limit=50`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const onlineOrders = (data.orders || []).filter(order => order.source === 'online');
+      count.textContent = onlineOrders.length;
+      count.style.display = onlineOrders.length ? 'flex' : 'none';
+      renderPanel(onlineOrders);
+
+      const seen = readSeenOnlineOrderIds();
+      if (!initialized) {
+        writeSeenOnlineOrderIds([...seen, ...onlineOrders.map(order => order.id)]);
+        initialized = true;
+        return;
+      }
+      const newOrders = onlineOrders.filter(order => !seen.includes(String(order.id)));
+      if (newOrders.length) {
+        injectOnlineOrderNotificationStyles();
+        newOrders.slice(0, 3).forEach(showOnlineOrderToast);
+        writeSeenOnlineOrderIds([...seen, ...newOrders.map(order => order.id)]);
+      }
+    } catch {
+      // Notifications should never interrupt staff work when the server is unavailable.
+    }
+  };
+  poll();
+  window.setInterval(poll, 20000);
+}
+
+function injectSessionWarningStyles() {
+  if (document.getElementById('sessionWarningStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'sessionWarningStyles';
+  style.textContent = `
+    .session-warning-banner {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(184,134,11,0.12); color: var(--warning, #b8860b);
+      border-bottom: 1px solid rgba(184,134,11,0.3);
+      padding: 10px 20px; font-family: 'Inter', sans-serif; font-size: 0.84rem; font-weight: 600;
+    }
+    .session-warning-banner .msg { flex: 1; }
+    .session-warning-banner button {
+      background: transparent; border: 1px solid rgba(184,134,11,0.4); color: var(--warning, #b8860b);
+      border-radius: 5px; padding: 4px 10px; font-size: 0.72rem; cursor: pointer; font-weight: 700;
+    }
+    .session-warning-banner button:hover { background: rgba(184,134,11,0.15); }
+  `;
+  document.head.appendChild(style);
+}
+
+// Shows a dismissible "your session is about to expire" banner just above
+// the admin header. Purely informational - the hard redirect timer set in
+// renderAdminShell still fires at the real expiry regardless of whether
+// this is dismissed, so staff can't accidentally lose the warning and get
+// silently logged out.
+function showSessionWarningBanner() {
+  if (document.getElementById('sessionWarningBanner')) return; // already shown
+  injectSessionWarningStyles();
+
+  const shell = document.querySelector('.admin-shell');
+  if (!shell) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'sessionWarningBanner';
+  banner.className = 'session-warning-banner';
+  banner.innerHTML = `
+    <span class="msg">⏱ Your session will expire in about 5 minutes. Please save or finish any pending work.</span>
+    <button type="button" id="sessionWarningDismiss">Dismiss</button>
+  `;
+
+  const adminMain = shell.querySelector('.admin-main');
+  adminMain.insertBefore(banner, adminMain.firstChild);
+
+  document.getElementById('sessionWarningDismiss').addEventListener('click', () => {
+    banner.remove();
+  });
 }
 
 export function renderAdminShell({ active, title }) {
@@ -133,7 +288,7 @@ export function renderAdminShell({ active, title }) {
   root.innerHTML = `
     <div class="admin-shell">
       <aside class="admin-sidebar">
-        <div class="admin-logo"><span class="mark">TY</span> THE~YO'S</div>
+        <div class="admin-logo"><span class="mark">TY</span><span class="brand-label">THE~YO'S</span><button class="sidebar-toggle" id="adminSidebarToggle" type="button" aria-label="Minimize sidebar" title="Minimize sidebar">☰</button></div>
         <div class="nav-group-label">Main Menu</div>
         ${NAV_MAIN.map(item => navLinkHTML(item, active, staff)).join('')}
         <div class="nav-group-label">Admin</div>
@@ -143,6 +298,7 @@ export function renderAdminShell({ active, title }) {
         <header class="admin-header">
           <h1>${title}</h1>
           <div class="admin-user">
+            <div class="admin-notification-wrap"><button class="admin-notification-btn" id="adminOnlineOrdersBtn" title="Pending online orders" aria-label="Pending online orders">🔔<span class="admin-notification-count" id="onlineOrderCount">0</span></button><div class="online-order-panel" id="onlineOrderPanel"></div></div>
             <div class="who">
               <strong>${staff.name || staff.email}</strong>
               <span>${staff.role || 'Staff'}</span>
@@ -164,6 +320,21 @@ export function renderAdminShell({ active, title }) {
     window.location.href = 'login.html';
   });
 
+  const shell = root.querySelector('.admin-shell');
+  const toggle = document.getElementById('adminSidebarToggle');
+  const sidebarCollapsed = localStorage.getItem('yo-admin-sidebar-collapsed') === 'true';
+  shell.classList.toggle('sidebar-collapsed', sidebarCollapsed);
+  toggle.setAttribute('aria-label', sidebarCollapsed ? 'Maximize sidebar' : 'Minimize sidebar');
+  toggle.title = sidebarCollapsed ? 'Maximize sidebar' : 'Minimize sidebar';
+  toggle.addEventListener('click', () => {
+    const collapsed = shell.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('yo-admin-sidebar-collapsed', String(collapsed));
+    toggle.setAttribute('aria-label', collapsed ? 'Maximize sidebar' : 'Minimize sidebar');
+    toggle.title = collapsed ? 'Maximize sidebar' : 'Minimize sidebar';
+  });
+
+  initOnlineOrderNotifications(token);
+
   // A signed-in staff member who isn't allowed on this page (e.g. they
   // bookmarked it before permissions changed) gets bounced to Home rather
   // than seeing a broken/empty page.
@@ -182,6 +353,17 @@ export function renderAdminShell({ active, title }) {
   window.setTimeout(() => {
     clearStaffSessionAndRedirect('expired-inline');
   }, msUntilExpiry);
+
+  // Heads-up banner ~5 minutes before that hard cutoff, so a session
+  // dying mid-order doesn't come out of nowhere. If the page is loaded
+  // with less than 5 minutes left (rare - expiry is 1 day), show it
+  // right away instead of scheduling a negative-delay timeout.
+  const msUntilWarning = msUntilExpiry - SESSION_WARNING_MS;
+  if (msUntilWarning <= 0) {
+    showSessionWarningBanner();
+  } else {
+    window.setTimeout(showSessionWarningBanner, msUntilWarning);
+  }
 
   return { staff, token };
 }

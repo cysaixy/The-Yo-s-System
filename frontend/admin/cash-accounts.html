@@ -23,6 +23,11 @@
   function init() {
     const content = document.getElementById('adminContent');
     content.innerHTML = `
+      <div class="stat-grid" id="accountSummary">
+        <div class="stat-card"><div class="label">Available Funds</div><div class="value brass">₱0</div></div>
+        <div class="stat-card"><div class="label">Cash on Hand</div><div class="value success">₱0</div></div>
+        <div class="stat-card"><div class="label">Bank & E-Wallet</div><div class="value">₱0</div></div>
+      </div>
       <div class="admin-panel">
         <div class="admin-panel-head">
           <h3>Accounts</h3>
@@ -84,6 +89,16 @@
 
   function render() {
     const wrap = document.getElementById('acctWrap');
+    const activeAccounts = accounts.filter(a => a.status === 'active');
+    const totalBalance = activeAccounts.reduce((sum, a) => sum + Number(a.balance || 0), 0);
+    const cashOnHand = activeAccounts.filter(a => a.account_type === 'cash')
+      .reduce((sum, a) => sum + Number(a.balance || 0), 0);
+    const digitalBalance = activeAccounts.filter(a => a.account_type !== 'cash')
+      .reduce((sum, a) => sum + Number(a.balance || 0), 0);
+    document.getElementById('accountSummary').innerHTML = `
+      <div class="stat-card"><div class="label">Available Funds</div><div class="value brass">${peso(totalBalance)}</div></div>
+      <div class="stat-card"><div class="label">Cash on Hand</div><div class="value success">${peso(cashOnHand)}</div></div>
+      <div class="stat-card"><div class="label">Bank & E-Wallet</div><div class="value">${peso(digitalBalance)}</div></div>`;
     if (accounts.length === 0) {
       wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No cash accounts yet.</div>`;
       return;

@@ -113,6 +113,8 @@
   }
   .source-online { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
   .source-pos { background: rgba(21,23,26,0.08); color: var(--ink); opacity: 0.7; }
+  .view-daily-orders-btn, .view-daily-order-detail { border:1px solid rgba(163,132,74,.38); border-radius:6px; background:#fff; color:var(--brass-dark); padding:6px 9px; font:700 .67rem 'Space Mono',monospace; text-transform:uppercase; cursor:pointer; }
+  .view-daily-orders-btn:hover, .view-daily-order-detail:hover { background:rgba(163,132,74,.12); border-color:var(--brass); }
   .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.66rem; font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
   .status-pending { background: rgba(184,134,11,0.14); color: var(--warning); }
   .status-confirmed { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
@@ -893,6 +895,9 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not load daily sales.');
       wrap.innerHTML = dailyHTML(data.daily || []);
+      wrap.querySelectorAll('.view-daily-orders-btn').forEach(button => {
+        button.addEventListener('click', () => openDailyOrders(button.dataset.date));
+      });
     } catch (err) {
       wrap.innerHTML = `<div class="stx-empty">⚠ ${err.message}</div>`;
     }
@@ -905,7 +910,7 @@
         <thead><tr>
           <th>Date</th><th>Orders</th><th class="right">Gross Sales</th>
           <th class="right">COGS</th><th class="right">Profit</th>
-          <th class="right">Margin</th><th class="right">AOV</th>
+          <th class="right">Margin</th><th class="right">AOV</th><th class="right">Orders</th>
         </tr></thead>
         <tbody>
           ${days.map(d => `
@@ -917,9 +922,39 @@
               <td class="right ${d.profit >= 0 ? 'profit-pos' : 'money-neg'}">${peso(d.profit)}</td>
               <td class="right">${d.margin}%</td>
               <td class="right">${peso(d.aov)}</td>
+              <td class="right"><button type="button" class="view-daily-orders-btn" data-date="${escapeHtml(String(d.date).slice(0, 10))}">View Orders</button></td>
             </tr>`).join('')}
         </tbody>
       </table>`;
+  }
+
+  async function openDailyOrders(date) {
+    const modal = document.getElementById('orderModal');
+    modal.classList.add('active');
+    document.getElementById('orderModalTitle').textContent = `Orders — ${date}`;
+    const body = document.getElementById('orderModalBody');
+    body.innerHTML = `<div class="admin-loading">Loading orders…</div>`;
+    try {
+      const res = await adminFetch(`/api/admin/sales/orders?from=${encodeURIComponent(date)}&to=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load orders.');
+      const orders = data.orders || [];
+      body.innerHTML = orders.length ? `
+        <div class="om-meta" style="margin-bottom:14px;"><div class="row"><span>Orders on this day</span><b>${orders.length}</b></div></div>
+        <table class="om-items"><thead><tr><th>Order</th><th>Customer</th><th>Type</th><th class="right">Total</th><th></th></tr></thead>
+        <tbody>${orders.map(order => `<tr>
+          <td>#${order.id}<div style="font-size:.7rem;opacity:.55;">${formatDate(order.datetime_ordered)}</div></td>
+          <td>${escapeHtml(order.customer_name || '—')}</td>
+          <td>${escapeHtml(orderTypeLabel(order.order_type))}</td>
+          <td class="right">${peso(order.total_amount)}</td>
+          <td class="right"><button type="button" class="view-daily-order-detail" data-id="${order.id}">View</button></td>
+        </tr>`).join('')}</tbody></table>` : '<div class="stx-empty">No orders were recorded on this day.</div>';
+      body.querySelectorAll('.view-daily-order-detail').forEach(button => {
+        button.addEventListener('click', () => openOrderModal(button.dataset.id));
+      });
+    } catch (err) {
+      body.innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+    }
   }
 
   /* ================================================================

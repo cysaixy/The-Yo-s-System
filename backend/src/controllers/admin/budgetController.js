@@ -32,11 +32,11 @@ export async function list(req, res, next) {
               COALESCE(actual.spent, 0) AS actual_spent
        FROM budgets b
        LEFT JOIN (
-         SELECT category, date_trunc('month', transaction_date)::date AS month, SUM(amount) AS spent
+         SELECT LOWER(BTRIM(category)) AS category_key, date_trunc('month', transaction_date)::date AS month, SUM(amount) AS spent
          FROM cash_transactions
-         WHERE transaction_type = 'out'
-         GROUP BY category, date_trunc('month', transaction_date)
-       ) actual ON actual.category = b.category AND actual.month = b.budget_month
+         WHERE transaction_type = 'out' AND NULLIF(BTRIM(category), '') IS NOT NULL
+         GROUP BY LOWER(BTRIM(category)), date_trunc('month', transaction_date)
+       ) actual ON actual.category_key = LOWER(BTRIM(b.category)) AND actual.month = b.budget_month
        ${where}
        ORDER BY b.budget_month DESC, b.category ASC`,
       params
@@ -50,9 +50,10 @@ export async function list(req, res, next) {
 export async function create(req, res, next) {
   try {
     const { category, budget_month, planned_amount, notes } = req.body || {};
+    const cleanCategory = String(category || "").trim();
     const normalized = normalizeMonth(budget_month);
 
-    if (!category || !normalized || planned_amount === undefined || planned_amount < 0) {
+    if (!cleanCategory || !normalized || planned_amount === undefined || planned_amount < 0) {
       return res.status(400).json({ error: "category, budget_month, and a non-negative planned_amount are required." });
     }
 
@@ -60,7 +61,7 @@ export async function create(req, res, next) {
       `INSERT INTO budgets (category, budget_month, planned_amount, notes)
        VALUES ($1, $2, $3, $4)
        RETURNING id, category, budget_month, planned_amount, notes`,
-      [category, normalized, planned_amount, notes || null]
+      [cleanCategory, normalized, planned_amount, notes || null]
     );
     res.status(201).json({ budget: rows[0] });
   } catch (err) {

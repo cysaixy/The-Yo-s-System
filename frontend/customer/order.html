@@ -9,8 +9,8 @@
 <style>
   .kiosk-grid {
     display: grid;
-    grid-template-columns: 1.6fr 1fr;
-    gap: 30px;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 24px;
     margin-top: 20px;
     align-items: start;
   }
@@ -24,6 +24,9 @@
     flex-wrap: wrap;
     margin-bottom: 20px;
   }
+  .kiosk-browse-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px; }
+  .kiosk-search { width:min(270px,100%); padding:11px 13px; border:1px solid var(--line); border-radius:8px; background:var(--component-bg); color:var(--ink); font-family:'Inter',sans-serif; font-size:.86rem; }
+  .kiosk-search:focus { outline:none; border-color:var(--brass); box-shadow:0 0 0 3px rgba(163,132,74,.12); }
   .kiosk-tab-btn {
     background: var(--component-bg, #1e1e1e);
     border: 1px solid var(--line, #333);
@@ -46,7 +49,7 @@
   .order-catalog {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 14px;
+    gap: 16px;
     max-height: 700px;
     overflow-y: auto;
     padding-right: 8px;
@@ -57,24 +60,45 @@
   .catalog-item {
     background: var(--component-bg, #1e1e1e) !important;
     border: 1px solid var(--line, #333);
-    border-radius: 8px;
-    padding: 16px;
+    border-radius: 12px;
+    padding: 0;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 14px;
+    gap: 0;
+    overflow: hidden;
+    box-shadow: 0 8px 22px rgba(0,0,0,.05);
     cursor: pointer;
     transition: transform 0.2s ease, border-color 0.2s ease;
   }
+  .catalog-item-media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: 0;
+    background: linear-gradient(135deg, rgba(163,132,74,.22), rgba(0,0,0,.08));
+  }
+  .catalog-item-media img,
+  .cart-item-thumb img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .product-image-placeholder {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--brass, #d4af37); opacity: .85;
+  }
+  .product-image-placeholder svg { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+  .catalog-item-media.has-image .product-image-placeholder,
+  .cart-item-thumb.has-image .product-image-placeholder { display: none; }
   .catalog-item:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
     border-color: var(--brass, #d4af37);
   }
   .catalog-info h4 {
     font-family: 'Archivo', sans-serif;
     font-size: 0.95rem;
     text-transform: uppercase;
-    margin-bottom: 4px;
+    margin: 0 0 5px;
     color: var(--ink, #fff);
   }
   .catalog-info span {
@@ -83,12 +107,14 @@
     color: var(--brass, #d4af37);
     font-weight: 700;
   }
+  .catalog-copy { padding:14px 15px 15px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+  .catalog-add { flex:0 0 32px; width:32px; height:32px; border:0; border-radius:9px; background:var(--brass); color:#fff; font-size:1.2rem; font-weight:700; pointer-events:none; }
 
   .kiosk-cart-panel {
     background: var(--component-bg, #1e1e1e);
     border: 1px solid var(--line, #333);
-    border-radius: 8px;
-    padding: 24px;
+    border-radius: 13px;
+    padding: 20px;
     position: sticky;
     top: 115px;
   }
@@ -98,10 +124,11 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--brass, #d4af37);
-    margin-bottom: 16px;
+    margin-bottom: 4px;
     display: block;
     font-weight: 700;
   }
+  .cart-panel-subtitle { display:block; font-size:.76rem; opacity:.55; margin-bottom:16px; }
   .cart-list {
     display: flex;
     flex-direction: column;
@@ -123,6 +150,12 @@
     border-bottom: 1px dashed var(--line, #333);
     color: var(--ink, #fff);
   }
+  .cart-row-main { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+  .cart-item-thumb {
+    position: relative; width: 52px; aspect-ratio: 1; flex: 0 0 52px; overflow: hidden;
+    border-radius: 5px; background: linear-gradient(135deg, rgba(163,132,74,.22), rgba(0,0,0,.08));
+  }
+  .cart-item-thumb .product-image-placeholder svg { width: 22px; height: 22px; }
   .cart-item-mods {
     display: block;
     font-size: 0.75rem;
@@ -191,6 +224,7 @@
   }
 
   .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+  .btn.is-submitting { cursor: wait; }
 
   /* ---------- QUANTITY STEPPER & ADD-ON PICKER ---------- */
   .stepper {
@@ -269,6 +303,30 @@
   .checkout-step-panel { display: none; flex-direction: column; gap: 18px; }
   .checkout-step-panel.active { display: flex; }
   .checkout-step-title { font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 1.35rem; margin-bottom: 2px; }
+  .checkout-confirmation { display:none; min-height:420px; align-items:center; justify-content:center; }
+  .checkout-confirmation.active { display:flex; }
+  .confirmation-card { width:100%; max-width:460px; text-align:center; border:1px solid var(--line); border-radius:10px; background:var(--component-bg); padding:30px 24px; box-shadow:0 12px 36px rgba(0,0,0,.08); }
+  .confirmation-check { width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; background:rgba(46,125,79,.13); color:var(--success); font-size:1.55rem; font-weight:700; }
+  .confirmation-card h3 { font-family:'Archivo', sans-serif; text-transform:uppercase; font-size:1.5rem; margin:0 0 8px; }
+  .confirmation-card > p { margin:0 auto 20px; max-width:330px; font-size:.88rem; opacity:.72; line-height:1.55; }
+  .confirmation-details { text-align:left; background:rgba(163,132,74,.08); border-radius:6px; padding:14px 16px; margin-bottom:20px; font-size:.84rem; }
+  .confirmation-details div { display:flex; justify-content:space-between; gap:14px; padding:6px 0; }
+  .confirmation-details span { opacity:.65; }
+  .confirmation-actions { display:flex; gap:10px; }
+  .confirmation-actions .btn { flex:1; justify-content:center; padding:12px; margin:0; font-size:.74rem; }
+  @media(max-width:480px) { .confirmation-actions { flex-direction:column; } }
+
+  .payment-receipt { border: 1px solid var(--line); border-radius: 8px; padding: 18px; background: var(--component-bg); }
+  .payment-receipt-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding-bottom:12px; border-bottom:1px dashed var(--line); }
+  .payment-receipt-title { font-family:'Space Mono', monospace; text-transform:uppercase; letter-spacing:.08em; font-size:.72rem; font-weight:700; }
+  .payment-receipt-service { font-size:.76rem; opacity:.65; text-align:right; }
+  .receipt-line { display:flex; justify-content:space-between; gap:14px; padding:12px 0; border-bottom:1px dashed var(--line); font-size:.88rem; }
+  .receipt-line-name { min-width:0; }
+  .receipt-line-name small { display:block; font-size:.74rem; opacity:.62; margin-top:3px; line-height:1.35; }
+  .receipt-line-price { white-space:nowrap; font-family:'Space Mono', monospace; font-size:.8rem; }
+  .receipt-total { display:flex; justify-content:space-between; gap:12px; padding-top:14px; font-family:'Space Mono', monospace; font-weight:700; }
+  .receipt-total strong { color:var(--brass); font-size:1.2rem; }
+  .receipt-payment-note { margin:12px 0 0; padding:10px 12px; border-radius:5px; background:rgba(163,132,74,.1); font-size:.78rem; line-height:1.45; }
 
   .checkout-footer { display: flex; justify-content: space-between; gap: 14px; margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--line); }
   .checkout-footer .btn { flex: 1; justify-content: center; padding: 15px; border-radius: 6px; margin-bottom: 0; }
@@ -310,6 +368,10 @@
     <div class="kiosk-grid">
       
       <div>
+        <div class="kiosk-browse-head">
+          <span class="eyebrow" style="margin:0;">Browse Menu</span>
+          <input type="search" class="kiosk-search" id="catalogSearch" placeholder="Search dishes and drinks…" aria-label="Search menu">
+        </div>
         <div class="kiosk-tabs" id="kioskTabs">
           <button class="kiosk-tab-btn active" onclick="filterCatalog('all', this)">All Categories</button>
           <!-- Category tabs are injected here from /api/customer/menu once loaded -->
@@ -321,7 +383,8 @@
       </div>
 
       <div class="kiosk-cart-panel">
-        <span class="cart-title">Your Tray</span>
+        <span class="cart-title">My Order</span>
+        <span class="cart-panel-subtitle">Review your picks before checkout.</span>
         <div class="cart-preview" style="border:none; padding:0; margin:0;">
           <div class="cart-list" id="cartListContainer">
             <div class="cart-empty">Your shopping cart is currently empty.</div>
@@ -424,8 +487,12 @@
           </div>
         </div>
 
+        <div class="payment-receipt" id="paymentReceipt" aria-live="polite"></div>
+
         <div id="formNote" style="margin-top:10px; text-align:center; font-size:0.85rem;" class="form-note"></div>
       </div>
+
+      <div class="checkout-confirmation" id="checkoutConfirmation" aria-live="polite"></div>
 
     </div>
 
@@ -560,9 +627,47 @@
   let menuDatabase = [];
   let categoryList = [];
 
-  let cart = [];
+  // Keep the order-page tray separately from the quick cart. The quick cart
+  // is only an import queue; this saved tray survives a refresh or a second
+  // tap on the "Order Now" navigation link while the guest is checking out.
+  const ORDER_TRAY_STORAGE_KEY = 'yo-order-tray';
+  let cart = readSavedOrderTray();
   let currentCartTotal = 0;
   let currentCategory = 'all';
+  let catalogSearchTerm = '';
+  let isSubmittingOrder = false;
+
+  function readSavedOrderTray() {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(ORDER_TRAY_STORAGE_KEY));
+      return Array.isArray(saved) ? saved.filter(line => line && line.id && line.quantity > 0) : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function saveOrderTray() {
+    try {
+      sessionStorage.setItem(ORDER_TRAY_STORAGE_KEY, JSON.stringify(cart));
+    } catch (err) {
+      // A full/disabled browser storage must never prevent ordering.
+      console.warn('Unable to save the order tray:', err);
+    }
+  }
+
+  function clearSavedOrderTray() {
+    try { sessionStorage.removeItem(ORDER_TRAY_STORAGE_KEY); } catch (err) { /* no-op */ }
+  }
+
+  function setOrderSubmitting(isSubmitting) {
+    isSubmittingOrder = isSubmitting;
+    const button = document.getElementById('btnCheckoutNext');
+    if (!button) return;
+    button.disabled = isSubmitting;
+    button.classList.toggle('is-submitting', isSubmitting);
+    if (isSubmitting) button.textContent = 'Placing Order…';
+    else updateCheckoutStep();
+  }
 
   // Modal state while customizing an item before adding it to the tray.
   let modalState = { itemId: null, quantity: 1, addons: {}, notes: '', editingId: null };
@@ -598,10 +703,85 @@
 
       buildCategoryTabs();
       renderCatalog();
+      // Render a tray restored after a refresh before importing any new
+      // quick-cart lines.
+      updateCartDisplay();
+      mergeSharedCartIntoTray();
     } catch (err) {
       console.error('Menu load error:', err);
       catalogContainer.innerHTML = `<div style="opacity:0.7; padding:20px; grid-column:1/-1;">Couldn't load the menu right now. Please refresh the page.</div>`;
     }
+  }
+
+  // ---------- Bring over items added from the Menu / Home "quick cart" ----------
+  // Those pages don't know real menu_id values, so they store lines by name
+  // in localStorage (see cart.js). Once the real catalog is loaded here, we
+  // match each line to a real item by name and drop it straight into the
+  // tray. Only matched lines leave the shared cart, so a temporary catalog
+  // issue can never silently discard an item.
+  function mergeSharedCartIntoTray() {
+    let sharedItems = [];
+    try {
+      sharedItems = JSON.parse(localStorage.getItem('yo-shared-cart')) || [];
+    } catch (err) {
+      sharedItems = [];
+    }
+    if (!sharedItems.length) return;
+
+    const normalize = s => String(s).toLowerCase().trim();
+    let matchedCount = 0;
+    const unmatched = [];
+
+    sharedItems.forEach(shared => {
+      const match = menuDatabase.find(m => normalize(m.name) === normalize(shared.name));
+      if (!match) { unmatched.push(shared.name); return; }
+
+      const candidate = {
+        uniqueCartId: Date.now() + Math.random(),
+        id: match.id,
+        name: match.name,
+        price: match.price,
+        image_url: match.image_url,
+        quantity: shared.qty || 1,
+        notes: '',
+        add_ons: []
+      };
+      const key = cartLineKey(candidate);
+      const existing = cart.find(e => cartLineKey(e) === key);
+      if (existing) existing.quantity += candidate.quantity;
+      else cart.push(candidate);
+      matchedCount++;
+    });
+
+    if (unmatched.length > 0) {
+      localStorage.setItem('yo-shared-cart', JSON.stringify(sharedItems.filter(shared =>
+        unmatched.includes(shared.name)
+      )));
+    } else {
+      localStorage.removeItem('yo-shared-cart');
+    }
+    if (matchedCount > 0) updateCartDisplay();
+
+    if (matchedCount > 0 || unmatched.length > 0) {
+      const msgParts = [];
+      if (matchedCount > 0) msgParts.push(`Added ${matchedCount} item${matchedCount > 1 ? 's' : ''} from your cart to the tray.`);
+      if (unmatched.length > 0) msgParts.push(`Couldn't find: ${unmatched.join(', ')} — please add ${unmatched.length > 1 ? 'them' : 'it'} manually below.`);
+      showSharedCartNotice(msgParts.join(' '));
+    }
+  }
+
+  function showSharedCartNotice(message) {
+    const panel = document.querySelector('.kiosk-cart-panel');
+    if (!panel) { console.log(message); return; }
+    let notice = document.getElementById('sharedCartNotice');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'sharedCartNotice';
+      notice.style.cssText = 'font-size:0.75rem; font-family:"Space Mono",monospace; background:var(--stone); border:1px dashed var(--brass); border-radius:4px; padding:10px 12px; margin-bottom:12px; color:var(--ink); line-height:1.4;';
+      panel.insertBefore(notice, panel.firstChild.nextSibling);
+    }
+    notice.textContent = message;
+    setTimeout(() => { if (notice) notice.remove(); }, 9000);
   }
 
   function buildCategoryTabs() {
@@ -624,6 +804,28 @@
     renderCatalog();
   };
 
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>'"]/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[char]));
+  }
+
+  // A single reusable image template for catalog cards and order lines.
+  // It reserves a stable responsive space even when a product has no image
+  // yet, or when the configured image URL cannot be loaded.
+  function productImageTemplate(imageUrl, name, className) {
+    const hasImage = Boolean(imageUrl && String(imageUrl).trim());
+    const safeName = escapeHtml(name || 'Product');
+    const safeUrl = escapeHtml(imageUrl || '');
+    return `
+      <div class="${className}${hasImage ? ' has-image' : ''}">
+        ${hasImage ? `<img src="${safeUrl}" alt="${safeName}" loading="lazy" onerror="this.remove(); this.parentElement.classList.remove('has-image');">` : ''}
+        <span class="product-image-placeholder" role="img" aria-label="Image placeholder for ${safeName}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="10" r="1.4"/><path d="m5 17 4.5-4 3.2 2.8 2.3-2 4 3.2"/></svg>
+        </span>
+      </div>`;
+  }
+
   function renderCatalog() {
     const catalogContainer = document.getElementById('menuCatalog');
     if(!catalogContainer) return;
@@ -632,7 +834,8 @@
     if (menuDatabase.length === 0) return; // still loading, or load failed
 
     const visibleItems = menuDatabase.filter(item =>
-      currentCategory === 'all' || item.cat === currentCategory
+      (currentCategory === 'all' || item.cat === currentCategory) &&
+      item.name.toLowerCase().includes(catalogSearchTerm)
     );
 
     if (visibleItems.length === 0) {
@@ -645,11 +848,11 @@
       itemElement.className = 'catalog-item';
       itemElement.setAttribute('onclick', `openCustomizationModal(${item.id})`);
       itemElement.innerHTML = `
-        <div class="catalog-info">
-          <h4>${item.name}</h4>
-          <span>₱${item.price}</span>
+        ${productImageTemplate(item.image_url, item.name, 'catalog-item-media')}
+        <div class="catalog-copy">
+          <div class="catalog-info"><h4>${item.name}</h4><span>₱${item.price}</span></div>
+          <button type="button" class="catalog-add" tabindex="-1" aria-hidden="true">+</button>
         </div>
-        <div style="text-align:right;"><span style="font-size:0.7rem; text-transform:uppercase; opacity:0.6; letter-spacing:1px; font-family:'Space Mono'">+ Customize</span></div>
       `;
       catalogContainer.appendChild(itemElement);
     });
@@ -770,6 +973,7 @@
         id: item.id,
         name: item.name,
         price: item.price,
+        image_url: item.image_url,
         quantity: modalState.quantity,
         notes: notes,
         add_ons: addons
@@ -810,12 +1014,15 @@
       ).join('');
       return `
       <div class="cart-row">
-        <div style="max-width:75%; cursor:pointer;" onclick="openCustomizationModal(${entry.id}, ${entry.uniqueCartId})" title="Tap to edit">
-          <strong>${entry.name}</strong>
-          <span style="color:var(--brass); margin-left:6px; font-family:'Space Mono'; font-weight:700;">x${entry.quantity}</span>
-          ${modsHTML}
-          ${addonsHTML}
-          <span style="display:block; font-size:0.7rem; color:var(--ink); opacity:0.4; margin-top:2px;">✏️ Tap to edit details</span>
+        <div class="cart-row-main" style="max-width:75%; cursor:pointer;" onclick="openCustomizationModal(${entry.id}, ${entry.uniqueCartId})" title="Tap to edit">
+          ${productImageTemplate(entry.image_url, entry.name, 'cart-item-thumb')}
+          <div style="min-width:0;">
+            <strong>${entry.name}</strong>
+            <span style="color:var(--brass); margin-left:6px; font-family:'Space Mono'; font-weight:700;">x${entry.quantity}</span>
+            ${modsHTML}
+            ${addonsHTML}
+            <span style="display:block; font-size:0.7rem; color:var(--ink); opacity:0.4; margin-top:2px;">✏️ Tap to edit details</span>
+          </div>
         </div>
         <div style="display:flex; align-items:center; gap:12px;">
           <span style="font-family:'Space Mono';">₱${lineSubtotal(entry)}</span>
@@ -827,6 +1034,7 @@
   }
 
   function updateCartDisplay() {
+    saveOrderTray();
     const rowsHTML = buildCartRowsHTML();
     const miniContainer = document.getElementById('cartListContainer');
     const checkoutContainer = document.getElementById('checkoutCartList');
@@ -835,16 +1043,58 @@
 
     currentCartTotal = cart.reduce((sum, entry) => sum + lineSubtotal(entry), 0);
     const totalText = `₱${currentCartTotal}`;
-    ['runningTotalDisplay', 'checkoutTotalDisplay', 'paymentTotalDisplay'].forEach(id => {
+    ['runningTotalDisplay', 'checkoutTotalDisplay'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = totalText;
     });
+    const paymentTotal = document.getElementById('paymentTotalDisplay');
+    if (paymentTotal) paymentTotal.textContent = `₱${paymentAmountDue()}`;
 
     const notice = document.getElementById('downpaymentNotice');
     if (notice) notice.style.display = (currentCartTotal >= 300) ? 'block' : 'none';
 
     const proceedBtn = document.getElementById('btnProceedCheckout');
     if (proceedBtn) proceedBtn.disabled = cart.length === 0;
+    if (checkoutStep === 3) renderPaymentReceipt();
+  }
+
+  function paymentAmountDue() {
+    // Orders at ₱300+ require a 50% downpayment; smaller orders are due in full.
+    const amount = currentCartTotal >= 300 ? currentCartTotal / 2 : currentCartTotal;
+    return Math.round((amount + Number.EPSILON) * 100) / 100;
+  }
+
+  function escapeReceiptHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[char]));
+  }
+
+  function renderPaymentReceipt() {
+    const receipt = document.getElementById('paymentReceipt');
+    if (!receipt) return;
+    const service = document.getElementById('orderType')?.value || 'Dine-In';
+    const payment = document.querySelector('input[name="paymentChoice"]:checked')?.value;
+    const amountDue = paymentAmountDue();
+    const hasDeposit = currentCartTotal >= 300;
+    const lineItems = cart.map(entry => {
+      const extras = (entry.add_ons || []).filter(a => a.quantity > 0)
+        .map(a => `${a.quantity}× ${a.name}`).join(', ');
+      const details = [extras, entry.notes ? `Note: ${entry.notes}` : ''].filter(Boolean).join(' · ');
+      return `<div class="receipt-line">
+        <div class="receipt-line-name"><strong>${escapeReceiptHtml(entry.name)}</strong><small>${entry.quantity} × ₱${entry.price}${details ? `<br>${escapeReceiptHtml(details)}` : ''}</small></div>
+        <span class="receipt-line-price">₱${lineSubtotal(entry)}</span>
+      </div>`;
+    }).join('') || '<div class="cart-empty">Your order is empty.</div>';
+
+    receipt.innerHTML = `
+      <div class="payment-receipt-head">
+        <span class="payment-receipt-title">Order Receipt</span>
+        <span class="payment-receipt-service">${escapeReceiptHtml(service)}${payment ? ` · ${escapeReceiptHtml(payment)}` : ''}</span>
+      </div>
+      ${lineItems}
+      <div class="receipt-total"><span>${hasDeposit ? 'Pay today (50% downpayment)' : 'Amount to pay'}</span><strong>₱${amountDue}</strong></div>
+      ${hasDeposit ? `<p class="receipt-payment-note">Order total: ₱${currentCartTotal}. Your remaining balance after the downpayment is ₱${Math.round((currentCartTotal - amountDue) * 100) / 100}.</p>` : '<p class="receipt-payment-note">This is the full amount for the items listed above.</p>'}`;
   }
 
   // ---------- CHECKOUT FLOW: Cart -> Your Info -> Payment ----------
@@ -867,6 +1117,7 @@
     document.getElementById('checkoutStepCount').textContent = `Step ${checkoutStep} of 3`;
     document.getElementById('btnCheckoutBack').style.visibility = checkoutStep === 1 ? 'hidden' : 'visible';
     document.getElementById('btnCheckoutNext').textContent = checkoutStep === 3 ? 'Place Order' : 'Continue';
+    if (checkoutStep === 3) renderPaymentReceipt();
   }
 
   window.startCheckout = function() {
@@ -876,6 +1127,7 @@
       return;
     }
     checkoutStep = 1;
+    setOrderSubmitting(false);
     updateCartDisplay();
     updateCheckoutStep();
     document.getElementById('checkoutOverlay').classList.add('active');
@@ -884,8 +1136,43 @@
 
   window.closeCheckout = function() {
     document.getElementById('checkoutOverlay').classList.remove('active');
+    document.getElementById('checkoutConfirmation').classList.remove('active');
+    document.querySelector('.checkout-footer').style.display = '';
     document.body.style.overflow = '';
   };
+
+  window.continueShopping = function() {
+    window.closeCheckout();
+    checkoutStep = 1;
+    setOrderSubmitting(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.trackOrder = function() {
+    window.location.href = 'my-orders.html';
+  };
+
+  function showOrderConfirmation(orderId, paymentChoice, amountDue, isDeposit) {
+    const confirmation = document.getElementById('checkoutConfirmation');
+    confirmation.innerHTML = `
+      <div class="confirmation-card">
+        <div class="confirmation-check">✓</div>
+        <h3>Order Confirmed!</h3>
+        <p>Your order has been sent to The~Yo's. We'll prepare it as soon as it is confirmed.</p>
+        <div class="confirmation-details">
+          <div><span>Order number</span><strong>#${escapeReceiptHtml(orderId)}</strong></div>
+          <div><span>Payment method</span><strong>${escapeReceiptHtml(paymentChoice)}</strong></div>
+          <div><span>${isDeposit ? 'Downpayment due today' : 'Amount due'}</span><strong>₱${amountDue}</strong></div>
+        </div>
+        <div class="confirmation-actions">
+          <button type="button" class="btn btn-outline" onclick="continueShopping()">Continue Shopping</button>
+          <button type="button" class="btn" onclick="trackOrder()">Track Order →</button>
+        </div>
+      </div>`;
+    document.querySelectorAll('.checkout-step-panel').forEach(panel => panel.classList.remove('active'));
+    document.querySelector('.checkout-footer').style.display = 'none';
+    confirmation.classList.add('active');
+  }
 
   window.checkoutBack = function() {
     if (checkoutStep === 1) return;
@@ -920,6 +1207,7 @@
       return;
     }
     // Step 3: Payment -> place the order
+    if (isSubmittingOrder) return;
     const paymentChosen = document.querySelector('input[name="paymentChoice"]:checked');
     if (!paymentChosen) { alert("Please select a payment method."); return; }
 
@@ -927,17 +1215,26 @@
       window.location.href = 'account.html?redirect=order.html';
       return;
     }
+    setOrderSubmitting(true);
     try {
       const idToken = await currentUser.getIdToken();
-      await executeOrderSubmission(idToken);
+      const submitted = await executeOrderSubmission(idToken);
+      if (!submitted) setOrderSubmitting(false);
     } catch (err) {
       console.error("Authentication Token Error:", err);
       alert("Session expired. Please sign in again.");
+      setOrderSubmitting(false);
       window.location.href = 'account.html?redirect=order.html';
     }
   };
 
   async function executeOrderSubmission(idToken) {
+    // This guard also protects direct calls from the browser console and
+    // prevents a stale checkout screen from submitting an emptied tray.
+    if (cart.length === 0) {
+      alert("Your cart is empty. Add something first!");
+      return false;
+    }
     const serviceType = document.getElementById('orderType').value;
     const paymentChoice = document.querySelector('input[name="paymentChoice"]:checked')?.value || 'Cash';
     const timeInput = document.getElementById('timeInput').value;
@@ -953,7 +1250,7 @@
     const order_type = ORDER_TYPE_MAP[serviceType];
     if (!order_type) {
       alert("Please choose a valid service type (Dine-In, Takeout, or Delivery).");
-      return;
+      return false;
     }
 
     // Backend expects `cart` as [{ menu_id, quantity, notes, add_ons }].
@@ -1004,15 +1301,18 @@
 
       if (response.ok) {
         const orderId = data.order?.id ?? 'Logged';
+        const confirmedPaymentAmount = paymentAmountDue();
+        const requiresDeposit = currentCartTotal >= 300;
         let finishMsg = `Success! Order #${orderId} created via ${paymentChoice}.`;
         if (currentCartTotal >= 300) {
           finishMsg = `Order #${orderId} Received! A 50% downpayment via GCash is required for totals over ₱300 before kitchen prep begins.`;
         }
 
-        document.getElementById('formNote').textContent = finishMsg + " Redirecting you to My Orders to track it...";
+        document.getElementById('formNote').textContent = finishMsg;
 
         // Reset cart, fields, and return to browsing
         cart = [];
+        clearSavedOrderTray();
         document.getElementById('name').value = '';
         document.getElementById('phone').value = '';
         document.getElementById('timeInput').value = '';
@@ -1022,17 +1322,17 @@
         document.getElementById('orderType').selectedIndex = 0;
         document.querySelectorAll('input[name="paymentChoice"]').forEach(r => r.checked = false);
         updateCartDisplay();
-        window.closeCheckout();
-        checkoutStep = 1;
-
-        // Send them straight to order tracking so they can watch it get confirmed.
-        setTimeout(() => { window.location.href = 'my-orders.html'; }, 1200);
+        isSubmittingOrder = false;
+        showOrderConfirmation(orderId, paymentChoice, confirmedPaymentAmount, requiresDeposit);
+        return true;
       } else {
         alert("Order submission failed: " + (data.error || data.message));
+        return false;
       }
     } catch (err) {
       console.error("Order submit network error:", err);
       alert("Network error occurred while sending order to server.");
+      return false;
     }
   }
 
@@ -1072,9 +1372,45 @@
 
   window.renderCatalog = renderCatalog;
   window.updateCartDisplay = updateCartDisplay;
+  document.getElementById('catalogSearch').addEventListener('input', event => {
+    catalogSearchTerm = event.target.value.trim().toLowerCase();
+    renderCatalog();
+  });
+  document.querySelectorAll('input[name="paymentChoice"]').forEach(input => {
+    input.addEventListener('change', renderPaymentReceipt);
+  });
   loadMenuFromServer();
 </script>
 <script type="module" src="authNav.js"></script>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">The~Yo's</div>
+        <p>A comforting community Resto Bar offering delicious meals to Baggao.</p>
+      </div>
+      <div>
+        <h4>Location & Hours</h4>
+        <p>2nd Floor DKB Building, Poblacion, Baggao, Cagayan</p>
+        <p style="color: var(--brass); font-weight:700;">Open Daily: 8:00 AM &ndash; 8:00 PM</p>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <a href="menu.html">View Full Menu</a>
+        <a href="reservations.html">Reserve a Table</a>
+        <a href="my-orders.html">Track My Order</a>
+        <a href="https://www.facebook.com/profile.php?id=61555628762441" target="_blank">Facebook Page</a>
+        <a href="https://www.tiktok.com/@theyos.restaurant" target="_blank">TikTok</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>&copy; <span id="year"></span> The~Yo's Resto Bar.</span>
+      <span>Baggao, Cagayan &middot; Made with care.</span>
+    </div>
+  </div>
+</footer>
+
 <script src="global.js"></script>
 </body>
 </html>

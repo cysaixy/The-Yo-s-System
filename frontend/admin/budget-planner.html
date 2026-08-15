@@ -102,15 +102,24 @@
     }
     wrap.innerHTML = `
       <table class="admin-table">
-        <thead><tr><th>Category</th><th>Planned</th><th>Actual Spend</th><th>Progress</th><th>Notes</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Category</th><th>Planned</th><th>Actual Spend</th><th>Remaining</th><th>Status</th><th>Progress</th><th>Notes</th><th>Actions</th></tr></thead>
         <tbody>
           ${budgets.map(b => {
             const pct = b.planned_amount > 0 ? Math.min(100, (b.actual_spent / b.planned_amount) * 100) : 0;
             const over = Number(b.actual_spent) > Number(b.planned_amount);
+            const nearLimit = !over && Number(b.planned_amount) > 0 && Number(b.actual_spent) >= Number(b.planned_amount) * 0.8;
+            const remaining = Number(b.planned_amount) - Number(b.actual_spent);
+            const status = over
+              ? { label: 'Over budget', className: 'pill-danger' }
+              : nearLimit
+                ? { label: 'Nearly used', className: 'pill-warning' }
+                : { label: 'Under budget', className: 'pill-success' };
             return `<tr>
               <td>${escapeHtml(b.category)}</td>
               <td>${peso(b.planned_amount)}</td>
               <td style="color:${over ? 'var(--danger)' : 'var(--ink)'}; font-weight:${over ? '700' : '400'};">${peso(b.actual_spent)}</td>
+              <td style="color:${over ? 'var(--danger)' : 'var(--success)'}; font-weight:700;">${over ? '−' : ''}${peso(Math.abs(remaining))}</td>
+              <td><span class="pill ${status.className}">${status.label}</span></td>
               <td><div class="budget-bar-track"><div class="budget-bar-fill${over ? ' over' : ''}" style="width:${pct}%;"></div></div></td>
               <td style="font-size:0.8rem; opacity:0.75; max-width:180px;">${escapeHtml(b.notes || '—')}</td>
               <td><div class="row-actions"><button class="danger del-budget-btn" data-id="${b.id}">Delete</button></div></td>

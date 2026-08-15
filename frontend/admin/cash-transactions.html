@@ -32,6 +32,11 @@
           </select>
         </div>
       </div>
+      <div class="stat-grid" id="txSummary">
+        <div class="stat-card"><div class="label">Cash In</div><div class="value success">₱0</div></div>
+        <div class="stat-card"><div class="label">Cash Out</div><div class="value danger">₱0</div></div>
+        <div class="stat-card"><div class="label">Net Movement</div><div class="value brass">₱0</div></div>
+      </div>
       <div class="admin-panel">
         <div class="admin-panel-head">
           <h3>Transaction History</h3>
@@ -101,6 +106,7 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not load transactions.');
       const rows = data.transactions || [];
+      renderSummary(rows);
       const wrap = document.getElementById('txWrap');
       wrap.innerHTML = rows.length
         ? `<table class="admin-table">
@@ -120,6 +126,19 @@
     } catch (err) {
       document.getElementById('txWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
     }
+  }
+
+  function renderSummary(rows) {
+    const cashIn = rows.filter(t => t.transaction_type === 'in')
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const cashOut = rows.filter(t => t.transaction_type === 'out')
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const net = cashIn - cashOut;
+    document.getElementById('txSummary').innerHTML = `
+      <div class="stat-card"><div class="label">Cash In</div><div class="value success">${peso(cashIn)}</div></div>
+      <div class="stat-card"><div class="label">Cash Out</div><div class="value danger">${peso(cashOut)}</div></div>
+      <div class="stat-card"><div class="label">Net Movement</div><div class="value ${net < 0 ? 'danger' : 'brass'}">${net < 0 ? '−' : ''}${peso(Math.abs(net))}</div></div>
+    `;
   }
 
   function openModal() {
