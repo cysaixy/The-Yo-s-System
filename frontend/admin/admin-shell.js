@@ -74,12 +74,48 @@ function navLinkHTML(item, active, staff) {
   </a>`;
 }
 
+// Decodes a JWT's payload without verifying the signature (verification
+// happens server-side - this is purely a client-side "is it worth even
+// trying" check) and returns its `exp` claim in milliseconds, or null if
+// the token is malformed/unparseable. Used to catch an expired session
+// BEFORE the page fires off a batch of doomed API calls, instead of
+// letting every one of them independently hit the backend, get a 401,
+// and log "Staff Token Error: jwt expired" in a spammy burst.
+function getTokenExpiryMs(token) {
+  try {
+    const payloadB64 = token.split('.')[1];
+    const payload = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
+  } catch {
+    return null; // malformed token - treat as expired, handled by caller
+  }
+}
+
+function clearStaffSessionAndRedirect(reason) {
+  localStorage.removeItem('staffToken');
+  localStorage.removeItem('staffInfo');
+  const redirect = encodeURIComponent(window.location.pathname.split('/').pop() || 'home.html');
+  window.location.href = `login.html?expired=1&redirect=${redirect}`;
+}
+
 export function renderAdminShell({ active, title }) {
   const token = localStorage.getItem('staffToken');
   const staffRaw = localStorage.getItem('staffInfo');
 
   if (!token || !staffRaw) {
     window.location.href = 'login.html';
+    return null;
+  }
+
+  // Check expiry BEFORE rendering anything or letting any page script run
+  // its fetch calls. A token that's already expired (or expires in the
+  // next few seconds - close enough that it'll die mid-request) sends the
+  // user straight to login instead of rendering a page that immediately
+  // fires 3-4 API calls that are all guaranteed to 401.
+  const expiryMs = getTokenExpiryMs(token);
+  const EXPIRY_GRACE_MS = 5000;
+  if (expiryMs === null || expiryMs - EXPIRY_GRACE_MS <= Date.now()) {
+    clearStaffSessionAndRedirect('expired');
     return null;
   }
 
@@ -137,6 +173,15 @@ export function renderAdminShell({ active, title }) {
     window.location.href = 'home.html';
     return null;
   }
+
+  // Belt-and-suspenders: if the staff member leaves this page open long
+  // enough for the token to expire mid-session (rather than arriving with
+  // one already expired), catch it the moment it happens instead of
+  // waiting for the next API call's 401 to reveal it.
+  const msUntilExpiry = expiryMs - Date.now();
+  window.setTimeout(() => {
+    clearStaffSessionAndRedirect('expired-inline');
+  }, msUntilExpiry);
 
   return { staff, token };
 }

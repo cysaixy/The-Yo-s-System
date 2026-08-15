@@ -196,7 +196,7 @@
 
   function ringSVG(pct) {
     const r = 18, c = 2 * Math.PI * r;
-    const val = Math.max(0, Math.min(100, Number(pct) || 0));
+    const val = Math.round(Math.max(0, Math.min(100, Number(pct) || 0)));
     const filled = (val / 100) * c;
     return `<svg class="stx-ring" viewBox="0 0 48 48" width="50" height="50" aria-hidden="true">
       <circle cx="24" cy="24" r="${r}" fill="none" stroke="var(--line)" stroke-width="4.5"/>
