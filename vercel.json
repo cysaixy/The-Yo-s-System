@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index.js" },
+    { "source": "/admin", "destination": "/frontend/admin/home.html" },
+    { "source": "/admin/:path*", "destination": "/frontend/admin/:path*" },
+    { "source": "/", "destination": "/frontend/customer/index.html" },
+    { "source": "/:path*", "destination": "/frontend/customer/:path*" }
+  ]
+}

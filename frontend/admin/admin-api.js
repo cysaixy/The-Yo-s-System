@@ -3,7 +3,15 @@
 // Assumes a staff JWT was stored under localStorage 'staffToken' by
 // whatever staff-login page you have (not included in this build).
 
-export const API_BASE_URL = "http://localhost:3000";
+// Left empty on purpose so every request is relative to whatever origin
+// served this page. That means:
+//   - On Vercel: adminFetch('/api/admin/...') hits the same deployment's
+//     /api/index.js function — no domain to hardcode or keep in sync.
+//   - Locally via backend/server.js: the admin pages are served from
+//     http://localhost:3000 too, so relative paths resolve the same way.
+// If you ever split the frontend and backend into two separate domains,
+// set this back to an absolute URL (e.g. "https://your-api.vercel.app").
+export const API_BASE_URL = "";
 
 // login.html and admin-shell.js both need these - login.html writes the
 // session here after a successful POST /api/admin/staff/login, and
