@@ -4,6 +4,7 @@ import {
   createPosOrder,
   getOrder,
   updateOrderStatus,
+  updateDeliveryFee,
   listOrders,
   listPayments,
   updatePaymentStatus,
@@ -30,6 +31,10 @@ salesRouter.patch("/pos/orders/:id/status", updateOrderStatus);
 // alongside Dashboard/POS/Reservations, not behind a report permission).
 salesRouter.get("/orders", listOrders);
 salesRouter.get("/orders/:id", getOrder);
+// Assigning/editing the delivery fee is order management, same default
+// Cashier access as viewing and confirming orders above — not gated
+// behind can_access_reports.
+salesRouter.patch("/orders/:id/delivery-fee", updateDeliveryFee);
 
 // Payments and sales reports — genuinely behind can_access_reports
 salesRouter.get("/payments", requirePermission("can_access_reports"), listPayments);

@@ -152,6 +152,34 @@
   .money-neg { color: var(--danger); }
   .profit-pos { color: var(--success); font-weight: 700; }
 
+  /* ---- Delivery details block ---- */
+  .om-delivery { margin-bottom: 16px; }
+  .om-delivery-head {
+    font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase;
+    letter-spacing: 0.06em; opacity: 0.55; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+  }
+  .om-delivery-head svg { width: 14px; height: 14px; fill: none; stroke: var(--brass-dark); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .om-delivery .om-meta { margin-bottom: 0; background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+  .om-delivery .om-meta .row { border-bottom-color: rgba(0,0,0,0.06); }
+  .om-delivery .om-meta .row:last-child { border-bottom: none; }
+
+  /* ---- Editable delivery fee ---- */
+  .fee-display-wrap { display: inline-flex; align-items: center; gap: 8px; }
+  .fee-edit-btn {
+    font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; font-weight: 700;
+    border: 1px solid var(--line); background: var(--component-bg); color: var(--brass-dark);
+    border-radius: 5px; padding: 3px 8px; cursor: pointer;
+  }
+  .fee-edit-btn:hover { border-color: var(--brass); }
+  .fee-edit-row { display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding: 6px 0 10px; }
+  .fee-edit-row input {
+    width: 110px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 6px;
+    font-family: 'Space Mono', monospace; font-size: 0.85rem; background: var(--bone); color: var(--ink); text-align: right;
+  }
+  .fee-edit-row input:focus { outline: none; border-color: var(--brass); }
+  .fee-edit-row .btn.small { padding: 6px 12px; font-size: 0.72rem; }
+  .fee-error { font-size: 0.72rem; color: var(--danger); text-align: right; margin-top: -4px; margin-bottom: 8px; display: none; }
+
   /* ---- Reports ---- */
   .report-section-title {
     font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 0.85rem;
@@ -856,6 +884,26 @@
       ? o.payments.map(p => `${escapeHtml(PAYMENT_LABELS[p.payment_method] || p.payment_method)} · ${peso(p.amount)} · ${escapeHtml(p.status)}`).join('<br>')
       : '—';
 
+    // The order's own order_type may still say "online" (the source) rather
+    // than the actual fulfillment method, so fall back to whether we have
+    // delivery-specific data on the order to decide if this is a delivery.
+    const isDelivery = o.order_type === 'delivery' || !!o.delivery_address;
+    const typeLabel = (o.order_type === 'online' && isDelivery) ? 'Delivery' : orderTypeLabel(o.order_type);
+
+    const deliveryBlock = isDelivery ? `
+      <div class="om-delivery">
+        <div class="om-delivery-head">
+          <svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg>
+          Delivery Details
+        </div>
+        <div class="om-meta">
+          <div class="row"><span>Mobile Number</span><b>${escapeHtml(o.customer_mobile || o.mobile_number || '—')}</b></div>
+          <div class="row"><span>Requested Time</span><b>${escapeHtml(o.requested_time || o.table_time || '—')}</b></div>
+          <div class="row" style="grid-column:1/-1;"><span>Delivery Address</span><b>${escapeHtml(o.delivery_address || '—')}</b></div>
+          ${o.special_instructions ? `<div class="row" style="grid-column:1/-1;"><span>Special Prep Instructions</span><b>${escapeHtml(o.special_instructions)}</b></div>` : ''}
+        </div>
+      </div>` : '';
+
     const itemsRows = (o.items || []).map(it => `
       <tr>
         <td>
@@ -876,11 +924,13 @@
       <div class="om-meta">
         <div class="row"><span>Customer</span><b>${escapeHtml(o.customer_name) || '—'}</b></div>
         <div class="row"><span>Source</span><b>${source}</b></div>
-        <div class="row"><span>Order Type</span><b>${orderTypeLabel(o.order_type)}</b></div>
+        <div class="row"><span>Order Type</span><b>${typeLabel}</b></div>
         <div class="row"><span>Status</span><b>${statusLabel(o.status)}</b></div>
         <div class="row"><span>Payment</span><b>${payment}</b></div>
         <div class="row"><span>Placed</span><b>${formatDate(o.datetime_ordered)}</b></div>
       </div>
+
+      ${deliveryBlock}
 
       <table class="om-items">
         <thead><tr><th>Item</th><th class="right">Unit Price</th><th class="right">Qty</th><th class="right">Total</th></tr></thead>
@@ -889,7 +939,20 @@
 
       <div class="om-totals">
         <div class="row"><span>Subtotal (items + add-ons)</span><span>${peso(Number(o.total_amount) - Number(o.delivery_fee || 0))}</span></div>
-        <div class="row"><span>Delivery Fee</span><span>${peso(o.delivery_fee || 0)}</span></div>
+        <div class="row" id="omFeeRow">
+          <span>Delivery Fee</span>
+          <span class="fee-display-wrap">
+            <b id="omFeeDisplay">${peso(o.delivery_fee || 0)}</b>
+            ${isDelivery ? `<button type="button" class="fee-edit-btn" id="omFeeEditBtn">Edit</button>` : ''}
+          </span>
+        </div>
+        ${isDelivery ? `
+          <div class="fee-edit-row" id="omFeeEditRow" style="display:none;">
+            <input type="number" id="omFeeInput" min="0" step="0.01" value="${Number(o.delivery_fee || 0)}">
+            <button type="button" class="btn btn-outline small" id="omFeeCancelBtn">Cancel</button>
+            <button type="button" class="btn small" id="omFeeSaveBtn">Save</button>
+          </div>
+          <div class="fee-error" id="omFeeError"></div>` : ''}
         <div class="row grand"><span>Grand Total</span><span>${peso(o.total_amount)}</span></div>
         ${o.cogs !== undefined ? `
           <div class="row"><span>COGS</span><span>${peso(o.cogs)}</span></div>
@@ -908,6 +971,60 @@
         openOrderModal(btn.dataset.id);
       });
     });
+
+    if (isDelivery) {
+      const editBtn = document.getElementById('omFeeEditBtn');
+      const editRow = document.getElementById('omFeeEditRow');
+      const errEl = document.getElementById('omFeeError');
+      editBtn.addEventListener('click', () => {
+        editRow.style.display = 'flex';
+        errEl.style.display = 'none';
+        document.getElementById('omFeeInput').focus();
+      });
+      document.getElementById('omFeeCancelBtn').addEventListener('click', () => {
+        editRow.style.display = 'none';
+        errEl.style.display = 'none';
+      });
+      document.getElementById('omFeeSaveBtn').addEventListener('click', () => saveDeliveryFee(o.id));
+    }
+  }
+
+  /* ================================================================
+     DELIVERY FEE — inline edit inside the order detail modal
+     ================================================================ */
+  async function saveDeliveryFee(orderId) {
+    const errEl = document.getElementById('omFeeError');
+    const input = document.getElementById('omFeeInput');
+    const newFee = Number(input.value);
+
+    if (isNaN(newFee) || newFee < 0) {
+      errEl.textContent = 'Enter a valid, non-negative fee.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const saveBtn = document.getElementById('omFeeSaveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+
+    try {
+      const res = await adminFetch(`/api/admin/sales/orders/${orderId}/delivery-fee`, {
+        method: 'PATCH',
+        body: JSON.stringify({ delivery_fee: newFee }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not update delivery fee.');
+      // Reload the modal so subtotal/grand total/margin all recompute from
+      // the server's atomic total_amount update, then quietly refresh the
+      // table behind it so the Subtotal/Total columns stay in sync.
+      await openOrderModal(orderId);
+      loadOrders(true);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save';
+    }
   }
 
   function modalActionButtons(o) {

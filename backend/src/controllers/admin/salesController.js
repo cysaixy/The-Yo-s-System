@@ -361,6 +361,46 @@ export async function updateOrderStatus(req, res, next) {
   }
 }
 
+/* ================================================================
+   UPDATE DELIVERY FEE — atomic swap so total_amount stays in sync
+   without needing to re-derive the subtotal or race a concurrent edit.
+   ================================================================ */
+export async function updateDeliveryFee(req, res, next) {
+  const client = await pool.connect();
+  try {
+    const { delivery_fee } = req.body;
+    const newFee = round2(delivery_fee);
+
+    if (delivery_fee === undefined || delivery_fee === null || isNaN(newFee) || newFee < 0) {
+      return res.status(400).json({ error: "delivery_fee must be a non-negative number." });
+    }
+
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
+      `UPDATE orders
+       SET total_amount = round((total_amount - COALESCE(delivery_fee, 0) + $1)::numeric, 2),
+           delivery_fee = $1
+       WHERE id = $2
+       RETURNING id, delivery_fee, total_amount`,
+      [newFee, req.params.id]
+    );
+
+    if (!rows[0]) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Order not found." });
+    }
+
+    await client.query("COMMIT");
+    res.json({ order: rows[0] });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    next(err);
+  } finally {
+    client.release();
+  }
+}
+
 export async function listPayments(req, res, next) {
   try {
     const { rows } = await pool.query(
