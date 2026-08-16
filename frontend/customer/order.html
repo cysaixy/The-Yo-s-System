@@ -461,7 +461,10 @@
               <option value="Delivery">Delivery</option>
             </select>
           </div>
-          <div><label for="timeInput">Table # / Time</label><input id="timeInput" type="text" required placeholder="Table 4 or 2:30 PM"></div>
+          <div><label for="tableNoInput">Table # <span style="opacity:.55; font-weight:400;">(dine-in only)</span></label><input id="tableNoInput" type="text" placeholder="e.g. Table 4"></div>
+        </div>
+        <div class="form-row">
+          <div><label for="timeInput">Preferred Time</label><input id="timeInput" type="text" required placeholder="e.g. 2:30 PM"></div>
         </div>
 
         <div><label for="notes">Overall Special Prep Instructions</label><textarea id="notes" placeholder="General instructions for the whole order..."></textarea></div>
@@ -1152,7 +1155,7 @@
     window.location.href = 'my-orders.html';
   };
 
-  function showOrderConfirmation(orderId, paymentChoice, amountDue, isDeposit) {
+  function showOrderConfirmation(orderId, paymentChoice, amountDue, isDeposit, isDelivery) {
     const confirmation = document.getElementById('checkoutConfirmation');
     confirmation.innerHTML = `
       <div class="confirmation-card">
@@ -1164,6 +1167,10 @@
           <div><span>Payment method</span><strong>${escapeReceiptHtml(paymentChoice)}</strong></div>
           <div><span>${isDeposit ? 'Downpayment due today' : 'Amount due'}</span><strong>₱${amountDue}</strong></div>
         </div>
+        ${isDelivery ? `
+          <p class="delivery-fee-note" style="margin-top:14px; padding:12px 14px; border-radius:6px; background:rgba(163,132,74,0.1); border:1px solid rgba(163,132,74,0.3); font-size:0.85rem; text-align:left;">
+            🛵 <strong>About your delivery fee:</strong> our staff will confirm the delivery fee for your address shortly. Your order total will update automatically once it's set — you can check the latest total anytime on the <a href="my-orders.html" style="color:var(--brass); font-weight:700;">My Orders</a> page.
+          </p>` : ''}
         <div class="confirmation-actions">
           <button type="button" class="btn btn-outline" onclick="continueShopping()">Continue Shopping</button>
           <button type="button" class="btn" onclick="trackOrder()">Track Order →</button>
@@ -1192,7 +1199,7 @@
       const phone = document.getElementById('phone').value.trim();
       const timeInput = document.getElementById('timeInput').value.trim();
       if (!name || !phone || !timeInput) {
-        alert("Please fill in your name, mobile number, and table/time before continuing.");
+        alert("Please fill in your name, mobile number, and preferred time before continuing.");
         return;
       }
       if (document.getElementById('orderType').value === 'Delivery') {
@@ -1237,6 +1244,7 @@
     }
     const serviceType = document.getElementById('orderType').value;
     const paymentChoice = document.querySelector('input[name="paymentChoice"]:checked')?.value || 'Cash';
+    const tableNoInput = document.getElementById('tableNoInput').value.trim();
     const timeInput = document.getElementById('timeInput').value;
     const notesInput = document.getElementById('notes').value.trim();
 
@@ -1273,17 +1281,26 @@
       addrEl.value = sessionStorage.getItem('yo-customer-address') || '';
     }
 
+    // The backend's `table_time` column is a single free-text field, so the
+    // two boxes are joined with a delimiter here — my-orders.html splits
+    // this same delimiter back apart when it re-displays/edits the order.
+    // table_no / requested_time are also sent alongside it in case the
+    // backend has (or gains) dedicated columns for them.
+    const combinedTableTime = [tableNoInput, timeInput.trim()].filter(Boolean).join(' · ');
+
     const orderPayload = {
       order_type,
       cart: cartLines,
       serviceType: serviceType,       // kept for any display/logging use
-      tableOrTime: timeInput,
+      tableOrTime: combinedTableTime,
       paymentChoice: paymentChoice,
       notes: notesInput || null,
       delivery_address: (addrEl && addrEl.value.trim()) || null,
       customer_name: document.getElementById('name').value.trim() || null,
       customer_phone: document.getElementById('phone').value.trim() || null,
-      table_time: timeInput || null,
+      table_time: combinedTableTime || null,
+      table_no: tableNoInput || null,
+      requested_time: timeInput.trim() || null,
       payment_method: (paymentChoice || '').toLowerCase() || null
     };
 
@@ -1315,6 +1332,7 @@
         clearSavedOrderTray();
         document.getElementById('name').value = '';
         document.getElementById('phone').value = '';
+        document.getElementById('tableNoInput').value = '';
         document.getElementById('timeInput').value = '';
         document.getElementById('notes').value = '';
         const addrResetEl = document.getElementById('deliveryAddress');
@@ -1323,7 +1341,7 @@
         document.querySelectorAll('input[name="paymentChoice"]').forEach(r => r.checked = false);
         updateCartDisplay();
         isSubmittingOrder = false;
-        showOrderConfirmation(orderId, paymentChoice, confirmedPaymentAmount, requiresDeposit);
+        showOrderConfirmation(orderId, paymentChoice, confirmedPaymentAmount, requiresDeposit, order_type === 'online');
         return true;
       } else {
         alert("Order submission failed: " + (data.error || data.message));

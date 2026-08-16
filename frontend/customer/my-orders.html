@@ -28,6 +28,25 @@
   .order-total .amount { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 1.3rem; color: var(--brass); display: block; }
   .order-total .label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.6; }
 
+  /* ---------- Totals breakdown (card + modal) ---------- */
+  .order-total .card-totals { min-width: 170px; }
+  .totals-breakdown, .card-totals { font-family: 'Space Mono', monospace; }
+  .totals-row {
+    display: flex; justify-content: space-between; gap: 14px; font-size: 0.82rem;
+    padding: 3px 0; opacity: 0.8;
+  }
+  .card-totals .totals-row { font-size: 0.78rem; }
+  .totals-row.grand {
+    font-size: 1rem; font-weight: 700; opacity: 1; color: var(--brass);
+    border-top: 1px dashed var(--line); margin-top: 4px; padding-top: 6px;
+  }
+  .totals-row .pending-fee { color: var(--brass); font-style: italic; opacity: 0.85; }
+  .delivery-note {
+    display: flex; gap: 8px; align-items: flex-start; margin-top: 14px;
+    padding: 10px 12px; border-radius: 4px; font-size: 0.78rem; line-height: 1.5;
+    background: rgba(163,132,74,0.08); border: 1px solid rgba(163,132,74,0.28); color: var(--ink);
+  }
+
   /* Status stepper */
   .status-tracker { display: flex; align-items: flex-start; margin-bottom: 20px; }
   .status-step { flex: 1; text-align: center; position: relative; }
@@ -180,6 +199,8 @@
 
     <div id="detailItems" class="order-items" style="margin: 16px 0 22px; padding: 14px; border: 1px dashed var(--line); border-radius: 6px;"></div>
 
+    <div id="detailTotals" class="totals-breakdown" style="margin: -6px 0 22px;"></div>
+
     <div id="detailForm">
       <div class="form-row">
         <div><label for="detailName">Name</label><input id="detailName" type="text"></div>
@@ -194,7 +215,10 @@
             <option value="online">Delivery</option>
           </select>
         </div>
-        <div><label for="detailTime">Table # / Time</label><input id="detailTime" type="text"></div>
+        <div><label for="detailTableNo">Table # <span style="opacity:.55; font-weight:400;">(dine-in only)</span></label><input id="detailTableNo" type="text"></div>
+      </div>
+      <div class="form-row">
+        <div><label for="detailTime">Preferred Time</label><input id="detailTime" type="text"></div>
       </div>
       <div class="form-row">
         <div>
@@ -246,6 +270,57 @@
   const TYPE_LABEL = { online: 'Delivery', pickup: 'Takeout', dine_in: 'Dine-In' };
   const PAYMENT_LABEL = { gcash: 'GCash', cash: 'Cash', card: 'Card', bank_transfer: 'Bank Transfer' };
 
+  // "online" is this system's order_type value for Delivery orders (see
+  // TYPE_LABEL above) — delivery_address presence is checked too as a
+  // fallback in case an order predates that convention.
+  function isDeliveryOrder(order) {
+    return order.order_type === 'online' || !!order.delivery_address;
+  }
+
+  // Delivery fee is set by staff after the order is placed, so a delivery
+  // order's total_amount may still just be the item subtotal until then.
+  function totalsFor(order) {
+    const grandTotal = Number(order.total_amount || 0);
+    const deliveryFee = Number(order.delivery_fee || 0);
+    const delivery = isDeliveryOrder(order);
+    const subtotal = delivery ? Math.max(0, grandTotal - deliveryFee) : grandTotal;
+    const feePending = delivery && deliveryFee <= 0 && order.status !== 'cancelled';
+    return { grandTotal, deliveryFee, subtotal, delivery, feePending };
+  }
+
+  function totalsRowsHTML(t, { grandClass = 'grand' } = {}) {
+    if (!t.delivery) {
+      return `<div class="totals-row ${grandClass}"><span>Total</span><span>${peso(t.grandTotal)}</span></div>`;
+    }
+    return `
+      <div class="totals-row"><span>Subtotal</span><span>${peso(t.subtotal)}</span></div>
+      <div class="totals-row"><span>Delivery Fee</span><span>${t.feePending ? '<span class="pending-fee">Pending</span>' : peso(t.deliveryFee)}</span></div>
+      <div class="totals-row ${grandClass}"><span>Total</span><span>${peso(t.grandTotal)}</span></div>
+    `;
+  }
+
+  function deliveryNoteHTML(t) {
+    if (!t.feePending) return '';
+    return `<div class="delivery-note">🛵 <span>This is a delivery order — our staff will confirm your delivery fee shortly, and the total above will update automatically once it's set.</span></div>`;
+  }
+
+  // table_time is stored as a single free-text column on the backend, so
+  // Table # and Time are joined with " · " when saving and split back
+  // apart here for display/editing. Older orders saved before this split
+  // existed won't have the delimiter — their value is shown as Time only.
+  const TABLE_TIME_DELIM = ' · ';
+  function splitTableTime(order) {
+    if (order.table_no != null || order.requested_time != null) {
+      return { tableNo: order.table_no || '', time: order.requested_time || '' };
+    }
+    const raw = order.table_time || '';
+    if (raw.includes(TABLE_TIME_DELIM)) {
+      const [tableNo, ...rest] = raw.split(TABLE_TIME_DELIM);
+      return { tableNo: tableNo.trim(), time: rest.join(TABLE_TIME_DELIM).trim() };
+    }
+    return { tableNo: '', time: raw };
+  }
+
   let currentUser = null;
   let ordersById = new Map();
   let currentDetailOrder = null;
@@ -288,17 +363,24 @@
         }).join('')
       : '<div class="order-item-row" style="opacity:.5;">No item details available.</div>';
 
+    // Subtotal / Delivery Fee / Total breakdown, plus a note while the
+    // delivery fee is still awaiting staff confirmation.
+    const t = totalsFor(order);
+    document.getElementById('detailTotals').innerHTML = totalsRowsHTML(t) + deliveryNoteHTML(t);
+
     // Fill in the details the customer typed at checkout.
     setVal('detailName', order.customer_name);
     setVal('detailPhone', order.customer_phone);
-    setVal('detailTime', order.table_time);
+    const { tableNo, time } = splitTableTime(order);
+    setVal('detailTableNo', tableNo);
+    setVal('detailTime', time);
     setVal('detailAddress', order.delivery_address);
     setVal('detailNotes', order.notes);
     setSelect('detailService', order.order_type);
     setSelect('detailPayment', order.payment_method);
 
     // Lock the form once the restaurant confirms the order.
-    ['detailName', 'detailPhone', 'detailService', 'detailTime', 'detailAddress', 'detailPayment', 'detailNotes'].forEach(sel => {
+    ['detailName', 'detailPhone', 'detailService', 'detailTableNo', 'detailTime', 'detailAddress', 'detailPayment', 'detailNotes'].forEach(sel => {
       document.getElementById(sel).disabled = !editable;
     });
     document.getElementById('btnSaveDetails').style.display = editable ? '' : 'none';
@@ -325,11 +407,15 @@
     if (!order || order.status !== 'pending') return;
     if (!currentUser) return;
 
+    const tableNoVal = document.getElementById('detailTableNo').value.trim();
+    const timeVal = document.getElementById('detailTime').value.trim();
     const payload = {
       customer_name: document.getElementById('detailName').value.trim(),
       customer_phone: document.getElementById('detailPhone').value.trim(),
       order_type: document.getElementById('detailService').value,
-      table_time: document.getElementById('detailTime').value.trim(),
+      table_time: [tableNoVal, timeVal].filter(Boolean).join(TABLE_TIME_DELIM),
+      table_no: tableNoVal || null,
+      requested_time: timeVal || null,
       delivery_address: document.getElementById('detailAddress').value.trim(),
       payment_method: document.getElementById('detailPayment').value,
       notes: document.getElementById('detailNotes').value.trim(),
@@ -383,6 +469,7 @@
       ? new Date(order.datetime_ordered).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
       : '';
     const items = Array.isArray(order.items) ? order.items.filter(it => it && it.menu_id !== null) : [];
+    const t = totalsFor(order);
 
     return `<div class="order-card">
       <div class="order-card-head">
@@ -392,12 +479,14 @@
           ${order.delivery_address ? `<div class="order-meta">Deliver to: ${order.delivery_address}</div>` : ''}
         </div>
         <div class="order-total">
-          <span class="amount">${peso(order.total_amount)}</span>
-          <span class="label">Total</span>
+          ${t.delivery
+            ? `<div class="card-totals">${totalsRowsHTML(t)}</div>`
+            : `<span class="amount">${peso(t.grandTotal)}</span><span class="label">Total</span>`}
           <button type="button" class="btn btn-outline view-details-btn" onclick="openOrderDetails(${order.id})">View Details</button>
         </div>
       </div>
       ${renderTracker(order.status)}
+      ${deliveryNoteHTML(t)}
       <div class="order-items">
         ${items.length
           ? items.map(it => {
