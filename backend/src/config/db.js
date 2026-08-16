@@ -14,9 +14,9 @@ dotenv.config();
 // DATABASE_URL set (no discrete DB_HOST/DB_USER/etc) would silently try to
 // connect to localhost and fail with ECONNREFUSED.
 const connectionString =
+  process.env.POSTGRES_URL_DATABASE_URL ||
   process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL ||
-  process.env.POSTGRES_URL_DATABASE_URL;
+  process.env.POSTGRES_URL;
 
 const pool = connectionString
   ? new Pool({
