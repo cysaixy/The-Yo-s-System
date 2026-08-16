@@ -135,10 +135,10 @@
 /* ---- Inventory table ---- */
 .inv-table-wrap {
   background: #fff; border: 1px solid var(--line); border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
 }
 .inv-table {
-  width: 100%; border-collapse: collapse; font-size: 0.84rem;
+  width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.84rem;
 }
 .inv-table thead tr {
   background: var(--stone); border-bottom: 1px solid var(--line);

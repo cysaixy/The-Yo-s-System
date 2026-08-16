@@ -57,6 +57,21 @@ body {
 .sidebar-toggle { margin-left:auto; width:34px; height:34px; display:flex; align-items:center; justify-content:center; border:0; border-radius:8px; background:transparent; color:var(--ink); font-size:1.25rem; line-height:1; cursor:pointer; }
 .sidebar-toggle:hover { background:var(--stone); color:var(--brass-dark); }
 
+/* ---------- Mobile nav toggle + backdrop ---------- */
+/* Hidden on desktop; becomes visible in the <=768px media query below. */
+.mobile-nav-toggle {
+  display: none; width: 40px; height: 40px; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: rgba(255,255,255,.06);
+  color: #fff; cursor: pointer; flex-shrink: 0;
+}
+.mobile-nav-toggle:hover { background: rgba(255,255,255,.14); }
+.mobile-nav-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.admin-sidebar-backdrop {
+  display: none; position: fixed; inset: 0; background: rgba(15,16,18,0.5);
+  z-index: 190; opacity: 0; transition: opacity .2s ease;
+}
+.admin-shell.mobile-nav-open .admin-sidebar-backdrop { display: block; opacity: 1; }
+
 .nav-group-label {
   font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase;
   letter-spacing: 0.08em; opacity: 0.45; padding: 18px 12px 8px;
@@ -114,7 +129,9 @@ body {
   font-family: 'Archivo', sans-serif; font-weight: 900; text-transform: uppercase;
   font-size: 1.3rem; letter-spacing: 0.02em; margin: 0;
 }
-.admin-user { display: flex; align-items: center; gap: 12px; }
+.admin-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.admin-header-left h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-user { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .admin-notification-btn { position:relative; width:38px; height:38px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#fff; cursor:pointer; font-size:1rem; }
 .admin-notification-btn:hover { background:rgba(255,255,255,.14); }
 .admin-notification-count { position:absolute; min-width:17px; height:17px; padding:0 4px; display:none; align-items:center; justify-content:center; right:-6px; top:-6px; border-radius:9px; background:#d55b4e; color:#fff; font:700 .6rem 'Space Mono',monospace; border:2px solid var(--ink); }
@@ -163,7 +180,11 @@ body {
 .admin-panel-head h3 { margin: 0; font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 0.95rem; }
 .admin-panel-body { padding: 20px; }
 
-.admin-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+/* Any panel body that a page fills with a raw <table> (most admin pages
+   just do panelBody.innerHTML = '<table class="admin-table">...') scrolls
+   horizontally instead of squashing columns unreadably on narrow screens. */
+.admin-panel-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.admin-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 0.86rem; }
 .admin-table th {
   text-align: left; padding: 13px 16px; background: #f8f4ed;
   font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase;
@@ -259,17 +280,54 @@ body {
 .modal-box h3 { margin: 0 0 18px; font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 1.05rem; }
 .modal-close-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
-@media (max-width: 860px) {
-  .admin-sidebar { position: static; width: 100%; }
-  .admin-main { margin-left: 0; }
-  .admin-shell { flex-direction: column; }
-  .admin-shell.sidebar-collapsed .admin-sidebar { width:100%; padding-left:16px; padding-right:16px; }
-  .admin-shell.sidebar-collapsed .admin-main { margin-left:0; }
+/* ---------- Responsive: tablet / mobile ---------- */
+/* Below 768px the sidebar stops pushing content around and instead
+   becomes an off-canvas drawer, opened with the hamburger button in the
+   header and closed via the backdrop, the × button, or picking a link. */
+@media (max-width: 768px) {
+  .mobile-nav-toggle { display: flex; }
+  .sidebar-toggle { display: none; } /* desktop collapse/expand control */
+
+  .admin-sidebar {
+    z-index: 200; width: min(280px, 84vw); padding: 18px 14px;
+    transform: translateX(-100%); transition: transform .22s ease;
+    box-shadow: var(--shadow-md);
+  }
+  .admin-shell.mobile-nav-open .admin-sidebar { transform: translateX(0); }
+  /* Collapsed-sidebar (desktop) state is irrelevant once the sidebar is
+     off-canvas - always render it expanded so the drawer is legible. */
+  .admin-shell.sidebar-collapsed .admin-sidebar { width: min(280px, 84vw); padding: 18px 14px; }
   .admin-shell.sidebar-collapsed .brand-label,
   .admin-shell.sidebar-collapsed .nav-group-label,
-  .admin-shell.sidebar-collapsed .admin-nav-link .nav-text { display:inline; }
-  .admin-shell.sidebar-collapsed .admin-logo .mark { display:flex; }
-  .admin-shell.sidebar-collapsed .admin-nav-link { justify-content:flex-start; padding:11px 12px; margin-bottom:2px; }
-  .admin-body { padding: 20px 16px; }
-  .admin-header { padding: 16px; }
+  .admin-shell.sidebar-collapsed .admin-nav-link .nav-text,
+  .admin-shell.sidebar-collapsed .admin-nav-link .lock-icon { display: inline; }
+  .admin-shell.sidebar-collapsed .admin-logo { justify-content: flex-start; padding-left: 8px; padding-right: 8px; }
+  .admin-shell.sidebar-collapsed .admin-logo .mark { display: flex; }
+  .admin-shell.sidebar-collapsed .admin-nav-link { justify-content: flex-start; padding: 11px 12px; margin-bottom: 2px; }
+  .admin-shell.sidebar-collapsed .admin-nav-link.active::before { display: block; }
+  .admin-shell.sidebar-collapsed .admin-nav-link.active { background: rgba(163,132,74,0.10); color: var(--brass-dark); box-shadow: none; }
+
+  .admin-main, .admin-shell.sidebar-collapsed .admin-main { margin-left: 0; }
+
+  .admin-header { padding: 14px 16px; gap: 10px; }
+  .admin-header h1 { font-size: 1.05rem; }
+  .admin-user .who { display: none; }
+  .admin-user { gap: 8px; }
+  .admin-user button.logout-btn { padding: 8px 10px; }
+
+  .admin-body { padding: 18px 14px; }
+  .stat-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .filter-bar { gap: 10px; }
+  .modal-box { padding: 20px; }
+}
+
+@media (max-width: 480px) {
+  .admin-header h1 { font-size: 0.95rem; }
+  .admin-user .avatar { width: 32px; height: 32px; font-size: 0.85rem; }
+  .admin-notification-btn { width: 34px; height: 34px; }
+  .admin-user button.logout-btn { font-size: 0.62rem; padding: 7px 9px; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .admin-panel-head { padding: 14px 16px; }
+  .admin-body { padding: 14px 10px; }
 }

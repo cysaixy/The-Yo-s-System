@@ -176,6 +176,9 @@ function initOnlineOrderNotifications(token) {
     try {
       const res = await fetch(`${ADMIN_API_BASE_URL}/api/admin/sales/orders?status=pending&limit=50`, {
         headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store', // some browsers/proxies will otherwise serve a
+                            // stale cached response for this identical GET
+                            // URL instead of re-hitting the server every poll
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -201,7 +204,15 @@ function initOnlineOrderNotifications(token) {
     }
   };
   poll();
-  window.setInterval(poll, 20000);
+  window.setInterval(poll, 15000);
+
+  // Browsers throttle or fully pause setInterval on background tabs, so a
+  // staff member who tabs away and back can be sitting on a stale bell for
+  // a while. Force an immediate poll the moment the tab becomes visible
+  // again instead of waiting for the next scheduled tick.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) poll();
+  });
 }
 
 function injectSessionWarningStyles() {
@@ -287,6 +298,7 @@ export function renderAdminShell({ active, title }) {
 
   root.innerHTML = `
     <div class="admin-shell">
+      <div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div>
       <aside class="admin-sidebar">
         <div class="admin-logo"><span class="mark">TY</span><span class="brand-label">THE~YO'S</span><button class="sidebar-toggle" id="adminSidebarToggle" type="button" aria-label="Minimize sidebar" title="Minimize sidebar">☰</button></div>
         <div class="nav-group-label">Main Menu</div>
@@ -296,7 +308,12 @@ export function renderAdminShell({ active, title }) {
       </aside>
       <div class="admin-main">
         <header class="admin-header">
-          <h1>${title}</h1>
+          <div class="admin-header-left">
+            <button class="mobile-nav-toggle" id="adminMobileNavToggle" type="button" aria-label="Open menu" title="Open menu">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
+            <h1>${title}</h1>
+          </div>
           <div class="admin-user">
             <div class="admin-notification-wrap"><button class="admin-notification-btn" id="adminOnlineOrdersBtn" title="Pending online orders" aria-label="Pending online orders">🔔<span class="admin-notification-count" id="onlineOrderCount">0</span></button><div class="online-order-panel" id="onlineOrderPanel"></div></div>
             <div class="who">
@@ -331,6 +348,37 @@ export function renderAdminShell({ active, title }) {
     localStorage.setItem('yo-admin-sidebar-collapsed', String(collapsed));
     toggle.setAttribute('aria-label', collapsed ? 'Maximize sidebar' : 'Minimize sidebar');
     toggle.title = collapsed ? 'Maximize sidebar' : 'Minimize sidebar';
+  });
+
+  // ---- Mobile off-canvas nav (<=768px, see admin-shell.css) ----
+  // Independent of the desktop collapse toggle above - on a narrow screen
+  // the sidebar isn't pushing content around at all, so "collapsed" has no
+  // meaning; it's just hidden off-canvas until opened here.
+  const mobileToggle = document.getElementById('adminMobileNavToggle');
+  const backdrop = document.getElementById('adminSidebarBackdrop');
+
+  function openMobileNav() {
+    shell.classList.add('mobile-nav-open');
+    mobileToggle.setAttribute('aria-label', 'Close menu');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeMobileNav() {
+    shell.classList.remove('mobile-nav-open');
+    mobileToggle.setAttribute('aria-label', 'Open menu');
+    document.body.style.overflow = '';
+  }
+
+  mobileToggle.addEventListener('click', () => {
+    shell.classList.contains('mobile-nav-open') ? closeMobileNav() : openMobileNav();
+  });
+  backdrop.addEventListener('click', closeMobileNav);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && shell.classList.contains('mobile-nav-open')) closeMobileNav();
+  });
+  // Tapping a nav link (or trying to, if disabled) should close the drawer
+  // instead of leaving it open behind the newly-loaded page/alert.
+  shell.querySelector('.admin-sidebar').addEventListener('click', (e) => {
+    if (e.target.closest('.admin-nav-link')) closeMobileNav();
   });
 
   initOnlineOrderNotifications(token);

@@ -135,9 +135,10 @@
 
 /* ---- Product / Add-on / Bundle table ---- */
 .prd-table-wrap {
-  background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
 }
-.prd-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.prd-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 0.84rem; }
 .prd-table thead tr { background: var(--stone); border-bottom: 1px solid var(--line); }
 .prd-table th {
   padding: 11px 16px; text-align: left; font-family: 'Space Mono', monospace;
@@ -279,6 +280,20 @@
   font-size: 0.82rem; margin-top: 14px; display: none;
 }
 .prd-error-msg.show { display: block; }
+
+@media (max-width: 900px) {
+  .prd-summary-row { grid-template-columns: 1fr 1fr; }
+  .prd-header-search input { width: 160px; }
+  .multi-comp-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .prd-summary-row { grid-template-columns: 1fr; }
+  .prd-tabs, .prd-sub-tabs { overflow-x: auto; }
+  .prd-form-grid { grid-template-columns: 1fr; }
+  .prd-header-row { flex-direction: column; align-items: flex-start; }
+  .prd-header-search input { width: 100%; }
+  .multi-comp-row { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>

@@ -164,6 +164,12 @@
     .stx-filters { width: 100%; }
     .stx-filters input[type="search"] { flex: 1; width: auto; }
     .stx-actions { margin-left: auto; }
+    .om-meta { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .stx-controls { flex-direction: column; align-items: stretch; }
+    .stx-field select, .stx-field input[type="date"] { min-width: 0; width: 100%; }
+    .stx-range { flex-direction: column; align-items: stretch; }
   }
 </style>
 </head>
@@ -461,6 +467,43 @@
     });
 
     refresh();
+    startAutoRefresh();
+  }
+
+  /* ================================================================
+     LIVE AUTO-REFRESH
+     Orders placed from the customer-facing site (or by another cashier)
+     used to only show up after a manual page reload. This quietly re-pulls
+     the current view on an interval so new/updated orders appear on their
+     own - without yanking focus away from someone mid-search or resetting
+     the order detail modal while they're reading it.
+     ================================================================ */
+  let autoRefreshTimer = null;
+
+  function startAutoRefresh() {
+    if (autoRefreshTimer) return;
+    autoRefreshTimer = window.setInterval(() => {
+      if (document.hidden) return; // tab in the background - skip, don't burn calls unseen
+      if (document.getElementById('orderModal').classList.contains('active')) return;
+      if (document.activeElement === document.getElementById('filterSearch')) return;
+
+      const activeView = document.querySelector('.stx-tab.active')?.dataset.vtab;
+      if (activeView !== 'transactions') return; // only the live orders list auto-refreshes
+
+      loadSubView(/* silent */ true);
+      if (canReports) loadSummary();
+    }, 15000);
+
+    // Catch up immediately when the tab regains focus rather than waiting
+    // for the next tick - browsers throttle/pause intervals in background tabs.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) return;
+      const activeView = document.querySelector('.stx-tab.active')?.dataset.vtab;
+      if (activeView === 'transactions') {
+        loadSubView(true);
+        if (canReports) loadSummary();
+      }
+    });
   }
 
   function togglePop(id) {
@@ -523,14 +566,14 @@
     if (document.getElementById('stxView-reports').style.display !== 'none') loadActiveReport();
   }
 
-  function loadSubView() {
+  function loadSubView(silent = false) {
     const active = document.querySelector('.stx-subtab[data-sub].active');
     const sub = active ? active.dataset.sub : 'transactions';
     document.getElementById('stxSub-transactions').style.display = sub === 'transactions' ? '' : 'none';
     document.getElementById('stxSub-daily').style.display = sub === 'daily' ? '' : 'none';
     document.getElementById('stxSub-archives').style.display = sub === 'archives' ? '' : 'none';
     if (sub === 'daily') loadDaily();
-    else if (sub === 'transactions') loadOrders();
+    else if (sub === 'transactions') loadOrders(silent);
   }
 
   /* ================================================================
@@ -539,7 +582,7 @@
   async function loadSummary() {
     if (!canReports) return;
     try {
-      const res = await adminFetch(`/api/admin/sales/summary?${periodQuery()}`);
+      const res = await adminFetch(`/api/admin/sales/summary?${periodQuery()}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not load summary.');
       const s = data.summary;
@@ -563,20 +606,23 @@
   /* ================================================================
      TRANSACTIONS TABLE
      ================================================================ */
-  async function loadOrders() {
+  async function loadOrders(silent = false) {
     const wrap = document.getElementById('ordersTableWrap');
-    wrap.innerHTML = `<div class="admin-loading">Loading transactions…</div>`;
+    if (!silent) wrap.innerHTML = `<div class="admin-loading">Loading transactions…</div>`;
     try {
       // The report period is the only server-side boundary; everything else
       // (order-type/status/search) is filtered client-side so switching
       // filters is instant and doesn't re-hit the API.
-      const res = await adminFetch(`/api/admin/sales/orders?${periodQuery()}`);
+      const res = await adminFetch(`/api/admin/sales/orders?${periodQuery()}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not load orders.');
       allOrders = data.orders || [];
       renderTable();
     } catch (err) {
-      wrap.innerHTML = `<div class="stx-empty">⚠ ${err.message}</div>`;
+      // A silent background refresh failing (e.g. a dropped connection)
+      // shouldn't blow away the table the person is currently looking at -
+      // just leave it as-is and try again on the next tick.
+      if (!silent) wrap.innerHTML = `<div class="stx-empty">⚠ ${err.message}</div>`;
     }
   }
 

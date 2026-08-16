@@ -69,6 +69,13 @@
   .toast.show { opacity: 1; transform: translateY(0); }
   .toast.success { border-left: 3px solid var(--success); }
   .toast.error { border-left: 3px solid var(--danger); }
+
+  @media (max-width: 640px) {
+    .detail-list { grid-template-columns: 1fr; gap: 2px 0; }
+    .detail-list dt { margin-top: 8px; }
+    .notes-cell { max-width: 140px; }
+    .toast { left: 12px; right: 12px; bottom: 12px; }
+  }
 </style>
 </head>
 <body>
