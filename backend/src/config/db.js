@@ -1,22 +1,25 @@
 // src/config/db.js
-// Single shared connection pool. Every model imports this instead of
-// creating its own client, so we don't leak connections.
-
 import pkg from "pg";
 const { Pool } = pkg;
 import dotenv from "dotenv";
 dotenv.config();
 
-// Supports either a hosted connection string (DATABASE_URL / POSTGRES_URL —
-// what Neon/Supabase/Railway give you, and what Vercel's Neon integration
-// injects as POSTGRES_URL_DATABASE_URL) or separate DB_HOST/DB_USER/etc for
-// local Postgres. Without this fallback, a deployment with only
-// DATABASE_URL set (no discrete DB_HOST/DB_USER/etc) would silently try to
-// connect to localhost and fail with ECONNREFUSED.
 const connectionString =
   process.env.POSTGRES_URL_DATABASE_URL ||
   process.env.DATABASE_URL ||
   process.env.POSTGRES_URL;
+
+// TEMPORARY DIAGNOSTIC — remove once confirmed which host we're hitting.
+console.log(
+  "[db.js] Using connection string, host:",
+  connectionString ? connectionString.split('@')[1]?.split('/')[0] : "NONE FOUND"
+);
+console.log(
+  "[db.js] Which env var won:",
+  process.env.POSTGRES_URL_DATABASE_URL ? "POSTGRES_URL_DATABASE_URL" :
+  process.env.DATABASE_URL ? "DATABASE_URL" :
+  process.env.POSTGRES_URL ? "POSTGRES_URL" : "NONE"
+);
 
 const pool = connectionString
   ? new Pool({
