@@ -58,7 +58,7 @@ body {
 .sidebar-toggle:hover { background:var(--stone); color:var(--brass-dark); }
 
 /* ---------- Mobile nav toggle + backdrop ---------- */
-/* Hidden on desktop; becomes visible in the <=768px media query below. */
+/* Hidden on desktop; becomes visible in the <=900px media query below. */
 .mobile-nav-toggle {
   display: none; width: 40px; height: 40px; align-items: center; justify-content: center;
   border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: rgba(255,255,255,.06);
@@ -132,8 +132,9 @@ body {
 .admin-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .admin-header-left h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .admin-user { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.admin-notification-btn { position:relative; width:38px; height:38px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#fff; cursor:pointer; font-size:1rem; }
+.admin-notification-btn { position:relative; width:38px; height:38px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .admin-notification-btn:hover { background:rgba(255,255,255,.14); }
+.admin-notification-btn .bell-icon { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; display:block; }
 .admin-notification-count { position:absolute; min-width:17px; height:17px; padding:0 4px; display:none; align-items:center; justify-content:center; right:-6px; top:-6px; border-radius:9px; background:#d55b4e; color:#fff; font:700 .6rem 'Space Mono',monospace; border:2px solid var(--ink); }
 .admin-notification-wrap { position:relative; }
 .online-order-panel { display:none; position:absolute; z-index:150; top:48px; right:0; width:min(370px, calc(100vw - 26px)); overflow:hidden; border:1px solid var(--line); border-radius:13px; background:#fff; color:var(--ink); box-shadow:var(--shadow-md); }
@@ -281,10 +282,14 @@ body {
 .modal-close-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
 /* ---------- Responsive: tablet / mobile ---------- */
-/* Below 768px the sidebar stops pushing content around and instead
+/* Below 900px the sidebar stops pushing content around and instead
    becomes an off-canvas drawer, opened with the hamburger button in the
-   header and closed via the backdrop, the × button, or picking a link. */
-@media (max-width: 768px) {
+   header and closed via the backdrop, the × button, or picking a link.
+   900px (not 768px) on purpose: real tablets in portrait - iPad Mini
+   768, iPad 810, iPad Air 820, iPad Pro 11" 834 - are all wider than a
+   phone but still too narrow to have a fixed 236px sidebar permanently
+   eating into the content column, so they get treated like phones here. */
+@media (max-width: 900px) {
   .mobile-nav-toggle { display: flex; }
   .sidebar-toggle { display: none; } /* desktop collapse/expand control */
 
@@ -309,6 +314,18 @@ body {
 
   .admin-main, .admin-shell.sidebar-collapsed .admin-main { margin-left: 0; }
 
+  /* Full-width tablet content once the sidebar is off-canvas still has
+     plenty of room, so this tier only trims spacing - it does not force
+     single-column forms or hide the staff name (that's the phone tier
+     below, at <=600px). */
+  .admin-header { padding: 16px 22px; }
+  .admin-body { padding: 22px 20px; }
+  .stat-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+  .modal-box { padding: 22px; }
+}
+
+/* ---- Phone tier: genuinely narrow, so trim harder ---- */
+@media (max-width: 600px) {
   .admin-header { padding: 14px 16px; gap: 10px; }
   .admin-header h1 { font-size: 1.05rem; }
   .admin-user .who { display: none; }

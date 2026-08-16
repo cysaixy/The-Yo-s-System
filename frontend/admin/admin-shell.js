@@ -128,7 +128,7 @@ function escapeNotificationHtml(value) {
 function showOnlineOrderToast(order) {
   const toast = document.createElement('div');
   toast.className = 'online-order-toast';
-  toast.innerHTML = `<span class="toast-icon">🔔</span><div><strong>New online order</strong><span>Order #${escapeNotificationHtml(order.id)} · ${escapeNotificationHtml(order.customer_name || 'Customer')} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}</span></div><button type="button" aria-label="Dismiss notification">×</button>`;
+  toast.innerHTML = `<span class="toast-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span><div><strong>New online order</strong><span>Order #${escapeNotificationHtml(order.id)} · ${escapeNotificationHtml(order.customer_name || 'Customer')} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}</span></div><button type="button" aria-label="Dismiss notification">×</button>`;
   document.body.appendChild(toast);
   toast.querySelector('button').addEventListener('click', () => toast.remove());
   window.setTimeout(() => toast.remove(), 8000);
@@ -315,7 +315,7 @@ export function renderAdminShell({ active, title }) {
             <h1>${title}</h1>
           </div>
           <div class="admin-user">
-            <div class="admin-notification-wrap"><button class="admin-notification-btn" id="adminOnlineOrdersBtn" title="Pending online orders" aria-label="Pending online orders">🔔<span class="admin-notification-count" id="onlineOrderCount">0</span></button><div class="online-order-panel" id="onlineOrderPanel"></div></div>
+            <div class="admin-notification-wrap"><button class="admin-notification-btn" id="adminOnlineOrdersBtn" title="Pending online orders" aria-label="Pending online orders"><svg viewBox="0 0 24 24" class="bell-icon"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="admin-notification-count" id="onlineOrderCount">0</span></button><div class="online-order-panel" id="onlineOrderPanel"></div></div>
             <div class="who">
               <strong>${staff.name || staff.email}</strong>
               <span>${staff.role || 'Staff'}</span>
