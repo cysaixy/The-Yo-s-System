@@ -104,7 +104,7 @@ function clearStaffSessionAndRedirect(reason) {
 // a courtesy heads-up, not a sign anything is broken.
 const SESSION_WARNING_MS = 5 * 60 * 1000;
 const ONLINE_ORDER_SEEN_KEY = 'yo-admin-online-order-seen';
-const ADMIN_API_BASE_URL = 'http://localhost:3000';
+const ADMIN_API_BASE_URL = '';
 
 function readSeenOnlineOrderIds() {
   try {
