@@ -34,7 +34,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || "*" }));
-app.use(express.json());
+app.use(express.json({ limit: "7mb" }));
 
 // Apply global rate limiting across all API endpoints
 app.use("/api", globalLimiter);

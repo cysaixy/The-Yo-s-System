@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index.js" },
+    { "source": "/pics&vids/:path*", "destination": "/frontend/pics&vids/:path*" },
     { "source": "/admin", "destination": "/frontend/admin/home.html" },
     { "source": "/admin/:path*", "destination": "/frontend/admin/:path*" },
     { "source": "/", "destination": "/frontend/customer/index.html" },

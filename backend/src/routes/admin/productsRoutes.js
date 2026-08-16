@@ -20,6 +20,7 @@ import {
 } from "../../controllers/admin/productsController.js";
 import { requireStaffAuth } from "../../middlewares/auth.middleware.js";
 import { requireAdmin } from "../../middlewares/role.middleware.js";
+import { uploadProductImage } from "../../controllers/admin/uploadsController.js";
 
 const productrouter = express.Router();
 
@@ -38,6 +39,7 @@ productrouter.patch("/categories/:id", requireAdmin, updateCategory);
 productrouter.delete("/categories/:id", requireAdmin, deleteCategory);
 
 // --- Admin Only Menu Item Management ---
+productrouter.post("/uploads/product-image", requireAdmin, uploadProductImage);
 productrouter.post("/menuitems", requireAdmin, createMenuItem);
 productrouter.patch("/menuitems/:id", requireAdmin, updateMenuItem);
 productrouter.delete("/menuitems/:id", requireAdmin, deleteMenuItem);
