@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Illustrated The Yo's Resto Bar storefront">
+  <rect width="640" height="400" fill="none"/>
+  <path d="M76 355V135h488v220" fill="#21190f" stroke="#f5f1e8" stroke-width="8"/>
+  <path d="M52 137h536l-32-68H84z" fill="#b8954a" stroke="#f5f1e8" stroke-width="8" stroke-linejoin="round"/>
+  <rect x="112" y="174" width="416" height="70" rx="4" fill="#120e0a" stroke="#d1b16a" stroke-width="5"/>
+  <text x="320" y="219" fill="#f5f1e8" font-family="Arial,sans-serif" font-size="42" font-weight="800" text-anchor="middle" letter-spacing="6">THE~YO'S</text>
+  <path d="M134 278h108v77H134zM398 278h108v77H398z" fill="#372714" stroke="#d1b16a" stroke-width="5"/>
+  <path d="M274 258h92v97H274z" fill="#120e0a" stroke="#f5f1e8" stroke-width="5"/>
+  <circle cx="340" cy="309" r="5" fill="#d1b16a"/>
+  <path d="M98 355h444" stroke="#d1b16a" stroke-width="8" stroke-linecap="round"/>
+</svg>

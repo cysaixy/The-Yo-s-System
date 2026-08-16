@@ -1,0 +1,19 @@
+/* Immersive homepage animation states.  Structural styles remain in index.html. */
+.order-story-sticky::before { transition: transform .12s linear; }
+.story-title span { transition: color .45s ease, -webkit-text-stroke .45s ease; }
+.story-step { transition: opacity .35s ease, transform .35s ease; }
+.story-step.is-active { animation: storyIn .45s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes storyIn { from { opacity:0; transform:translate3d(0,16px,0); } to { opacity:1; transform:translate3d(0,0,0); } }
+.story-visual img { transition: opacity .35s ease, transform .6s cubic-bezier(.2,.8,.2,1); }
+.story-visual.is-changing img { opacity:0; transform:scale(.94) translate3d(0,12px,0); }
+.story-stage-list button { transition: transform .25s ease, background .25s ease, border-color .25s ease; }
+.story-stage-list button.is-active { transform:scale(1.2); }
+.story-progress span { transition:width .08s linear; }
+.location-layer { transition:opacity .28s ease, filter .28s ease; }
+.location-copy,.arrival-copy { transition:opacity .42s ease, transform .52s cubic-bezier(.2,.8,.2,1); }
+.location-layer.marker { transition:opacity .34s ease, transform .42s cubic-bezier(.2,.8,.2,1); }
+.find-us[data-phase="3"] .location-layer.marker { animation:markerDrop .55s cubic-bezier(.22,1.4,.5,1) both; }
+@keyframes markerDrop { from { opacity:0; transform:translate3d(0,-35px,0) scale(.55); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .order-story-sticky::before,.story-title span,.story-step,.story-visual img,.story-stage-list button,.story-progress span,.location-layer,.location-copy,.arrival-copy { animation:none !important; transition:none !important; }
+}

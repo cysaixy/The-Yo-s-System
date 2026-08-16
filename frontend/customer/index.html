@@ -6,6 +6,7 @@
 <title>The~Yo's Resto Bar — Baggao, Cagayan</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="animations.css">
 <style>
   /* ---------- Landing page (home only) ---------- */
   body { padding-top: 0; }
@@ -116,6 +117,8 @@
     .sticky-order .txt strong { display: block; font-family: 'Archivo', sans-serif; font-size: .88rem; }
     .sticky-order .txt span { font-family: 'Space Mono', monospace; font-size: .66rem; opacity: .65; }
   }
+  /* Immersive homepage chapters: structurally separate from cart/order logic. */
+  .order-story,.find-us{background:#17120d;color:#fbf7ee;position:relative}.journey{height:360vh}.journey-stage{height:100vh;position:sticky;top:0;overflow:hidden;display:grid;place-items:center}.journey-stage::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 25%,#b8954a33,transparent 27%),linear-gradient(#17120d88,#17120dcc);pointer-events:none}.journey-copy{position:relative;z-index:8;width:min(1120px,calc(100% - 48px));display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}.journey-copy h2{font-size:clamp(3rem,7vw,7.3rem);line-height:.83;letter-spacing:-.075em;margin:12px 0}.journey-copy p{color:#fbf7eeb8;max-width:430px}.journey-label{color:#d1b16a;font:700 .68rem 'Space Mono',monospace;letter-spacing:.13em;text-transform:uppercase;margin-top:24px}.journey-art{height:min(58vh,470px);position:relative}.journey-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;will-change:transform,opacity,filter}.journey-art .background{opacity:.65;transform:scale(1.08)}.journey-art .store{opacity:0;transform:translateY(50px) scale(.58);filter:blur(9px)}.journey-art .marker{opacity:0;transform:translateY(-45px) scale(.6)}.arrival{opacity:0;transform:translateY(22px);padding:25px;border:1px solid #fbf7ee44;background:#17120de8;backdrop-filter:blur(8px)}.arrival h3{font:900 clamp(1.8rem,3vw,2.7rem)/.9 Archivo,sans-serif;text-transform:uppercase;margin-bottom:15px}.arrival address{font-style:normal;color:#fbf7eec4}.arrival .hours{display:block;margin:14px 0;color:#d1b16a;font:700 .67rem 'Space Mono',monospace;text-transform:uppercase;letter-spacing:.08em}.arrival-actions{display:flex;gap:10px;flex-wrap:wrap}@media(max-width:900px){.journey{height:auto}.journey-stage{height:auto;min-height:760px;position:relative;padding:80px 0}.journey-copy{grid-template-columns:1fr;gap:22px}.journey-art{height:290px}.journey-art .store,.journey-art .marker,.arrival{opacity:1;filter:none;transform:none}.journey-label{display:none}}@media(prefers-reduced-motion:reduce){.journey{height:auto}.journey-stage{position:relative;height:auto;min-height:760px}.journey-art .store,.journey-art .marker,.arrival{opacity:1!important;filter:none!important;transform:none!important}}
 </style>
 </head>
 <body>
@@ -199,6 +202,11 @@
     <button class="carousel-arrow" id="carouselNext" aria-label="Next featured items">›</button>
   </div>
 </section>
+
+<!-- Scroll-controlled ordering and arrival story. -->
+<section class="order-story" id="orderStory"><div class="journey"><div class="journey-stage"><div class="journey-copy"><div><p class="eyebrow">From craving to confirmed</p><h2 class="display" id="storyTitle">Good food.<br>Your way.</h2><p id="storyText">Browse drinks, choose dine-in, pickup, delivery, or an advance order, then check everything before you confirm.</p><p class="journey-label" id="storyLabel">01 / 04 · Choose your drink</p></div><div class="journey-art"><img id="storyImage" src="./assets/svg/how-drink.svg" alt="Coffee ordering illustration"></div></div></div></div></section>
+
+<section class="find-us" id="find-us"><div class="journey" id="locationJourney"><div class="journey-stage" id="mapFrame"><div class="journey-copy"><div><p class="eyebrow">Where to find us</p><h2 class="display" id="findUsTitle">Walk to<br>The~Yo's.</h2><p id="locationText">Follow the way to The~Yo's Resto Bar in the heart of Baggao.</p><p class="journey-label" id="journeyLabel">01 / 04 · You're on the road</p></div><div><div class="journey-art"><img class="location-layer background" src="./assets/location/location-background.svg" alt=""><img class="location-layer midground" src="./assets/location/location-midground.svg" alt=""><img class="location-layer road" src="./assets/location/location-road.svg" alt=""><img class="location-layer foreground" src="./assets/location/location-foreground.svg" alt=""><img class="location-layer store" src="./assets/location/location-store.svg" alt="The Yo's storefront"><img class="location-layer marker" src="./assets/location/location-marker.svg" alt=""></div><div class="arrival" id="arrivalCard"><h3>You've arrived.</h3><address><strong>The~Yo's Resto Bar</strong><br>2nd Floor, DKB Building<br>Poblacion, Baggao, Cagayan</address><span class="hours">Open daily · 8:00 AM – 8:00 PM</span><div class="arrival-actions"><a class="btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=2nd+Floor+DKB+Building,+Poblacion,+Baggao,+Cagayan" target="_blank" rel="noopener">Get Directions</a><a class="btn btn-outline" href="order.html">Order Now</a></div></div></div></div></div></div></section>
 
 <div class="marquee">
   <div class="marquee-track">
@@ -344,5 +352,6 @@
 </script>
 <script src="global.js"></script>
 <script src="cart.js"></script>
+<script src="scroll-effects.js"></script>
 </body>
 </html>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 520" fill="none" aria-label="Outline illustration of a drink moving into an order cart">
+  <style>path,rect,circle,line,polyline{stroke:#f8f1e4;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}.soft{stroke:#c9a45f}.draw{stroke-dasharray:900;stroke-dashoffset:900;animation:draw 1s ease forwards}.b{animation-delay:.18s}.c{animation-delay:.36s}.d{animation-delay:.54s}@keyframes draw{to{stroke-dashoffset:0}}@media(prefers-reduced-motion:reduce){*{animation:none!important;stroke-dashoffset:0}}</style>
+  <path class="soft draw" d="M110 256h158"/><path class="soft draw b" d="m230 218 42 38-42 38"/>
+  <g class="draw"><path d="M116 146h108l-13 154h-82l-13-154Z"/><path d="M108 146h124l-11-18h-102l-11 18Z"/><path class="soft" d="m190 80 24 66"/></g>
+  <g class="draw c"><path d="M316 173h53l27 163h159"/><path d="M365 216h173l-18 99H382"/><circle cx="408" cy="379" r="15"/><circle cx="507" cy="379" r="15"/><path class="soft" d="M424 245h79M424 278h63"/></g>
+  <g class="draw d"><rect x="433" y="98" width="110" height="90" rx="8"/><path d="M456 126h62M456 151h38"/><circle class="soft" cx="518" cy="151" r="13"/><path class="soft" d="M512 151h12M518 145v12"/></g>
+</svg>
