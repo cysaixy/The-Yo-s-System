@@ -1,7 +1,7 @@
 // src/controllers/customer/order.controller.js
 import pool from "../../config/db.js";
 
-const VALID_ORDER_TYPES = ["online", "dine_in", "pickup"];
+const VALID_ORDER_TYPES = ["online", "delivery", "dine_in", "pickup"];
 const VALID_PAYMENT_METHODS = ["cash", "gcash", "card", "bank_transfer"];
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
@@ -44,12 +44,12 @@ export async function createOrder(req, res, next) {
       });
     }
 
-    // Delivery (order_type 'online') requires the customer to provide a
+    // Delivery orders require the customer to provide a
     // delivery location and a contact number. Customers can NEVER set the
     // delivery fee themselves — it starts pending and the Admin assigns it
     // later after checking the location. Any delivery_fee value the client
     // sends is deliberately ignored (never trusted from the browser).
-    const isDelivery = order_type === "online";
+    const isDelivery = order_type === "delivery" || order_type === "online";
     if (isDelivery) {
       if (!delivery_address || !String(delivery_address).trim()) {
         return res.status(400).json({ error: "Please enter your delivery address." });

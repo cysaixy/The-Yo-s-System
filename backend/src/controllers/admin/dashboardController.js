@@ -25,7 +25,10 @@ export async function summary(req, res, next) {
       // dashboard, not all-time.
       pool.query(
         `WITH today_orders AS (
-           SELECT o.id, o.order_type, o.total_amount, o.delivery_fee,
+           SELECT o.id,
+                  CASE WHEN o.order_type = 'online' AND o.delivery_address IS NOT NULL
+                       THEN 'delivery' ELSE o.order_type END AS order_type,
+                  o.total_amount, o.delivery_fee,
                   (SELECT COALESCE(SUM(oi.cost * oi.quantity), 0)
                    FROM order_items oi WHERE oi.order_id = o.id) AS base_cogs,
                   (SELECT COALESCE(SUM(oia.cost * oia.quantity), 0)
@@ -102,11 +105,14 @@ export async function salesBreakdown(req, res, next) {
   try {
     const [byOrderTypeRes, byCategoryRes] = await Promise.all([
       pool.query(
-        `SELECT order_type, COUNT(*)::int AS order_count,
+        `SELECT CASE WHEN order_type = 'online' AND delivery_address IS NOT NULL
+                     THEN 'delivery' ELSE order_type END AS order_type,
+                COUNT(*)::int AS order_count,
                 COALESCE(SUM(total_amount), 0)::numeric AS total_sales
          FROM orders
          WHERE datetime_ordered::date = CURRENT_DATE AND status <> 'cancelled'
-         GROUP BY order_type`
+         GROUP BY CASE WHEN order_type = 'online' AND delivery_address IS NOT NULL
+                       THEN 'delivery' ELSE order_type END`
       ),
       pool.query(
         `SELECT c.name AS category_name, COALESCE(SUM(oi.subtotal), 0)::numeric AS total_sales

@@ -223,7 +223,8 @@
 
   if (session) init();
 
-  function orderTypeLabel(v) {
+  function orderTypeLabel(v, order = null) {
+    if (v === 'online' && order?.delivery_address) return 'Delivery';
     const map = { dine_in: 'Dine-in', pickup: 'Takeout', takeout: 'Takeout', delivery: 'Delivery', online: 'Online Order' };
     return map[v] || String(v || '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()) || '—';
   }
@@ -324,6 +325,7 @@
                   <option value="all">All Order Types</option>
                   <option value="dine_in">Dine-in</option>
                   <option value="pickup">Takeout</option>
+                  <option value="delivery">Delivery</option>
                   <option value="online">Online Order</option>
                 </select>
                 <select id="filterStatus">
@@ -661,10 +663,11 @@
 
     return allOrders.filter(o => {
       if (!showCancelled && o.status === 'cancelled') return false;
-      if (orderTypeFilter !== 'all' && o.order_type !== orderTypeFilter) return false;
+      const effectiveType = (o.order_type === 'online' && o.delivery_address) ? 'delivery' : o.order_type;
+      if (orderTypeFilter !== 'all' && effectiveType !== orderTypeFilter) return false;
       if (statusFilter !== 'all' && o.status !== statusFilter) return false;
       if (search) {
-        const hay = `${o.customer_name || ''} ${o.staff_name || ''} #${o.id} ${orderTypeLabel(o.order_type)}`.toLowerCase();
+        const hay = `${o.customer_name || ''} ${o.staff_name || ''} #${o.id} ${orderTypeLabel(o.order_type, o)}`.toLowerCase();
         if (!hay.includes(search)) return false;
       }
       return true;
@@ -678,7 +681,7 @@
       switch (key) {
         case 'id': return o.id;
         case 'datetime': return o.datetime_ordered || '';
-        case 'order_type': return orderTypeLabel(o.order_type);
+        case 'order_type': return orderTypeLabel(o.order_type, o);
         case 'customer': return o.customer_name || '';
         case 'cashier': return o.staff_name || '';
         case 'items': return Number(o.item_count) || 0;
@@ -769,7 +772,7 @@
           ${isOnline
             ? `<span class="source-pill source-online">Online</span>`
             : `<span class="source-pill source-pos">POS · ${cashier}</span>`}
-          <div style="font-size:0.74rem; opacity:0.6; margin-top:2px;">${orderTypeLabel(o.order_type)}</div>
+          <div style="font-size:0.74rem; opacity:0.6; margin-top:2px;">${orderTypeLabel(o.order_type, o)}</div>
         </td>
         <td>${escapeHtml(o.customer_name) || '—'}</td>
         <td>${cashier}</td>
@@ -832,7 +835,7 @@
     const cols = [
       ['Transaction ID', o => `#${o.id}`],
       ['Date & Time', o => formatDate(o.datetime_ordered)],
-      ['Order Type', o => orderTypeLabel(o.order_type)],
+      ['Order Type', o => orderTypeLabel(o.order_type, o)],
       ['Customer', o => o.customer_name || ''],
       ['Cashier', o => o.source === 'online' ? '' : (o.staff_name || 'Staff')],
       ['Items', o => Number(o.item_count) || 0],
