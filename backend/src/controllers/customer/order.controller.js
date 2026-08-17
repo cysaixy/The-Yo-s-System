@@ -50,6 +50,10 @@ export async function createOrder(req, res, next) {
     // later after checking the location. Any delivery_fee value the client
     // sends is deliberately ignored (never trusted from the browser).
     const isDelivery = order_type === "delivery" || order_type === "online";
+    // The existing database CHECK constraint stores customer delivery orders
+    // as `online`. Accept the clearer client value too, but normalize before
+    // insertion so old deployments cannot fail with constraint 23514.
+    const storedOrderType = order_type === "delivery" ? "online" : order_type;
     if (isDelivery) {
       if (!delivery_address || !String(delivery_address).trim()) {
         return res.status(400).json({ error: "Please enter your delivery address." });
@@ -171,7 +175,7 @@ export async function createOrder(req, res, next) {
       [
         customer_id,
         reservation_id || null,
-        order_type,
+        storedOrderType,
         total_amount,
         deliveryFee,
         delivery_address || null,
