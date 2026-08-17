@@ -1253,7 +1253,7 @@
     const ORDER_TYPE_MAP = {
       'Dine-In': 'dine_in',
       'Takeout': 'pickup',
-      'Delivery': 'delivery'
+      'Delivery': 'online'
     };
     const order_type = ORDER_TYPE_MAP[serviceType];
     if (!order_type) {
@@ -1341,7 +1341,7 @@
         document.querySelectorAll('input[name="paymentChoice"]').forEach(r => r.checked = false);
         updateCartDisplay();
         isSubmittingOrder = false;
-        showOrderConfirmation(orderId, paymentChoice, confirmedPaymentAmount, requiresDeposit, order_type === 'delivery');
+        showOrderConfirmation(orderId, paymentChoice, confirmedPaymentAmount, requiresDeposit, order_type === 'online');
         return true;
       } else {
         alert("Order submission failed: " + (data.error || data.message));
