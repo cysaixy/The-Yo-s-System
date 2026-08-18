@@ -92,7 +92,7 @@
   .orders-loading { text-align: center; padding: 60px 20px; opacity: 0.6; font-family: 'Space Mono', monospace; font-size: 0.85rem; }
 
   .view-details-btn {
-    margin-top: 12px; padding: 8px 14px; font-size: 0.72rem; border-radius: 4px;
+    padding: 8px 14px; font-size: 0.72rem; border-radius: 4px;
     font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em;
   }
 
@@ -148,7 +148,7 @@
     <img src="../pics&vids/the-yo's_logo.jpg" alt="Logo" class="logo-img">
     <span class="logo-text">The~Yo's</span>
   </a>
-<nav id="siteNav">
+  <nav id="siteNav">
     <ul>
       <li><a href="about.html">About</a></li>
       <li><a href="menu.html">Menu</a></li>
@@ -238,6 +238,7 @@
 
     <div class="modal-actions">
       <button type="button" class="btn btn-outline" onclick="closeOrderDetails()">Close</button>
+      <button type="button" class="btn btn-outline" id="btnCancelInModal" style="display:none; color:#e05252; border-color:rgba(224,82,82,.4);" onclick="cancelOrder(currentDetailOrder?.id)">Cancel Order</button>
       <button type="button" class="btn" id="btnSaveDetails" onclick="saveOrderDetails()">Save Changes</button>
     </div>
   </div>
@@ -252,15 +253,12 @@
     { key: 'preparing', label: 'Preparing' },
     { key: 'ready', label: 'Ready' },
   ];
-  // Some backends may finalize with 'completed' instead of 'ready' — treat
-  // both as the last step so the tracker doesn't break either way.
   const STEP_ALIASES = { completed: 'ready' };
 
   function peso(n) {
     return '₱' + Number(n || 0).toLocaleString('en-PH', { maximumFractionDigits: 2 });
   }
 
-  // Escape user-supplied text before injecting it into HTML.
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -270,15 +268,10 @@
   const TYPE_LABEL = { online: 'Delivery', pickup: 'Takeout', dine_in: 'Dine-In' };
   const PAYMENT_LABEL = { gcash: 'GCash', cash: 'Cash', card: 'Card', bank_transfer: 'Bank Transfer' };
 
-  // "online" is this system's order_type value for Delivery orders (see
-  // TYPE_LABEL above) — delivery_address presence is checked too as a
-  // fallback in case an order predates that convention.
   function isDeliveryOrder(order) {
     return order.order_type === 'online' || !!order.delivery_address;
   }
 
-  // Delivery fee is set by staff after the order is placed, so a delivery
-  // order's total_amount may still just be the item subtotal until then.
   function totalsFor(order) {
     const grandTotal = Number(order.total_amount || 0);
     const deliveryFee = Number(order.delivery_fee || 0);
@@ -304,10 +297,6 @@
     return `<div class="delivery-note">🛵 <span>This is a delivery order — our staff will confirm your delivery fee shortly, and the total above will update automatically once it's set.</span></div>`;
   }
 
-  // table_time is stored as a single free-text column on the backend, so
-  // Table # and Time are joined with " · " when saving and split back
-  // apart here for display/editing. Older orders saved before this split
-  // existed won't have the delimiter — their value is shown as Time only.
   const TABLE_TIME_DELIM = ' · ';
   function splitTableTime(order) {
     if (order.table_no != null || order.requested_time != null) {
@@ -325,7 +314,6 @@
   let ordersById = new Map();
   let currentDetailOrder = null;
 
-  // ----- ORDER DETAILS MODAL (view always, edit while pending) -----
   function setVal(id, value) {
     const el = document.getElementById(id);
     if (el) el.value = (value == null ? '' : value);
@@ -335,7 +323,6 @@
     const el = document.getElementById(id);
     if (!el) return;
     el.value = value;
-    // If the stored value isn't one of our options, fall back to the first.
     if (el.value !== value) el.selectedIndex = 0;
   }
 
@@ -349,7 +336,6 @@
     document.getElementById('detailOrderMeta').textContent =
       `Status: ${(order.status || '').toUpperCase()} · ${esc(TYPE_LABEL[order.order_type] || order.order_type)} · Placed ${order.datetime_ordered ? new Date(order.datetime_ordered).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : ''}`;
 
-    // Line items + add-ons (read-only, always).
     const items = Array.isArray(order.items) ? order.items.filter(it => it && it.menu_id !== null) : [];
     document.getElementById('detailItems').innerHTML = items.length
       ? items.map(it => {
@@ -363,12 +349,9 @@
         }).join('')
       : '<div class="order-item-row" style="opacity:.5;">No item details available.</div>';
 
-    // Subtotal / Delivery Fee / Total breakdown, plus a note while the
-    // delivery fee is still awaiting staff confirmation.
     const t = totalsFor(order);
     document.getElementById('detailTotals').innerHTML = totalsRowsHTML(t) + deliveryNoteHTML(t);
 
-    // Fill in the details the customer typed at checkout.
     setVal('detailName', order.customer_name);
     setVal('detailPhone', order.customer_phone);
     const { tableNo, time } = splitTableTime(order);
@@ -379,19 +362,24 @@
     setSelect('detailService', order.order_type);
     setSelect('detailPayment', order.payment_method);
 
-    // Lock the form once the restaurant confirms the order.
     ['detailName', 'detailPhone', 'detailService', 'detailTableNo', 'detailTime', 'detailAddress', 'detailPayment', 'detailNotes'].forEach(sel => {
-      document.getElementById(sel).disabled = !editable;
+      const el = document.getElementById(sel);
+      if (el) el.disabled = !editable;
     });
-    document.getElementById('btnSaveDetails').style.display = editable ? '' : 'none';
+    const btnSave = document.getElementById('btnSaveDetails');
+    if (btnSave) btnSave.style.display = editable ? '' : 'none';
+    const btnCancelModal = document.getElementById('btnCancelInModal');
+    if (btnCancelModal) btnCancelModal.style.display = editable ? '' : 'none';
     const lockedNote = document.getElementById('detailLockedNote');
-    if (!editable) {
-      lockedNote.style.display = 'block';
-      lockedNote.textContent = order.status === 'cancelled'
-        ? 'This order was cancelled and can no longer be edited.'
-        : 'This order has already been confirmed and is locked. You can only view these details.';
-    } else {
-      lockedNote.style.display = 'none';
+    if (lockedNote) {
+      if (!editable) {
+        lockedNote.style.display = 'block';
+        lockedNote.textContent = order.status === 'cancelled'
+          ? 'This order was cancelled and can no longer be edited.'
+          : 'This order has already been confirmed and is locked. You can only view these details.';
+      } else {
+        lockedNote.style.display = 'none';
+      }
     }
 
     document.getElementById('orderModal').classList.add('active');
@@ -402,10 +390,43 @@
     currentDetailOrder = null;
   };
 
+  window.cancelOrder = async function(id) {
+    if (!id) return;
+    if (!confirm(`Are you sure you want to cancel Order #${id}?`)) return;
+    if (!currentUser) return;
+
+    try {
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/customer/orders/${id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Could not cancel your order.');
+        return;
+      }
+      alert('✓ Order cancelled successfully.');
+      if (currentDetailOrder && currentDetailOrder.id === id) {
+        window.closeOrderDetails();
+      }
+      window.refreshOrders();
+    } catch (err) {
+      alert('Network error while cancelling order. Please try again.');
+    }
+  };
+
   window.saveOrderDetails = async function() {
     const order = currentDetailOrder;
     if (!order || order.status !== 'pending') return;
     if (!currentUser) return;
+
+    const btn = document.getElementById('btnSaveDetails');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
 
     const tableNoVal = document.getElementById('detailTableNo').value.trim();
     const timeVal = document.getElementById('detailTime').value.trim();
@@ -436,11 +457,14 @@
         alert(data.error || 'Could not save your changes.');
         return;
       }
-      alert('Your details were updated.');
+      alert('✓ Order details updated successfully.');
       window.closeOrderDetails();
       window.refreshOrders();
     } catch (err) {
       alert('Network error while saving. Please try again.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
     }
   };
 
@@ -482,7 +506,10 @@
           ${t.delivery
             ? `<div class="card-totals">${totalsRowsHTML(t)}</div>`
             : `<span class="amount">${peso(t.grandTotal)}</span><span class="label">Total</span>`}
-          <button type="button" class="btn btn-outline view-details-btn" onclick="openOrderDetails(${order.id})">View Details</button>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:10px;">
+            <button type="button" class="btn btn-outline view-details-btn" onclick="openOrderDetails(${order.id})">View Details</button>
+            ${order.status === 'pending' ? `<button type="button" class="btn btn-outline" style="color:#e05252; border-color:rgba(224,82,82,.4); padding:8px 12px; font-size:0.72rem;" onclick="cancelOrder(${order.id})">Cancel</button>` : ''}
+          </div>
         </div>
       </div>
       ${renderTracker(order.status)}
@@ -491,7 +518,7 @@
         ${items.length
           ? items.map(it => {
               const addons = (it.add_ons || []).filter(a => a && a.quantity > 0)
-                .map(a => `<span style="display:block; font-size:0.78rem; color:var(--brass); opacity:0.85; margin-top:1px;">+ ${a.quantity}× ${a.name} <span style="opacity:.7;">(${peso(a.subtotal)})</span></span>`)
+                .map(a => `<span style="display:block; font-size:0.78rem; color:var(--brass); opacity:0.85; margin-top:1px;">+ ${a.quantity}× ${esc(a.name)} <span style="opacity:.7;">(${peso(a.subtotal)})</span></span>`)
                 .join('');
               return `<div class="order-item-row">
                 <span><span class="qty">×${it.quantity}</span>${esc(it.item_name) || 'Item #' + it.menu_id}${it.notes ? ` <span style="opacity:.6; font-size:0.8em;">(${esc(it.notes)})</span>` : ''}${addons}</span>

@@ -289,6 +289,7 @@
     font-size: 1.05rem; cursor: pointer; color: var(--ink);
   }
   .ticket-body .add:hover { background: var(--brass); color: #0b0c0d; border-color: var(--brass); }
+  .ticket-body .add.just-added { background: var(--brass) !important; color: #0b0c0d !important; border-color: var(--brass) !important; transform: scale(1.15); transition: all .15s ease; }
 
   /* ---------- GALLERY TEASER ---------- */
   .gallery-teaser { background: #0b0c0d; padding: 0 0 110px; }
@@ -382,8 +383,8 @@
 
 <div class="gs-marquee">
   <div class="gs-marquee-track">
-    <span>Rice Meals &amp; Bowls &diams;</span><span>Crispy Chicken &diams;</span><span>Pansit Batil Patung &diams;</span><span>Handcrafted Espresso &diams;</span><span>Matcha &amp; Non-Coffee &diams;</span><span>Full Catering Operations &diams;</span>
-    <span>Rice Meals &amp; Bowls &diams;</span><span>Crispy Chicken &diams;</span><span>Pansit Batil Patung &diams;</span><span>Handcrafted Espresso &diams;</span><span>Matcha &amp; Non-Coffee &diams;</span><span>Full Catering Operations &diams;</span>
+    <span>Rice Meals &amp; Bowls </span><span>Crispy Chicken </span><span>Pansit Batil Patung </span><span>Handcrafted Espresso </span><span>Matcha &amp; Non-Coffee </span><span>Full Catering Operations </span>
+    <span>Rice Meals &amp; Bowls </span><span>Crispy Chicken </span><span>Pansit Batil Patung </span><span>Handcrafted Espresso </span><span>Matcha &amp; Non-Coffee </span><span>Full Catering Operations </span>
   </div>
 </div>
 
@@ -457,41 +458,33 @@
       <div class="gs-panel">
         <div class="gs-panel-inner gs-cat">
           <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="9" ry="3.2"/><path d="M3 15V9a9 3.2 0 0 1 18 0v6"/></svg></div>
-          <h3>Rice Meals</h3>
+          <h3>Rice Meals &amp; Bowls</h3>
           <p class="gs-cat-meta">From ₱100 &middot; sisig, katsu, tapsi &amp; bowls</p>
-          <a class="gs-cat-link" href="menu.html#rice-meals">View Rice Meals &rarr;</a>
+          <a class="gs-cat-link" href="menu.html#rice-meals-bowls">View Rice Meals &amp; Bowls &rarr;</a>
         </div>
       </div>
       <div class="gs-panel">
         <div class="gs-panel-inner gs-cat">
           <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg></div>
-          <h3>Crispy Chicken</h3>
-          <p class="gs-cat-meta">From ₱55 &middot; wings, burgers &amp; snacks</p>
-          <a class="gs-cat-link" href="menu.html#wings-snacks">View Chicken &amp; Snacks &rarr;</a>
-        </div>
-      </div>
-      <div class="gs-panel">
-        <div class="gs-panel-inner gs-cat">
-          <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg></div>
-          <h3>Pansit &amp; Noodles</h3>
-          <p class="gs-cat-meta">From ₱70 &middot; lomi, batil patung &amp; bilao</p>
-          <a class="gs-cat-link" href="menu.html#wings-snacks">View Noodles &rarr;</a>
+          <h3>Wings, Noodles &amp; Snacks</h3>
+          <p class="gs-cat-meta">From ₱55 &middot; wings, batil patung, lomi, burgers &amp; snacks</p>
+          <a class="gs-cat-link" href="menu.html#wings-noodles-snacks">View Wings, Noodles &amp; Snacks &rarr;</a>
         </div>
       </div>
       <div class="gs-panel">
         <div class="gs-panel-inner gs-cat">
           <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M8.5 4.5c1.5 1 1.8 2.2.9 3.4M12 4.5c1.5 1 1.8 2.2.9 3.4" stroke-linecap="round"/></svg></div>
-          <h3>Espresso Bar</h3>
+          <h3>Espresso &amp; Coffee</h3>
           <p class="gs-cat-meta">From ₱90 &middot; hot &amp; iced espresso lines</p>
-          <a class="gs-cat-link" href="menu.html#espresso-bar">View Espresso Bar &rarr;</a>
+          <a class="gs-cat-link" href="menu.html#espresso-coffee">View Espresso &amp; Coffee &rarr;</a>
         </div>
       </div>
       <div class="gs-panel">
         <div class="gs-panel-inner gs-cat">
           <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7 10c1.5 1 3 1.4 5 1.4s3.5-.4 5-1.4M6 14c2 1.2 4 1.7 6 1.7s4-.5 6-1.7" stroke-linecap="round"/></svg></div>
-          <h3>Matcha &amp; Non-Coffee</h3>
+          <h3>Specialty Beverages</h3>
           <p class="gs-cat-meta">From ₱80 &middot; matcha, frappes &amp; fruit teas</p>
-          <a class="gs-cat-link" href="menu.html#non-coffee-drinks">View Matcha Series &rarr;</a>
+          <a class="gs-cat-link" href="menu.html#specialty-beverages">View Specialty Beverages &rarr;</a>
         </div>
       </div>
     </div>
@@ -547,7 +540,7 @@
         <div><strong>₱150</strong><span>Balor 150</span></div>
         <div><strong>₱300+</strong><span>Bilao (Sharing)</span></div>
       </div>
-      <div style="margin-top:28px;"><a href="menu.html#wings-snacks" class="btn btn-outline" style="border-color:rgba(242,236,223,.3); color:#f2ecdf;">See Noodle Menu</a></div>
+      <div style="margin-top:28px;"><a href="menu.html#wings-noodles-snacks" class="btn btn-outline" style="border-color:rgba(242,236,223,.3); color:#f2ecdf;">See Noodle Menu</a></div>
     </div>
     <div class="specialty-photo">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7 10c1.5 1 3 1.4 5 1.4s3.5-.4 5-1.4M6 14c2 1.2 4 1.7 6 1.7s4-.5 6-1.7" stroke-linecap="round"/></svg>

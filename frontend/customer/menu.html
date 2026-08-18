@@ -88,14 +88,14 @@
 
     <p class="menu-photo-note" style="margin-top:-40px; margin-bottom:36px;">Tip: tap <strong style="color:var(--brass);">+ Add</strong> on anything you like — your picks are waiting for you when you check out.</p>
 
-    <div class="menu-tabs">
-      <button class="tab-btn active" data-tab="rice-meals">Rice Meals & Bowls</button>
-      <button class="tab-btn" data-tab="wings-snacks">Wings, Noodles & Snacks</button>
-      <button class="tab-btn" data-tab="espresso-bar">Espresso & Coffee</button>
-      <button class="tab-btn" data-tab="non-coffee-drinks">Specialty Beverages</button>
-    </div>
+    <nav class="menu-tabs" role="tablist" aria-label="Menu categories">
+      <button class="tab-btn active" data-tab="rice-meals-bowls" role="tab" aria-selected="true" aria-controls="rice-meals-bowls" id="tab-rice">Rice Meals &amp; Bowls</button>
+      <button class="tab-btn" data-tab="wings-noodles-snacks" role="tab" aria-selected="false" aria-controls="wings-noodles-snacks" id="tab-wings">Wings, Noodles &amp; Snacks</button>
+      <button class="tab-btn" data-tab="espresso-coffee" role="tab" aria-selected="false" aria-controls="espresso-coffee" id="tab-espresso">Espresso &amp; Coffee</button>
+      <button class="tab-btn" data-tab="specialty-beverages" role="tab" aria-selected="false" aria-controls="specialty-beverages" id="tab-specialty">Specialty Beverages</button>
+    </nav>
 
-    <div class="menu-grid active" id="rice-meals">
+    <div class="menu-grid active" id="rice-meals-bowls" role="tabpanel" aria-labelledby="tab-rice">
       <div class="menu-item" data-id="pork-sisig-rice-meal" data-name="Pork Sisig Rice Meal" data-price="100">
         <div class="item-photo">
           <img src="../pics&vids/menu/pork-sisig-rice-meal.jpg" alt="Pork Sisig Rice Meal" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
@@ -338,7 +338,7 @@
       </div>
     </div>
 
-    <div class="menu-grid" id="wings-snacks">
+    <div class="menu-grid" id="wings-noodles-snacks" role="tabpanel" aria-labelledby="tab-wings">
       <div class="menu-item" data-id="dubai-chocolate-truffles" data-name="Dubai Chocolate Truffles" data-price="150">
         <div class="item-photo">
           <img src="../pics&vids/menu/dubai-chocolate-truffles.jpg" alt="Dubai Chocolate Truffles" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
@@ -693,7 +693,7 @@
       </div>
     </div>
 
-    <div class="menu-grid" id="espresso-bar">
+    <div class="menu-grid" id="espresso-coffee" role="tabpanel" aria-labelledby="tab-espresso">
       <div class="menu-item" data-id="americano-coffee" data-name="Americano Coffee" data-price="90">
         <div class="item-photo">
           <img src="../pics&vids/menu/americano-coffee.jpg" alt="Americano Coffee" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
@@ -968,7 +968,7 @@
       </div>
     </div>
 
-    <div class="menu-grid" id="non-coffee-drinks">
+    <div class="menu-grid" id="specialty-beverages" role="tabpanel" aria-labelledby="tab-specialty">
       <div class="menu-item" data-id="milky-strawberry-drink" data-name="Milky Strawberry Drink" data-price="100">
         <div class="item-photo">
           <img src="../pics&vids/menu/milky-strawberry-drink.jpg" alt="Milky Strawberry Drink" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
@@ -1338,16 +1338,49 @@
 </footer>
 
 <script>
-  const tabs = document.querySelectorAll('.tab-btn');
-  const grids = document.querySelectorAll('.menu-grid');
-  tabs.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabs.forEach(b => b.classList.remove('active'));
-      grids.forEach(g => g.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.add('active');
+  (function () {
+    const tabs = document.querySelectorAll('.tab-btn');
+    const grids = document.querySelectorAll('.menu-grid');
+
+    function activateTab(tabId) {
+      tabs.forEach(b => {
+        const isActive = b.dataset.tab === tabId;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      grids.forEach(g => g.classList.toggle('active', g.id === tabId));
+    }
+
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        activateTab(btn.dataset.tab);
+        // Update hash without jumping
+        history.replaceState(null, '', '#' + btn.dataset.tab);
+      });
     });
-  });
+
+    // On page load: read hash and activate the matching tab
+    function initFromHash() {
+      const hash = (window.location.hash || '').replace('#', '');
+      const validIds = Array.from(tabs).map(b => b.dataset.tab);
+      if (hash && validIds.includes(hash)) {
+        activateTab(hash);
+        // Smooth scroll to the top of the menu section
+        const grid = document.getElementById(hash);
+        if (grid) {
+          setTimeout(() => {
+            grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 80);
+        }
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initFromHash);
+    } else {
+      initFromHash();
+    }
+  })();
 </script>
 <script src="global.js"></script>
 <script src="cart.js"></script>

@@ -87,7 +87,28 @@
     return String(str).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
-  function addItem({ id, name, price }) {
+  function triggerButtonFeedback(btn) {
+    if (!btn || !(btn instanceof HTMLElement)) return;
+    if (btn.classList.contains('add')) {
+      const orig = btn.textContent;
+      btn.textContent = '✓';
+      btn.classList.add('just-added');
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.classList.remove('just-added');
+      }, 1200);
+    } else if (btn.classList.contains('add-btn')) {
+      const orig = btn.textContent;
+      btn.textContent = '✓ Added';
+      btn.classList.add('qc-just-added');
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.classList.remove('qc-just-added');
+      }, 1200);
+    }
+  }
+
+  function addItem({ id, name, price }, btn) {
     const items = readQuickCart();
     const key = id || slugify(name);
     const existing = items.find(i => i.id === key);
@@ -97,9 +118,8 @@
       items.push({ id: key, name, price: Number(price) || 0, qty: 1 });
     }
     writeCart(items);
-    // Keep browsing uninterrupted. The badge pulses and the toast confirms
-    // the add; the drawer opens only when the customer clicks the cart icon.
     pulseCartButton();
+    if (btn) triggerButtonFeedback(btn);
   }
 
   function changeQty(id, delta, source = 'quick') {
@@ -108,25 +128,44 @@
       const line = items.find(i => String(i.uniqueCartId ?? i.id) === String(id));
       if (!line) return;
       line.quantity += delta;
-      writeOrderTray(line.quantity <= 0 ? items.filter(i => i !== line) : items);
+      const itemName = line.name || 'Item';
+      if (line.quantity <= 0) {
+        writeOrderTray(items.filter(i => i !== line));
+        flashToast(`✓ Removed "${itemName}" from cart`);
+      } else {
+        writeOrderTray(items);
+        flashToast(delta > 0 ? `✓ Added another "${itemName}"` : `✓ Quantity updated (${line.quantity})`);
+      }
       return;
     }
     const items = readQuickCart();
     const line = items.find(i => i.id === id);
     if (!line) return;
     line.qty += delta;
-    const next = line.qty <= 0 ? items.filter(i => i.id !== id) : items;
-    writeCart(next);
+    const itemName = line.name || 'Item';
+    if (line.qty <= 0) {
+      writeCart(items.filter(i => i.id !== id));
+      flashToast(`✓ Removed "${itemName}" from cart`);
+    } else {
+      writeCart(items);
+      flashToast(delta > 0 ? `✓ Added another "${itemName}"` : `✓ Quantity updated (${line.qty})`);
+    }
   }
 
   function removeItem(id, source = 'quick') {
     if (source === 'tray') {
-      writeOrderTray(readStoredCart(ORDER_TRAY_STORAGE_KEY).filter(i =>
-        String(i.uniqueCartId ?? i.id) !== String(id)
-      ));
+      const items = readStoredCart(ORDER_TRAY_STORAGE_KEY);
+      const line = items.find(i => String(i.uniqueCartId ?? i.id) === String(id));
+      const name = line ? line.name : 'Item';
+      writeOrderTray(items.filter(i => String(i.uniqueCartId ?? i.id) !== String(id)));
+      flashToast(`✓ Removed "${name}" from cart`);
       return;
     }
-    writeCart(readQuickCart().filter(i => i.id !== id));
+    const items = readQuickCart();
+    const line = items.find(i => i.id === id);
+    const name = line ? line.name : 'Item';
+    writeCart(items.filter(i => i.id !== id));
+    flashToast(`✓ Removed "${name}" from cart`);
   }
 
   function clearCart() {
@@ -134,6 +173,7 @@
     try { sessionStorage.removeItem(ORDER_TRAY_STORAGE_KEY); } catch (err) { /* no-op */ }
     renderBadge();
     renderDrawerContents();
+    flashToast('✓ Cart cleared');
   }
 
   /* ---------------------------- Floating UI ---------------------------- */
@@ -313,15 +353,17 @@
   window.Cart = {
     add(source) {
       let payload;
+      let btn = null;
       if (source instanceof HTMLElement) {
+        btn = source;
         const card = source.closest('[data-id],[data-name]');
         if (!card) return;
         payload = { id: card.dataset.id, name: card.dataset.name, price: card.dataset.price };
       } else {
         payload = source;
       }
-      addItem(payload);
-      flashToast(`Added "${payload.name}" to your cart`);
+      addItem(payload, btn);
+      flashToast(`✓ Added "${payload.name}" to cart`);
     },
     remove: removeItem,
     changeQty,

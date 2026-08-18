@@ -58,9 +58,15 @@
 
     // --- Horizontal chapters ---
     const story = document.getElementById('orderStory');
-    if (story) horiz(story, story.querySelector('.gs-horz-track'));
+    if (story) {
+      const track = story.querySelector('.gs-horz-track');
+      if (track) horiz(story, track);
+    }
     const menu = document.getElementById('menuShowcase');
-    if (menu) horiz(menu, menu.querySelector('.gs-horz-track'));
+    if (menu) {
+      const track = menu.querySelector('.gs-horz-track');
+      if (track) horiz(menu, track);
+    }
 
     // --- Location journey (parallax layers + arrival) ---
     const journey = document.getElementById('locationJourney');
