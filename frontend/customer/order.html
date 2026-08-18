@@ -190,7 +190,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 3000;
     opacity: 0; pointer-events: none;
     transition: opacity 0.2s ease;
   }
@@ -330,6 +330,9 @@
 
   .checkout-footer { display: flex; justify-content: space-between; gap: 14px; margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--line); }
   .checkout-footer .btn { flex: 1; justify-content: center; padding: 15px; border-radius: 6px; margin-bottom: 0; }
+  .checkout-footer #btnCancelOrder { color: #c0392b; border-color: var(--line); }
+  .checkout-footer #btnCancelOrder:hover { background: #c0392b; color: #fff; border-color: #c0392b; }
+  .field-error { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: #c0392b; margin: -6px 0 0; }
   @media(max-width:480px) { .progress-label { font-size: 0.55rem; } .progress-line { max-width: 36px; } }
 </style>
 </head>
@@ -454,15 +457,26 @@
 
         <div class="form-row">
           <div>
-            <label for="orderType">Service</label>
-            <select id="orderType">
+            <label for="orderType">Service / Order Type</label>
+            <select id="orderType" onchange="onOrderTypeChange()">
+              <option value="" disabled selected>Select order type</option>
               <option value="Dine-In">Dine-In (At Table)</option>
               <option value="Takeout">Advanced Takeout Pick-up</option>
               <option value="Delivery">Delivery</option>
             </select>
           </div>
-          <div><label for="tableNoInput">Table # <span style="opacity:.55; font-weight:400;">(dine-in only)</span></label><input id="tableNoInput" type="text" placeholder="e.g. Table 4"></div>
+          <div class="order-type-dynamic">
+            <div id="tableNoField" style="display:none;">
+              <label for="tableNoInput">Table # <span style="opacity:.55; font-weight:400;">(dine-in only)</span></label>
+              <input id="tableNoInput" type="text" placeholder="e.g. Table 4">
+            </div>
+            <div id="deliveryField" style="display:none;">
+              <label for="deliveryAddress">Delivery Address</label>
+              <input id="deliveryAddress" type="text" placeholder="House No., Street, Barangay, Landmarks">
+            </div>
+          </div>
         </div>
+        <p class="field-error" id="step2Error" style="display:none;"></p>
         <div class="form-row">
           <div><label for="timeInput">Preferred Time</label><input id="timeInput" type="text" required placeholder="e.g. 2:30 PM"></div>
         </div>
@@ -500,8 +514,21 @@
     </div>
 
     <div class="checkout-footer">
+      <button type="button" class="btn btn-outline" id="btnCancelOrder" onclick="requestCancelOrder()" style="display:none;">Cancel Order</button>
       <button type="button" class="btn btn-outline" id="btnCheckoutBack" onclick="checkoutBack()">Back</button>
       <button type="button" class="btn" id="btnCheckoutNext" onclick="checkoutNext()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cancel Order Confirmation Modal -->
+<div class="modal-overlay" id="cancelOrderModal">
+  <div class="modal-card">
+    <h3>Cancel Order?</h3>
+    <p style="font-size:0.9rem; line-height:1.55; opacity:0.8; margin:0 0 22px;">Are you sure you want to cancel this order? Your current cart will be cleared.</p>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button type="button" class="btn btn-outline" style="padding:10px 16px; font-size:0.75rem; margin-bottom:0;" onclick="keepOrder()">Keep Order</button>
+      <button type="button" class="btn" style="padding:10px 16px; font-size:0.75rem; margin-bottom:0; background:#c0392b; border-color:#c0392b;" onclick="confirmCancelOrder()">Cancel Order</button>
     </div>
   </div>
 </div>
@@ -530,7 +557,7 @@
     </div>
     <div style="display:flex; gap:10px; justify-content:flex-end;">
       <button type="button" class="btn" style="background:transparent; color:var(--ink); border-color:var(--line); padding:8px 14px; font-size:0.75rem;" onclick="closeModal()">Cancel</button>
-      <button type="button" class="btn" style="padding:8px 14px; font-size:0.75rem; margin-bottom:0;" onclick="confirmAddToCart()">Add to Tray</button>
+      <button type="button" class="btn" id="modalConfirmBtn" style="padding:8px 14px; font-size:0.75rem; margin-bottom:0;" onclick="confirmAddToCart()">Add to Tray</button>
     </div>
   </div>
 </div>
@@ -881,6 +908,8 @@
     }
 
     document.getElementById('modalItemName').innerText = item.name;
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+    if (confirmBtn) confirmBtn.textContent = modalState.editingId ? 'Update Item' : 'Add to Tray';
     document.getElementById('modalItemPrice').innerText = '₱' + item.price;
     document.getElementById('modalItemComments').value = modalState.notes;
     renderModalAddons();
@@ -1076,7 +1105,7 @@
   function renderPaymentReceipt() {
     const receipt = document.getElementById('paymentReceipt');
     if (!receipt) return;
-    const service = document.getElementById('orderType')?.value || 'Dine-In';
+    const service = document.getElementById('orderType')?.value || 'Select order type';
     const payment = document.querySelector('input[name="paymentChoice"]:checked')?.value;
     const amountDue = paymentAmountDue();
     const hasDeposit = currentCartTotal >= 300;
@@ -1100,6 +1129,70 @@
       ${hasDeposit ? `<p class="receipt-payment-note">Order total: ₱${currentCartTotal}. Your remaining balance after the downpayment is ₱${Math.round((currentCartTotal - amountDue) * 100) / 100}.</p>` : '<p class="receipt-payment-note">This is the full amount for the items listed above.</p>'}`;
   }
 
+  // ---------- STEP 2: DYNAMIC ORDER-TYPE FIELDS ----------
+  window.onOrderTypeChange = function () {
+    const type = document.getElementById('orderType').value;
+    const tableField = document.getElementById('tableNoField');
+    const deliveryField = document.getElementById('deliveryField');
+    const tableInput = document.getElementById('tableNoInput');
+    const addressInput = document.getElementById('deliveryAddress');
+    if (tableField) tableField.style.display = type === 'Dine-In' ? '' : 'none';
+    if (deliveryField) deliveryField.style.display = type === 'Delivery' ? '' : 'none';
+    if (type !== 'Dine-In' && tableInput) tableInput.value = '';
+    if (type !== 'Delivery' && addressInput) addressInput.value = '';
+    if (type === 'Delivery' && addressInput && !addressInput.value.trim()) {
+      addressInput.value = sessionStorage.getItem('yo-customer-address') || '';
+    }
+    clearStep2Error();
+    renderPaymentReceipt();
+  };
+
+  function showStep2Error(message) {
+    const el = document.getElementById('step2Error');
+    if (!el) return;
+    el.textContent = message;
+    el.style.display = '';
+  }
+
+  function clearStep2Error() {
+    const el = document.getElementById('step2Error');
+    if (el) { el.style.display = 'none'; el.textContent = ''; }
+  }
+
+  // ---------- CANCEL ORDER FLOW ----------
+  window.requestCancelOrder = function () {
+    document.getElementById('cancelOrderModal').classList.add('active');
+  };
+
+  window.keepOrder = function () {
+    document.getElementById('cancelOrderModal').classList.remove('active');
+  };
+
+  window.confirmCancelOrder = function () {
+    document.getElementById('cancelOrderModal').classList.remove('active');
+    cart = [];
+    clearSavedOrderTray();
+    try { localStorage.removeItem('yo-shared-cart'); } catch (err) { /* no-op */ }
+    resetCheckoutForm();
+    updateCartDisplay();
+    closeCheckout();
+    checkoutStep = 1;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  function resetCheckoutForm() {
+    ['name', 'phone', 'timeInput', 'notes', 'tableNoInput'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    const addr = document.getElementById('deliveryAddress');
+    if (addr) addr.value = '';
+    const type = document.getElementById('orderType');
+    if (type) type.value = '';
+    onOrderTypeChange();
+    document.querySelectorAll('input[name="paymentChoice"]').forEach(r => r.checked = false);
+  }
+
   // ---------- CHECKOUT FLOW: Cart -> Your Info -> Payment ----------
   let checkoutStep = 1;
   const STEP_PANEL_IDS = ['stepCart', 'stepInfo', 'stepPayment'];
@@ -1118,8 +1211,10 @@
       document.getElementById('progLine' + n).classList.toggle('done', checkoutStep > n);
     });
     document.getElementById('checkoutStepCount').textContent = `Step ${checkoutStep} of 3`;
+    document.getElementById('btnCancelOrder').style.display = checkoutStep === 1 ? '' : 'none';
     document.getElementById('btnCheckoutBack').style.visibility = checkoutStep === 1 ? 'hidden' : 'visible';
     document.getElementById('btnCheckoutNext').textContent = checkoutStep === 3 ? 'Place Order' : 'Continue';
+    clearStep2Error();
     if (checkoutStep === 3) renderPaymentReceipt();
   }
 
@@ -1198,17 +1293,25 @@
       const name = document.getElementById('name').value.trim();
       const phone = document.getElementById('phone').value.trim();
       const timeInput = document.getElementById('timeInput').value.trim();
+      const orderType = document.getElementById('orderType').value;
+      const tableNo = document.getElementById('tableNoInput').value.trim();
+      const addrEl = document.getElementById('deliveryAddress');
+      const addr = addrEl ? addrEl.value.trim() : '';
+
+      if (!orderType) { showStep2Error('Please select an order type.'); return; }
       if (!name || !phone || !timeInput) {
-        alert("Please fill in your name, mobile number, and preferred time before continuing.");
+        showStep2Error('Please fill in your name, mobile number, and preferred time before continuing.');
         return;
       }
-      if (document.getElementById('orderType').value === 'Delivery') {
-        const addrEl = document.getElementById('deliveryAddress');
-        if (!addrEl || !addrEl.value.trim()) {
-          alert("Please enter your delivery address before continuing.");
-          return;
-        }
+      if (orderType === 'Dine-In' && !tableNo) {
+        showStep2Error('Please enter your table number before continuing.');
+        return;
       }
+      if (orderType === 'Delivery' && !addr) {
+        showStep2Error('Please enter your delivery address before continuing.');
+        return;
+      }
+      clearStep2Error();
       checkoutStep = 3;
       updateCheckoutStep();
       return;
@@ -1330,16 +1433,8 @@
         // Reset cart, fields, and return to browsing
         cart = [];
         clearSavedOrderTray();
-        document.getElementById('name').value = '';
-        document.getElementById('phone').value = '';
-        document.getElementById('tableNoInput').value = '';
-        document.getElementById('timeInput').value = '';
-        document.getElementById('notes').value = '';
-        const addrResetEl = document.getElementById('deliveryAddress');
-        if (addrResetEl) addrResetEl.value = '';
-        document.getElementById('orderType').selectedIndex = 0;
-        document.querySelectorAll('input[name="paymentChoice"]').forEach(r => r.checked = false);
         updateCartDisplay();
+        resetCheckoutForm();
         isSubmittingOrder = false;
         showOrderConfirmation(orderId, paymentChoice, confirmedPaymentAmount, requiresDeposit, order_type === 'online');
         return true;

@@ -94,6 +94,19 @@
   .account-status.ok { color: #4caf7d; }
   .account-status.info { color: var(--brass); }
 
+  .password-wrap { position: relative; }
+  .password-wrap input { padding-right: 42px; }
+  .password-toggle {
+    position: absolute; right: 2px; bottom: 10px;
+    background: none; border: none; padding: 4px; cursor: pointer;
+    color: var(--ink); opacity: 0.5; display: flex; align-items: center; justify-content: center;
+    transition: opacity .2s ease;
+  }
+  .password-toggle:hover { opacity: 1; }
+  .password-toggle .eye-closed { display: none; }
+  .password-toggle.shown .eye-open { display: none; }
+  .password-toggle.shown .eye-closed { display: block; }
+
   .switch-hint { text-align: center; font-size: 0.82rem; color: var(--ink); opacity: 0.7; margin-top: 4px; }
   .switch-hint a { color: var(--brass); font-weight: 600; cursor: pointer; }
 
@@ -158,7 +171,13 @@
         </div>
         <div>
           <label for="siPassword">Password</label>
-          <input id="siPassword" type="password" required placeholder="••••••••" autocomplete="current-password">
+          <div class="password-wrap">
+            <input id="siPassword" type="password" required placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="password-toggle" data-toggle-pw="siPassword" aria-label="Show password">
+              <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
         </div>
         <button type="submit" class="btn account-submit">Sign In</button>
         <div class="divider-row"><div class="line"></div><span>or</span><div class="line"></div></div>
@@ -216,11 +235,23 @@
           </div>
           <div>
             <label for="caPassword">Password</label>
-            <input id="caPassword" type="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+            <div class="password-wrap">
+              <input id="caPassword" type="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+              <button type="button" class="password-toggle" data-toggle-pw="caPassword" aria-label="Show password">
+                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
           </div>
           <div>
             <label for="caConfirmPassword">Confirm Password</label>
-            <input id="caConfirmPassword" type="password" required minlength="6" placeholder="Re-enter password" autocomplete="new-password">
+            <div class="password-wrap">
+              <input id="caConfirmPassword" type="password" required minlength="6" placeholder="Re-enter password" autocomplete="new-password">
+              <button type="button" class="password-toggle" data-toggle-pw="caConfirmPassword" aria-label="Show password">
+                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
           </div>
           <button type="submit" class="btn account-submit">Create Account</button>
           <div class="account-status" id="caStatus2"></div>
@@ -288,11 +319,23 @@
           <p class="field-hint" style="color:#4caf7d; margin-bottom: 8px;">✓ Email verified. Enter your new password below.</p>
           <div>
             <label for="pwNew">New Password</label>
-            <input id="pwNew" type="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+            <div class="password-wrap">
+              <input id="pwNew" type="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+              <button type="button" class="password-toggle" data-toggle-pw="pwNew" aria-label="Show password">
+                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
           </div>
           <div>
             <label for="pwConfirm">Confirm New Password</label>
-            <input id="pwConfirm" type="password" required minlength="6" placeholder="Re-enter new password" autocomplete="new-password">
+            <div class="password-wrap">
+              <input id="pwConfirm" type="password" required minlength="6" placeholder="Re-enter new password" autocomplete="new-password">
+              <button type="button" class="password-toggle" data-toggle-pw="pwConfirm" aria-label="Show password">
+                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
           </div>
           <button type="submit" class="btn account-submit">Update Password</button>
           <div class="account-status" id="pwStatus3"></div>
@@ -343,6 +386,16 @@
     syncCustomerProfile, 
     API_BASE_URL 
   } from "./firebase-init.js";
+
+  document.querySelectorAll('[data-toggle-pw]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.togglePw);
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.classList.toggle('shown', show);
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
+  });
 
   function getRedirectTarget() {
     const params = new URLSearchParams(window.location.search);
