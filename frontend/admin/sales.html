@@ -1,14 +1,14 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sales Transactions — The~Yo's Admin</title>
+<title>Sales Transactions â€” The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css">
+<link rel="stylesheet" href="admin-shell.css?v=2">
 <style>
   /* ============================================================
-     SALES TRANSACTIONS — scoped design system (gold/brown theme)
+     SALES TRANSACTIONS â€” scoped design system (gold/brown theme)
      ============================================================ */
   .stx-tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--line); margin-bottom: 22px; }
   .stx-tab {
@@ -226,7 +226,7 @@
   function orderTypeLabel(v, order = null) {
     if (v === 'online' && order?.delivery_address) return 'Delivery';
     const map = { dine_in: 'Dine-in', pickup: 'Takeout', takeout: 'Takeout', delivery: 'Delivery', online: 'Online Order' };
-    return map[v] || String(v || '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()) || '—';
+    return map[v] || String(v || '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()) || 'â€”';
   }
 
   function statusLabel(s) { return String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1); }
@@ -264,14 +264,14 @@
           <div class="stx-card">
             <div>
               <div class="label">Sales</div>
-              <div class="value" id="sumSales">₱0.00</div>
-              <div class="sub" id="sumSalesSub">—</div>
+              <div class="value" id="sumSales">â‚±0.00</div>
+              <div class="sub" id="sumSalesSub">â€”</div>
             </div>
           </div>
           <div class="stx-card">
             <div>
               <div class="label">Cost of Goods Sold</div>
-              <div class="value" id="sumCogs">₱0.00</div>
+              <div class="value" id="sumCogs">â‚±0.00</div>
               <div class="sub">ingredients + add-ons</div>
             </div>
             <span id="sumCogsRing" style="color:var(--brass-dark);">${ringSVG(0)}</span>
@@ -279,7 +279,7 @@
           <div class="stx-card">
             <div>
               <div class="label">Margin</div>
-              <div class="value green" id="sumMargin">₱0.00</div>
+              <div class="value green" id="sumMargin">â‚±0.00</div>
               <div class="sub" id="sumMarginSub">gross profit</div>
             </div>
             <span id="sumMarginRing" style="color:var(--success);">${ringSVG(0)}</span>
@@ -304,7 +304,7 @@
           <div class="stx-field" id="customRangeWrap" style="display:none;">
             <label>Custom Range</label>
             <div class="stx-range">
-              <input type="date" id="fromDate"><span style="opacity:0.5;">—</span><input type="date" id="toDate">
+              <input type="date" id="fromDate"><span style="opacity:0.5;">â€”</span><input type="date" id="toDate">
             </div>
           </div>
         </div>
@@ -320,7 +320,7 @@
             <div class="stx-toolbar">
               <div class="stx-filters">
                 <span class="fb">Filter by</span>
-                <input type="search" id="filterSearch" placeholder="Customer, cashier or order #…">
+                <input type="search" id="filterSearch" placeholder="Customer, cashier or order #â€¦">
                 <select id="filterOrderType">
                   <option value="all">All Order Types</option>
                   <option value="dine_in">Dine-in</option>
@@ -375,13 +375,13 @@
               </div>
             </div>
             <div class="stx-table-wrap" id="ordersTableWrap">
-              <div class="admin-loading">Loading transactions…</div>
+              <div class="admin-loading">Loading transactionsâ€¦</div>
             </div>
           </div>
 
           <div id="stxSub-daily" style="display:none;">
             <div class="stx-table-wrap" id="dailyWrap">
-              <div class="admin-loading">Loading daily sales…</div>
+              <div class="admin-loading">Loading daily salesâ€¦</div>
             </div>
           </div>
 
@@ -406,7 +406,7 @@
             <button class="stx-subtab" data-rtab="ordertypes">Order Types</button>
           </div>
           <div class="stx-table-wrap" id="reportWrap">
-            <div class="admin-loading">Loading reports…</div>
+            <div class="admin-loading">Loading reportsâ€¦</div>
           </div>` : `
           <div class="stx-table-wrap">
             <div class="stx-empty">You need the "Access Reports" permission to view sales reports. Ask an Admin to grant it.</div>
@@ -417,7 +417,7 @@
       <div class="modal-backdrop" id="orderModal">
         <div class="modal-box order-modal-box">
           <h3 id="orderModalTitle">Order Details</h3>
-          <div id="orderModalBody"><div class="admin-loading">Loading…</div></div>
+          <div id="orderModalBody"><div class="admin-loading">Loadingâ€¦</div></div>
           <div class="modal-close-row">
             <button class="btn btn-outline" id="orderModalCloseBtn">Close</button>
           </div>
@@ -622,7 +622,7 @@
       const marginPct = Number(s.margin) || 0;
 
       document.getElementById('sumSales').textContent = peso(sales);
-      document.getElementById('sumSalesSub').textContent = `${s.order_count} orders · avg ${peso(s.aov)}`;
+      document.getElementById('sumSalesSub').textContent = `${s.order_count} orders Â· avg ${peso(s.aov)}`;
       document.getElementById('sumCogs').textContent = peso(cogs);
       document.getElementById('sumCogsRing').innerHTML = ringSVG(sales > 0 ? (cogs / sales) * 100 : 0);
       document.getElementById('sumMargin').textContent = peso(profit);
@@ -638,7 +638,7 @@
      ================================================================ */
   async function loadOrders(silent = false) {
     const wrap = document.getElementById('ordersTableWrap');
-    if (!silent) wrap.innerHTML = `<div class="admin-loading">Loading transactions…</div>`;
+    if (!silent) wrap.innerHTML = `<div class="admin-loading">Loading transactionsâ€¦</div>`;
     try {
       // The report period is the only server-side boundary; everything else
       // (order-type/status/search) is filtered client-side so switching
@@ -652,7 +652,7 @@
       // A silent background refresh failing (e.g. a dropped connection)
       // shouldn't blow away the table the person is currently looking at -
       // just leave it as-is and try again on the next tick.
-      if (!silent) wrap.innerHTML = `<div class="stx-empty">⚠ ${err.message}</div>`;
+      if (!silent) wrap.innerHTML = `<div class="stx-empty">âš  ${err.message}</div>`;
     }
   }
 
@@ -762,7 +762,7 @@
     const isOnline = o.source === 'online';
     const needsAction = isOnline && o.status === 'pending';
     const subtotal = (Number(o.total_amount) || 0) - (Number(o.delivery_fee) || 0);
-    const cashier = isOnline ? '—' : escapeHtml(o.staff_name || 'Staff');
+    const cashier = isOnline ? 'â€”' : escapeHtml(o.staff_name || 'Staff');
 
     return `
       <tr class="${needsAction ? 'needs-action' : ''}">
@@ -771,14 +771,14 @@
         <td>
           ${isOnline
             ? `<span class="source-pill source-online">Online</span>`
-            : `<span class="source-pill source-pos">POS · ${cashier}</span>`}
+            : `<span class="source-pill source-pos">POS Â· ${cashier}</span>`}
           <div style="font-size:0.74rem; opacity:0.6; margin-top:2px;">${orderTypeLabel(o.order_type, o)}</div>
         </td>
-        <td>${escapeHtml(o.customer_name) || '—'}</td>
+        <td>${escapeHtml(o.customer_name) || 'â€”'}</td>
         <td>${cashier}</td>
         <td class="right">${Number(o.item_count) || 0}</td>
         <td class="right">${peso(subtotal)}</td>
-        <td>${escapeHtml(PAYMENT_LABELS[o.payment_method] || o.payment_method || '—')}</td>
+        <td>${escapeHtml(PAYMENT_LABELS[o.payment_method] || o.payment_method || 'â€”')}</td>
         <td class="right"><b>${peso(o.total_amount)}</b></td>
         <td><span class="status-pill status-${o.status}">${statusLabel(o.status)}</span></td>
         <td><div class="row-actions">${actionButtons(o)}</div></td>
@@ -824,12 +824,12 @@
   }
 
   /* ================================================================
-     EXPORT (currently filtered rows → CSV)
+     EXPORT (currently filtered rows â†’ CSV)
      ================================================================ */
   function exportCSV() {
     const rows = sortRows(getFilteredRows());
     if (rows.length === 0) {
-      alert('Nothing to export — no transactions match the current filters.');
+      alert('Nothing to export â€” no transactions match the current filters.');
       return;
     }
     const cols = [
@@ -869,7 +869,7 @@
     const modal = document.getElementById('orderModal');
     modal.classList.add('active');
     document.getElementById('orderModalTitle').textContent = `Order #${orderId}`;
-    document.getElementById('orderModalBody').innerHTML = `<div class="admin-loading">Loading…</div>`;
+    document.getElementById('orderModalBody').innerHTML = `<div class="admin-loading">Loadingâ€¦</div>`;
 
     try {
       const res = await adminFetch(`/api/admin/sales/orders/${orderId}`);
@@ -877,15 +877,15 @@
       if (!res.ok) throw new Error(data.error || 'Could not load order.');
       renderOrderDetail(data.order);
     } catch (err) {
-      document.getElementById('orderModalBody').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+      document.getElementById('orderModalBody').innerHTML = `<div class="admin-error">âš  ${err.message}</div>`;
     }
   }
 
   function renderOrderDetail(o) {
-    const source = o.source === 'online' ? 'Online (Customer)' : `POS · ${escapeHtml(o.staff_name || 'Staff')}`;
+    const source = o.source === 'online' ? 'Online (Customer)' : `POS Â· ${escapeHtml(o.staff_name || 'Staff')}`;
     const payment = o.payments && o.payments.length
-      ? o.payments.map(p => `${escapeHtml(PAYMENT_LABELS[p.payment_method] || p.payment_method)} · ${peso(p.amount)} · ${escapeHtml(p.status)}`).join('<br>')
-      : '—';
+      ? o.payments.map(p => `${escapeHtml(PAYMENT_LABELS[p.payment_method] || p.payment_method)} Â· ${peso(p.amount)} Â· ${escapeHtml(p.status)}`).join('<br>')
+      : 'â€”';
 
     // The order's own order_type may still say "online" (the source) rather
     // than the actual fulfillment method, so fall back to whether we have
@@ -900,9 +900,9 @@
           Delivery Details
         </div>
         <div class="om-meta">
-          <div class="row"><span>Mobile Number</span><b>${escapeHtml(o.customer_mobile || o.mobile_number || '—')}</b></div>
-          <div class="row"><span>Requested Time</span><b>${escapeHtml(o.requested_time || o.table_time || '—')}</b></div>
-          <div class="row" style="grid-column:1/-1;"><span>Delivery Address</span><b>${escapeHtml(o.delivery_address || '—')}</b></div>
+          <div class="row"><span>Mobile Number</span><b>${escapeHtml(o.customer_mobile || o.mobile_number || 'â€”')}</b></div>
+          <div class="row"><span>Requested Time</span><b>${escapeHtml(o.requested_time || o.table_time || 'â€”')}</b></div>
+          <div class="row" style="grid-column:1/-1;"><span>Delivery Address</span><b>${escapeHtml(o.delivery_address || 'â€”')}</b></div>
           ${o.special_instructions ? `<div class="row" style="grid-column:1/-1;"><span>Special Prep Instructions</span><b>${escapeHtml(o.special_instructions)}</b></div>` : ''}
         </div>
       </div>` : '';
@@ -914,7 +914,7 @@
           ${it.notes ? `<div style="font-size:0.72rem; opacity:0.55;">${escapeHtml(it.notes)}</div>` : ''}
           ${(it.add_ons || []).length ? `
             <div class="addon-line-list" style="font-size:0.76rem;">
-              + ${it.add_ons.map(a => `${escapeHtml(a.name)} ×${a.quantity} (${peso(a.subtotal)})`).join(', ')}
+              + ${it.add_ons.map(a => `${escapeHtml(a.name)} Ã—${a.quantity} (${peso(a.subtotal)})`).join(', ')}
             </div>` : ''}
         </td>
         <td class="right">${peso(it.price)}</td>
@@ -925,7 +925,7 @@
     const body = document.getElementById('orderModalBody');
     body.innerHTML = `
       <div class="om-meta">
-        <div class="row"><span>Customer</span><b>${escapeHtml(o.customer_name) || '—'}</b></div>
+        <div class="row"><span>Customer</span><b>${escapeHtml(o.customer_name) || 'â€”'}</b></div>
         <div class="row"><span>Source</span><b>${source}</b></div>
         <div class="row"><span>Order Type</span><b>${typeLabel}</b></div>
         <div class="row"><span>Status</span><b>${statusLabel(o.status)}</b></div>
@@ -993,7 +993,7 @@
   }
 
   /* ================================================================
-     DELIVERY FEE — inline edit inside the order detail modal
+     DELIVERY FEE â€” inline edit inside the order detail modal
      ================================================================ */
   async function saveDeliveryFee(orderId) {
     const errEl = document.getElementById('omFeeError');
@@ -1008,7 +1008,7 @@
 
     const saveBtn = document.getElementById('omFeeSaveBtn');
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving…';
+    saveBtn.textContent = 'Savingâ€¦';
 
     try {
       const res = await adminFetch(`/api/admin/sales/orders/${orderId}/delivery-fee`, {
@@ -1055,7 +1055,7 @@
       wrap.innerHTML = `<div class="stx-empty">You need the "Access Reports" permission to view daily sales.</div>`;
       return;
     }
-    wrap.innerHTML = `<div class="admin-loading">Loading daily sales…</div>`;
+    wrap.innerHTML = `<div class="admin-loading">Loading daily salesâ€¦</div>`;
     try {
       const res = await adminFetch(`/api/admin/sales/daily?${periodQuery()}`);
       const data = await res.json();
@@ -1065,7 +1065,7 @@
         button.addEventListener('click', () => openDailyOrders(button.dataset.date));
       });
     } catch (err) {
-      wrap.innerHTML = `<div class="stx-empty">⚠ ${err.message}</div>`;
+      wrap.innerHTML = `<div class="stx-empty">âš  ${err.message}</div>`;
     }
   }
 
@@ -1097,9 +1097,9 @@
   async function openDailyOrders(date) {
     const modal = document.getElementById('orderModal');
     modal.classList.add('active');
-    document.getElementById('orderModalTitle').textContent = `Orders — ${date}`;
+    document.getElementById('orderModalTitle').textContent = `Orders â€” ${date}`;
     const body = document.getElementById('orderModalBody');
-    body.innerHTML = `<div class="admin-loading">Loading orders…</div>`;
+    body.innerHTML = `<div class="admin-loading">Loading ordersâ€¦</div>`;
     try {
       const res = await adminFetch(`/api/admin/sales/orders?from=${encodeURIComponent(date)}&to=${encodeURIComponent(date)}`);
       const data = await res.json();
@@ -1110,7 +1110,7 @@
         <table class="om-items"><thead><tr><th>Order</th><th>Customer</th><th>Type</th><th class="right">Total</th><th></th></tr></thead>
         <tbody>${orders.map(order => `<tr>
           <td>#${order.id}<div style="font-size:.7rem;opacity:.55;">${formatDate(order.datetime_ordered)}</div></td>
-          <td>${escapeHtml(order.customer_name || '—')}</td>
+          <td>${escapeHtml(order.customer_name || 'â€”')}</td>
           <td>${escapeHtml(orderTypeLabel(order.order_type))}</td>
           <td class="right">${peso(order.total_amount)}</td>
           <td class="right"><button type="button" class="view-daily-order-detail" data-id="${order.id}">View</button></td>
@@ -1119,7 +1119,7 @@
         button.addEventListener('click', () => openOrderModal(button.dataset.id));
       });
     } catch (err) {
-      body.innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+      body.innerHTML = `<div class="admin-error">âš  ${err.message}</div>`;
     }
   }
 
@@ -1135,7 +1135,7 @@
     if (!canReports) return;
     const tab = activeReportTab();
     const wrap = document.getElementById('reportWrap');
-    wrap.innerHTML = `<div class="admin-loading">Loading…</div>`;
+    wrap.innerHTML = `<div class="admin-loading">Loadingâ€¦</div>`;
     try {
       const q = periodQuery();
       let html = '';
@@ -1167,7 +1167,7 @@
       }
       wrap.innerHTML = html;
     } catch (err) {
-      wrap.innerHTML = `<div class="stx-empty">⚠ ${err.message}</div>`;
+      wrap.innerHTML = `<div class="stx-empty">âš  ${err.message}</div>`;
     }
   }
 
@@ -1209,7 +1209,7 @@
           ${products.map(p => `
             <tr>
               <td>${escapeHtml(p.product_name || `Menu #${p.menu_id}`)}</td>
-              <td>${escapeHtml(p.category_name || '—')}</td>
+              <td>${escapeHtml(p.category_name || 'â€”')}</td>
               <td>${p.quantity_sold}</td>
               <td class="right">${peso(p.revenue)}</td>
               <td class="right">${peso(p.addon_revenue)}</td>

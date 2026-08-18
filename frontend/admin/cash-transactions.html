@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cash Transactions — The~Yo's Admin</title>
+<title>Cash Transactions â€” The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css">
+<link rel="stylesheet" href="admin-shell.css?v=2">
 </head>
 <body>
 
@@ -33,16 +33,16 @@
         </div>
       </div>
       <div class="stat-grid" id="txSummary">
-        <div class="stat-card"><div class="label">Cash In</div><div class="value success">₱0</div></div>
-        <div class="stat-card"><div class="label">Cash Out</div><div class="value danger">₱0</div></div>
-        <div class="stat-card"><div class="label">Net Movement</div><div class="value brass">₱0</div></div>
+        <div class="stat-card"><div class="label">Cash In</div><div class="value success">â‚±0</div></div>
+        <div class="stat-card"><div class="label">Cash Out</div><div class="value danger">â‚±0</div></div>
+        <div class="stat-card"><div class="label">Net Movement</div><div class="value brass">â‚±0</div></div>
       </div>
       <div class="admin-panel">
         <div class="admin-panel-head">
           <h3>Transaction History</h3>
           <button class="btn small" id="newTxBtn">+ Record Transaction</button>
         </div>
-        <div class="admin-panel-body" style="padding:0;" id="txWrap"><div class="admin-loading">Loading…</div></div>
+        <div class="admin-panel-body" style="padding:0;" id="txWrap"><div class="admin-loading">Loadingâ€¦</div></div>
       </div>
 
       <div class="modal-backdrop" id="txModal">
@@ -61,7 +61,7 @@
               </select>
             </div>
             <div class="form-field">
-              <label>Amount (₱)</label><input type="number" step="0.01" id="txAmount">
+              <label>Amount (â‚±)</label><input type="number" step="0.01" id="txAmount">
             </div>
             <div class="form-field" style="grid-column:1/-1;">
               <label>Category (optional)</label><input type="text" id="txCategory" placeholder="e.g. Supplies, Utilities, Owner Draw">
@@ -115,16 +115,16 @@
               <tr>
                 <td>${escapeHtml(t.account_name)}</td>
                 <td><span class="pill ${t.transaction_type === 'in' ? 'pill-success' : 'pill-danger'}">${t.transaction_type === 'in' ? 'Cash In' : 'Cash Out'}</span></td>
-                <td>${escapeHtml(t.category || '—')}</td>
+                <td>${escapeHtml(t.category || 'â€”')}</td>
                 <td style="font-family:'Space Mono'; font-weight:700; color:${t.transaction_type === 'in' ? 'var(--success)' : 'var(--danger)'};">${t.transaction_type === 'in' ? '+' : '-'}${peso(t.amount)}</td>
-                <td>${t.staff_name || '—'}</td>
+                <td>${t.staff_name || 'â€”'}</td>
                 <td style="font-size:0.78rem; opacity:0.7;">${formatDate(t.transaction_date)}</td>
-                <td style="font-size:0.8rem; opacity:0.75; max-width:200px;">${escapeHtml(t.description || '—')}</td>
+                <td style="font-size:0.8rem; opacity:0.75; max-width:200px;">${escapeHtml(t.description || 'â€”')}</td>
               </tr>`).join('')}</tbody>
           </table>`
         : `<div class="panel-empty" style="padding:20px;">No transactions recorded yet.</div>`;
     } catch (err) {
-      document.getElementById('txWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+      document.getElementById('txWrap').innerHTML = `<div class="admin-error">âš  ${err.message}</div>`;
     }
   }
 
@@ -137,7 +137,7 @@
     document.getElementById('txSummary').innerHTML = `
       <div class="stat-card"><div class="label">Cash In</div><div class="value success">${peso(cashIn)}</div></div>
       <div class="stat-card"><div class="label">Cash Out</div><div class="value danger">${peso(cashOut)}</div></div>
-      <div class="stat-card"><div class="label">Net Movement</div><div class="value ${net < 0 ? 'danger' : 'brass'}">${net < 0 ? '−' : ''}${peso(Math.abs(net))}</div></div>
+      <div class="stat-card"><div class="label">Net Movement</div><div class="value ${net < 0 ? 'danger' : 'brass'}">${net < 0 ? 'âˆ’' : ''}${peso(Math.abs(net))}</div></div>
     `;
   }
 

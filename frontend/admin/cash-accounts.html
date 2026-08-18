@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cash Accounts — The~Yo's Admin</title>
+<title>Cash Accounts â€” The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css">
+<link rel="stylesheet" href="admin-shell.css?v=2">
 </head>
 <body>
 
@@ -24,16 +24,16 @@
     const content = document.getElementById('adminContent');
     content.innerHTML = `
       <div class="stat-grid" id="accountSummary">
-        <div class="stat-card"><div class="label">Available Funds</div><div class="value brass">₱0</div></div>
-        <div class="stat-card"><div class="label">Cash on Hand</div><div class="value success">₱0</div></div>
-        <div class="stat-card"><div class="label">Bank & E-Wallet</div><div class="value">₱0</div></div>
+        <div class="stat-card"><div class="label">Available Funds</div><div class="value brass">â‚±0</div></div>
+        <div class="stat-card"><div class="label">Cash on Hand</div><div class="value success">â‚±0</div></div>
+        <div class="stat-card"><div class="label">Bank & E-Wallet</div><div class="value">â‚±0</div></div>
       </div>
       <div class="admin-panel">
         <div class="admin-panel-head">
           <h3>Accounts</h3>
           <button class="btn small" id="newAcctBtn">+ New Account</button>
         </div>
-        <div class="admin-panel-body" style="padding:0;" id="acctWrap"><div class="admin-loading">Loading…</div></div>
+        <div class="admin-panel-body" style="padding:0;" id="acctWrap"><div class="admin-loading">Loadingâ€¦</div></div>
       </div>
 
       <div class="modal-backdrop" id="acctModal">
@@ -83,7 +83,7 @@
       accounts = data.accounts || [];
       render();
     } catch (err) {
-      document.getElementById('acctWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+      document.getElementById('acctWrap').innerHTML = `<div class="admin-error">âš  ${err.message}</div>`;
     }
   }
 
@@ -128,7 +128,7 @@
 
   function openModal(id) {
     const acct = id ? accounts.find(a => a.id == id) : null;
-    document.getElementById('acctModalTitle').textContent = acct ? `Edit — ${acct.name}` : 'New Cash Account';
+    document.getElementById('acctModalTitle').textContent = acct ? `Edit â€” ${acct.name}` : 'New Cash Account';
     document.getElementById('acctId').value = id || '';
     document.getElementById('acctName').value = acct?.name || '';
     document.getElementById('acctType').value = acct?.account_type || 'cash';

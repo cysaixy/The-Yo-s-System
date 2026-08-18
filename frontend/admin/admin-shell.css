@@ -106,7 +106,7 @@ body {
 .admin-nav-link .lock-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; display: block; }
 
 /* ---------- Header + content ---------- */
-.admin-main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition:margin-left .2s ease; }
+.admin-main { margin-left: var(--sidebar-w); flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 100vh; transition:margin-left .2s ease; }
 .admin-shell.sidebar-collapsed .admin-sidebar { width:var(--sidebar-collapsed-w); padding-left:10px; padding-right:10px; overflow:visible; }
 .admin-shell.sidebar-collapsed .admin-main { margin-left:var(--sidebar-collapsed-w); }
 .admin-shell.sidebar-collapsed .brand-label,
@@ -337,6 +337,20 @@ body {
   .form-grid { grid-template-columns: 1fr; }
   .filter-bar { gap: 10px; }
   .modal-box { padding: 20px; }
+
+  /* The notifications dropdown is anchored to the bell button, which sits
+     far from the left edge of the screen - on a phone its fixed 370px width
+     hangs off the left side and hides the order details. Pin it to the
+     viewport below the header instead so the full panel is always visible. */
+  .online-order-panel {
+    position: fixed;
+    top: 70px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: 370px;
+    margin-left: auto;
+  }
 }
 
 @media (max-width: 480px) {
@@ -344,7 +358,12 @@ body {
   .admin-user .avatar { width: 32px; height: 32px; font-size: 0.85rem; }
   .admin-notification-btn { width: 34px; height: 34px; }
   .admin-user button.logout-btn { font-size: 0.62rem; padding: 7px 9px; }
-  .stat-grid { grid-template-columns: 1fr 1fr; }
+  /* `1fr` tracks won't shrink below a stat card's longest peso value, which
+     blows the grid past the viewport on small phones. Let the tracks and
+     cards shrink and allow long values to wrap instead. */
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .stat-card { min-width: 0; padding: 14px 12px; }
+  .stat-card .value { font-size: 1.15rem; overflow-wrap: anywhere; }
   .admin-panel-head { padding: 14px 16px; }
   .admin-body { padding: 14px 10px; }
 }
