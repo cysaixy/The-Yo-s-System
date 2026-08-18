@@ -382,6 +382,45 @@ export async function updateOrder(req, res, next) {
   }
 }
 
+// Lets a customer cancel their own order, but ONLY while it is still pending.
+export async function cancelOrder(req, res, next) {
+  try {
+    const customer_id = req.user?.customer?.id;
+    const { id } = req.params;
+    if (!customer_id) {
+      return res.status(400).json({
+        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
+      });
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE orders
+       SET status = 'cancelled'
+       WHERE id = $1 AND customer_id = $2 AND status = 'pending'
+       RETURNING id, customer_id, reservation_id, order_type, status, total_amount, delivery_fee,
+                 delivery_address, notes, customer_name, customer_phone, table_time, payment_method, datetime_ordered`,
+      [id, customer_id]
+    );
+
+    if (!rows[0]) {
+      const check = await pool.query(
+        `SELECT status FROM orders WHERE id = $1 AND customer_id = $2`,
+        [id, customer_id]
+      );
+      if (!check.rows[0]) {
+        return res.status(404).json({ error: "Order not found." });
+      }
+      return res.status(409).json({
+        error: `This order can't be cancelled because it is already ${check.rows[0].status}.`,
+      });
+    }
+
+    res.json({ message: "Order cancelled successfully.", order: rows[0] });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function createPayment(req, res, next) {
   try {
     const { id: order_id } = req.params;

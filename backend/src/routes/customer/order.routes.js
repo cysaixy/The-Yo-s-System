@@ -7,6 +7,7 @@ import {
   getOrder,
   getCustomerOrders,
   updateOrder,
+  cancelOrder,
   createPayment,
   getPayment,
 } from "../../controllers/customer/order.controller.js";
@@ -24,6 +25,9 @@ router.get("/:id", globalLimiter, verifyFirebaseToken, getOrder);
 
 // Edit checkout details while the order is still pending
 router.patch("/:id", globalLimiter, verifyFirebaseToken, updateOrder);
+
+// Cancel an order while it is still pending
+router.post("/:id/cancel", globalLimiter, verifyFirebaseToken, cancelOrder);
 
 router.post("/:id/payment", globalLimiter, verifyFirebaseToken, createPayment);
 router.get("/:id/payment", globalLimiter, verifyFirebaseToken, getPayment);

@@ -731,6 +731,7 @@
       'auth/user-not-found': 'No account found with that email.',
       'auth/weak-password': 'Password should be at least 6 characters.',
       'auth/popup-closed-by-user': 'Google sign-in was closed before finishing.',
+      'auth/unauthorized-domain': 'This domain/host is not authorized in Firebase. Add your current host (e.g. localhost, 127.0.0.1, or your domain) to Firebase Console > Authentication > Settings > Authorized domains.',
     };
     return map[err.code] || ('Error: ' + err.message);
   }
