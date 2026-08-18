@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Budget Planner â€” The~Yo's Admin</title>
+<title>Budget Planner — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=2">
+<link rel="stylesheet" href="admin-shell.css?v=3">
 <style>
   .budget-bar-track { background: var(--stone); border-radius: 20px; height: 8px; overflow: hidden; width: 140px; }
   .budget-bar-fill { height: 100%; background: var(--brass); }
@@ -41,7 +41,7 @@
           <h3>Monthly Budgets</h3>
           <button class="btn small" id="newBudgetBtn">+ New Budget Line</button>
         </div>
-        <div class="admin-panel-body" style="padding:0;" id="budgetWrap"><div class="admin-loading">Loadingâ€¦</div></div>
+        <div class="admin-panel-body" style="padding:0;" id="budgetWrap"><div class="admin-loading">Loading…</div></div>
       </div>
 
       <div class="modal-backdrop" id="budgetModal">
@@ -55,7 +55,7 @@
               <label>Month</label><input type="month" id="bMonth" value="${currentMonthValue()}">
             </div>
             <div class="form-field">
-              <label>Planned Amount (â‚±)</label><input type="number" step="0.01" id="bAmount">
+              <label>Planned Amount (₱)</label><input type="number" step="0.01" id="bAmount">
             </div>
             <div class="form-field" style="grid-column:1/-1;">
               <label>Notes (optional)</label><textarea id="bNotes"></textarea>
@@ -83,14 +83,14 @@
   async function load() {
     const month = document.getElementById('filterMonth').value; // "YYYY-MM"
     const wrap = document.getElementById('budgetWrap');
-    wrap.innerHTML = `<div class="admin-loading">Loadingâ€¦</div>`;
+    wrap.innerHTML = `<div class="admin-loading">Loading…</div>`;
     try {
       const res = await adminFetch(`/api/admin/budgets?month=${month}-01`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not load budgets.');
       render(data.budgets || []);
     } catch (err) {
-      wrap.innerHTML = `<div class="admin-error">âš  ${err.message}</div>`;
+      wrap.innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
     }
   }
 
@@ -118,10 +118,10 @@
               <td>${escapeHtml(b.category)}</td>
               <td>${peso(b.planned_amount)}</td>
               <td style="color:${over ? 'var(--danger)' : 'var(--ink)'}; font-weight:${over ? '700' : '400'};">${peso(b.actual_spent)}</td>
-              <td style="color:${over ? 'var(--danger)' : 'var(--success)'}; font-weight:700;">${over ? 'âˆ’' : ''}${peso(Math.abs(remaining))}</td>
+              <td style="color:${over ? 'var(--danger)' : 'var(--success)'}; font-weight:700;">${over ? '−' : ''}${peso(Math.abs(remaining))}</td>
               <td><span class="pill ${status.className}">${status.label}</span></td>
               <td><div class="budget-bar-track"><div class="budget-bar-fill${over ? ' over' : ''}" style="width:${pct}%;"></div></div></td>
-              <td style="font-size:0.8rem; opacity:0.75; max-width:180px;">${escapeHtml(b.notes || 'â€”')}</td>
+              <td style="font-size:0.8rem; opacity:0.75; max-width:180px;">${escapeHtml(b.notes || '—')}</td>
               <td><div class="row-actions"><button class="danger del-budget-btn" data-id="${b.id}">Delete</button></div></td>
             </tr>`;
           }).join('')}

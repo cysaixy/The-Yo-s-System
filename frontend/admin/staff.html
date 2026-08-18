@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Staff â€” The~Yo's Admin</title>
+<title>Staff — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=2">
+<link rel="stylesheet" href="admin-shell.css?v=3">
 <style>
   .perm-check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 10px; }
 
@@ -55,7 +55,7 @@
           <h3>Staff Accounts</h3>
           <button class="btn small" id="newStaffBtn">+ New Staff</button>
         </div>
-        <div class="admin-panel-body" style="padding:0;" id="staffWrap"><div class="admin-loading">Loadingâ€¦</div></div>
+        <div class="admin-panel-body" style="padding:0;" id="staffWrap"><div class="admin-loading">Loading…</div></div>
       </div>
 
       <div class="modal-backdrop" id="staffModal">
@@ -129,7 +129,7 @@
       staffList = data.staff || [];
       render();
     } catch (err) {
-      document.getElementById('staffWrap').innerHTML = `<div class="admin-error">âš  ${err.message}</div>`;
+      document.getElementById('staffWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
     }
   }
 
@@ -165,7 +165,7 @@
 
   function openStaffModal(id) {
     const staff = id ? staffList.find(s => s.id == id) : null;
-    document.getElementById('staffModalTitle').textContent = staff ? `Edit â€” ${staff.name}` : 'New Staff';
+    document.getElementById('staffModalTitle').textContent = staff ? `Edit — ${staff.name}` : 'New Staff';
     document.getElementById('staffId').value = id || '';
     document.getElementById('staffName').value = staff?.name || '';
     document.getElementById('staffEmail').value = staff?.email || '';

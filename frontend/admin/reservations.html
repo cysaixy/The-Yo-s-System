@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reservations â€” The~Yo's Admin</title>
+<title>Reservations — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=2">
+<link rel="stylesheet" href="admin-shell.css?v=3">
 <style>
   .res-counts { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
   .res-count {
@@ -102,7 +102,7 @@
     content.innerHTML = `
       <div class="filter-bar">
         <div><label>Search</label>
-          <input type="text" id="filterQ" placeholder="Name, email, table, notesâ€¦" style="min-width:220px;">
+          <input type="text" id="filterQ" placeholder="Name, email, table, notes…" style="min-width:220px;">
         </div>
         <div><label>Status</label>
           <select id="filterStatus">
@@ -118,7 +118,7 @@
       </div>
       <div class="res-counts" id="resCounts"></div>
       <div class="admin-panel">
-        <div class="admin-panel-body" style="padding:0;" id="resWrap"><div class="admin-loading">Loading reservationsâ€¦</div></div>
+        <div class="admin-panel-body" style="padding:0;" id="resWrap"><div class="admin-loading">Loading reservations…</div></div>
       </div>
     `;
     ['filterQ', 'filterStatus', 'filterFrom', 'filterTo'].forEach(id => {
@@ -141,7 +141,7 @@
       tables = tableJson.tables || [];
       render();
     } catch (err) {
-      document.getElementById('resWrap').innerHTML = `<div class="admin-error">âš  ${escapeHtml(err.message)}</div>`;
+      document.getElementById('resWrap').innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
     }
   }
 
@@ -199,10 +199,10 @@
         </tbody>
       </table>
       <div class="pager">
-        <span class="pager-info">${rows.length} result${rows.length === 1 ? '' : 's'} Â· Page ${page} of ${pageCount}</span>
+        <span class="pager-info">${rows.length} result${rows.length === 1 ? '' : 's'} · Page ${page} of ${pageCount}</span>
         <div class="row-actions">
-          <button type="button" ${page <= 1 ? 'disabled' : ''} data-nav="prev">â€¹ Prev</button>
-          <button type="button" ${page >= pageCount ? 'disabled' : ''} data-nav="next">Next â€º</button>
+          <button type="button" ${page <= 1 ? 'disabled' : ''} data-nav="prev">‹ Prev</button>
+          <button type="button" ${page >= pageCount ? 'disabled' : ''} data-nav="next">Next ›</button>
         </div>
       </div>
     `;
@@ -238,13 +238,13 @@
             ${r.customer_phone ? `<span class="sub">${escapeHtml(r.customer_phone)}</span>` : ''}
           </div>
         </td>
-        <td>${r.table_no ? escapeHtml(r.table_no) : '<span style="opacity:0.4;">â€”</span>'}</td>
-        <td>${r.reservation_date ? fmtDate(r.reservation_date) : 'â€”'}${tag}</td>
-        <td>${r.reservation_time ? String(r.reservation_time).slice(0, 5) : 'â€”'}</td>
+        <td>${r.table_no ? escapeHtml(r.table_no) : '<span style="opacity:0.4;">—</span>'}</td>
+        <td>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}${tag}</td>
+        <td>${r.reservation_time ? String(r.reservation_time).slice(0, 5) : '—'}</td>
         <td>${r.guests}</td>
         <td title="${formatDate(r.datetime_reserved)}" style="white-space:nowrap;">${formatDate(r.datetime_reserved, { dateStyle: 'medium', timeStyle: 'short' })}</td>
         <td><span class="pill ${STATUS_PILL[r.status] || 'pill-neutral'}">${escapeHtml(r.status)}</span></td>
-        <td><div class="notes-cell${notes ? '' : ' empty'}" title="${escapeHtml(notes)}">${notes ? escapeHtml(notes) : 'â€”'}</div></td>
+        <td><div class="notes-cell${notes ? '' : ' empty'}" title="${escapeHtml(notes)}">${notes ? escapeHtml(notes) : '—'}</div></td>
         <td><div class="row-actions">${actionButtons(r)}</div></td>
       </tr>
     `;
@@ -269,7 +269,7 @@
     if (!r) return;
     const options = tables.map(t => {
       const selected = r.table_no === t.table_no ? ' selected' : '';
-      return `<option value="${escapeHtml(t.table_no)}" data-cap="${t.capacity}"${selected}>${escapeHtml(t.table_no)} â€” seats ${t.capacity}</option>`;
+      return `<option value="${escapeHtml(t.table_no)}" data-cap="${t.capacity}"${selected}>${escapeHtml(t.table_no)} — seats ${t.capacity}</option>`;
     }).join('') || `<option value="">No active tables</option>`;
 
     const backdrop = document.createElement('div');
@@ -279,7 +279,7 @@
         <h3>Confirm reservation</h3>
         <div class="detail-list">
           <dt>Customer</dt><dd>${escapeHtml(r.customer_name)}</dd>
-          <dt>Date</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : 'â€”'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dt>Date</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
           <dt>Guests</dt><dd>${r.guests}</dd>
         </div>
         <div class="form-field" style="margin-top:16px;">
@@ -305,7 +305,7 @@
         capEl.textContent = 'No active tables available.';
         capEl.className = 'confirm-capacity bad';
       } else if (cap >= r.guests) {
-        capEl.textContent = `Seats ${cap} â€” fits your ${r.guests} guests.`;
+        capEl.textContent = `Seats ${cap} — fits your ${r.guests} guests.`;
         capEl.className = 'confirm-capacity';
       } else {
         capEl.textContent = `Only seats ${cap}, but this reservation is for ${r.guests}. Pick a bigger table.`;
@@ -337,7 +337,7 @@
         const r0 = reservations.find(x => x.id == id);
         if (r0) { r0.status = 'confirmed'; r0.table_no = data.reservation.table_no; }
         close();
-        toast(`Confirmed â€” ${data.reservation.table_no} assigned.`, 'success');
+        toast(`Confirmed — ${data.reservation.table_no} assigned.`, 'success');
         render();
       } catch (err) {
         errEl.textContent = err.message;
@@ -361,16 +361,16 @@
         <h3>${escapeHtml(r.customer_name)}</h3>
         <div class="detail-list">
           <dt>Email</dt>
-          <dd>${r.customer_email ? `<a href="mailto:${escapeHtml(r.customer_email)}">${escapeHtml(r.customer_email)}</a>` : 'â€”'}</dd>
+          <dd>${r.customer_email ? `<a href="mailto:${escapeHtml(r.customer_email)}">${escapeHtml(r.customer_email)}</a>` : '—'}</dd>
           <dt>Phone</dt>
-          <dd>${r.customer_phone ? `<a href="tel:${escapeHtml(r.customer_phone)}">${escapeHtml(r.customer_phone)}</a>` : 'â€”'}</dd>
+          <dd>${r.customer_phone ? `<a href="tel:${escapeHtml(r.customer_phone)}">${escapeHtml(r.customer_phone)}</a>` : '—'}</dd>
           <dt>Reservation</dt>
-          <dd>${r.reservation_date ? fmtDate(r.reservation_date) : 'â€”'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
           <dt>Guests</dt><dd>${r.guests}</dd>
           <dt>Table</dt><dd>${r.table_no ? escapeHtml(r.table_no) : 'Not yet assigned'}</dd>
           <dt>Status</dt><dd><span class="pill ${STATUS_PILL[r.status] || 'pill-neutral'}">${escapeHtml(r.status)}</span></dd>
           <dt>Requested</dt><dd>${formatDate(r.datetime_reserved)}</dd>
-          <dt>Notes</dt><dd style="white-space:pre-wrap;">${r.notes ? escapeHtml(r.notes) : 'â€”'}</dd>
+          <dt>Notes</dt><dd style="white-space:pre-wrap;">${r.notes ? escapeHtml(r.notes) : '—'}</dd>
         </div>
         <div class="modal-close-row"><button class="btn" id="detailsClose">Close</button></div>
       </div>
@@ -433,7 +433,7 @@
 
   function fmtDate(dateStr) {
     const d = parseDateOnly(dateStr);
-    return d ? d.toLocaleDateString('en-PH') : 'â€”';
+    return d ? d.toLocaleDateString('en-PH') : '—';
   }
 </script>
 </body>

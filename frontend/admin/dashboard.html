@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard â€” The~Yo's Admin</title>
+<title>Dashboard — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=2">
+<link rel="stylesheet" href="admin-shell.css?v=3">
 <style>
   /* ---------- Section headers ---------- */
   .dash-section { margin-bottom: 30px; }
@@ -120,9 +120,9 @@
   };
   const STATUS_REMARK = {
     in_stock: 'Healthy stock level.',
-    below_reorder: 'At or below reorder level â€” restock soon.',
-    low_stock: 'Running low â€” monitor closely.',
-    out_of_stock: 'Out of stock â€” reorder immediately.',
+    below_reorder: 'At or below reorder level — restock soon.',
+    low_stock: 'Running low — monitor closely.',
+    out_of_stock: 'Out of stock — reorder immediately.',
   };
 
   function num(n) { return Number(n) || 0; }
@@ -131,11 +131,11 @@
   }
   function compactPeso(v) {
     const n = num(v);
-    if (n >= 1000000) return 'â‚±' + (n / 1000000).toFixed(1) + 'M';
-    if (n >= 1000) return 'â‚±' + (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'k';
-    return 'â‚±' + Math.round(n);
+    if (n >= 1000000) return '₱' + (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return '₱' + (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'k';
+    return '₱' + Math.round(n);
   }
-  const lockBox = (msg) => `<div class="panel-empty">ðŸ”’ ${escapeHtml(msg)}</div>`;
+  const lockBox = (msg) => `<div class="panel-empty">🔒 ${escapeHtml(msg)}</div>`;
 
   async function getJSON(path) {
     const res = await adminFetch(path);
@@ -144,7 +144,7 @@
     return data;
   }
 
-  // Hand-rolled SVG line chart â€” no library, no fake data. Each dot
+  // Hand-rolled SVG line chart — no library, no fake data. Each dot
   // carries a native <title> tooltip so values are inspectable.
   function trendChart({ labels, series, height = 230 }) {
     const W = 640, PL = 56, PR = 16, PT = 14, PB = 30;
@@ -206,8 +206,8 @@
   }
 
   /* ================================================================
-     Page skeleton â€” all 10 sections always render; individual sections
-     show a ðŸ”’ lock note if the logged-in staff lacks that permission.
+     Page skeleton — all 10 sections always render; individual sections
+     show a 🔒 lock note if the logged-in staff lacks that permission.
      ================================================================ */
   function init() {
     const today = new Date().toLocaleDateString('en-PH', {
@@ -216,53 +216,53 @@
     const content = document.getElementById('adminContent');
     content.innerHTML = `
       <div class="dash-section">
-        <div class="dash-section-head"><h3>Sales Overview</h3><span class="dash-sub">as of today Â· ${today}</span></div>
-        <div class="stat-grid" id="sec-overview"><div class="admin-loading">Loadingâ€¦</div></div>
+        <div class="dash-section-head"><h3>Sales Overview</h3><span class="dash-sub">as of today · ${today}</span></div>
+        <div class="stat-grid" id="sec-overview"><div class="admin-loading">Loading…</div></div>
       </div>
 
       <div class="dash-section">
-        <div class="dash-section-head"><h3>Sales Breakdown</h3><span class="dash-sub">by order type Â· today</span></div>
-        <div class="admin-panel"><div class="admin-panel-body" id="sec-breakdown"><div class="admin-loading">Loadingâ€¦</div></div></div>
+        <div class="dash-section-head"><h3>Sales Breakdown</h3><span class="dash-sub">by order type · today</span></div>
+        <div class="admin-panel"><div class="admin-panel-body" id="sec-breakdown"><div class="admin-loading">Loading…</div></div></div>
       </div>
 
       <div class="dash-section">
         <div class="dash-section-head"><h3>Monthly Sales Target</h3><span class="dash-sub">${today}</span></div>
-        <div class="admin-panel"><div class="admin-panel-body" id="sec-monthly-target"><div class="admin-loading">Loadingâ€¦</div></div></div>
+        <div class="admin-panel"><div class="admin-panel-body" id="sec-monthly-target"><div class="admin-loading">Loading…</div></div></div>
       </div>
 
       <div class="dash-section">
         <div class="dash-section-head"><h3>Top 10 Best Sellers</h3><span class="dash-sub">as of today</span></div>
-        <div class="admin-panel"><div class="admin-panel-body" id="sec-best-sellers"><div class="admin-loading">Loadingâ€¦</div></div></div>
+        <div class="admin-panel"><div class="admin-panel-body" id="sec-best-sellers"><div class="admin-loading">Loading…</div></div></div>
       </div>
 
       <div class="dash-section">
         <div class="dash-section-head"><h3>Sales Trend</h3><span class="dash-sub">last 15 days</span></div>
-        <div class="admin-panel"><div class="admin-panel-body" id="sec-sales-trend"><div class="admin-loading">Loadingâ€¦</div></div></div>
+        <div class="admin-panel"><div class="admin-panel-body" id="sec-sales-trend"><div class="admin-loading">Loading…</div></div></div>
       </div>
 
       <div class="dash-section">
         <div class="dash-section-head"><h3>Cash Overview</h3><span class="dash-sub">as of today</span></div>
-        <div class="stat-grid" id="sec-cash-overview"><div class="admin-loading">Loadingâ€¦</div></div>
+        <div class="stat-grid" id="sec-cash-overview"><div class="admin-loading">Loading…</div></div>
       </div>
 
       <div class="dash-section">
         <div class="dash-section-head"><h3>Cash Trend</h3><span class="dash-sub">last 15 days</span></div>
-        <div class="admin-panel"><div class="admin-panel-body" id="sec-cash-trend"><div class="admin-loading">Loadingâ€¦</div></div></div>
+        <div class="admin-panel"><div class="admin-panel-body" id="sec-cash-trend"><div class="admin-loading">Loading…</div></div></div>
       </div>
 
       <div class="dash-section">
         <div class="dash-section-head"><h3>Inventory Overview</h3><span class="dash-sub">raw stock status</span></div>
-        <div class="stat-grid" id="sec-inventory-overview"><div class="admin-loading">Loadingâ€¦</div></div>
+        <div class="stat-grid" id="sec-inventory-overview"><div class="admin-loading">Loading…</div></div>
       </div>
 
       <div class="dash-section">
         <div class="dash-section-head"><h3>Inventory Usage</h3><span class="dash-sub">as of today</span></div>
-        <div class="admin-panel"><div class="admin-panel-body" id="sec-inventory-usage"><div class="admin-loading">Loadingâ€¦</div></div></div>
+        <div class="admin-panel"><div class="admin-panel-body" id="sec-inventory-usage"><div class="admin-loading">Loading…</div></div></div>
       </div>
 
       <div class="dash-section">
-        <div class="dash-section-head"><h3>Inventory Status</h3><span class="dash-sub">days of stock: N/A Â· insufficient history</span></div>
-        <div class="admin-panel"><div class="admin-panel-body" id="sec-inventory-status"><div class="admin-loading">Loadingâ€¦</div></div></div>
+        <div class="dash-section-head"><h3>Inventory Status</h3><span class="dash-sub">days of stock: N/A · insufficient history</span></div>
+        <div class="admin-panel"><div class="admin-panel-body" id="sec-inventory-status"><div class="admin-loading">Loading…</div></div></div>
       </div>
     `;
 
@@ -357,7 +357,7 @@
             <div class="target-cell"><div class="label">Sales this month</div>
               <div class="target-value brass">${peso(d.month_sales)}</div></div>
             <div class="target-cell"><div class="label">Remaining</div>
-              <div class="target-value">${remaining != null ? peso(remaining) : 'â€”'}</div></div>
+              <div class="target-value">${remaining != null ? peso(remaining) : '—'}</div></div>
             <div class="target-cell"><div class="label">Days left</div>
               <div class="target-value">${d.days_remaining} <span class="muted">of ${d.days_in_month}</span></div></div>
           </div>
@@ -367,7 +367,7 @@
           <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
           <div class="progress-labels">
             <span>${d.target ? num(d.progress_percent) + '% of target reached' : 'Set a monthly target to track progress'}</span>
-            <span>${d.month} Â· ${d.month_orders} ${d.month_orders === 1 ? 'order' : 'orders'} this month</span>
+            <span>${d.month} · ${d.month_orders} ${d.month_orders === 1 ? 'order' : 'orders'} this month</span>
           </div>
         </div>
       `;
@@ -389,7 +389,7 @@
       <div class="modal-box">
         <h3>Set Monthly Sales Target</h3>
         <div class="form-field">
-          <label>Monthly target (â‚±) for ${current.month}</label>
+          <label>Monthly target (₱) for ${current.month}</label>
           <input type="number" id="targetInput" min="0" step="0.01" value="${current.target != null ? current.target : ''}" placeholder="e.g. 100000">
         </div>
         <div class="form-field" style="margin-top:12px;">
@@ -474,7 +474,7 @@
               name: 'Sales',
               color: '#a3844a',
               values: days.map((x) => num(x.sales)),
-              titles: days.map((x) => `${fmtDay(x.date)} Â· ${peso(x.sales)} Â· ${x.orders} ${x.orders === 1 ? 'order' : 'orders'}`),
+              titles: days.map((x) => `${fmtDay(x.date)} · ${peso(x.sales)} · ${x.orders} ${x.orders === 1 ? 'order' : 'orders'}`),
             }],
           })
         : `<div class="panel-empty">No sales recorded in the last 15 days.</div>`;
@@ -514,9 +514,9 @@
         ? trendChart({
             labels: days.map((x) => fmtDay(x.date)),
             series: [
-              { name: 'Cash Sales', color: '#a3844a', values: days.map((x) => num(x.cash_sales)), titles: days.map((x) => `${fmtDay(x.date)} Â· Cash sales ${peso(x.cash_sales)}`) },
-              { name: 'Cash In', color: '#2e7d4f', values: days.map((x) => num(x.cash_in)), titles: days.map((x) => `${fmtDay(x.date)} Â· Cash in ${peso(x.cash_in)}`) },
-              { name: 'Cash Out', color: '#c0392b', values: days.map((x) => num(x.cash_out)), titles: days.map((x) => `${fmtDay(x.date)} Â· Cash out ${peso(x.cash_out)}`) },
+              { name: 'Cash Sales', color: '#a3844a', values: days.map((x) => num(x.cash_sales)), titles: days.map((x) => `${fmtDay(x.date)} · Cash sales ${peso(x.cash_sales)}`) },
+              { name: 'Cash In', color: '#2e7d4f', values: days.map((x) => num(x.cash_in)), titles: days.map((x) => `${fmtDay(x.date)} · Cash in ${peso(x.cash_in)}`) },
+              { name: 'Cash Out', color: '#c0392b', values: days.map((x) => num(x.cash_out)), titles: days.map((x) => `${fmtDay(x.date)} · Cash out ${peso(x.cash_out)}`) },
             ],
           })
         : `<div class="panel-empty">No cash activity in the last 15 days.</div>`;
@@ -559,7 +559,7 @@
                 <td class="r">${it.opening_qty}</td>
                 <td class="r">${it.closing_qty}</td>
                 <td class="r amt">${it.used_qty}</td>
-                <td class="r">${it.usage_percent != null ? it.usage_percent + '%' : 'â€”'}</td>
+                <td class="r">${it.usage_percent != null ? it.usage_percent + '%' : '—'}</td>
               </tr>`).join('')}
           </tbody>
         </table>

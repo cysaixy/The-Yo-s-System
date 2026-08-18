@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Point of Sale â€” The~Yo's Admin</title>
+<title>Point of Sale — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=2">
+<link rel="stylesheet" href="admin-shell.css?v=3">
 <style>
   .pos-layout { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 22px; align-items: start; }
   @media (max-width: 1000px) { .pos-layout { grid-template-columns: 1fr; } }
@@ -189,7 +189,7 @@
             <input type="text" id="posSearch" placeholder="Search by product name...">
             <select id="catFilterSelect"><option value="all">All Categories</option></select>
           </div>
-          <div class="pos-list" id="posListWrap"><div class="admin-loading">Loading menuâ€¦</div></div>
+          <div class="pos-list" id="posListWrap"><div class="admin-loading">Loading menu…</div></div>
         </div>
 
         <div class="admin-panel">
@@ -210,21 +210,21 @@
           <div id="cartEmptyState" class="pos-empty-orders">Select from the menu to add orders</div>
 
           <div class="pos-summary">
-            <div class="row"><span>Total Amount</span><span id="sumTotal">â‚±0.00</span></div>
+            <div class="row"><span>Total Amount</span><span id="sumTotal">₱0.00</span></div>
             <div class="row"><span>Delivery Fee</span><input type="number" id="deliveryFeeInput" value="0" min="0" step="0.01"></div>
-            <div class="row grand"><span>Grand Total</span><span id="sumGrand">â‚±0.00</span></div>
+            <div class="row grand"><span>Grand Total</span><span id="sumGrand">₱0.00</span></div>
           </div>
 
           <div class="pos-actions">
             <select id="posPayment" class="pos-payment">
-              <option value="cash">Payment Method â€” Cash</option>
-              <option value="card">Payment Method â€” Card</option>
-              <option value="gcash">Payment Method â€” GCash</option>
-              <option value="other">Payment Method â€” Other</option>
+              <option value="cash">Payment Method — Cash</option>
+              <option value="card">Payment Method — Card</option>
+              <option value="gcash">Payment Method — GCash</option>
+              <option value="other">Payment Method — Other</option>
             </select>
             <div id="custSelectedWrap" style="display:none;"></div>
             <div id="custSearchWrap" class="cust-search-wrap">
-              <input type="text" id="custSearchInput" placeholder="Optional: search customer by name, email, or phoneâ€¦" autocomplete="off">
+              <input type="text" id="custSearchInput" placeholder="Optional: search customer by name, email, or phone…" autocomplete="off">
               <div class="cust-results" id="custResults" style="display:none;"></div>
             </div>
             <p style="font-size:0.72rem; opacity:0.5; margin:8px 0 0;">No customer attached? Orders are logged under "Walk-in Customer" automatically.</p>
@@ -244,7 +244,7 @@
           <div class="cust-qty-row">
             <label>Quantity</label>
             <div class="qty-controls">
-              <button id="custQtyMinus">âˆ’</button>
+              <button id="custQtyMinus">−</button>
               <span id="custQty" style="min-width:28px; font-size:1rem;">1</span>
               <button id="custQtyPlus">+</button>
             </div>
@@ -261,9 +261,9 @@
           </div>
 
           <div class="cust-totals">
-            <div class="row"><span>Item Total</span><span id="custItemTotal">â‚±0.00</span></div>
-            <div class="row"><span>Add-Ons Total</span><span id="custAddonsTotal">â‚±0.00</span></div>
-            <div class="row grand"><span>Line Total</span><span id="custLineTotal">â‚±0.00</span></div>
+            <div class="row"><span>Item Total</span><span id="custItemTotal">₱0.00</span></div>
+            <div class="row"><span>Add-Ons Total</span><span id="custAddonsTotal">₱0.00</span></div>
+            <div class="row grand"><span>Line Total</span><span id="custLineTotal">₱0.00</span></div>
           </div>
 
           <div class="modal-close-row">
@@ -320,7 +320,7 @@
       menuItems = (data.items || []).filter(i => i.status === 'available');
       renderList();
     } catch (err) {
-      document.getElementById('posListWrap').innerHTML = `<div class="admin-error">âš  ${err.message}</div>`;
+      document.getElementById('posListWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
     }
   }
 
@@ -363,7 +363,7 @@
         <div class="pos-product-card" data-id="${i.id}" data-name="${escapeHtml(i.name)}" data-price="${i.price}">
           <div class="pos-product-image${i.image_url ? ' has-image' : ''}">
             ${i.image_url ? `<img src="${escapeHtml(i.image_url)}" alt="${escapeHtml(i.name)}" loading="lazy" onerror="this.remove(); this.parentElement.classList.remove('has-image');">` : ''}
-            <span class="pos-product-fallback">ðŸ½</span>
+            <span class="pos-product-fallback">🍽</span>
           </div>
           <div class="pos-product-copy">
             <div class="n">${escapeHtml(i.name)}${hasAddons ? '<span class="addon-flag">Add-ons</span>' : ''}</div>
@@ -396,7 +396,7 @@
       (line.add_ons || []).forEach(a => customize.selected.set(String(a.addon_id), a.qty));
     }
 
-    document.getElementById('customizeModalTitle').textContent = `Customize â€” ${name}`;
+    document.getElementById('customizeModalTitle').textContent = `Customize — ${name}`;
     document.getElementById('customizeNotes').value = customize.notes;
     document.getElementById('customizeAddBtn').textContent = line ? 'Update Item' : 'Add to Order';
     renderAddonList();
@@ -427,7 +427,7 @@
           </label>
           <div class="cp">${peso(a.price)}</div>
           <div class="qty-controls addon-qty" ${selected && !disabled ? '' : 'style="display:none"'}>
-            <button data-aid="${a.id}" data-d="-1">âˆ’</button>
+            <button data-aid="${a.id}" data-d="-1">−</button>
             <span>${qty}</span>
             <button data-aid="${a.id}" data-d="1">+</button>
           </div>
@@ -561,23 +561,23 @@
           <td>
             <div class="cart-item-head">
               <span class="nm">${escapeHtml(c.name)}</span>
-              <button class="edit-line-btn" data-id="${c.uniqueId}" title="Customize">âœŽ</button>
+              <button class="edit-line-btn" data-id="${c.uniqueId}" title="Customize">✎</button>
             </div>
             ${c.notes ? `<span class="item-notes">${escapeHtml(c.notes)}</span>` : ''}
             ${(c.add_ons || []).length ? `
-              <span class="item-notes addon-notes">+ ${c.add_ons.map(a => `${escapeHtml(a.name)} Ã—${a.qty} (${peso(a.price * a.qty)})`).join(', ')}</span>
+              <span class="item-notes addon-notes">+ ${c.add_ons.map(a => `${escapeHtml(a.name)} ×${a.qty} (${peso(a.price * a.qty)})`).join(', ')}</span>
             ` : ''}
           </td>
           <td>${peso(c.price)}</td>
           <td>
             <div class="qty-controls">
-              <button data-id="${c.uniqueId}" data-delta="-1" class="qty-btn">âˆ’</button>
+              <button data-id="${c.uniqueId}" data-delta="-1" class="qty-btn">−</button>
               <span>${c.qty}</span>
               <button data-id="${c.uniqueId}" data-delta="1" class="qty-btn">+</button>
             </div>
           </td>
           <td>${peso(lineTotal(c))}</td>
-          <td><button data-id="${c.uniqueId}" class="remove-line-btn">âœ•</button></td>
+          <td><button data-id="${c.uniqueId}" class="remove-line-btn">✕</button></td>
         </tr>
       `).join('');
       tbody.querySelectorAll('.qty-btn').forEach(btn => {
@@ -614,7 +614,7 @@
     if (cart.length === 0) { errEl.textContent = 'Cart is empty.'; errEl.style.display = 'block'; return; }
 
     const submitBtn = document.getElementById('submitOrderBtn');
-    submitBtn.disabled = true; submitBtn.textContent = 'Placingâ€¦';
+    submitBtn.disabled = true; submitBtn.textContent = 'Placing…';
 
     try {
       const res = await adminFetch('/api/admin/sales/pos/orders', {
@@ -681,7 +681,7 @@
         row.addEventListener('click', () => selectCustomer(row.dataset.id, row.dataset.name, row.dataset.email));
       });
     } catch (err) {
-      resultsEl.innerHTML = `<div class="cust-empty-hint">âš  ${err.message}</div>`;
+      resultsEl.innerHTML = `<div class="cust-empty-hint">⚠ ${err.message}</div>`;
       resultsEl.style.display = 'block';
     }
   }

@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home â€” The~Yo's Admin</title>
+<title>Home — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=2">
+<link rel="stylesheet" href="admin-shell.css?v=3">
 <style>
   .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
   @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
@@ -89,7 +89,7 @@
     out_of_stock: 'Item requires immediate replenishment.',
   };
 
-  const lockBox = (msg) => `<div class="panel-empty">ðŸ”’ ${escapeHtml(msg)}</div>`;
+  const lockBox = (msg) => `<div class="panel-empty">🔒 ${escapeHtml(msg)}</div>`;
 
   async function getJSON(path) {
     const res = await adminFetch(path);
@@ -107,23 +107,23 @@
       <div class="two-col">
         <div class="admin-panel">
           <div class="admin-panel-head"><h3>Top 10 Best Sellers as of Today</h3><span class="panel-sub">${today}</span></div>
-          <div class="admin-panel-body panel-body-flush" id="sec-best-sellers"><div class="admin-loading">Loadingâ€¦</div></div>
+          <div class="admin-panel-body panel-body-flush" id="sec-best-sellers"><div class="admin-loading">Loading…</div></div>
         </div>
 
         <div class="admin-panel">
           <div class="admin-panel-head"><h3>Inventory Overview</h3><span class="panel-sub">${today}</span></div>
-          <div class="admin-panel-body" id="sec-inventory-overview"><div class="admin-loading">Loadingâ€¦</div></div>
+          <div class="admin-panel-body" id="sec-inventory-overview"><div class="admin-loading">Loading…</div></div>
         </div>
       </div>
 
       <div class="admin-panel section-gap">
         <div class="admin-panel-head"><h3>Inventory Usage as of Today</h3><span class="panel-sub">${today}</span></div>
-        <div class="admin-panel-body panel-body-flush" id="sec-inventory-usage"><div class="admin-loading">Loadingâ€¦</div></div>
+        <div class="admin-panel-body panel-body-flush" id="sec-inventory-usage"><div class="admin-loading">Loading…</div></div>
       </div>
 
       <div class="admin-panel section-gap">
         <div class="admin-panel-head"><h3>Inventory Status</h3><span class="panel-sub">${today}</span></div>
-        <div class="admin-panel-body" id="sec-inventory-status"><div class="admin-loading">Loadingâ€¦</div></div>
+        <div class="admin-panel-body" id="sec-inventory-status"><div class="admin-loading">Loading…</div></div>
       </div>
     `;
 
@@ -150,7 +150,7 @@
                 <tr>
                   <td class="rank">${i + 1}</td>
                   <td>${escapeHtml(b.name)}</td>
-                  <td class="r qty"><span class="mul">Ã—</span>${b.qty_sold}</td>
+                  <td class="r qty"><span class="mul">×</span>${b.qty_sold}</td>
                   <td class="r amt">${peso(b.sales_amount)}</td>
                 </tr>`).join('')}
             </tbody>

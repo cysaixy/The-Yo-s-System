@@ -1,15 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Products, Add-Ons & Bundles â€” The~Yo's Admin</title>
+<title>Products, Add-Ons & Bundles — The~Yo's Admin</title>
 <meta name="description" content="Manage The~Yo's menu products, add-ons, and combo bundles with inventory connections.">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=2">
+<link rel="stylesheet" href="admin-shell.css?v=3">
 <style>
 /* ================================================================
-   PRODUCTS PAGE â€” Scoped styles (.prd-* namespace)
+   PRODUCTS PAGE — Scoped styles (.prd-* namespace)
    ================================================================ */
 
 .prd-page { display: flex; flex-direction: column; gap: 0; }
@@ -340,7 +340,7 @@ function buildPageHTML() {
     <div class="prd-header-actions">
       <div class="prd-header-search">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="hdrSearch" placeholder="Search menu & add-onsâ€¦" autocomplete="off">
+        <input type="text" id="hdrSearch" placeholder="Search menu & add-ons…" autocomplete="off">
       </div>
       <button class="prd-btn prd-btn-gold" id="topActionBtn">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -353,22 +353,22 @@ function buildPageHTML() {
   <div class="prd-summary-row">
     <div class="prd-stat-card">
       <div class="psc-label">Menu Products</div>
-      <div class="psc-value" id="statProducts">â€”</div>
+      <div class="psc-value" id="statProducts">—</div>
       <div class="psc-sub">Standalone menu items</div>
     </div>
     <div class="prd-stat-card">
       <div class="psc-label">Add-Ons</div>
-      <div class="psc-value gold" id="statAddons">â€”</div>
+      <div class="psc-value gold" id="statAddons">—</div>
       <div class="psc-sub">Optional extras</div>
     </div>
     <div class="prd-stat-card">
       <div class="psc-label">Bundles & Deals</div>
-      <div class="psc-value green" id="statBundles">â€”</div>
+      <div class="psc-value green" id="statBundles">—</div>
       <div class="psc-sub">Combo packages</div>
     </div>
     <div class="prd-stat-card">
       <div class="psc-label">Categories</div>
-      <div class="psc-value" id="statCategories">â€”</div>
+      <div class="psc-value" id="statCategories">—</div>
       <div class="psc-sub">Product categories</div>
     </div>
   </div>
@@ -402,7 +402,7 @@ function buildPageHTML() {
             <th></th>
           </tr></thead>
           <tbody id="itemsTbody">
-            <tr><td colspan="6"><div class="admin-loading">Loading productsâ€¦</div></td></tr>
+            <tr><td colspan="6"><div class="admin-loading">Loading products…</div></td></tr>
           </tbody>
         </table>
       </div>
@@ -422,7 +422,7 @@ function buildPageHTML() {
             <th></th>
           </tr></thead>
           <tbody id="catsTbody">
-            <tr><td colspan="3"><div class="admin-loading">Loading categoriesâ€¦</div></td></tr>
+            <tr><td colspan="3"><div class="admin-loading">Loading categories…</div></td></tr>
           </tbody>
         </table>
       </div>
@@ -451,7 +451,7 @@ function buildPageHTML() {
           <th></th>
         </tr></thead>
         <tbody id="addonsTbody">
-          <tr><td colspan="7"><div class="admin-loading">Loading add-onsâ€¦</div></td></tr>
+          <tr><td colspan="7"><div class="admin-loading">Loading add-ons…</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -479,7 +479,7 @@ function buildPageHTML() {
           <th></th>
         </tr></thead>
         <tbody id="bundlesTbody">
-          <tr><td colspan="7"><div class="admin-loading">Loading bundlesâ€¦</div></td></tr>
+          <tr><td colspan="7"><div class="admin-loading">Loading bundles…</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -500,7 +500,7 @@ function buildPageHTML() {
           <th>Status</th>
         </tr></thead>
         <tbody id="profTbody">
-          <tr><td colspan="5"><div class="admin-loading">Loadingâ€¦</div></td></tr>
+          <tr><td colspan="5"><div class="admin-loading">Loading…</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -515,7 +515,7 @@ function buildPageHTML() {
 </div><!-- /prd-page -->
 
 <!-- ================================================================
-     MODAL â€” ADD / EDIT MENU ITEM (PRODUCT)
+     MODAL — ADD / EDIT MENU ITEM (PRODUCT)
      ================================================================ -->
 <div class="prd-modal-backdrop" id="itemModal">
   <div class="prd-modal wide">
@@ -541,11 +541,11 @@ function buildPageHTML() {
         </select>
       </div>
       <div class="prd-form-field">
-        <label>Selling Price (â‚±) *</label>
+        <label>Selling Price (₱) *</label>
         <input type="number" step="0.01" min="0" id="itemPrice" placeholder="90.00">
       </div>
       <div class="prd-form-field">
-        <label>Cost (â‚±)</label>
+        <label>Cost (₱)</label>
         <input type="number" step="0.01" min="0" id="itemCost" placeholder="35.00">
       </div>
       <div class="prd-form-field">
@@ -554,10 +554,10 @@ function buildPageHTML() {
       </div>
       <div class="prd-form-field span2">
         <label>Description (optional)</label>
-        <textarea id="itemDesc" placeholder="Short descriptionâ€¦"></textarea>
+        <textarea id="itemDesc" placeholder="Short description…"></textarea>
       </div>
       <div class="prd-form-field span2">
-        <label>Product Image (JPG, PNG, or WebP Â· max 5 MB)</label>
+        <label>Product Image (JPG, PNG, or WebP · max 5 MB)</label>
         <input type="file" id="itemImage" accept="image/jpeg,image/png,image/webp">
         <input type="hidden" id="itemImageUrl">
         <small id="itemImageStatus" style="opacity:.6;">No image selected.</small>
@@ -572,7 +572,7 @@ function buildPageHTML() {
 </div>
 
 <!-- ================================================================
-     MODAL â€” ADD / EDIT ADD-ON
+     MODAL — ADD / EDIT ADD-ON
      ================================================================ -->
 <div class="prd-modal-backdrop" id="addonModal">
   <div class="prd-modal wide">
@@ -587,11 +587,11 @@ function buildPageHTML() {
         <input type="text" id="addonName" placeholder="e.g. Extra Shot">
       </div>
       <div class="prd-form-field">
-        <label>Price (â‚±) *</label>
+        <label>Price (₱) *</label>
         <input type="number" step="0.01" min="0" id="addonPrice" placeholder="30.00">
       </div>
       <div class="prd-form-field">
-        <label>Cost (â‚±)</label>
+        <label>Cost (₱)</label>
         <input type="number" step="0.01" min="0" id="addonCost" placeholder="12.00">
       </div>
       <div class="prd-form-field">
@@ -634,7 +634,7 @@ function buildPageHTML() {
 </div>
 
 <!-- ================================================================
-     MODAL â€” ADD / EDIT BUNDLE
+     MODAL — ADD / EDIT BUNDLE
      ================================================================ -->
 <div class="prd-modal-backdrop" id="bundleModal">
   <div class="prd-modal wide">
@@ -664,7 +664,7 @@ function buildPageHTML() {
 
       <div class="prd-form-field">
         <label>Regular Price Total</label>
-        <input type="text" id="bundleRegTotal" readonly style="background:var(--stone); font-family:'Space Mono',monospace; font-weight:700;" value="â‚±0.00">
+        <input type="text" id="bundleRegTotal" readonly style="background:var(--stone); font-family:'Space Mono',monospace; font-weight:700;" value="₱0.00">
       </div>
 
       <div class="prd-form-field">
@@ -673,13 +673,13 @@ function buildPageHTML() {
       </div>
 
       <div class="prd-form-field">
-        <label>Bundle Price (â‚±) *</label>
+        <label>Bundle Price (₱) *</label>
         <input type="number" step="0.01" min="0" id="bundlePrice" placeholder="170.00">
       </div>
 
       <div class="prd-form-field">
         <label>Customer Savings</label>
-        <input type="text" id="bundleSavings" readonly style="background:var(--stone); font-family:'Space Mono',monospace; color:var(--success); font-weight:700;" value="â‚±0.00">
+        <input type="text" id="bundleSavings" readonly style="background:var(--stone); font-family:'Space Mono',monospace; color:var(--success); font-weight:700;" value="₱0.00">
       </div>
     </div>
     <div class="prd-error-msg" id="bundleError"></div>
@@ -691,7 +691,7 @@ function buildPageHTML() {
 </div>
 
 <!-- ================================================================
-     MODAL â€” ADD / EDIT CATEGORY
+     MODAL — ADD / EDIT CATEGORY
      ================================================================ -->
 <div class="prd-modal-backdrop" id="catModal">
   <div class="prd-modal narrow">
@@ -713,7 +713,7 @@ function buildPageHTML() {
 </div>
 
 <!-- ================================================================
-     MODAL â€” DELETE CONFIRMATION
+     MODAL — DELETE CONFIRMATION
      ================================================================ -->
 <div class="prd-modal-backdrop" id="deleteModal">
   <div class="prd-modal narrow">
@@ -877,7 +877,7 @@ function renderMenuItems() {
   tbody.innerHTML = menuItems.map(i => `
     <tr>
       <td><span class="item-name">${escapeHtml(i.name)}</span></td>
-      <td><span style="font-size:0.80rem;">${escapeHtml(i.category_name || 'â€”')}</span></td>
+      <td><span style="font-size:0.80rem;">${escapeHtml(i.category_name || '—')}</span></td>
       <td class="right"><span class="price-val">${peso(i.price)}</span></td>
       <td class="right"><span class="stock-qty">${i.stock_quantity ?? '0'}</span></td>
       <td><span class="prd-badge ${i.status === 'available' ? 'badge-available' : 'badge-unavailable'}">${escapeHtml(i.status)}</span></td>
@@ -966,7 +966,7 @@ function renderBundles() {
     return;
   }
   tbody.innerHTML = bundles.map(b => {
-    const prodStr = b.products?.map(p => `${escapeHtml(p.product_name)} Ã— ${p.quantity}`).join(', ') || 'None';
+    const prodStr = b.products?.map(p => `${escapeHtml(p.product_name)} × ${p.quantity}`).join(', ') || 'None';
     const stBadge = b.status === 'available' ? 'badge-available' : 'badge-unavailable';
 
     return `
@@ -1025,10 +1025,10 @@ function closeDropdowns() {
 }
 
 /* ================================================================
-   MODAL â€” PRODUCT (MENU ITEM)
+   MODAL — PRODUCT (MENU ITEM)
    ================================================================ */
 function openItemModal(item = null) {
-  document.getElementById('itemModalTitle').textContent = item ? `Edit â€” ${item.name}` : 'Add Product';
+  document.getElementById('itemModalTitle').textContent = item ? `Edit — ${item.name}` : 'Add Product';
   document.getElementById('itemId').value     = item ? item.id : '';
   document.getElementById('itemName').value   = item ? item.name : '';
   document.getElementById('itemPrice').value  = item ? item.price : '';
@@ -1068,7 +1068,7 @@ async function saveItem() {
   }
 
   const saveBtn = document.getElementById('itemSaveBtn');
-  saveBtn.disabled = true; saveBtn.textContent = 'Savingâ€¦';
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
 
   try {
     if (imageFile) {
@@ -1079,13 +1079,13 @@ async function saveItem() {
         reader.onerror = () => reject(new Error('Could not read the selected image.'));
         reader.readAsDataURL(imageFile);
       });
-      saveBtn.textContent = 'Uploading imageâ€¦';
+      saveBtn.textContent = 'Uploading image…';
       const upload = await adminFetch('/api/admin/products/uploads/product-image', { method: 'POST', body: JSON.stringify({ dataUrl }) });
       const uploaded = await upload.json();
       if (!upload.ok) throw new Error(uploaded.error || 'Could not upload image.');
       imageUrl = uploaded.image_url;
     }
-    saveBtn.textContent = 'Savingâ€¦';
+    saveBtn.textContent = 'Saving…';
     const url = id ? `/api/admin/products/menuitems/${id}` : '/api/admin/products/menuitems';
     const method = id ? 'PATCH' : 'POST';
 
@@ -1107,10 +1107,10 @@ async function saveItem() {
 }
 
 /* ================================================================
-   MODAL â€” ADD-ON
+   MODAL — ADD-ON
    ================================================================ */
 function openAddonModal(addon = null) {
-  document.getElementById('addonModalTitle').textContent = addon ? `Edit Add-On â€” ${addon.name}` : 'Add Add-On';
+  document.getElementById('addonModalTitle').textContent = addon ? `Edit Add-On — ${addon.name}` : 'Add Add-On';
   document.getElementById('addonId').value     = addon ? addon.id : '';
   document.getElementById('addonName').value   = addon ? addon.name : '';
   document.getElementById('addonPrice').value  = addon ? addon.price : '';
@@ -1151,10 +1151,10 @@ function addAddonInvRow(invId = '', qty = '', unit = 'g') {
   const invOptions = inventoryItems.map(i => `<option value="${i.id}">${escapeHtml(i.name)} (${i.unit})</option>`).join('');
 
   div.innerHTML = `
-    <select class="addon-inv-id"><option value="">Select Inventory Itemâ€¦</option>${invOptions}</select>
+    <select class="addon-inv-id"><option value="">Select Inventory Item…</option>${invOptions}</select>
     <input type="number" step="0.01" min="0.01" class="addon-inv-qty" placeholder="Qty" value="${qty}">
     <input type="text" class="addon-inv-unit" placeholder="Unit" value="${unit}">
-    <button class="remove-row-btn" type="button" onclick="this.parentElement.remove()">Ã—</button>
+    <button class="remove-row-btn" type="button" onclick="this.parentElement.remove()">×</button>
   `;
   if (invId) div.querySelector('.addon-inv-id').value = invId;
   box.appendChild(div);
@@ -1198,7 +1198,7 @@ async function saveAddon() {
   };
 
   const saveBtn = document.getElementById('addonSaveBtn');
-  saveBtn.disabled = true; saveBtn.textContent = 'Savingâ€¦';
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
 
   try {
     const url = id ? `/api/admin/products/addons/${id}` : '/api/admin/products/addons';
@@ -1219,10 +1219,10 @@ async function saveAddon() {
 }
 
 /* ================================================================
-   MODAL â€” BUNDLE
+   MODAL — BUNDLE
    ================================================================ */
 function openBundleModal(bundle = null) {
-  document.getElementById('bundleModalTitle').textContent = bundle ? `Edit Bundle â€” ${bundle.name}` : 'Add Bundle';
+  document.getElementById('bundleModalTitle').textContent = bundle ? `Edit Bundle — ${bundle.name}` : 'Add Bundle';
   document.getElementById('bundleId').value       = bundle ? bundle.id : '';
   document.getElementById('bundleName').value     = bundle ? bundle.name : '';
   document.getElementById('bundleDesc').value     = bundle ? (bundle.description || '') : '';
@@ -1247,13 +1247,13 @@ function addBundleProdRow(menuId = '', qty = '1') {
   const div = document.createElement('div');
   div.className = 'multi-comp-row';
 
-  const menuOptions = menuItems.map(m => `<option value="${m.id}" data-price="${m.price}">${escapeHtml(m.name)} (â‚±${m.price})</option>`).join('');
+  const menuOptions = menuItems.map(m => `<option value="${m.id}" data-price="${m.price}">${escapeHtml(m.name)} (₱${m.price})</option>`).join('');
 
   div.innerHTML = `
-    <select class="bundle-prod-id"><option value="">Select Menu Productâ€¦</option>${menuOptions}</select>
+    <select class="bundle-prod-id"><option value="">Select Menu Product…</option>${menuOptions}</select>
     <input type="number" min="1" class="bundle-prod-qty" placeholder="Qty" value="${qty}">
     <div></div>
-    <button class="remove-row-btn" type="button" onclick="this.parentElement.remove(); window.recalculateBundleRegTotal();">Ã—</button>
+    <button class="remove-row-btn" type="button" onclick="this.parentElement.remove(); window.recalculateBundleRegTotal();">×</button>
   `;
   if (menuId) div.querySelector('.bundle-prod-id').value = menuId;
 
@@ -1347,7 +1347,7 @@ async function saveBundle() {
   };
 
   const saveBtn = document.getElementById('bundleSaveBtn');
-  saveBtn.disabled = true; saveBtn.textContent = 'Savingâ€¦';
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
 
   try {
     const url = id ? `/api/admin/products/bundles/${id}` : '/api/admin/products/bundles';
@@ -1368,7 +1368,7 @@ async function saveBundle() {
 }
 
 /* ================================================================
-   MODAL â€” CATEGORY
+   MODAL — CATEGORY
    ================================================================ */
 function openCatModal(id = '', name = '') {
   document.getElementById('catModalTitle').textContent = id ? 'Edit Category' : 'Add Category';
@@ -1390,7 +1390,7 @@ async function saveCategory() {
   }
 
   const saveBtn = document.getElementById('catSaveBtn');
-  saveBtn.disabled = true; saveBtn.textContent = 'Savingâ€¦';
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
 
   try {
     const url = id ? `/api/admin/products/categories/${id}` : '/api/admin/products/categories';
@@ -1426,7 +1426,7 @@ async function confirmDelete() {
   const errEl = document.getElementById('delError');
   const delBtn = document.getElementById('delConfirmBtn');
 
-  delBtn.disabled = true; delBtn.textContent = 'Deletingâ€¦';
+  delBtn.disabled = true; delBtn.textContent = 'Deleting…';
 
   let url = '';
   if (type === 'item')   url = `/api/admin/products/menuitems/${id}`;
@@ -1465,7 +1465,7 @@ function renderProfitability() {
   tbody.innerHTML = menuItems.map(i => `
     <tr>
       <td><span class="item-name">${escapeHtml(i.name)}</span></td>
-      <td>${escapeHtml(i.category_name || 'â€”')}</td>
+      <td>${escapeHtml(i.category_name || '—')}</td>
       <td class="right"><span class="price-val">${peso(i.price)}</span></td>
       <td class="right"><span class="stock-qty">${i.stock_quantity ?? '0'}</span></td>
       <td><span class="prd-badge ${i.status === 'available' ? 'badge-available' : 'badge-unavailable'}">${escapeHtml(i.status)}</span></td>

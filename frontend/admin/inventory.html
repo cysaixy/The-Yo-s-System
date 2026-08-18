@@ -1,15 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inventory â€” The~Yo's Admin</title>
-<meta name="description" content="Manage The~Yo's inventory â€” ingredients, raw materials, packaging, and supplies.">
+<title>Inventory — The~Yo's Admin</title>
+<meta name="description" content="Manage The~Yo's inventory — ingredients, raw materials, packaging, and supplies.">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=2">
+<link rel="stylesheet" href="admin-shell.css?v=3">
 <style>
 /* ================================================================
-   INVENTORY PAGE â€” Scoped styles (.inv-* namespace)
+   INVENTORY PAGE — Scoped styles (.inv-* namespace)
    ================================================================ */
 
 .inv-page { display: flex; flex-direction: column; gap: 0; }
@@ -349,7 +349,7 @@ import { renderAdminShell } from "./admin-shell.js";
 import { adminFetch, formatDate, escapeHtml, peso } from "./admin-api.js";
 
 /* ================================================================
-   PREDEFINED CATEGORIES & UNITS FOR CAFÃ‰/RESTAURANT INVENTORY
+   PREDEFINED CATEGORIES & UNITS FOR CAFÉ/RESTAURANT INVENTORY
    ================================================================ */
 const INVENTORY_CATEGORIES = [
   "Coffee & Espresso",
@@ -416,7 +416,7 @@ function buildPageHTML() {
     <div class="inv-header-actions">
       <div class="inv-header-search">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="hdrSearch" placeholder="Search inventoryâ€¦" autocomplete="off">
+        <input type="text" id="hdrSearch" placeholder="Search inventory…" autocomplete="off">
       </div>
       <button class="inv-add-btn" id="openAddBtn">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -440,34 +440,34 @@ function buildPageHTML() {
     <div class="inv-summary-row" id="summaryCards">
       <div class="inv-stat-card">
         <div class="isc-label">Total Inventory Items</div>
-        <div class="isc-value" id="statTotal">â€”</div>
+        <div class="isc-value" id="statTotal">—</div>
         <div class="isc-sub">Ingredients & supplies</div>
       </div>
       <div class="inv-stat-card">
         <div class="isc-label">Current Stock Value</div>
-        <div class="isc-value gold" id="statValue">â€”</div>
-        <div class="isc-sub">SUM(stock Ã— unit cost)</div>
+        <div class="isc-value gold" id="statValue">—</div>
+        <div class="isc-sub">SUM(stock × unit cost)</div>
       </div>
       <div class="inv-stat-card">
         <div class="isc-label">Last Inventory Audit</div>
-        <div class="isc-value sm" id="statLastAudit">Loadingâ€¦</div>
+        <div class="isc-value sm" id="statLastAudit">Loading…</div>
       </div>
     </div>
 
     <!-- Status strip -->
     <div class="inv-status-strip">
       <span class="strip-label">Status</span>
-      <div class="inv-status-item"><span class="inv-status-dot dot-green"></span><span class="count" id="cntInStock">â€”</span>&nbsp;In Stock</div>
-      <div class="inv-status-item"><span class="inv-status-dot dot-blue"></span><span class="count" id="cntBelow">â€”</span>&nbsp;Below Reorder</div>
-      <div class="inv-status-item"><span class="inv-status-dot dot-yellow"></span><span class="count" id="cntLow">â€”</span>&nbsp;Low Stock</div>
-      <div class="inv-status-item"><span class="inv-status-dot dot-red"></span><span class="count" id="cntOut">â€”</span>&nbsp;Out of Stock</div>
+      <div class="inv-status-item"><span class="inv-status-dot dot-green"></span><span class="count" id="cntInStock">—</span>&nbsp;In Stock</div>
+      <div class="inv-status-item"><span class="inv-status-dot dot-blue"></span><span class="count" id="cntBelow">—</span>&nbsp;Below Reorder</div>
+      <div class="inv-status-item"><span class="inv-status-dot dot-yellow"></span><span class="count" id="cntLow">—</span>&nbsp;Low Stock</div>
+      <div class="inv-status-item"><span class="inv-status-dot dot-red"></span><span class="count" id="cntOut">—</span>&nbsp;Out of Stock</div>
     </div>
 
     <!-- Toolbar -->
     <div class="inv-toolbar">
       <div class="inv-search-wrap">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input class="inv-search" type="text" id="stockSearch" placeholder="Search by name, SKU, or categoryâ€¦" autocomplete="off">
+        <input class="inv-search" type="text" id="stockSearch" placeholder="Search by name, SKU, or category…" autocomplete="off">
       </div>
       <div class="inv-filter-group">
         <span class="inv-filter-label">Filter:</span>
@@ -502,7 +502,7 @@ function buildPageHTML() {
           </tr>
         </thead>
         <tbody id="stockTbody">
-          <tr><td colspan="9"><div class="admin-loading">Loading inventoryâ€¦</div></td></tr>
+          <tr><td colspan="9"><div class="admin-loading">Loading inventory…</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -515,7 +515,7 @@ function buildPageHTML() {
       <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Inventory Audits</div>
       <div style="font-size:0.80rem; opacity:0.5; margin-top:2px;">Consolidated history of inventory entries and adjustments.</div>
     </div>
-    <div class="inv-table-wrap" id="auditsWrap"><div class="admin-loading">Loading audit logâ€¦</div></div>
+    <div class="inv-table-wrap" id="auditsWrap"><div class="admin-loading">Loading audit log…</div></div>
   </div>
 
   <!-- ===== USAGE PANEL ===== -->
@@ -524,7 +524,7 @@ function buildPageHTML() {
       <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Usage History</div>
       <div style="font-size:0.80rem; opacity:0.5; margin-top:2px;">Stock consumed by POS sales, recipes, and add-ons.</div>
     </div>
-    <div class="inv-table-wrap" id="usageWrap"><div class="admin-loading">Loading usage dataâ€¦</div></div>
+    <div class="inv-table-wrap" id="usageWrap"><div class="admin-loading">Loading usage data…</div></div>
   </div>
 
   <!-- ===== ADJUSTMENTS PANEL ===== -->
@@ -533,7 +533,7 @@ function buildPageHTML() {
       <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Adjustments Log</div>
       <div style="font-size:0.80rem; opacity:0.5; margin-top:2px;">Manual stock quantity changes and corrections.</div>
     </div>
-    <div class="inv-table-wrap" id="adjustmentsWrap"><div class="admin-loading">Loading adjustmentsâ€¦</div></div>
+    <div class="inv-table-wrap" id="adjustmentsWrap"><div class="admin-loading">Loading adjustments…</div></div>
   </div>
 
 </div><!-- /inv-page -->
@@ -556,7 +556,7 @@ function buildPageHTML() {
       <div class="inv-form-field">
         <label>Category *</label>
         <select id="itemCategory">
-          <option value="">Select categoryâ€¦</option>
+          <option value="">Select category…</option>
           ${INVENTORY_CATEGORIES.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
         </select>
       </div>
@@ -577,7 +577,7 @@ function buildPageHTML() {
         <input type="text" id="itemUnitCustom" placeholder="Enter unit (e.g. roll)" style="display:none; margin-top:6px;">
       </div>
       <div class="inv-form-field">
-        <label>Unit Cost (â‚±) *</label>
+        <label>Unit Cost (₱) *</label>
         <input type="number" id="itemUnitCost" min="0" step="0.01" placeholder="0.00">
       </div>
       <div class="inv-form-field">
@@ -590,7 +590,7 @@ function buildPageHTML() {
       </div>
       <div class="inv-form-field span2">
         <label>Notes / Remarks</label>
-        <textarea id="itemNotes" placeholder="Optional notesâ€¦"></textarea>
+        <textarea id="itemNotes" placeholder="Optional notes…"></textarea>
       </div>
     </div>
     <div class="inv-error-msg" id="itemError"></div>
@@ -736,7 +736,7 @@ async function loadStock() {
     applyFilters();
     loadLastAudit();
   } catch (err) {
-    document.getElementById('stockTbody').innerHTML = `<tr><td colspan="9"><div class="admin-error">âš  ${escapeHtml(err.message)}</div></td></tr>`;
+    document.getElementById('stockTbody').innerHTML = `<tr><td colspan="9"><div class="admin-error">⚠ ${escapeHtml(err.message)}</div></td></tr>`;
   }
 }
 
@@ -766,7 +766,7 @@ async function loadLastAudit() {
     document.getElementById('statLastAudit').textContent =
       entries.length ? formatDate(entries[0].log_date, { dateStyle: 'medium', timeStyle: 'short' }) : 'No audits yet';
   } catch {
-    document.getElementById('statLastAudit').textContent = 'â€”';
+    document.getElementById('statLastAudit').textContent = '—';
   }
 }
 
@@ -880,12 +880,12 @@ function closeDropdowns() {
 }
 
 /* ================================================================
-   ITEM MODAL â€” ADD / EDIT
+   ITEM MODAL — ADD / EDIT
    ================================================================ */
 function openItemModal(item = null) {
   editingItem = item;
 
-  document.getElementById('itemModalTitle').textContent = item ? `Edit â€” ${item.name}` : 'Add Inventory Item';
+  document.getElementById('itemModalTitle').textContent = item ? `Edit — ${item.name}` : 'Add Inventory Item';
   document.getElementById('itemId').value       = item ? item.id : '';
   document.getElementById('itemName').value     = item ? item.name : '';
   document.getElementById('itemCategory').value = item ? item.category : '';
@@ -949,7 +949,7 @@ async function saveItem() {
   };
 
   const saveBtn = document.getElementById('itemSaveBtn');
-  saveBtn.disabled = true; saveBtn.textContent = 'Savingâ€¦';
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
 
   try {
     const url = id ? `/api/admin/inventory/items/${id}` : '/api/admin/inventory/items';
@@ -998,7 +998,7 @@ async function saveAdjustment() {
   const change = type === 'stock_in' ? rawQty : -rawQty;
 
   const saveBtn = document.getElementById('adjSaveBtn');
-  saveBtn.disabled = true; saveBtn.textContent = 'Savingâ€¦';
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
 
   try {
     const res = await adminFetch('/api/admin/inventory/adjustments', {
@@ -1033,7 +1033,7 @@ async function confirmDelete() {
   const errEl  = document.getElementById('delError');
   const delBtn = document.getElementById('delConfirmBtn');
 
-  delBtn.disabled = true; delBtn.textContent = 'Deletingâ€¦';
+  delBtn.disabled = true; delBtn.textContent = 'Deleting…';
 
   try {
     const res = await adminFetch(`/api/admin/inventory/items/${deletingItem.id}`, { method: 'DELETE' });
@@ -1058,40 +1058,40 @@ async function confirmDelete() {
    ================================================================ */
 async function loadAudits() {
   const wrap = document.getElementById('auditsWrap');
-  wrap.innerHTML = '<div class="admin-loading">Loading audit logâ€¦</div>';
+  wrap.innerHTML = '<div class="admin-loading">Loading audit log…</div>';
   try {
     const res  = await adminFetch('/api/admin/inventory/log');
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     renderLogTable(wrap, data.entries || []);
   } catch (err) {
-    wrap.innerHTML = `<div class="admin-error">âš  ${escapeHtml(err.message)}</div>`;
+    wrap.innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
   }
 }
 
 async function loadUsage() {
   const wrap = document.getElementById('usageWrap');
-  wrap.innerHTML = '<div class="admin-loading">Loading usage dataâ€¦</div>';
+  wrap.innerHTML = '<div class="admin-loading">Loading usage data…</div>';
   try {
     const res  = await adminFetch('/api/admin/inventory/log?transaction_type=sale');
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     renderLogTable(wrap, data.entries || []);
   } catch (err) {
-    wrap.innerHTML = `<div class="admin-error">âš  ${escapeHtml(err.message)}</div>`;
+    wrap.innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
   }
 }
 
 async function loadAdjustmentsLog() {
   const wrap = document.getElementById('adjustmentsWrap');
-  wrap.innerHTML = '<div class="admin-loading">Loading adjustmentsâ€¦</div>';
+  wrap.innerHTML = '<div class="admin-loading">Loading adjustments…</div>';
   try {
     const res  = await adminFetch('/api/admin/inventory/log?transaction_type=adjustment');
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     renderLogTable(wrap, data.entries || []);
   } catch (err) {
-    wrap.innerHTML = `<div class="admin-error">âš  ${escapeHtml(err.message)}</div>`;
+    wrap.innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -1118,8 +1118,8 @@ function renderLogTable(wrap, entries) {
           <td style="font-family:'Space Mono',monospace;font-weight:700;color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'};">
             ${e.quantity_change > 0 ? '+' : ''}${e.quantity_change}
           </td>
-          <td>${escapeHtml(e.staff_name || 'â€”')}</td>
-          <td style="font-size:0.78rem;opacity:0.6;">${escapeHtml(e.remarks || 'â€”')}</td>
+          <td>${escapeHtml(e.staff_name || '—')}</td>
+          <td style="font-size:0.78rem;opacity:0.6;">${escapeHtml(e.remarks || '—')}</td>
         </tr>`).join('')}
       </tbody>
     </table>`;

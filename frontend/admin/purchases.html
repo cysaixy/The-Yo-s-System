@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Purchases â€” The~Yo's Admin</title>
+<title>Purchases — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=2">
+<link rel="stylesheet" href="admin-shell.css?v=3">
 </head>
 <body>
 
@@ -28,7 +28,7 @@
           <h3>Purchase / Stock-In History</h3>
           <button class="btn small" id="newPurchaseBtn">+ Record Purchase</button>
         </div>
-        <div class="admin-panel-body" style="padding:0;" id="purchasesWrap"><div class="admin-loading">Loadingâ€¦</div></div>
+        <div class="admin-panel-body" style="padding:0;" id="purchasesWrap"><div class="admin-loading">Loading…</div></div>
       </div>
 
       <div class="modal-backdrop" id="purchaseModal">
@@ -90,15 +90,15 @@
               <tr>
                 <td>${escapeHtml(p.item_name)}</td>
                 <td>+${p.quantity}</td>
-                <td>${p.expiration_date ? new Date(p.expiration_date).toLocaleDateString('en-PH') : 'â€”'}</td>
-                <td>${p.staff_name || 'â€”'}</td>
+                <td>${p.expiration_date ? new Date(p.expiration_date).toLocaleDateString('en-PH') : '—'}</td>
+                <td>${p.staff_name || '—'}</td>
                 <td style="font-size:0.78rem; opacity:0.7;">${formatDate(p.stockin_date)}</td>
-                <td style="font-size:0.8rem; opacity:0.75;">${escapeHtml(p.remarks || 'â€”')}</td>
+                <td style="font-size:0.8rem; opacity:0.75;">${escapeHtml(p.remarks || '—')}</td>
               </tr>`).join('')}</tbody>
           </table>`
         : `<div class="panel-empty" style="padding:20px;">No purchases recorded yet.</div>`;
     } catch (err) {
-      document.getElementById('purchasesWrap').innerHTML = `<div class="admin-error">âš  ${err.message}</div>`;
+      document.getElementById('purchasesWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
     }
   }
 
