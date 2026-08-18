@@ -8,120 +8,330 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="animations.css">
 <style>
-  /* ---------- Landing page (home only) ---------- */
-  body { padding-top: 0; }
-  header { position: sticky; }
-
-  .hero-v2 { padding: calc(95px + 44px) 0 0; overflow: hidden; background: var(--bone); }
-  .hero-v2-grid { display: grid; grid-template-columns: 1.05fr 1fr; align-items: center; gap: 30px; min-height: 480px; position: relative; }
-  @media(max-width:900px) { .hero-v2-grid { grid-template-columns: 1fr; min-height: 0; gap: 36px; text-align: center; } }
-
-  .hero-copy h1 { font-size: clamp(2.8rem,6vw,4.8rem); margin: 16px 0 18px; }
-  .hero-desc { font-size: 1.05rem; color: var(--ink); opacity: .78; max-width: 440px; margin: 0 0 30px; }
-  @media(max-width:900px) { .hero-desc { margin-left: auto; margin-right: auto; } }
-  .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; }
-  @media(max-width:900px) { .hero-cta { justify-content: center; } }
-
-  .hero-organic { position: relative; height: 460px; display: flex; align-items: center; justify-content: center; }
-  @media(max-width:900px) { .hero-organic { order: -1; height: 320px; } }
-  .hero-organic::before {
-    content: ""; position: absolute; top: 2%; bottom: 2%; right: -80px; left: 4%;
-    background: linear-gradient(135deg, var(--stone) 0%, #e7d7b7 45%, var(--brass) 100%);
-    border-radius: 46% 54% 38% 62% / 58% 42% 58% 42%; z-index: 0;
+  /* ============ GSAP-STYLE HOMEPAGE ============ */
+  html { scroll-behavior: auto; }
+  body.home-gsap {
+    --bone: #0b0c0d; --ink: #f2ecdf; --brass: #c9a45f;
+    --stone: #15171a; --dark: #0b0c0d;
+    --line: rgba(242,236,223,.12); --header-bg: rgba(11,12,13,.82);
+    --component-bg: #15171a;
+    --hp-bg: #0b0c0d; --hp-panel: #131416; --hp-card: #15171a;
+    --hp-ink: #f2ecdf; --hp-ink-soft: rgba(242,236,223,.62); --hp-ink-faint: rgba(242,236,223,.45);
+    --hp-line: rgba(242,236,223,.12); --hp-line-strong: rgba(242,236,223,.16);
+    --hp-grid: rgba(242,236,223,.035); --hp-word-stroke: rgba(242,236,223,.06);
+    --hp-glow-a: rgba(201,164,95,.13); --hp-glow-b: rgba(201,164,95,.05);
+    --hp-photo-a: #2b2d31; --hp-photo-b: #141518;
+    --hp-plate-a: #3c2a18; --hp-plate-b: #15100a;
+    --hp-spec-a: #3a2718; --hp-spec-b: #16110c;
+    --hp-gt-a: #2c2317; --hp-gt-b: #17181c;
+    --hp-sticky: #101114; --hp-marquee-text: #0b0c0d;
+    padding-top: 0; background: var(--hp-bg); color: var(--hp-ink);
   }
-  @media(max-width:900px) { .hero-organic::before { left: 2%; right: 2%; border-radius: 38% 62% 34% 66% / 50% 46% 54% 50%; } }
-  .deco { position: absolute; opacity: .28; color: var(--dark); z-index: 1; }
-  .deco svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 1.2; }
-  .d1 { width: 60px; height: 60px; top: 9%; right: 14%; }
-  .d2 { width: 36px; height: 36px; top: 64%; right: 8%; }
-  .d3 { width: 78px; height: 78px; bottom: 8%; left: 9%; transform: rotate(-10deg); }
+  body.home-gsap.coffee-night {
+    --hp-bg: #120d09; --hp-panel: #191310; --hp-card: #1b1410;
+    --hp-ink: #f5ead8; --hp-ink-soft: rgba(245,234,216,.66); --hp-ink-faint: rgba(245,234,216,.5);
+    --hp-line: rgba(245,234,216,.14); --hp-line-strong: rgba(245,234,216,.18);
+    --hp-grid: rgba(245,234,216,.04); --hp-word-stroke: rgba(245,234,216,.07);
+    --hp-glow-a: rgba(217,154,78,.17); --hp-glow-b: rgba(217,154,78,.07);
+    --hp-photo-a: #33291c; --hp-photo-b: #17120b;
+    --hp-plate-a: #462e18; --hp-plate-b: #1a120a;
+    --hp-spec-a: #463019; --hp-spec-b: #19110a;
+    --hp-gt-a: #382a16; --hp-gt-b: #1a1410;
+    --hp-sticky: #16100c; --hp-marquee-text: #140f08;
+  }
+  body.js-anim .location-layer { transition: none !important; }
 
-  .hero-plate { position: relative; z-index: 2; width: 300px; height: 300px; max-width: 74vw; max-height: 74vw; border-radius: 50%; background: #fff; padding: 10px; box-shadow: 0 24px 50px -18px rgba(21,17,10,.35); }
-  .hero-plate-inner { position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: radial-gradient(120% 90% at 30% 20%, #3c2a18 0%, #241a10 55%, #15100a 100%); display: flex; align-items: center; justify-content: center; }
-  .hero-plate .steam { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 40% at 50% 10%, rgba(255,220,170,.3), transparent 70%); animation: steam 6s ease-in-out infinite; mix-blend-mode: screen; }
-  @keyframes steam { 0%,100% { opacity:.35; transform:translateY(0) scale(1); } 50% { opacity:.65; transform:translateY(-8px) scale(1.05); } }
-  .hero-plate .plate-copy { position: relative; z-index: 1; color: rgba(255,244,224,.9); display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 26px; }
-  .hero-plate svg { width: 76px; height: 76px; stroke: currentColor; fill: none; stroke-width: 1.1; opacity: .85; }
-  .hero-plate .plate-label { margin-top: 12px; font-family: 'Space Mono', monospace; font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; opacity: .55; line-height: 1.5; }
+  /* ---------- HERO ---------- */
+  .gs-hero {
+    position: relative; min-height: 100vh; display: grid; align-items: center;
+    overflow: hidden; padding: 150px 0 90px;
+    background:
+      radial-gradient(980px 560px at 80% 8%, var(--hp-glow-a), transparent 60%),
+      radial-gradient(720px 460px at 4% 96%, var(--hp-glow-b), transparent 55%),
+      var(--hp-bg);
+  }
+  .gs-hero::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: linear-gradient(var(--hp-grid) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--hp-grid) 1px, transparent 1px);
+    background-size: 72px 72px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 60% 30%, #000, transparent 75%);
+    mask-image: radial-gradient(ellipse 80% 70% at 60% 30%, #000, transparent 75%);
+  }
+  .gs-hero-word {
+    position: absolute; top: 2%; right: -4%; z-index: 0; pointer-events: none; user-select: none;
+    font: 900 clamp(5rem,17vw,16rem)/1 'Archivo', sans-serif; letter-spacing: -.06em;
+    text-transform: uppercase; color: transparent; white-space: nowrap;
+    -webkit-text-stroke: 1px var(--hp-word-stroke);
+  }
+  .gs-hero-inner {
+    position: relative; z-index: 2; width: min(1200px, calc(100% - 80px)); margin: 0 auto;
+    display: grid; grid-template-columns: 1.2fr .8fr; gap: 40px; align-items: center;
+  }
+  .gs-eyebrow {
+    display: inline-flex; align-items: center; gap: 12px;
+    font: 700 .68rem 'Space Mono', monospace; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--brass);
+  }
+  .gs-eyebrow::before { content: ""; width: 34px; height: 1px; background: var(--brass); }
+  .gs-title {
+    font: 900 clamp(3.1rem,10vw,9.5rem)/.84 'Archivo', sans-serif;
+    text-transform: uppercase; letter-spacing: -.045em; color: var(--ink); margin: 18px 0 8px;
+  }
+  .gs-title .l { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: .04em; margin-bottom: -.04em; }
+  .gs-sub {
+    font: 700 clamp(1.15rem,2.6vw,2rem)/.9 'Archivo', sans-serif; text-transform: uppercase;
+    letter-spacing: -.02em; color: var(--brass); margin: 0 0 22px;
+  }
+  .gs-hero-desc { max-width: 460px; color: rgba(242,236,223,.64); font-size: 1.02rem; margin: 0 0 32px; }
+  .gs-hero-cta { display: flex; gap: 14px; flex-wrap: wrap; }
+  .gs-hero-figure { position: relative; height: 430px; display: grid; place-items: center; }
+  .gs-hero-figure::before {
+    content: ""; position: absolute; inset: 12% 6%;
+    background: linear-gradient(140deg, var(--hp-photo-a), var(--hp-bg) 70%); border-radius: 50%;
+    box-shadow: 0 40px 80px -30px rgba(0,0,0,.7);
+  }
+  .gs-hero-plate {
+    position: relative; z-index: 2; width: min(300px, 64vw); height: min(300px, 64vw);
+    border-radius: 50%; background: linear-gradient(160deg, var(--hp-plate-a), var(--hp-plate-b));
+    border: 1px solid var(--hp-line); display: grid; place-items: center;
+  }
+  .gs-hero-plate svg { width: 110px; height: 110px; stroke: rgba(248,241,228,.85); fill: none; stroke-width: 1.2; }
+  .gs-hero-plate .gs-steam {
+    position: absolute; inset: 0; border-radius: 50%; mix-blend-mode: screen;
+    background: radial-gradient(ellipse 60% 40% at 50% 12%, rgba(255,220,170,.22), transparent 70%);
+    animation: steam 6s ease-in-out infinite;
+  }
+  @keyframes steam { 0%,100% { opacity:.4; transform: translateY(0) scale(1); } 50% { opacity:.75; transform: translateY(-8px) scale(1.05); } }
+  .gs-hero-plate .plate-label {
+    position: absolute; bottom: -34px; font: 400 .6rem 'Space Mono', monospace;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--hp-ink-faint);
+  }
+  .gs-scroll-cue {
+    position: absolute; left: 40px; bottom: 28px; z-index: 3;
+    display: flex; flex-direction: column; gap: 12px; align-items: center;
+    font: 700 .62rem 'Space Mono', monospace; letter-spacing: .24em;
+    text-transform: uppercase; color: var(--hp-ink-faint);
+  }
+  .gs-scroll-cue::after {
+    content: ""; width: 1px; height: 58px;
+    background: linear-gradient(var(--brass), transparent);
+    animation: cue 1.8s ease-in-out infinite;
+  }
+  @keyframes cue { 0%,100% { transform: scaleY(.4); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } }
+  @media (max-width: 980px) {
+    .gs-hero { padding: 120px 0 70px; text-align: center; justify-items: center; }
+    .gs-hero-inner { grid-template-columns: 1fr; width: min(1200px, calc(100% - 44px)); }
+    .gs-eyebrow { justify-content: center; } .gs-eyebrow::before { display: none; }
+    .gs-hero-figure { order: -1; height: 250px; }
+    .gs-hero-desc { margin: 0 auto 30px; }
+    .gs-hero-cta { justify-content: center; }
+    .gs-scroll-cue { display: none; }
+  }
 
-  .feature-row { display: flex; align-items: center; gap: 16px; padding: 36px 0 70px; position: relative; z-index: 3; }
-  .feature-cards { display: flex; gap: 16px; overflow-x: auto; scroll-behavior: smooth; padding: 4px 2px 8px; }
-  .feature-cards::-webkit-scrollbar { display: none; }
-  .feature-card { flex: 0 0 172px; background: linear-gradient(160deg, var(--brass) 0%, #8a6d3a 100%); border-radius: 20px; padding: 18px 14px 20px; text-align: center; text-decoration: none; color: #fff; transition: transform .15s ease, box-shadow .15s ease; }
-  .feature-card:hover { transform: translateY(-4px); box-shadow: 0 16px 30px -16px rgba(138,109,58,.5); }
-  .fc-img { width: 74px; height: 74px; border-radius: 50%; background: rgba(255,255,255,.16); border: 2px solid rgba(255,255,255,.4); margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; }
-  .fc-img svg { width: 30px; height: 30px; stroke: #fff; fill: none; stroke-width: 1.4; }
-  .feature-card strong { display: block; font-family: 'Archivo', sans-serif; font-size: .86rem; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
-  .feature-card span { display: block; font-family: 'Space Mono', monospace; font-size: .66rem; opacity: .85; }
-  .carousel-arrow { flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--component-bg); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: var(--ink); transition: background .15s, color .15s; }
-  .carousel-arrow:hover { background: var(--brass); color: #fff; border-color: var(--brass); }
+  /* ---------- MARQUEE ---------- */
+  .gs-marquee {
+    position: relative; z-index: 3; background: var(--brass); color: var(--hp-marquee-text);
+    overflow: hidden; white-space: nowrap; padding: 18px 0;
+    border-block: 1px solid rgba(0,0,0,.28);
+  }
+  .gs-marquee-track { display: inline-block; animation: gsScroll 28s linear infinite; }
+  .gs-marquee span { font: 900 clamp(1.25rem,2.6vw,2.1rem)/1 'Archivo', sans-serif; text-transform: uppercase; letter-spacing: .015em; padding: 0 20px; }
+  @keyframes gsScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-  /* ---------- Specialty band ---------- */
-  .specialty { background: var(--dark); color: #f4efe6; padding: 90px 0; }
-  .specialty-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
-  @media(max-width:900px) { .specialty-grid { grid-template-columns: 1fr; } }
-  .specialty .eyebrow { color: var(--brass); }
-  .specialty h2 { font-family: 'Archivo', sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -.01em; font-size: clamp(1.7rem,3vw,2.5rem); margin: 12px 0 16px; line-height: 1.05; }
-  .specialty p { color: rgba(244,239,230,.72); max-width: 440px; }
-  .specialty-price { font-family: 'Space Mono', monospace; display: flex; gap: 22px; margin-top: 26px; flex-wrap: wrap; }
-  .specialty-price div { border-left: 2px solid var(--brass); padding-left: 12px; }
-  .specialty-price strong { display: block; font-size: 1.3rem; color: var(--brass); }
-  .specialty-price span { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; opacity: .6; }
-  .specialty-photo { aspect-ratio: 1/1; border-radius: 16px; background: radial-gradient(110% 90% at 70% 30%, #5c3a1e 0%, #2a1c10 60%, #17110a 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-  @media(max-width:900px) { .specialty-photo { order: -1; aspect-ratio: 16/10; } }
-  .specialty-photo svg { width: 96px; height: 96px; stroke: #f4e9d8; fill: none; stroke-width: 1; opacity: .8; }
+  /* ---------- PINNED HORIZONTAL SECTIONS ---------- */
+  .gs-horz { position: relative; background: var(--hp-bg); }
+  .gs-horz-stage { position: relative; }
+  body.js-anim .gs-horz-stage { height: 100vh; overflow: hidden; }
+  .gs-horz-track { display: flex; flex-direction: column; }
+  body.js-anim .gs-horz-track { flex-direction: row; width: max-content; height: 100vh; }
+  .gs-panel { flex: 0 0 100%; display: flex; align-items: center; justify-content: center; padding: 90px 40px; }
+  body.js-anim .gs-panel { flex: 0 0 auto; width: 100vw; height: 100vh; padding: 0 40px; }
+  .gs-panel-inner { width: min(1120px, 100%); margin: 0 auto; }
+  .gs-horz-progress { display: none; }
+  body.js-anim .gs-horz-progress {
+    display: block; position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+    height: 2px; background: rgba(242,236,223,.09);
+  }
+  .gs-horz-progress i { display: block; height: 100%; width: 0; background: var(--brass); }
 
-  /* ---------- Bestsellers ---------- */
-  .best { padding: 90px 0; }
+  .gs-intro .gs-panel-inner { width: min(960px, 100%); }
+  .gs-intro h2 {
+    font: 900 clamp(2.8rem,7.5vw,7.5rem)/.85 'Archivo', sans-serif; text-transform: uppercase;
+    letter-spacing: -.06em; color: var(--ink); margin: 18px 0 22px;
+  }
+  .gs-intro p { color: var(--hp-ink-soft); max-width: 520px; }
+
+  .gs-step { display: grid; grid-template-columns: 1fr .9fr; gap: 60px; align-items: center; }
+  .gs-step-art { display: grid; place-items: center; }
+  .gs-step-art svg { width: min(420px, 100%); height: auto; }
+  .gs-step-index { font: 700 .68rem 'Space Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--brass); }
+  .gs-step h3 {
+    font: 900 clamp(2rem,4.6vw,4.2rem)/.88 'Archivo', sans-serif; text-transform: uppercase;
+    letter-spacing: -.03em; margin: 16px 0 20px; color: var(--ink);
+  }
+  .gs-step p { color: var(--hp-ink-soft); max-width: 430px; }
+
+  .gs-cat { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
+  .gs-cat-icon {
+    width: 96px; height: 96px; border-radius: 50%; border: 1px solid rgba(201,164,95,.35);
+    background: rgba(201,164,95,.07); display: grid; place-items: center;
+  }
+  .gs-cat-icon svg { width: 44px; height: 44px; stroke: var(--brass); fill: none; stroke-width: 1.3; }
+  .gs-cat h3 {
+    font: 900 clamp(2.4rem,5.4vw,5rem)/.86 'Archivo', sans-serif; text-transform: uppercase;
+    letter-spacing: -.04em; color: var(--ink);
+  }
+  .gs-cat-meta { font: 700 .68rem 'Space Mono', monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--hp-ink-soft); }
+  .gs-cat-link {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 8px;
+    font: 700 .72rem 'Space Mono', monospace; letter-spacing: .18em; text-transform: uppercase; color: var(--brass);
+  }
+  .gs-cat-link:hover { color: #fff; }
+  @media (max-width: 900px) {
+    body.js-anim .gs-panel { width: 88vw; padding: 0 12vw 0 6vw; }
+    .gs-panel { padding: 70px 22px; }
+    .gs-step { grid-template-columns: 1fr; gap: 28px; text-align: center; justify-items: center; }
+    .gs-step p { margin: 0 auto; }
+    .gs-cat { align-items: center; text-align: center; }
+  }
+
+  /* ---------- LOCATION JOURNEY ---------- */
+  .find-us { background: var(--hp-bg); position: relative; }
+  #locationJourney { position: relative; }
+  #mapFrame { position: relative; overflow: hidden; display: grid; place-items: center; padding: 0 22px; }
+  body.js-anim #mapFrame { height: 100vh; }
+  .journey-copy { width: min(1120px, 100%); display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+  .journey-copy h2 {
+    font: 900 clamp(2.6rem,6.4vw,6.2rem)/.85 'Archivo', sans-serif; text-transform: uppercase;
+    letter-spacing: -.05em; margin: 16px 0 20px; color: var(--ink);
+  }
+  .journey-copy p { color: var(--hp-ink-soft); max-width: 430px; }
+  .journey-label { font: 700 .68rem 'Space Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--brass); margin-top: 22px; }
+  .journey-art { position: relative; height: min(56vh, 460px); }
+  .journey-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; will-change: transform, opacity, filter; }
+  .arrival { padding: 26px; border: 1px solid var(--hp-line-strong); background: var(--hp-panel); }
+  body.js-anim .arrival { opacity: 0; transform: translateY(22px); }
+  .arrival h3 { font: 900 clamp(1.7rem,3vw,2.6rem)/.9 'Archivo', sans-serif; text-transform: uppercase; margin-bottom: 14px; color: var(--ink); }
+  .arrival address { font-style: normal; color: var(--hp-ink-soft); line-height: 1.6; }
+  .arrival .hours { display: block; margin: 14px 0; color: var(--brass); font: 700 .66rem 'Space Mono', monospace; text-transform: uppercase; letter-spacing: .08em; }
+  .arrival-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  @media (max-width: 900px) {
+    #mapFrame { height: auto; padding: 90px 22px; }
+    body.js-anim #mapFrame { height: auto; position: relative; }
+    .journey-copy { grid-template-columns: 1fr; gap: 34px; text-align: center; justify-items: center; }
+    .journey-copy p { margin: 0 auto; }
+    .journey-art { height: 300px; }
+    .arrival { opacity: 1 !important; transform: none !important; }
+    .journey-art img { transform: none !important; opacity: 1 !important; filter: none !important; }
+  }
+
+  /* ---------- SPECIALTY ---------- */
+  .specialty { background: var(--hp-panel); padding: 110px 0; border-block: 1px solid var(--hp-line); }
+  .specialty-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 70px; align-items: center; }
+  .specialty h2 {
+    font: 900 clamp(2rem,4.4vw,3.6rem)/.92 'Archivo', sans-serif; text-transform: uppercase;
+    letter-spacing: -.03em; margin: 16px 0; color: var(--ink);
+  }
+  .specialty p { color: rgba(242,236,223,.64); max-width: 440px; }
+  .specialty-price { display: flex; gap: 26px; margin-top: 28px; flex-wrap: wrap; }
+  .specialty-price div { border-left: 2px solid var(--brass); padding-left: 14px; }
+  .specialty-price strong { display: block; font: 700 1.3rem 'Space Mono', monospace; color: var(--brass); }
+  .specialty-price span { font: 600 .66rem 'Space Mono', monospace; text-transform: uppercase; letter-spacing: .06em; color: rgba(242,236,223,.55); }
+  .specialty-photo {
+    aspect-ratio: 1/1; border-radius: 50%; overflow: hidden; position: relative;
+    background: radial-gradient(110% 90% at 70% 30%, #3a2718, #16110c 60%);
+    border: 1px solid rgba(242,236,223,.1); display: grid; place-items: center;
+  }
+  .specialty-photo svg { width: 110px; height: 110px; stroke: #f2ecdf; fill: none; stroke-width: 1; opacity: .85; }
+  @media (max-width: 900px) {
+    .specialty-grid { grid-template-columns: 1fr; gap: 44px; }
+    .specialty-photo { order: -1; aspect-ratio: 16/11; border-radius: 18px; }
+  }
+
+  /* ---------- SECTION HEADS ---------- */
+  .section-head {
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 30px;
+    margin-bottom: 54px; flex-wrap: wrap; border-bottom: 1px solid rgba(242,236,223,.12); padding-bottom: 26px;
+  }
+  .section-head h2 {
+    font: 900 clamp(1.9rem,4vw,3.2rem)/.9 'Archivo', sans-serif; text-transform: uppercase;
+    letter-spacing: -.03em; color: var(--ink);
+  }
+  .section-head p { max-width: 340px; color: rgba(242,236,223,.6); font-size: .95rem; }
+
+  /* ---------- BESTSELLERS ---------- */
+  .best { background: #0b0c0d; padding: 110px 0; }
   .ticket-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; }
-  @media(max-width:900px) { .ticket-grid { grid-template-columns: repeat(2,1fr); } }
-  .ticket { background: var(--component-bg); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; position: relative; transition: transform .15s ease, box-shadow .15s ease; }
-  .ticket:hover { transform: translateY(-4px); box-shadow: 0 16px 30px -18px rgba(21,17,10,.25); }
-  .ticket-photo { aspect-ratio: 1/.82; background: linear-gradient(135deg,var(--stone),var(--line)); display: flex; align-items: center; justify-content: center; color: var(--brass); position: relative; }
-  .ticket-photo svg { width: 42px; height: 42px; stroke: currentColor; fill: none; stroke-width: 1.3; opacity: .55; }
-  .ticket-badge { position: absolute; top: 10px; left: 10px; background: var(--brass); color: #fff; font-family: 'Space Mono', monospace; font-size: .6rem; letter-spacing: .05em; text-transform: uppercase; padding: 4px 8px; border-radius: 20px; font-weight: 700; }
-  .ticket-body { padding: 14px 16px 16px; border-top: 1px dashed var(--line); }
-  .ticket-body .name { font-weight: 700; font-size: .88rem; display: block; margin-bottom: 6px; font-family: 'Archivo', sans-serif; text-transform: uppercase; color: var(--ink); }
+  @media (max-width: 900px) { .ticket-grid { grid-template-columns: repeat(2,1fr); } }
+  .ticket {
+    background: #15171a; border: 1px solid rgba(242,236,223,.1); border-radius: 14px;
+    overflow: hidden; position: relative; transition: transform .2s ease, border-color .2s ease;
+  }
+  .ticket:hover { transform: translateY(-6px); border-color: rgba(201,164,95,.5); }
+  .ticket-photo {
+    aspect-ratio: 1/.82; position: relative; display: grid; place-items: center; color: var(--brass);
+    background: radial-gradient(120% 90% at 30% 20%, #2a2c30, #141518 70%);
+  }
+  .ticket-photo svg { width: 46px; height: 46px; stroke: currentColor; fill: none; stroke-width: 1.3; opacity: .75; }
+  .ticket-badge {
+    position: absolute; top: 12px; left: 12px; background: var(--brass); color: #0b0c0d;
+    font: 700 .58rem 'Space Mono', monospace; letter-spacing: .05em; text-transform: uppercase;
+    padding: 5px 9px; border-radius: 20px;
+  }
+  .ticket-body { padding: 15px 16px 17px; border-top: 1px dashed rgba(242,236,223,.14); }
+  .ticket-body .name { font: 800 .86rem 'Archivo', sans-serif; text-transform: uppercase; letter-spacing: .01em; display: block; margin-bottom: 8px; color: var(--ink); }
   .ticket-body .row { display: flex; justify-content: space-between; align-items: center; }
-  .ticket-body .price { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--brass); }
-  .ticket-body .add { width: 30px; height: 30px; border-radius: 8px; background: var(--stone); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 1.05rem; cursor: pointer; color: var(--ink); }
-  .ticket-body .add:hover { background: var(--brass); color: #fff; border-color: var(--brass); }
+  .ticket-body .price { font: 700 .95rem 'Space Mono', monospace; color: var(--brass); }
+  .ticket-body .add {
+    width: 30px; height: 30px; border-radius: 9px; background: rgba(201,164,95,.12);
+    border: 1px solid rgba(201,164,95,.35); display: grid; place-items: center;
+    font-size: 1.05rem; cursor: pointer; color: var(--ink);
+  }
+  .ticket-body .add:hover { background: var(--brass); color: #0b0c0d; border-color: var(--brass); }
 
-  /* ---------- Gallery teaser ---------- */
-  .gallery-teaser { padding: 0 0 90px; }
-  .gt-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 14px; height: 280px; }
-  @media(max-width:800px) { .gt-grid { grid-template-columns: 1fr 1fr; height: auto; } .gt-grid .gt-item { aspect-ratio: 1/1; } .gt-grid .gt-item:first-child { grid-column: 1/-1; aspect-ratio: 2/1; } }
-  .gt-item { border-radius: 12px; position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 16px; color: #f4efe6; font-family: 'Space Mono', monospace; font-size: .74rem; letter-spacing: .04em; text-decoration: none; }
-  .gt-item::before { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg,#5c4326,#241a10); }
+  /* ---------- GALLERY TEASER ---------- */
+  .gallery-teaser { background: #0b0c0d; padding: 0 0 110px; }
+  .gt-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 14px; height: 300px; }
+  @media (max-width: 800px) {
+    .gt-grid { grid-template-columns: 1fr 1fr; height: auto; }
+    .gt-grid .gt-item { aspect-ratio: 1/1; }
+    .gt-grid .gt-item:first-child { grid-column: 1/-1; aspect-ratio: 2/1; }
+  }
+  .gt-item {
+    border-radius: 14px; position: relative; overflow: hidden; display: flex; align-items: flex-end;
+    padding: 18px; color: #f2ecdf; font: 700 .72rem 'Space Mono', monospace; letter-spacing: .04em; text-decoration: none;
+  }
+  .gt-item::before { content: ""; position: absolute; inset: 0; background: radial-gradient(140% 100% at 20% 0%, #2c2317, #17181c 70%); }
+  .gt-item::after { content: ""; position: absolute; inset: 0; border: 1px solid rgba(201,164,95,.22); border-radius: inherit; opacity: 0; transition: opacity .25s; }
+  .gt-item:hover::after { opacity: 1; }
   .gt-item span { position: relative; z-index: 1; }
 
-  /* ---------- CTA band ---------- */
-  .cta-band { background: var(--stone); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 60px 0; }
+  /* ---------- CTA BAND ---------- */
+  .cta-band { background: #131416; border-block: 1px solid rgba(242,236,223,.08); padding: 80px 0; }
   .cta-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-  @media(max-width:700px) { .cta-inner { flex-direction: column; align-items: flex-start; } }
-  .cta-inner h3 { font-family: 'Archivo', sans-serif; font-weight: 900; text-transform: uppercase; font-size: 1.5rem; margin-bottom: 6px; color: var(--ink); }
-  .cta-inner p { margin: 0; color: var(--ink); opacity: .7; }
+  .cta-inner h3 { font: 900 1.6rem 'Archivo', sans-serif; text-transform: uppercase; margin-bottom: 6px; color: var(--ink); }
+  .cta-inner p { margin: 0; color: rgba(242,236,223,.6); }
+  @media (max-width: 700px) { .cta-inner { flex-direction: column; align-items: flex-start; } }
 
-  .marquee { position: relative; z-index: 3; }
+  footer { border-top: 1px solid rgba(242,236,223,.08); }
 
-  /* ---------- Mobile sticky order bar ---------- */
+  /* ---------- MOBILE STICKY ORDER BAR ---------- */
   .sticky-order { display: none; }
-  @media(max-width:900px) {
-    body { padding-bottom: 78px; }
+  @media (max-width: 900px) {
+    body.home-gsap { padding-bottom: 78px; }
     .sticky-order {
       display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
-      background: var(--dark); padding: 12px 18px; align-items: center; justify-content: space-between;
-      box-shadow: 0 -8px 24px rgba(0,0,0,.18);
+      background: #101114; padding: 12px 18px; align-items: center; justify-content: space-between;
+      border-top: 1px solid rgba(242,236,223,.1); box-shadow: 0 -8px 24px rgba(0,0,0,.18);
     }
-    .sticky-order .txt { color: #f4efe6; }
-    .sticky-order .txt strong { display: block; font-family: 'Archivo', sans-serif; font-size: .88rem; }
-    .sticky-order .txt span { font-family: 'Space Mono', monospace; font-size: .66rem; opacity: .65; }
+    .sticky-order .txt { color: #f2ecdf; }
+    .sticky-order .txt strong { display: block; font: 800 .86rem 'Archivo', sans-serif; }
+    .sticky-order .txt span { font: 600 .64rem 'Space Mono', monospace; opacity: .6; }
   }
-  /* Immersive homepage chapters: structurally separate from cart/order logic. */
-  .order-story,.find-us{background:#17120d;color:#fbf7ee;position:relative}.journey{height:360vh}.journey-stage{height:100vh;position:sticky;top:0;overflow:hidden;display:grid;place-items:center}.journey-stage::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 25%,#b8954a33,transparent 27%),linear-gradient(#17120d88,#17120dcc);pointer-events:none}.journey-copy{position:relative;z-index:8;width:min(1120px,calc(100% - 48px));display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}.journey-copy h2{font-size:clamp(3rem,7vw,7.3rem);line-height:.83;letter-spacing:-.075em;margin:12px 0}.journey-copy p{color:#fbf7eeb8;max-width:430px}.journey-label{color:#d1b16a;font:700 .68rem 'Space Mono',monospace;letter-spacing:.13em;text-transform:uppercase;margin-top:24px}.journey-art{height:min(58vh,470px);position:relative}.journey-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;will-change:transform,opacity,filter}.journey-art .background{opacity:.65;transform:scale(1.08)}.journey-art .store{opacity:0;transform:translateY(50px) scale(.58);filter:blur(9px)}.journey-art .marker{opacity:0;transform:translateY(-45px) scale(.6)}.arrival{opacity:0;transform:translateY(22px);padding:25px;border:1px solid #fbf7ee44;background:#17120de8;backdrop-filter:blur(8px)}.arrival h3{font:900 clamp(1.8rem,3vw,2.7rem)/.9 Archivo,sans-serif;text-transform:uppercase;margin-bottom:15px}.arrival address{font-style:normal;color:#fbf7eec4}.arrival .hours{display:block;margin:14px 0;color:#d1b16a;font:700 .67rem 'Space Mono',monospace;text-transform:uppercase;letter-spacing:.08em}.arrival-actions{display:flex;gap:10px;flex-wrap:wrap}@media(max-width:900px){.journey{height:auto}.journey-stage{height:auto;min-height:760px;position:relative;padding:80px 0}.journey-copy{grid-template-columns:1fr;gap:22px}.journey-art{height:290px}.journey-art .store,.journey-art .marker,.arrival{opacity:1;filter:none;transform:none}.journey-label{display:none}}@media(prefers-reduced-motion:reduce){.journey{height:auto}.journey-stage{position:relative;height:auto;min-height:760px}.journey-art .store,.journey-art .marker,.arrival{opacity:1!important;filter:none!important;transform:none!important}}
 </style>
 </head>
-<body>
+<body class="home-gsap">
 
 <header>
   <a href="index.html" class="logo-link">
@@ -144,82 +354,191 @@
 </header>
 
 <!-- ============ HERO ============ -->
-<section class="hero-v2">
-  <div class="wrap hero-v2-grid">
-    <div class="hero-copy">
-      <p class="eyebrow">Resto Bar — Baggao, Cagayan</p>
-      <h1 class="display">The~Yo's</h1>
-      <p class="hero-desc">Sizzling rice meals, signature chicken flavors, local noodle masterpieces, and premium hot &amp; icy espresso lines — 2nd Floor, DKB Building, Poblacion.</p>
-      <div class="hero-cta">
+<section class="gs-hero">
+  <div class="gs-hero-word" aria-hidden="true">THE~YO'S</div>
+  <div class="gs-hero-inner">
+    <div class="gs-hero-copy">
+      <p class="gs-eyebrow fade-in">Resto Bar &middot; Baggao, Cagayan</p>
+      <h1 class="gs-title" aria-label="THE~YO'S">
+        <span class="l"><span>T</span></span><span class="l"><span>H</span></span><span class="l"><span>E</span></span><span class="l"><span>~</span></span><span class="l"><span>Y</span></span><span class="l"><span>O</span></span><span class="l"><span>'</span></span><span class="l"><span>S</span></span>
+      </h1>
+      <p class="gs-sub fade-in">Sizzling rice meals &middot; Handcrafted espresso</p>
+      <p class="gs-hero-desc fade-in">Sizzling rice meals, signature chicken flavors, local noodle masterpieces, and premium hot &amp; icy espresso lines — 2nd Floor, DKB Building, Poblacion.</p>
+      <div class="gs-hero-cta fade-in">
         <a href="order.html" class="btn">Order Now</a>
         <a href="menu.html" class="btn btn-outline">View Full Menu</a>
       </div>
     </div>
-    <div class="hero-organic">
-      <div class="deco d1"><svg viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg></div>
-      <div class="deco d2"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="7" ry="9"/><path d="M12 3v18" stroke-linecap="round"/></svg></div>
-      <div class="deco d3"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="9" ry="3.2"/><path d="M3 15V9a9 3.2 0 0 1 18 0v6"/></svg></div>
-      <div class="hero-plate">
-        <div class="hero-plate-inner">
-          <div class="steam"></div>
-          <div class="plate-copy">
-            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="9" ry="3.2"/><path d="M3 15V9a9 3.2 0 0 1 18 0v6"/><path d="M8 6c0-1.4.6-2.2.6-3.4M12 6c0-1.6.6-2.4.6-3.6M16 6c0-1.4.6-2.2.6-3.4" stroke-linecap="round"/></svg>
-            <span class="plate-label">Swap this circle for a real photo of<br>your signature platter</span>
+    <div class="gs-hero-figure fade-in">
+      <div class="gs-hero-plate">
+        <div class="gs-steam"></div>
+        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="9" ry="3.2"/><path d="M3 15V9a9 3.2 0 0 1 18 0v6"/><path d="M8 6c0-1.4.6-2.2.6-3.4M12 6c0-1.6.6-2.4.6-3.6M16 6c0-1.4.6-2.2.6-3.4" stroke-linecap="round"/></svg>
+        <span class="plate-label">The~Yo's signature</span>
+      </div>
+    </div>
+  </div>
+  <div class="gs-scroll-cue">Scroll</div>
+</section>
+
+<div class="gs-marquee">
+  <div class="gs-marquee-track">
+    <span>Rice Meals &amp; Bowls &diams;</span><span>Crispy Chicken &diams;</span><span>Pansit Batil Patung &diams;</span><span>Handcrafted Espresso &diams;</span><span>Matcha &amp; Non-Coffee &diams;</span><span>Full Catering Operations &diams;</span>
+    <span>Rice Meals &amp; Bowls &diams;</span><span>Crispy Chicken &diams;</span><span>Pansit Batil Patung &diams;</span><span>Handcrafted Espresso &diams;</span><span>Matcha &amp; Non-Coffee &diams;</span><span>Full Catering Operations &diams;</span>
+  </div>
+</div>
+
+<!-- ============ HORIZONTAL: ORDER STORY ============ -->
+<section class="gs-horz order-horz" id="orderStory">
+  <div class="gs-horz-stage">
+    <div class="gs-horz-track">
+      <div class="gs-panel gs-intro">
+        <div class="gs-panel-inner">
+          <p class="gs-eyebrow">From craving to confirmed</p>
+          <h2 id="storyTitle">Good food.<br>Your way.</h2>
+          <p id="storyText">Browse drinks, choose dine-in, pickup, delivery, or an advance order, then check everything before you confirm.</p>
+        </div>
+      </div>
+      <div class="gs-panel">
+        <div class="gs-panel-inner gs-step">
+          <div>
+            <p class="gs-step-index">01 / 04 &middot; Choose your drink</p>
+            <h3>Pick your favorite</h3>
+            <p>Browse our drinks and choose something you&rsquo;ll enjoy — from handcrafted espresso to icy matcha.</p>
+          </div>
+          <div class="gs-step-art"><img src="./assets/svg/how-drink.svg" alt="Choosing your drink illustration"></div>
+        </div>
+      </div>
+      <div class="gs-panel">
+        <div class="gs-panel-inner gs-step">
+          <div>
+            <p class="gs-step-index">02 / 04 &middot; Choose your way</p>
+            <h3>Your way, your call</h3>
+            <p>Choose dine-in, pickup, delivery, or plan your order ahead for a set time.</p>
+          </div>
+          <div class="gs-step-art"><img src="./assets/svg/how-way.svg" alt="Choosing your way illustration"></div>
+        </div>
+      </div>
+      <div class="gs-panel">
+        <div class="gs-panel-inner gs-step">
+          <div>
+            <p class="gs-step-index">03 / 04 &middot; Review your order</p>
+            <h3>Check it twice</h3>
+            <p>Check your drinks, quantities, order details, and total before you send it.</p>
+          </div>
+          <div class="gs-step-art"><img src="./assets/svg/how-cart.svg" alt="Reviewing your order illustration"></div>
+        </div>
+      </div>
+      <div class="gs-panel">
+        <div class="gs-panel-inner gs-step">
+          <div>
+            <p class="gs-step-index">04 / 04 &middot; Confirm and track</p>
+            <h3>Done. Tracked.</h3>
+            <p>Send your order, receive confirmation, and check its status from My Orders.</p>
+          </div>
+          <div class="gs-step-art"><img src="./assets/svg/how-track.svg" alt="Tracking your order illustration"></div>
+        </div>
+      </div>
+    </div>
+    <div class="gs-horz-progress"><i></i></div>
+  </div>
+</section>
+
+<!-- ============ HORIZONTAL: MENU SHOWCASE ============ -->
+<section class="gs-horz menu-horz" id="menuShowcase">
+  <div class="gs-horz-stage">
+    <div class="gs-horz-track">
+      <div class="gs-panel gs-intro">
+        <div class="gs-panel-inner">
+          <p class="gs-eyebrow">The Menu</p>
+          <h2>What people actually order</h2>
+          <p>Every favorite, one scroll away — from rice meals to the espresso bar. Tap any panel to jump straight to that part of the menu.</p>
+        </div>
+      </div>
+      <div class="gs-panel">
+        <div class="gs-panel-inner gs-cat">
+          <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="9" ry="3.2"/><path d="M3 15V9a9 3.2 0 0 1 18 0v6"/></svg></div>
+          <h3>Rice Meals</h3>
+          <p class="gs-cat-meta">From ₱100 &middot; sisig, katsu, tapsi &amp; bowls</p>
+          <a class="gs-cat-link" href="menu.html#rice-meals">View Rice Meals &rarr;</a>
+        </div>
+      </div>
+      <div class="gs-panel">
+        <div class="gs-panel-inner gs-cat">
+          <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg></div>
+          <h3>Crispy Chicken</h3>
+          <p class="gs-cat-meta">From ₱55 &middot; wings, burgers &amp; snacks</p>
+          <a class="gs-cat-link" href="menu.html#wings-snacks">View Chicken &amp; Snacks &rarr;</a>
+        </div>
+      </div>
+      <div class="gs-panel">
+        <div class="gs-panel-inner gs-cat">
+          <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg></div>
+          <h3>Pansit &amp; Noodles</h3>
+          <p class="gs-cat-meta">From ₱70 &middot; lomi, batil patung &amp; bilao</p>
+          <a class="gs-cat-link" href="menu.html#wings-snacks">View Noodles &rarr;</a>
+        </div>
+      </div>
+      <div class="gs-panel">
+        <div class="gs-panel-inner gs-cat">
+          <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M8.5 4.5c1.5 1 1.8 2.2.9 3.4M12 4.5c1.5 1 1.8 2.2.9 3.4" stroke-linecap="round"/></svg></div>
+          <h3>Espresso Bar</h3>
+          <p class="gs-cat-meta">From ₱90 &middot; hot &amp; iced espresso lines</p>
+          <a class="gs-cat-link" href="menu.html#espresso-bar">View Espresso Bar &rarr;</a>
+        </div>
+      </div>
+      <div class="gs-panel">
+        <div class="gs-panel-inner gs-cat">
+          <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7 10c1.5 1 3 1.4 5 1.4s3.5-.4 5-1.4M6 14c2 1.2 4 1.7 6 1.7s4-.5 6-1.7" stroke-linecap="round"/></svg></div>
+          <h3>Matcha &amp; Non-Coffee</h3>
+          <p class="gs-cat-meta">From ₱80 &middot; matcha, frappes &amp; fruit teas</p>
+          <a class="gs-cat-link" href="menu.html#non-coffee-drinks">View Matcha Series &rarr;</a>
+        </div>
+      </div>
+    </div>
+    <div class="gs-horz-progress"><i></i></div>
+  </div>
+</section>
+
+<!-- ============ LOCATION JOURNEY ============ -->
+<section class="find-us" id="find-us">
+  <div class="journey" id="locationJourney">
+    <div class="journey-stage" id="mapFrame">
+      <div class="journey-copy">
+        <div>
+          <p class="gs-eyebrow">Where to find us</p>
+          <h2 class="display" id="findUsTitle">Walk to<br>The~Yo's.</h2>
+          <p id="locationText">Follow the way to The~Yo's Resto Bar in the heart of Baggao.</p>
+          <p class="journey-label" id="journeyLabel">01 / 04 &middot; You're on the road</p>
+        </div>
+        <div>
+          <div class="journey-art">
+            <img class="location-layer background" src="./assets/location/location-background.svg" alt="">
+            <img class="location-layer midground" src="./assets/location/location-midground.svg" alt="">
+            <img class="location-layer road" src="./assets/location/location-road.svg" alt="">
+            <img class="location-layer foreground" src="./assets/location/location-foreground.svg" alt="">
+            <img class="location-layer store" src="./assets/location/location-store.svg" alt="The Yo's storefront">
+            <img class="location-layer marker" src="./assets/location/location-marker.svg" alt="">
+          </div>
+          <div class="arrival" id="arrivalCard">
+            <h3>You've arrived.</h3>
+            <address><strong>The~Yo's Resto Bar</strong><br>2nd Floor, DKB Building<br>Poblacion, Baggao, Cagayan</address>
+            <span class="hours">Open daily &middot; 8:00 AM &ndash; 8:00 PM</span>
+            <div class="arrival-actions">
+              <a class="btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=2nd+Floor+DKB+Building,+Poblacion,+Baggao,+Cagayan" target="_blank" rel="noopener">Get Directions</a>
+              <a class="btn btn-outline" href="order.html">Order Now</a>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-
-  <div class="wrap feature-row">
-    <div class="feature-cards" id="featureCards">
-      <a class="feature-card" href="menu.html#rice-meals">
-        <div class="fc-img"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="9" ry="3.2"/><path d="M3 15V9a9 3.2 0 0 1 18 0v6"/></svg></div>
-        <strong>Rice Meals</strong>
-        <span>Pork Sisig · ₱100</span>
-      </a>
-      <a class="feature-card" href="menu.html#wings-snacks">
-        <div class="fc-img"><svg viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg></div>
-        <strong>Crispy Chicken</strong>
-        <span>6pc Wings · ₱180</span>
-      </a>
-      <a class="feature-card" href="menu.html#wings-snacks">
-        <div class="fc-img"><svg viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg></div>
-        <strong>Local Noodles</strong>
-        <span>Batil Patung · ₱120</span>
-      </a>
-      <a class="feature-card" href="menu.html#espresso-bar">
-        <div class="fc-img"><svg viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg></div>
-        <strong>Espresso Bar</strong>
-        <span>Spanish Latte · ₱110</span>
-      </a>
-      <a class="feature-card" href="menu.html#non-coffee-drinks">
-        <div class="fc-img"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7 10c1.5 1 3 1.4 5 1.4s3.5-.4 5-1.4M6 14c2 1.2 4 1.7 6 1.7s4-.5 6-1.7" stroke-linecap="round"/></svg></div>
-        <strong>Matcha Series</strong>
-        <span>Berry Matcha · ₱100</span>
-      </a>
-    </div>
-    <button class="carousel-arrow" id="carouselNext" aria-label="Next featured items">›</button>
-  </div>
 </section>
-
-<!-- Scroll-controlled ordering and arrival story. -->
-<section class="order-story" id="orderStory"><div class="journey"><div class="journey-stage"><div class="journey-copy"><div><p class="eyebrow">From craving to confirmed</p><h2 class="display" id="storyTitle">Good food.<br>Your way.</h2><p id="storyText">Browse drinks, choose dine-in, pickup, delivery, or an advance order, then check everything before you confirm.</p><p class="journey-label" id="storyLabel">01 / 04 · Choose your drink</p></div><div class="journey-art"><img id="storyImage" src="./assets/svg/how-drink.svg" alt="Coffee ordering illustration"></div></div></div></div></section>
-
-<section class="find-us" id="find-us"><div class="journey" id="locationJourney"><div class="journey-stage" id="mapFrame"><div class="journey-copy"><div><p class="eyebrow">Where to find us</p><h2 class="display" id="findUsTitle">Walk to<br>The~Yo's.</h2><p id="locationText">Follow the way to The~Yo's Resto Bar in the heart of Baggao.</p><p class="journey-label" id="journeyLabel">01 / 04 · You're on the road</p></div><div><div class="journey-art"><img class="location-layer background" src="./assets/location/location-background.svg" alt=""><img class="location-layer midground" src="./assets/location/location-midground.svg" alt=""><img class="location-layer road" src="./assets/location/location-road.svg" alt=""><img class="location-layer foreground" src="./assets/location/location-foreground.svg" alt=""><img class="location-layer store" src="./assets/location/location-store.svg" alt="The Yo's storefront"><img class="location-layer marker" src="./assets/location/location-marker.svg" alt=""></div><div class="arrival" id="arrivalCard"><h3>You've arrived.</h3><address><strong>The~Yo's Resto Bar</strong><br>2nd Floor, DKB Building<br>Poblacion, Baggao, Cagayan</address><span class="hours">Open daily · 8:00 AM – 8:00 PM</span><div class="arrival-actions"><a class="btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=2nd+Floor+DKB+Building,+Poblacion,+Baggao,+Cagayan" target="_blank" rel="noopener">Get Directions</a><a class="btn btn-outline" href="order.html">Order Now</a></div></div></div></div></div></div></section>
-
-<div class="marquee">
-  <div class="marquee-track">
-    <span>Rice Meals & Bowls</span><span>Pansit Batil Patung</span><span>Handcrafted Espresso line</span><span>Full Catering Operations</span>
-    <span>Rice Meals & Bowls</span><span>Pansit Batil Patung</span><span>Handcrafted Espresso line</span><span>Full Catering Operations</span>
-  </div>
-</div>
 
 <!-- ============ HOUSE SPECIALTY ============ -->
 <section class="specialty">
   <div class="wrap specialty-grid">
     <div>
-      <p class="eyebrow">House Specialty</p>
+      <p class="gs-eyebrow">House Specialty</p>
       <h2>Pancit Batil Patung, made the Cagayan way.</h2>
       <p>Our take on the regional classic — thick miki noodles, a raw egg batil-mixed in tableside style, and your choice of balor. It's the dish people from out of town ask for by name.</p>
       <div class="specialty-price">
@@ -228,7 +547,7 @@
         <div><strong>₱150</strong><span>Balor 150</span></div>
         <div><strong>₱300+</strong><span>Bilao (Sharing)</span></div>
       </div>
-      <div style="margin-top:28px;"><a href="menu.html#wings-snacks" class="btn btn-outline" style="border-color:rgba(244,239,230,.3); color:#f4efe6;">See Noodle Menu</a></div>
+      <div style="margin-top:28px;"><a href="menu.html#wings-snacks" class="btn btn-outline" style="border-color:rgba(242,236,223,.3); color:#f2ecdf;">See Noodle Menu</a></div>
     </div>
     <div class="specialty-photo">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7 10c1.5 1 3 1.4 5 1.4s3.5-.4 5-1.4M6 14c2 1.2 4 1.7 6 1.7s4-.5 6-1.7" stroke-linecap="round"/></svg>
@@ -241,8 +560,8 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <p class="eyebrow" style="display:block; margin-bottom:8px;">Popular Menu</p>
-        <h2 class="display">What people actually order</h2>
+        <p class="gs-eyebrow" style="display:block; margin-bottom:8px;">Popular Menu</p>
+        <h2>What people actually order</h2>
       </div>
       <p>Reordered favorites — tap "+" to drop one straight into your cart, no need to leave the page.</p>
     </div>
@@ -284,12 +603,12 @@
 <section class="gallery-teaser">
   <div class="wrap">
     <div class="section-head" style="margin-bottom:20px; border-bottom:none; padding-bottom:0;">
-      <div><p class="eyebrow" style="display:block; margin-bottom:8px;">Life at The~Yo's</p><h2 class="display" style="font-size:clamp(1.6rem,3vw,2.1rem);">See it before you order</h2></div>
+      <div><p class="gs-eyebrow" style="display:block; margin-bottom:8px;">Life at The~Yo's</p><h2 style="font-size:clamp(1.6rem,3vw,2.1rem);">See it before you order</h2></div>
     </div>
     <div class="gt-grid">
-      <a class="gt-item" href="gallery.html"><span>Full Catering Setups →</span></a>
-      <a class="gt-item" href="gallery.html"><span>Espresso Bar →</span></a>
-      <a class="gt-item" href="gallery.html"><span>Family Gatherings →</span></a>
+      <a class="gt-item" href="gallery.html"><span>Full Catering Setups &rarr;</span></a>
+      <a class="gt-item" href="gallery.html"><span>Espresso Bar &rarr;</span></a>
+      <a class="gt-item" href="gallery.html"><span>Family Gatherings &rarr;</span></a>
     </div>
   </div>
 </section>
@@ -341,17 +660,10 @@
   <a class="btn" href="order.html" style="padding:9px 16px;">Order</a>
 </div>
 
-<script>
-  document.getElementById('carouselNext')?.addEventListener('click', () => {
-    const cards = document.getElementById('featureCards');
-    if (!cards) return;
-    const step = (cards.querySelector('.feature-card')?.offsetWidth || 172) + 16;
-    const atEnd = cards.scrollLeft + cards.clientWidth >= cards.scrollWidth - 4;
-    cards.scrollTo({ left: atEnd ? 0 : cards.scrollLeft + step, behavior: 'smooth' });
-  });
-</script>
 <script src="global.js"></script>
 <script src="cart.js"></script>
-<script src="scroll-effects.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="home-anim.js"></script>
 </body>
 </html>
