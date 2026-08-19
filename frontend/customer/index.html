@@ -388,6 +388,49 @@
   </div>
 </div>
 
+<section class="best">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="gs-eyebrow" style="display:block; margin-bottom:8px;">Popular Menu</p>
+        <h2>What people actually order</h2>
+      </div>
+      <p>Reordered favorites — tap "+" to drop one straight into your cart, no need to leave the page.</p>
+    </div>
+
+    <div class="ticket-grid" id="bestsellerGrid">
+      <div class="ticket">
+        <div class="ticket-photo"><span class="ticket-badge">Bestseller</span><svg viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg></div>
+        <div class="ticket-body">
+          <span class="name">Chicken Katsu Rice Meal</span>
+          <div class="row"><span class="price">₱120</span><button type="button" class="add" data-id="chicken-katsu-rice-meal" data-name="Chicken Katsu Rice Meal" data-price="120" onclick="Cart.add(this)">+</button></div>
+        </div>
+      </div>
+      <div class="ticket">
+        <div class="ticket-photo"><svg viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg></div>
+        <div class="ticket-body">
+          <span class="name">Chicken Wings (6 Pcs)</span>
+          <div class="row"><span class="price">₱180</span><button type="button" class="add" data-id="chicken-wings-6-pcs" data-name="Chicken Wings (6 Pcs)" data-price="180" onclick="Cart.add(this)">+</button></div>
+        </div>
+      </div>
+      <div class="ticket">
+        <div class="ticket-photo"><span class="ticket-badge">Bestseller</span><svg viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg></div>
+        <div class="ticket-body">
+          <span class="name">Spanish Latte</span>
+          <div class="row"><span class="price">₱110</span><button type="button" class="add" data-id="spanish-latte" data-name="Spanish Latte" data-price="110" onclick="Cart.add(this)">+</button></div>
+        </div>
+      </div>
+      <div class="ticket">
+        <div class="ticket-photo"><svg viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M8.5 4.5c1.5 1 1.8 2.2.9 3.4M12 4.5c1.5 1 1.8 2.2.9 3.4" stroke-linecap="round"/></svg></div>
+        <div class="ticket-body">
+          <span class="name">Biscoff Matcha Delight</span>
+          <div class="row"><span class="price">₱130</span><button type="button" class="add" data-id="biscoff-matcha-delight" data-name="Biscoff Matcha Delight" data-price="130" onclick="Cart.add(this)">+</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ HORIZONTAL: ORDER STORY ============ -->
 <section class="gs-horz order-horz" id="orderStory">
   <div class="gs-horz-stage">
@@ -549,48 +592,7 @@
 </section>
 
 <!-- ============ BESTSELLERS ============ -->
-<section class="best">
-  <div class="wrap">
-    <div class="section-head">
-      <div>
-        <p class="gs-eyebrow" style="display:block; margin-bottom:8px;">Popular Menu</p>
-        <h2>What people actually order</h2>
-      </div>
-      <p>Reordered favorites — tap "+" to drop one straight into your cart, no need to leave the page.</p>
-    </div>
 
-    <div class="ticket-grid" id="bestsellerGrid">
-      <div class="ticket">
-        <div class="ticket-photo"><span class="ticket-badge">Bestseller</span><svg viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg></div>
-        <div class="ticket-body">
-          <span class="name">Chicken Katsu Rice Meal</span>
-          <div class="row"><span class="price">₱120</span><button type="button" class="add" data-id="chicken-katsu-rice-meal" data-name="Chicken Katsu Rice Meal" data-price="120" onclick="Cart.add(this)">+</button></div>
-        </div>
-      </div>
-      <div class="ticket">
-        <div class="ticket-photo"><svg viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg></div>
-        <div class="ticket-body">
-          <span class="name">Chicken Wings (6 Pcs)</span>
-          <div class="row"><span class="price">₱180</span><button type="button" class="add" data-id="chicken-wings-6-pcs" data-name="Chicken Wings (6 Pcs)" data-price="180" onclick="Cart.add(this)">+</button></div>
-        </div>
-      </div>
-      <div class="ticket">
-        <div class="ticket-photo"><span class="ticket-badge">Bestseller</span><svg viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/></svg></div>
-        <div class="ticket-body">
-          <span class="name">Spanish Latte</span>
-          <div class="row"><span class="price">₱110</span><button type="button" class="add" data-id="spanish-latte" data-name="Spanish Latte" data-price="110" onclick="Cart.add(this)">+</button></div>
-        </div>
-      </div>
-      <div class="ticket">
-        <div class="ticket-photo"><svg viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M8.5 4.5c1.5 1 1.8 2.2.9 3.4M12 4.5c1.5 1 1.8 2.2.9 3.4" stroke-linecap="round"/></svg></div>
-        <div class="ticket-body">
-          <span class="name">Biscoff Matcha Delight</span>
-          <div class="row"><span class="price">₱130</span><button type="button" class="add" data-id="biscoff-matcha-delight" data-name="Biscoff Matcha Delight" data-price="130" onclick="Cart.add(this)">+</button></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ============ GALLERY TEASER ============ -->
 <section class="gallery-teaser">

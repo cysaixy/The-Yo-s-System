@@ -1449,7 +1449,50 @@
     }
   }
 
-  // Feedback Section Handlers
+  // Feedback Section Handlers & Persistence
+  const REVIEWS_STORAGE_KEY = 'theyos_guest_reviews';
+  const DEFAULT_REVIEWS = [
+    {
+      name: 'Aaron Lavado',
+      stars: 5,
+      text: 'The Barbeque Pork Ribs are unbelievably tender!',
+      date: 'July 2, 2026'
+    },
+    {
+      name: 'Claire Mendoza',
+      stars: 5,
+      text: 'Best Batil Patung in Baggao! The iced caramel macchiato is also top-tier.',
+      date: 'August 10, 2026'
+    }
+  ];
+
+  function loadSavedReviews() {
+    let reviews = DEFAULT_REVIEWS;
+    try {
+      const stored = localStorage.getItem(REVIEWS_STORAGE_KEY);
+      if (stored) {
+        reviews = JSON.parse(stored);
+      } else {
+        localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(DEFAULT_REVIEWS));
+      }
+    } catch (e) {
+      reviews = DEFAULT_REVIEWS;
+    }
+    renderReviews(reviews);
+  }
+
+  function renderReviews(reviews) {
+    const container = document.getElementById('commentsDisplay');
+    if (!container) return;
+    container.innerHTML = reviews.map(r => `
+      <div class="comment-card">
+        <div class="comment-header"><span class="comment-user">${escapeReceiptHtml(r.name)}</span><span class="comment-stars">${'★'.repeat(r.stars || 5)}</span></div>
+        <p class="comment-text">${escapeReceiptHtml(r.text)}</p>
+        <span class="comment-date">${escapeReceiptHtml(r.date)}</span>
+      </div>
+    `).join('');
+  }
+
   let chosenRating = 5;
   const stars = document.querySelectorAll('#starSelector span');
   stars.forEach(star => {
@@ -1461,21 +1504,36 @@
 
   window.handleFeedback = function(e) {
     e.preventDefault();
-    const name = document.getElementById('reviewerName').value;
-    const txt = document.getElementById('feedbackText').value;
+    const name = document.getElementById('reviewerName').value.trim();
+    const txt = document.getElementById('feedbackText').value.trim();
     const isPrivate = document.getElementById('privateToggle').checked;
 
+    if (!name || !txt) return false;
+
     if (isPrivate) {
-      alert(`Thank you, ${name}. Your message was sent privately to management.`);
+      try {
+        const privateNotes = JSON.parse(localStorage.getItem('theyos_private_notes') || '[]');
+        privateNotes.unshift({ name, stars: chosenRating, text: txt, date: new Date().toLocaleDateString('en-PH', { dateStyle: 'medium' }) });
+        localStorage.setItem('theyos_private_notes', JSON.stringify(privateNotes));
+      } catch (err) {}
+      alert(`✓ Thank you, ${name}. Your message was sent privately to management.`);
     } else {
-      const card = document.createElement('div');
-      card.className = 'comment-card';
-      card.innerHTML = `
-        <div class="comment-header"><span class="comment-user">${name}</span><span class="comment-stars">${'★'.repeat(chosenRating)}</span></div>
-        <p class="comment-text">${txt}</p>
-        <span class="comment-date">Today</span>
-      `;
-      document.getElementById('commentsDisplay').insertBefore(card, document.getElementById('commentsDisplay').firstChild);
+      try {
+        let reviews = JSON.parse(localStorage.getItem(REVIEWS_STORAGE_KEY) || '[]');
+        if (!Array.isArray(reviews) || reviews.length === 0) reviews = [...DEFAULT_REVIEWS];
+        const newReview = {
+          name,
+          stars: chosenRating,
+          text: txt,
+          date: new Date().toLocaleDateString('en-PH', { dateStyle: 'medium' })
+        };
+        reviews.unshift(newReview);
+        localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(reviews));
+        renderReviews(reviews);
+        alert(`✓ Thank you, ${name}! Your review has been posted to our guest wall.`);
+      } catch (err) {
+        console.error('Error saving review:', err);
+      }
     }
     e.target.reset();
     chosenRating = 5;
@@ -1493,13 +1551,13 @@
     input.addEventListener('change', renderPaymentReceipt);
   });
   loadMenuFromServer();
+  loadSavedReviews();
 </script>
 <script type="module" src="authNav.js"></script>
 
 <footer>
   <div class="wrap">
     <div class="footer-grid">
-      <div>
         <div class="footer-logo">The~Yo's</div>
         <p>A comforting community Resto Bar offering delicious meals to Baggao.</p>
       </div>
