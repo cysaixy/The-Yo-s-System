@@ -1,6 +1,6 @@
 import express from "express";
 const staffRouter = express.Router();
-import {login, me, listStaff, getStaffById, createStaff, updateStaff, updatePermissions}from "../../controllers/admin/staffController.js";
+import {login, me, listStaff, getStaffById, createStaff, updateStaff, updatePermissions, changePassword}from "../../controllers/admin/staffController.js";
 import { requireStaffAuth } from "../../middlewares/auth.middleware.js";
 import { requireAdmin } from "../../middlewares/role.middleware.js";
 
@@ -21,5 +21,9 @@ staffRouter.post("/", requireAdmin, createStaff);
 // changed to match (both routes accepted the same body shape either way).
 staffRouter.put("/:id", requireAdmin, updateStaff);
 staffRouter.put("/:id/permissions", requireAdmin, updatePermissions);
+// PUT /api/admin/staff/:id/password — any logged-in staff can change their
+// own password (settings.html); the controller verifies current password
+// and restricts edits to the account owner (or an Admin).
+staffRouter.put("/:id/password", changePassword);
 
 export default staffRouter;

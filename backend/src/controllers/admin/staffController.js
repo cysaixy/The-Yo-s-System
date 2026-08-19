@@ -156,3 +156,42 @@ export async function updatePermissions(req, res, next) {
     next(err);
   }
 }
+
+// PUT /api/admin/staff/:id/password — lets a signed-in staff member change
+// their own password (settings.html). Verifies the current password before
+// writing the new one; only the account's owner (or an Admin) may use it.
+export async function changePassword(req, res, next) {
+  try {
+    const { current_password, new_password } = req.body;
+    const { id } = req.params;
+
+    if (req.staff.role !== "Admin" && String(req.staff.id) !== String(id)) {
+      return res.status(403).json({ error: "You can only change your own password." });
+    }
+    if (!current_password || !new_password) {
+      return res.status(400).json({ error: "Current and new passwords are required." });
+    }
+    if (typeof new_password !== "string" || new_password.length < 6) {
+      return res.status(400).json({ error: "New password must be at least 6 characters." });
+    }
+
+    const { rows } = await pool.query(
+      "SELECT id, password FROM staff WHERE id = $1",
+      [id]
+    );
+    const staff = rows[0];
+    if (!staff) return res.status(404).json({ error: "Staff member not found." });
+
+    const matches = await bcrypt.compare(current_password, staff.password);
+    if (!matches) {
+      return res.status(401).json({ error: "Current password is incorrect." });
+    }
+
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+    await pool.query("UPDATE staff SET password = $1 WHERE id = $2", [hashedPassword, staff.id]);
+
+    res.json({ success: true, message: "Password updated." });
+  } catch (err) {
+    next(err);
+  }
+}

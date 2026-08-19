@@ -176,10 +176,6 @@
     statusEl.style.display = 'none';
 
     try {
-      // NOTE: the PUT /api/admin/staff/:id/password endpoint does not exist
-      // in the backend yet (see staffRoutes.js / staffController.js). The
-      // backend must be extended to handle this route before the button
-      // will do anything other than show the fetch error below.
       const res = await adminFetch(`/api/admin/staff/${session.staff.id}/password`, {
         method: 'PUT',
         body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
