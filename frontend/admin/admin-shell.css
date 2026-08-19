@@ -2,6 +2,8 @@
 
 :root {
   --ink: #15171a;
+  --ink-muted: #5c6065;          /* secondary text: ≥4.5:1 on #fff and #f1ede5 */
+  --ink-inverse-muted: rgba(255,255,255,0.78); /* secondary text on the dark header */
   --bone: #faf7f2;
   --stone: #f1ede5;
   --component-bg: #ffffff;
@@ -74,21 +76,21 @@ body {
 
 .nav-group-label {
   font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase;
-  letter-spacing: 0.08em; opacity: 0.45; padding: 18px 12px 8px;
+  letter-spacing: 0.08em; color: var(--ink-muted); padding: 18px 12px 8px;
 }
 
 .admin-nav-link {
   position: relative;
   display: flex; align-items: center; gap: 10px;
   padding: 11px 12px; border-radius: 8px; margin-bottom: 2px;
-  text-decoration: none; color: var(--ink); opacity: 0.65;
+  text-decoration: none; color: var(--ink-muted);
   font-size: 0.86rem; font-weight: 600;
-  transition: transform .15s ease, background .15s ease, color .15s ease, opacity .15s ease;
+  transition: transform .15s ease, background .15s ease, color .15s ease;
 }
-.admin-nav-link:hover { opacity: 1; background: var(--stone); transform: translateX(2px); }
+.admin-nav-link:hover { color: var(--ink); background: var(--stone); transform: translateX(2px); }
 .admin-nav-link.active {
   background: rgba(163,132,74,0.10);
-  color: var(--brass-dark); opacity: 1; font-weight: 700;
+  color: var(--brass-dark); font-weight: 700;
 }
 .admin-nav-link.active::before {
   content: ""; position: absolute; left: 0; top: 50%;
@@ -147,15 +149,15 @@ body {
 .online-order-panel-item { display:flex; align-items:flex-start; gap:10px; padding:12px 16px; text-decoration:none; color:inherit; border-bottom:1px solid var(--line); }
 .online-order-panel-item:hover { background:#faf7f1; }
 .online-order-panel-item strong { display:block; font-size:.82rem; }
-.online-order-panel-item span:not(.online-order-dot) { display:block; margin-top:3px; font-size:.75rem; opacity:.65; }
+.online-order-panel-item span:not(.online-order-dot) { display:block; margin-top:3px; font-size:.75rem; color: var(--ink-muted); }
 .online-order-dot { width:9px; height:9px; margin-top:5px; flex:0 0 9px; border-radius:50%; background:var(--success); box-shadow:0 0 0 4px rgba(46,125,79,.11); }
-.online-order-panel-empty { padding:24px 16px; text-align:center; font-size:.8rem; opacity:.6; }
+.online-order-panel-empty { padding:24px 16px; text-align:center; font-size:.8rem; color: var(--ink-muted); }
 .online-order-panel-action { display:block; padding:12px 16px; text-decoration:none; font:700 .72rem 'Space Mono',monospace; text-transform:uppercase; color:var(--brass-dark); background:#faf7f1; }
 .online-order-panel-action:hover { background:#f2eadd; }
 @keyframes notificationPanelIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
 .admin-user .who { text-align: right; line-height: 1.3; }
 .admin-user .who strong { display: block; font-size: 0.88rem; }
-.admin-user .who span { font-family: 'Space Mono', monospace; font-size: 0.65rem; opacity: 0.6; text-transform: uppercase; }
+.admin-user .who span { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--ink-inverse-muted); text-transform: uppercase; }
 .admin-user .avatar {
   width: 38px; height: 38px; border-radius: 50%; background: var(--brass);
   display: flex; align-items: center; justify-content: center; font-weight: 900;
@@ -170,7 +172,7 @@ body {
 .admin-body { padding: 30px; flex: 1; }
 .admin-section { max-width: 1340px; }
 .admin-section > h2 { font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 1.15rem; margin: 0 0 4px; }
-.admin-section > p.sub { opacity: 0.6; font-size: 0.88rem; margin: 0 0 20px; }
+.admin-section > p.sub { color: var(--ink-muted); font-size: 0.88rem; margin: 0 0 20px; }
 
 /* ---------- Panels / tables ---------- */
 .admin-panel { background: rgba(255,255,255,.94); border: 1px solid rgba(228,221,208,.95); border-radius: 13px; overflow: hidden; box-shadow: var(--shadow-sm); }
@@ -189,19 +191,20 @@ body {
 .admin-table th {
   text-align: left; padding: 13px 16px; background: #f8f4ed;
   font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase;
-  letter-spacing: 0.05em; opacity: 0.6; border-bottom: 1px solid var(--line);
+  letter-spacing: 0.05em; color: var(--ink-muted); border-bottom: 1px solid var(--line);
 }
 .admin-table td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .admin-table tr:last-child td { border-bottom: none; }
 .admin-table tr:hover td { background: rgba(163,132,74,0.04); }
 
-.admin-loading, .admin-error, .panel-empty { padding: 30px 20px; text-align: center; opacity: 0.6; font-size: 0.86rem; }
-.admin-error { color: var(--danger); opacity: 1; }
+.admin-loading, .admin-error, .panel-empty { padding: 30px 20px; text-align: center; color: var(--ink-muted); font-size: 0.86rem; }
+.admin-error { color: var(--danger); }
+.admin-success { color: var(--success); }
 
 /* ---------- Stat cards ---------- */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
 .stat-card { background: linear-gradient(145deg, #fff, #faf7f1); border: 1px solid var(--line); border-radius: 13px; padding: 20px; box-shadow: var(--shadow-sm); }
-.stat-card .label { font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase; opacity: 0.55; }
+.stat-card .label { font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase; color: var(--ink-muted); }
 .stat-card .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.7rem; margin-top: 6px; }
 .stat-card .value.brass { color: var(--brass-dark); }
 .stat-card .value.danger { color: var(--danger); }
@@ -227,7 +230,7 @@ body {
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
 .form-field label {
   display: block; font-family: 'Space Mono', monospace; font-size: 0.65rem;
-  text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); margin-bottom: 6px;
 }
 .form-field input, .form-field select, .form-field textarea {
   width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 5px;
@@ -242,7 +245,7 @@ body {
   padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--component-bg);
   font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--ink);
 }
-.filter-bar label { font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; opacity: 0.55; margin-right: 6px; }
+.filter-bar label { font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; color: var(--ink-muted); margin-right: 6px; }
 
 /* ---------- Pills / badges ---------- */
 .pill {
@@ -250,7 +253,7 @@ body {
   font-size: 0.66rem; font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase;
 }
 .pill-brass { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
-.pill-neutral { background: rgba(21,23,26,0.08); color: var(--ink); opacity: 0.7; }
+.pill-neutral { background: rgba(21,23,26,0.08); color: var(--ink-muted); }
 .pill-warning { background: rgba(184,134,11,0.14); color: var(--warning); }
 .pill-success { background: rgba(46,125,79,0.14); color: var(--success); }
 .pill-danger { background: rgba(192,57,43,0.14); color: var(--danger); }
@@ -258,8 +261,9 @@ body {
 
 .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .row-actions button {
+  display: inline-flex; align-items: center; justify-content: center;
   font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; font-weight: 700;
-  border-radius: 5px; padding: 6px 10px; cursor: pointer; border: 1px solid var(--line);
+  border-radius: 5px; padding: 12px 14px; min-height: 40px; cursor: pointer; border: 1px solid var(--line);
   background: var(--component-bg); color: var(--ink); transition: all .15s ease;
 }
 .row-actions button.primary { background: var(--brass); color: #fff; border-color: var(--brass); }

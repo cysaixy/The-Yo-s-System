@@ -92,8 +92,8 @@
                 <td>+${p.quantity}</td>
                 <td>${p.expiration_date ? new Date(p.expiration_date).toLocaleDateString('en-PH') : '—'}</td>
                 <td>${p.staff_name || '—'}</td>
-                <td style="font-size:0.78rem; opacity:0.7;">${formatDate(p.stockin_date)}</td>
-                <td style="font-size:0.8rem; opacity:0.75;">${escapeHtml(p.remarks || '—')}</td>
+                <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(p.stockin_date)}</td>
+                <td style="font-size:0.8rem; color:var(--ink-muted);">${escapeHtml(p.remarks || '—')}</td>
               </tr>`).join('')}</tbody>
           </table>`
         : `<div class="panel-empty" style="padding:20px;">No purchases recorded yet.</div>`;

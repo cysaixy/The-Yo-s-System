@@ -6,6 +6,20 @@
 <title>Settings — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css?v=3">
+<style>
+  .password-wrap { position: relative; }
+  .password-wrap input { padding-right: 44px; }
+  .password-toggle {
+    position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+    background: none; border: none; padding: 6px; cursor: pointer;
+    color: var(--ink); opacity: 0.5; display: flex; align-items: center; justify-content: center;
+    transition: opacity .2s ease;
+  }
+  .password-toggle:hover { opacity: 1; }
+  .password-toggle .eye-closed { display: none; }
+  .password-toggle.shown .eye-open { display: none; }
+  .password-toggle.shown .eye-closed { display: block; }
+</style>
 </head>
 <body>
 
@@ -14,6 +28,17 @@
 <script type="module">
   import { renderAdminShell } from "./admin-shell.js";
   import { adminFetch } from "./admin-api.js";
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-toggle-pw]');
+    if (!btn) return;
+    const input = document.getElementById(btn.dataset.togglePw);
+    if (!input) return;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.classList.toggle('shown', show);
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  });
 
   const session = renderAdminShell({ active: 'settings', title: 'Settings' });
   if (session) init(session);
@@ -45,15 +70,49 @@
         </div>
       </div>
 
-      <p style="opacity:0.55; font-size:0.8rem; max-width:520px; margin-top:16px;">
-        Note: this only updates your display name. Password changes and
-        deeper account settings (staff permissions, roles) live under
+      <div class="admin-panel" style="max-width:520px;">
+        <div class="admin-panel-head"><h3>Change Password</h3></div>
+        <div class="admin-panel-body">
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Current Password</label>
+              <div class="password-wrap"><input type="password" id="pwCurrent" autocomplete="current-password"><button type="button" class="password-toggle" data-toggle-pw="pwCurrent" aria-label="Show password">
+                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button></div>
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>New Password</label>
+              <div class="password-wrap"><input type="password" id="pwNew" autocomplete="new-password"><button type="button" class="password-toggle" data-toggle-pw="pwNew" aria-label="Show password">
+                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button></div>
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Confirm New Password</label>
+              <div class="password-wrap"><input type="password" id="pwConfirm" autocomplete="new-password"><button type="button" class="password-toggle" data-toggle-pw="pwConfirm" aria-label="Show password">
+                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button></div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" id="changePwBtn">Update Password</button>
+          </div>
+          <div class="admin-error" id="pwStatus" style="display:none; margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <p style="color:var(--ink-muted); font-size:0.8rem; max-width:520px; margin-top:16px;">
+        Note: this only updates your display name. Staff permissions and
+        roles live under
         <a href="staff.html" style="color:var(--brass);">Staff</a> — only
         Admin-role accounts can manage other staff there.
       </p>
     `;
 
     document.getElementById('saveProfileBtn').addEventListener('click', () => saveProfile(session));
+    document.getElementById('changePwBtn').addEventListener('click', () => changePassword(session));
   }
 
   async function saveProfile(session) {
@@ -78,13 +137,64 @@
       const updated = { ...session.staff, name: data.staff.name };
       localStorage.setItem('staffInfo', JSON.stringify(updated));
 
-      statusEl.className = 'admin-error';
-      statusEl.style.color = 'var(--success)';
+      statusEl.className = 'admin-success';
       statusEl.textContent = 'Saved.';
       statusEl.style.display = 'block';
     } catch (err) {
       statusEl.className = 'admin-error';
-      statusEl.style.color = '';
+      statusEl.textContent = err.message;
+      statusEl.style.display = 'block';
+    }
+  }
+
+  async function changePassword(session) {
+    const statusEl = document.getElementById('pwStatus');
+    const currentPassword = document.getElementById('pwCurrent').value;
+    const newPassword = document.getElementById('pwNew').value;
+    const confirmPassword = document.getElementById('pwConfirm').value;
+
+    if (!currentPassword) {
+      statusEl.className = 'admin-error';
+      statusEl.textContent = 'Enter your current password.';
+      statusEl.style.display = 'block';
+      return;
+    }
+    if (newPassword.length < 6) {
+      statusEl.className = 'admin-error';
+      statusEl.textContent = 'New password must be at least 6 characters.';
+      statusEl.style.display = 'block';
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      statusEl.className = 'admin-error';
+      statusEl.textContent = 'New passwords do not match.';
+      statusEl.style.display = 'block';
+      return;
+    }
+
+    statusEl.className = 'admin-error';
+    statusEl.style.display = 'none';
+
+    try {
+      // NOTE: the PUT /api/admin/staff/:id/password endpoint does not exist
+      // in the backend yet (see staffRoutes.js / staffController.js). The
+      // backend must be extended to handle this route before the button
+      // will do anything other than show the fetch error below.
+      const res = await adminFetch(`/api/admin/staff/${session.staff.id}/password`, {
+        method: 'PUT',
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not change password.');
+
+      document.getElementById('pwCurrent').value = '';
+      document.getElementById('pwNew').value = '';
+      document.getElementById('pwConfirm').value = '';
+      statusEl.className = 'admin-success';
+      statusEl.textContent = 'Password updated.';
+      statusEl.style.display = 'block';
+    } catch (err) {
+      statusEl.className = 'admin-error';
       statusEl.textContent = err.message;
       statusEl.style.display = 'block';
     }

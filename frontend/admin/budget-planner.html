@@ -17,7 +17,7 @@
 <div id="adminShell"></div>
 
 <script type="module">
-  import { renderAdminShell } from "./admin-shell.js";
+  import { renderAdminShell, confirmDialog, showAlert } from "./admin-shell.js";
   import { adminFetch, peso, escapeHtml } from "./admin-api.js";
 
   const session = renderAdminShell({ active: 'budget', title: 'Budget Planner' });
@@ -121,7 +121,7 @@
               <td style="color:${over ? 'var(--danger)' : 'var(--success)'}; font-weight:700;">${over ? '−' : ''}${peso(Math.abs(remaining))}</td>
               <td><span class="pill ${status.className}">${status.label}</span></td>
               <td><div class="budget-bar-track"><div class="budget-bar-fill${over ? ' over' : ''}" style="width:${pct}%;"></div></div></td>
-              <td style="font-size:0.8rem; opacity:0.75; max-width:180px;">${escapeHtml(b.notes || '—')}</td>
+              <td style="font-size:0.8rem; color:var(--ink-muted); max-width:180px;">${escapeHtml(b.notes || '—')}</td>
               <td><div class="row-actions"><button class="danger del-budget-btn" data-id="${b.id}">Delete</button></div></td>
             </tr>`;
           }).join('')}
@@ -168,7 +168,8 @@
   }
 
   async function remove(id) {
-    if (!confirm('Delete this budget line?')) return;
+    const ok = await confirmDialog('Delete this budget line?', { confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
     try {
       const res = await adminFetch(`/api/admin/budgets/${id}`, { method: 'DELETE' });
       if (res.status !== 204) {
@@ -177,7 +178,7 @@
       }
       load();
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, { title: 'Delete failed' });
     }
   }
 </script>

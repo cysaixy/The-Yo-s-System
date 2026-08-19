@@ -1,13 +1,13 @@
 // The customer pages share one coffee theme controller and stylesheet.
-if (!document.querySelector('link[href="sunset-mode.css"]')) {
+if (!document.querySelector('link[href="theme.css"]')) {
   const themeStyles = document.createElement('link');
   themeStyles.rel = 'stylesheet';
-  themeStyles.href = 'sunset-mode.css';
+  themeStyles.href = 'theme.css';
   document.head.appendChild(themeStyles);
 }
-if (!document.querySelector('script[src="sunset-mode.js"]')) {
+if (!document.querySelector('script[src="theme.js"]')) {
   const themeScript = document.createElement('script');
-  themeScript.src = 'sunset-mode.js';
+  themeScript.src = 'theme.js';
   document.head.appendChild(themeScript);
 }
 

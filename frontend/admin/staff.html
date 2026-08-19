@@ -149,7 +149,7 @@
               <td>${escapeHtml(s.email)}</td>
               <td><span class="pill pill-brass">${s.role}</span></td>
               <td><span class="pill ${s.status === 'active' ? 'pill-success' : 'pill-neutral'}">${s.status}</span></td>
-              <td style="font-size:0.78rem; opacity:0.7;">${formatDate(s.created_at, { dateStyle: 'medium' })}</td>
+              <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(s.created_at, { dateStyle: 'medium' })}</td>
               <td><div class="row-actions">
                 <button class="edit-staff-btn" data-id="${s.id}">Edit</button>
                 <button class="perm-btn" data-id="${s.id}"

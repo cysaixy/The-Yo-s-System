@@ -206,7 +206,7 @@
 <div id="adminShell"></div>
 
 <script type="module">
-  import { renderAdminShell } from "./admin-shell.js";
+  import { renderAdminShell, confirmDialog, showAlert } from "./admin-shell.js";
   import { adminFetch, peso, formatDate, escapeHtml } from "./admin-api.js";
 
   const session = renderAdminShell({ active: 'sales', title: 'Sales Transactions' });
@@ -304,7 +304,7 @@
           <div class="stx-field" id="customRangeWrap" style="display:none;">
             <label>Custom Range</label>
             <div class="stx-range">
-              <input type="date" id="fromDate"><span style="opacity:0.5;">—</span><input type="date" id="toDate">
+              <input type="date" id="fromDate"><span style="color:var(--ink-muted);">—</span><input type="date" id="toDate">
             </div>
           </div>
         </div>
@@ -772,7 +772,7 @@
           ${isOnline
             ? `<span class="source-pill source-online">Online</span>`
             : `<span class="source-pill source-pos">POS · ${cashier}</span>`}
-          <div style="font-size:0.74rem; opacity:0.6; margin-top:2px;">${orderTypeLabel(o.order_type, o)}</div>
+          <div style="font-size:0.74rem; color:var(--ink-muted); margin-top:2px;">${orderTypeLabel(o.order_type, o)}</div>
         </td>
         <td>${escapeHtml(o.customer_name) || '—'}</td>
         <td>${cashier}</td>
@@ -806,7 +806,10 @@
   }
 
   async function handleStatusChange(orderId, newStatus) {
-    if (newStatus === 'cancelled' && !confirm(`Cancel/Void Order #${orderId}? This can't be undone.`)) return;
+    if (newStatus === 'cancelled') {
+      const ok = await confirmDialog(`Cancel/Void Order #${orderId}? This can't be undone.`, { confirmLabel: 'Void Order', danger: true });
+      if (!ok) return;
+    }
 
     try {
       const res = await adminFetch(`/api/admin/sales/pos/orders/${orderId}/status`, {
@@ -819,7 +822,7 @@
       loadOrders();
       loadSummary();
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, { title: 'Update failed' });
     }
   }
 
@@ -829,7 +832,7 @@
   function exportCSV() {
     const rows = sortRows(getFilteredRows());
     if (rows.length === 0) {
-      alert('Nothing to export — no transactions match the current filters.');
+      showAlert('Nothing to export — no transactions match the current filters.', { title: 'Export' });
       return;
     }
     const cols = [
@@ -911,7 +914,7 @@
       <tr>
         <td>
           ${escapeHtml(it.product_name || `Menu #${it.menu_id}`)}
-          ${it.notes ? `<div style="font-size:0.72rem; opacity:0.55;">${escapeHtml(it.notes)}</div>` : ''}
+          ${it.notes ? `<div style="font-size:0.72rem; color:var(--ink-muted);">${escapeHtml(it.notes)}</div>` : ''}
           ${(it.add_ons || []).length ? `
             <div class="addon-line-list" style="font-size:0.76rem;">
               + ${it.add_ons.map(a => `${escapeHtml(a.name)} ×${a.quantity} (${peso(a.subtotal)})`).join(', ')}
@@ -1042,7 +1045,7 @@
       case 'completed':
         return `<button class="danger" data-action="cancelled" data-id="${id}">Void Order</button>`;
       default:
-        return `<span style="font-size:0.75rem; opacity:0.5;">No further action</span>`;
+        return `<span style="font-size:0.75rem; color:var(--ink-muted);">No further action</span>`;
     }
   }
 
@@ -1109,7 +1112,7 @@
         <div class="om-meta" style="margin-bottom:14px;"><div class="row"><span>Orders on this day</span><b>${orders.length}</b></div></div>
         <table class="om-items"><thead><tr><th>Order</th><th>Customer</th><th>Type</th><th class="right">Total</th><th></th></tr></thead>
         <tbody>${orders.map(order => `<tr>
-          <td>#${order.id}<div style="font-size:.7rem;opacity:.55;">${formatDate(order.datetime_ordered)}</div></td>
+          <td>#${order.id}<div style="font-size:.7rem;color:var(--ink-muted);">${formatDate(order.datetime_ordered)}</div></td>
           <td>${escapeHtml(order.customer_name || '—')}</td>
           <td>${escapeHtml(orderTypeLabel(order.order_type))}</td>
           <td class="right">${peso(order.total_amount)}</td>

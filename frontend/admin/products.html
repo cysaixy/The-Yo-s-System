@@ -434,7 +434,7 @@ function buildPageHTML() {
     <div style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <div>
         <h3 style="margin:0; font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.95rem;">Optional Extras & Add-Ons</h3>
-        <span style="font-size:0.78rem; opacity:0.55;">Add-ons linked to inventory ingredients and applicable products.</span>
+        <span style="font-size:0.78rem; color:var(--ink-muted);">Add-ons linked to inventory ingredients and applicable products.</span>
       </div>
       <button class="prd-btn prd-btn-gold" id="openAddAddonBtn">+ Add Add-On</button>
     </div>
@@ -462,7 +462,7 @@ function buildPageHTML() {
     <div style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <div>
         <h3 style="margin:0; font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.95rem;">Combo Deals & Bundles</h3>
-        <span style="font-size:0.78rem; opacity:0.55;">Group existing menu products together with special package pricing.</span>
+        <span style="font-size:0.78rem; color:var(--ink-muted);">Group existing menu products together with special package pricing.</span>
       </div>
       <button class="prd-btn prd-btn-gold" id="openAddBundleBtn">+ Add Bundle</button>
     </div>
@@ -560,7 +560,7 @@ function buildPageHTML() {
         <label>Product Image (JPG, PNG, or WebP · max 5 MB)</label>
         <input type="file" id="itemImage" accept="image/jpeg,image/png,image/webp">
         <input type="hidden" id="itemImageUrl">
-        <small id="itemImageStatus" style="opacity:.6;">No image selected.</small>
+        <small id="itemImageStatus" style="color:var(--ink-muted);">No image selected.</small>
       </div>
     </div>
     <div class="prd-error-msg" id="itemError"></div>
@@ -940,8 +940,8 @@ function renderAddons() {
       <td><span class="item-name">${escapeHtml(a.name)}</span></td>
       <td class="right"><span class="price-val">${peso(a.price)}</span></td>
       <td class="right"><span class="price-val">${peso(a.cost)}</span></td>
-      <td><span style="font-size:0.78rem; opacity:0.75;">${invStr}</span></td>
-      <td><span style="font-size:0.78rem; opacity:0.75;">${prodStr}</span></td>
+      <td><span style="font-size:0.78rem; color:var(--ink-muted);">${invStr}</span></td>
+      <td><span style="font-size:0.78rem; color:var(--ink-muted);">${prodStr}</span></td>
       <td><span class="prd-badge ${stBadge}">${a.status === 'available' ? 'Available' : 'Unavailable / Out of Stock'}</span></td>
       <td>
         <div class="prd-action-wrap">
@@ -972,7 +972,7 @@ function renderBundles() {
     return `
     <tr>
       <td><span class="item-name">${escapeHtml(b.name)}</span></td>
-      <td><span style="font-size:0.78rem; opacity:0.8;">${prodStr}</span></td>
+      <td><span style="font-size:0.78rem; color:var(--ink-muted);">${prodStr}</span></td>
       <td class="right"><span class="price-val">${peso(b.regular_total)}</span></td>
       <td class="right"><span class="price-val" style="font-weight:700; color:var(--brass-dark);">${peso(b.bundle_price)}</span></td>
       <td class="right"><span class="price-val" style="color:var(--success); font-weight:700;">${peso(b.savings)}</span></td>

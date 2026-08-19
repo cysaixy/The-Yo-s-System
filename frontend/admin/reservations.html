@@ -83,7 +83,7 @@
 <div id="adminShell"></div>
 
 <script type="module">
-  import { renderAdminShell } from "./admin-shell.js";
+  import { renderAdminShell, confirmDialog } from "./admin-shell.js";
   import { adminFetch, formatDate, escapeHtml } from "./admin-api.js";
 
   const session = renderAdminShell({ active: 'reservations', title: 'Reservations' });
@@ -238,7 +238,7 @@
             ${r.customer_phone ? `<span class="sub">${escapeHtml(r.customer_phone)}</span>` : ''}
           </div>
         </td>
-        <td>${r.table_no ? escapeHtml(r.table_no) : '<span style="opacity:0.4;">—</span>'}</td>
+        <td>${r.table_no ? escapeHtml(r.table_no) : '<span style="color:var(--ink-muted);">—</span>'}</td>
         <td>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}${tag}</td>
         <td>${r.reservation_time ? String(r.reservation_time).slice(0, 5) : '—'}</td>
         <td>${r.guests}</td>
@@ -259,7 +259,7 @@
       return `<button class="primary" data-action="completed" data-id="${r.id}">Mark Completed</button>
               <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
-    return `<span style="font-size:0.75rem; opacity:0.5;">No further action</span>`;
+    return `<span style="font-size:0.75rem; color:var(--ink-muted);">No further action</span>`;
   }
 
   // ---- Confirm modal: table assignment is mandatory, capacity checked live ----
@@ -384,7 +384,8 @@
     const r = reservations.find(x => x.id == id);
     if (!r) return;
     const verb = status === 'cancelled' ? 'Cancel this reservation?' : 'Mark this reservation as completed?';
-    if (!confirm(verb)) return;
+    const ok = await confirmDialog(verb, { confirmLabel: status === 'cancelled' ? 'Cancel Reservation' : 'Mark Complete', danger: status === 'cancelled' });
+    if (!ok) return;
     try {
       const res = await adminFetch(`/api/admin/reservations/${id}/status`, {
         method: 'PATCH',

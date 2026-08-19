@@ -95,7 +95,7 @@
 <div id="adminShell"></div>
 
 <script type="module">
-  import { renderAdminShell } from "./admin-shell.js";
+  import { renderAdminShell, showAlert } from "./admin-shell.js";
   import { adminFetch, peso, escapeHtml } from "./admin-api.js";
 
   const session = renderAdminShell({ active: 'dashboard', title: 'Dashboard' });
@@ -394,7 +394,7 @@
         </div>
         <div class="form-field" style="margin-top:12px;">
           <label>Sales so far this month</label>
-          <div style="font-size:0.9rem; opacity:.7;">${peso(current.month_sales)}</div>
+          <div style="font-size:0.9rem; color:var(--ink-muted);">${peso(current.month_sales)}</div>
         </div>
         <div class="modal-close-row">
           <button class="btn btn-outline" id="targetCancel">Cancel</button>
@@ -409,7 +409,7 @@
     back.querySelector('#targetSave').addEventListener('click', async () => {
       const target = parseFloat(back.querySelector('#targetInput').value);
       if (!Number.isFinite(target) || target < 0) {
-        alert('Enter a valid non-negative amount.');
+        showAlert('Enter a valid non-negative amount.', { title: 'Invalid target' });
         return;
       }
       const saveBtn = back.querySelector('#targetSave');
@@ -424,7 +424,7 @@
         close();
         loadMonthlyTarget();
       } catch (err) {
-        alert(err.message);
+        showAlert(err.message, { title: 'Save failed' });
         saveBtn.disabled = false;
       }
     });

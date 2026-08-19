@@ -125,6 +125,75 @@ function escapeNotificationHtml(value) {
   }[char]));
 }
 
+// Simple accessible confirm() replacement that reuses the shared
+// .modal-backdrop/.modal-box markup from admin-shell.css. Resolves to
+// true/false based on the confirm button, and returns false if the
+// backdrop is clicked or Escape is pressed. Message is inserted as text
+// (never HTML) and focus is moved into the dialog, returning to the
+// previously focused element when it closes.
+export function confirmDialog(message, { confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false } = {}) {
+  return new Promise(resolve => {
+    const previousFocus = document.activeElement;
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop active';
+    backdrop.innerHTML = `
+      <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="confirmDialogTitle">
+        <h3 id="confirmDialogTitle">Confirm</h3>
+        <p style="margin:0 0 6px; line-height:1.55;">${escapeNotificationHtml(message)}</p>
+        <div class="modal-close-row">
+          <button type="button" class="btn btn-outline" data-confirm-cancel>${escapeNotificationHtml(cancelLabel)}</button>
+          <button type="button" class="btn ${danger ? 'btn-danger' : ''}" data-confirm-ok>${escapeNotificationHtml(confirmLabel)}</button>
+        </div>
+      </div>`;
+    const done = result => {
+      document.removeEventListener('keydown', onKey);
+      backdrop.remove();
+      resolve(result);
+      previousFocus?.focus?.();
+    };
+    const onKey = e => {
+      if (e.key === 'Escape') done(false);
+      if (e.key === 'Enter' && e.target.matches('button')) e.preventDefault();
+    };
+    backdrop.querySelector('[data-confirm-cancel]').addEventListener('click', () => done(false));
+    backdrop.querySelector('[data-confirm-ok]').addEventListener('click', () => done(true));
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) done(false); });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(backdrop);
+    backdrop.querySelector('[data-confirm-ok]').focus();
+  });
+}
+
+// Simple accessible alert() replacement. Resolves once dismissed (either
+// button, backdrop click, or Escape).
+export function showAlert(message, { title = 'Notice' } = {}) {
+  return new Promise(resolve => {
+    const previousFocus = document.activeElement;
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop active';
+    backdrop.innerHTML = `
+      <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="showAlertTitle">
+        <h3 id="showAlertTitle">${escapeNotificationHtml(title)}</h3>
+        <p style="margin:0 0 6px; line-height:1.55;">${escapeNotificationHtml(message)}</p>
+        <div class="modal-close-row">
+          <button type="button" class="btn" data-alert-ok>OK</button>
+        </div>
+      </div>`;
+    const done = () => {
+      document.removeEventListener('keydown', onKey);
+      backdrop.remove();
+      resolve();
+      previousFocus?.focus?.();
+    };
+    const onKey = e => { if (e.key === 'Escape') done(); };
+    backdrop.querySelector('[data-alert-ok]').addEventListener('click', done);
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) done(); });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(backdrop);
+    backdrop.querySelector('[data-alert-ok]').focus();
+  });
+}
+
 function showOnlineOrderToast(order) {
   const toast = document.createElement('div');
   toast.className = 'online-order-toast';
@@ -142,7 +211,7 @@ function injectOnlineOrderNotificationStyles() {
     .online-order-toast { position:fixed; z-index:1000; right:24px; bottom:24px; width:min(390px, calc(100vw - 32px)); display:flex; align-items:flex-start; gap:11px; padding:15px 42px 15px 15px; border-radius:14px; border:1px solid rgba(163,132,74,.25); background:linear-gradient(135deg,#fff,#fbf7ef); color:var(--ink,#15171a); box-shadow:0 18px 42px rgba(0,0,0,.18); animation:onlineOrderEnter .25s ease both; }
     .online-order-toast .toast-icon { width:32px; height:32px; flex:0 0 32px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:rgba(163,132,74,.15); font-size:1rem; }
     .online-order-toast strong { display:block; font:800 .76rem 'Space Mono',monospace; text-transform:uppercase; color:var(--brass-dark,#8a6d3a); }
-    .online-order-toast span { display:block; margin-top:5px; font-size:.8rem; opacity:.7; }
+    .online-order-toast span { display:block; margin-top:5px; font-size:.8rem; color:var(--ink-muted,#5c6065); }
     .online-order-toast button { position:absolute; right:12px; top:10px; border:0; background:transparent; font-size:1.2rem; cursor:pointer; opacity:.5; }
     @keyframes onlineOrderEnter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
   `;

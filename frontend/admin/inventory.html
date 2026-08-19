@@ -513,7 +513,7 @@ function buildPageHTML() {
   <div class="inv-panel" id="panel-audits">
     <div style="margin-bottom:18px;">
       <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Inventory Audits</div>
-      <div style="font-size:0.80rem; opacity:0.5; margin-top:2px;">Consolidated history of inventory entries and adjustments.</div>
+      <div style="font-size:0.80rem; color:var(--ink-muted); margin-top:2px;">Consolidated history of inventory entries and adjustments.</div>
     </div>
     <div class="inv-table-wrap" id="auditsWrap"><div class="admin-loading">Loading audit log…</div></div>
   </div>
@@ -522,7 +522,7 @@ function buildPageHTML() {
   <div class="inv-panel" id="panel-usage">
     <div style="margin-bottom:18px;">
       <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Usage History</div>
-      <div style="font-size:0.80rem; opacity:0.5; margin-top:2px;">Stock consumed by POS sales, recipes, and add-ons.</div>
+      <div style="font-size:0.80rem; color:var(--ink-muted); margin-top:2px;">Stock consumed by POS sales, recipes, and add-ons.</div>
     </div>
     <div class="inv-table-wrap" id="usageWrap"><div class="admin-loading">Loading usage data…</div></div>
   </div>
@@ -531,7 +531,7 @@ function buildPageHTML() {
   <div class="inv-panel" id="panel-adjustments">
     <div style="margin-bottom:18px;">
       <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Adjustments Log</div>
-      <div style="font-size:0.80rem; opacity:0.5; margin-top:2px;">Manual stock quantity changes and corrections.</div>
+      <div style="font-size:0.80rem; color:var(--ink-muted); margin-top:2px;">Manual stock quantity changes and corrections.</div>
     </div>
     <div class="inv-table-wrap" id="adjustmentsWrap"><div class="admin-loading">Loading adjustments…</div></div>
   </div>
@@ -1112,14 +1112,14 @@ function renderLogTable(wrap, entries) {
       </tr></thead>
       <tbody>${entries.map(e => `
         <tr>
-          <td style="font-size:0.78rem;opacity:0.65;">${formatDate(e.log_date)}</td>
+          <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(e.log_date)}</td>
           <td><span style="font-weight:600;">${escapeHtml(e.item_name)}</span></td>
           <td><span class="pill pill-neutral">${escapeHtml(e.transaction_type)}</span></td>
           <td style="font-family:'Space Mono',monospace;font-weight:700;color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'};">
             ${e.quantity_change > 0 ? '+' : ''}${e.quantity_change}
           </td>
           <td>${escapeHtml(e.staff_name || '—')}</td>
-          <td style="font-size:0.78rem;opacity:0.6;">${escapeHtml(e.remarks || '—')}</td>
+          <td style="font-size:0.78rem; color:var(--ink-muted);">${escapeHtml(e.remarks || '—')}</td>
         </tr>`).join('')}
       </tbody>
     </table>`;
