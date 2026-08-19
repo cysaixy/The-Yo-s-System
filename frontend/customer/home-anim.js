@@ -62,11 +62,6 @@
       const track = story.querySelector('.gs-horz-track');
       if (track) horiz(story, track);
     }
-    const menu = document.getElementById('menuShowcase');
-    if (menu) {
-      const track = menu.querySelector('.gs-horz-track');
-      if (track) horiz(menu, track);
-    }
 
     // --- Location journey (parallax layers + arrival) ---
     const journey = document.getElementById('locationJourney');

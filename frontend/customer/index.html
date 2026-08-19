@@ -227,8 +227,10 @@
   }
 
   /* ---------- SPECIALTY ---------- */
-  .specialty { background: var(--hp-panel); padding: 110px 0; border-block: 1px solid var(--hp-line); }
-  .specialty-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 70px; align-items: center; }
+  .specialty { background: var(--hp-bg); padding: 110px 0; border: none; }
+  .specialty-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+  }
   .specialty h2 {
     font: 900 clamp(2rem,4.4vw,3.6rem)/.92 'Archivo', sans-serif; text-transform: uppercase;
     letter-spacing: -.03em; margin: 16px 0; color: var(--ink);
@@ -238,15 +240,32 @@
   .specialty-price div { border-left: 2px solid var(--brass); padding-left: 14px; }
   .specialty-price strong { display: block; font: 700 1.3rem 'Space Mono', monospace; color: var(--brass); }
   .specialty-price span { font: 600 .66rem 'Space Mono', monospace; text-transform: uppercase; letter-spacing: .06em; color: rgba(242,236,223,.55); }
-  .specialty-photo {
-    aspect-ratio: 1/1; border-radius: 50%; overflow: hidden; position: relative;
-    background: radial-gradient(110% 90% at 70% 30%, #3a2718, #16110c 60%);
-    border: 1px solid rgba(242,236,223,.1); display: grid; place-items: center;
+  .specialty-photo-wrap {
+    display: flex; justify-content: center; align-items: center;
   }
-  .specialty-photo svg { width: 110px; height: 110px; stroke: #f2ecdf; fill: none; stroke-width: 1; opacity: .85; }
+  .specialty-photo {
+    width: 380px; height: 380px;
+    border-radius: 50%; overflow: hidden; position: relative;
+    background: #141518;
+    border: 2px solid rgba(201,164,95,.45);
+    box-shadow: 0 20px 45px rgba(0,0,0,.6), 0 0 0 10px rgba(201,164,95,.07);
+    flex-shrink: 0;
+  }
+  .specialty-photo video,
+  .specialty-photo img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+  }
+  @media (max-width: 1000px) {
+    .specialty-photo { width: 300px; height: 300px; }
+  }
   @media (max-width: 900px) {
-    .specialty-grid { grid-template-columns: 1fr; gap: 44px; }
-    .specialty-photo { order: -1; aspect-ratio: 16/11; border-radius: 18px; }
+    .specialty { padding: 70px 0 40px; }
+    .specialty-grid { grid-template-columns: 1fr; gap: 40px; }
+    .specialty-photo-wrap { order: -1; }
+    .specialty-photo { width: 260px; height: 260px; }
   }
 
   /* ---------- SECTION HEADS ---------- */
@@ -291,6 +310,67 @@
   .ticket-body .add:hover { background: var(--brass); color: #0b0c0d; border-color: var(--brass); }
   .ticket-body .add.just-added { background: var(--brass) !important; color: #0b0c0d !important; border-color: var(--brass) !important; transform: scale(1.15); transition: all .15s ease; }
 
+  /* ---------- STATIC MENU CATEGORIES ---------- */
+  .hp-menu-cats { background: var(--hp-bg); padding: 110px 0; border-top: 1px solid var(--hp-line); }
+  .hp-cat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  @media (max-width: 990px) { .hp-cat-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 540px) { .hp-cat-grid { grid-template-columns: 1fr; } }
+
+  .hp-cat-card {
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 30px 24px; border: 1px solid var(--hp-line);
+    background: var(--hp-card); border-radius: 14px;
+    text-decoration: none; color: var(--hp-ink);
+    transition: border-color .22s ease, transform .22s ease, background .22s ease, box-shadow .22s ease;
+    position: relative; overflow: hidden; min-height: 240px;
+  }
+  .hp-cat-card:hover {
+    border-color: rgba(201,164,95,.6);
+    background: rgba(201,164,95,.06);
+    transform: translateY(-5px);
+    box-shadow: 0 16px 36px -12px rgba(0,0,0,.5);
+  }
+  .hp-cat-card:focus-visible {
+    outline: 2px solid var(--brass); outline-offset: 3px;
+  }
+  .hp-cat-card:active { transform: translateY(-2px); }
+
+  .hp-cat-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+  .hp-cat-icon {
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 1px solid rgba(201,164,95,.35);
+    background: rgba(201,164,95,.1);
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .hp-cat-icon svg { width: 24px; height: 24px; stroke: var(--brass); fill: none; stroke-width: 1.4; }
+  .hp-cat-badge {
+    font: 700 .66rem 'Space Mono', monospace;
+    letter-spacing: .06em; text-transform: uppercase;
+    color: var(--brass); background: rgba(201,164,95,.12);
+    padding: 4px 10px; border-radius: 20px;
+  }
+
+  .hp-cat-name {
+    font: 900 1.22rem/1.15 'Archivo', sans-serif;
+    text-transform: uppercase; letter-spacing: -.01em;
+    color: var(--hp-ink); margin-bottom: 10px;
+  }
+  .hp-cat-desc {
+    font: 400 .86rem/1.55 'Inter', sans-serif;
+    color: var(--hp-ink-soft); margin-bottom: 20px;
+  }
+  .hp-cat-action {
+    display: inline-flex; align-items: center; gap: 8px;
+    font: 700 .72rem 'Space Mono', monospace; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--brass);
+    transition: transform .2s ease;
+  }
+  .hp-cat-card:hover .hp-cat-action { transform: translateX(4px); }
+
   /* ---------- GALLERY TEASER ---------- */
   .gallery-teaser { background: #0b0c0d; padding: 0 0 110px; }
   .gt-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 14px; height: 300px; }
@@ -301,12 +381,15 @@
   }
   .gt-item {
     border-radius: 14px; position: relative; overflow: hidden; display: flex; align-items: flex-end;
-    padding: 18px; color: #f2ecdf; font: 700 .72rem 'Space Mono', monospace; letter-spacing: .04em; text-decoration: none;
+    padding: 22px; color: #f2ecdf; font: 700 .82rem 'Archivo', sans-serif; letter-spacing: .02em; text-transform: uppercase; text-decoration: none;
   }
-  .gt-item::before { content: ""; position: absolute; inset: 0; background: radial-gradient(140% 100% at 20% 0%, #2c2317, #17181c 70%); }
-  .gt-item::after { content: ""; position: absolute; inset: 0; border: 1px solid rgba(201,164,95,.22); border-radius: inherit; opacity: 0; transition: opacity .25s; }
+  .gt-item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; z-index: 0; }
+  .gt-item::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,12,13,0.15) 0%, rgba(11,12,13,0.85) 100%); z-index: 1; transition: background .3s ease; }
+  .gt-item::after { content: ""; position: absolute; inset: 0; border: 1px solid rgba(201,164,95,.3); border-radius: inherit; opacity: 0; transition: opacity .25s; z-index: 2; }
+  .gt-item:hover img { transform: scale(1.06); }
+  .gt-item:hover::before { background: linear-gradient(180deg, rgba(11,12,13,0.05) 0%, rgba(11,12,13,0.7) 100%); }
   .gt-item:hover::after { opacity: 1; }
-  .gt-item span { position: relative; z-index: 1; }
+  .gt-item span { position: relative; z-index: 3; display: inline-flex; align-items: center; gap: 8px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
 
   /* ---------- CTA BAND ---------- */
   .cta-band { background: #131416; border-block: 1px solid rgba(242,236,223,.08); padding: 80px 0; }
@@ -487,51 +570,78 @@
   </div>
 </section>
 
-<!-- ============ HORIZONTAL: MENU SHOWCASE ============ -->
-<section class="gs-horz menu-horz" id="menuShowcase">
-  <div class="gs-horz-stage">
-    <div class="gs-horz-track">
-      <div class="gs-panel gs-intro">
-        <div class="gs-panel-inner">
-          <p class="gs-eyebrow">The Menu</p>
-          <h2>What people actually order</h2>
-          <p>Every favorite, one scroll away — from rice meals to the espresso bar. Tap any panel to jump straight to that part of the menu.</p>
-        </div>
+<!-- ============ STATIC MENU CATEGORIES ============ -->
+<section class="hp-menu-cats" id="menuShowcase">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="gs-eyebrow">The Menu</p>
+        <h2 style="font-size:clamp(2rem,4vw,3.2rem);">What people actually order</h2>
       </div>
-      <div class="gs-panel">
-        <div class="gs-panel-inner gs-cat">
-          <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="9" ry="3.2"/><path d="M3 15V9a9 3.2 0 0 1 18 0v6"/></svg></div>
-          <h3>Rice Meals &amp; Bowls</h3>
-          <p class="gs-cat-meta">From ₱100 &middot; sisig, katsu, tapsi &amp; bowls</p>
-          <a class="gs-cat-link" href="menu.html#rice-meals-bowls">View Rice Meals &amp; Bowls &rarr;</a>
-        </div>
-      </div>
-      <div class="gs-panel">
-        <div class="gs-panel-inner gs-cat">
-          <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg></div>
-          <h3>Wings, Noodles &amp; Snacks</h3>
-          <p class="gs-cat-meta">From ₱55 &middot; wings, batil patung, lomi, burgers &amp; snacks</p>
-          <a class="gs-cat-link" href="menu.html#wings-noodles-snacks">View Wings, Noodles &amp; Snacks &rarr;</a>
-        </div>
-      </div>
-      <div class="gs-panel">
-        <div class="gs-panel-inner gs-cat">
-          <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M8.5 4.5c1.5 1 1.8 2.2.9 3.4M12 4.5c1.5 1 1.8 2.2.9 3.4" stroke-linecap="round"/></svg></div>
-          <h3>Espresso &amp; Coffee</h3>
-          <p class="gs-cat-meta">From ₱90 &middot; hot &amp; iced espresso lines</p>
-          <a class="gs-cat-link" href="menu.html#espresso-coffee">View Espresso &amp; Coffee &rarr;</a>
-        </div>
-      </div>
-      <div class="gs-panel">
-        <div class="gs-panel-inner gs-cat">
-          <div class="gs-cat-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7 10c1.5 1 3 1.4 5 1.4s3.5-.4 5-1.4M6 14c2 1.2 4 1.7 6 1.7s4-.5 6-1.7" stroke-linecap="round"/></svg></div>
-          <h3>Specialty Beverages</h3>
-          <p class="gs-cat-meta">From ₱80 &middot; matcha, frappes &amp; fruit teas</p>
-          <a class="gs-cat-link" href="menu.html#specialty-beverages">View Specialty Beverages &rarr;</a>
-        </div>
-      </div>
+      <p>Every favorite in one place — from hearty rice meals to the espresso bar. Select any category to jump straight to that part of the menu.</p>
     </div>
-    <div class="gs-horz-progress"><i></i></div>
+
+    <div class="hp-cat-grid">
+      <!-- 1. Rice Meals & Bowls -->
+      <a class="hp-cat-card" href="menu.html#rice-meals-bowls">
+        <div>
+          <div class="hp-cat-top">
+            <div class="hp-cat-icon">
+              <svg viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="9" ry="3.2"/><path d="M3 15V9a9 3.2 0 0 1 18 0v6"/></svg>
+            </div>
+            <span class="hp-cat-badge">From ₱100</span>
+          </div>
+          <h3 class="hp-cat-name">Rice Meals &amp; Bowls</h3>
+          <p class="hp-cat-desc">Comforting Filipino favorites — pork sisig, chicken katsu, tapsi, poppers, and savory rice bowls.</p>
+        </div>
+        <div class="hp-cat-action">View Rice Meals &amp; Bowls &rarr;</div>
+      </a>
+
+      <!-- 2. Wings, Noodles & Snacks -->
+      <a class="hp-cat-card" href="menu.html#wings-noodles-snacks">
+        <div>
+          <div class="hp-cat-top">
+            <div class="hp-cat-icon">
+              <svg viewBox="0 0 24 24"><path d="M8 4c-2 0-3.5 1.6-3.5 3.6 0 2.6 2.2 4.9 5 6.8l2.5 1.7 2.5-1.7c2.8-1.9 5-4.2 5-6.8C19.5 5.6 18 4 16 4c-1.5 0-2.8.9-3.5 2.2C11.8 4.9 10.5 4 9 4Z"/></svg>
+            </div>
+            <span class="hp-cat-badge">From ₱55</span>
+          </div>
+          <h3 class="hp-cat-name">Wings, Noodles &amp; Snacks</h3>
+          <p class="hp-cat-desc">Crispy flavored wings, regional Pancit Batil Patung, rich Lomi, burger sets, pasta, and loaded fries.</p>
+        </div>
+        <div class="hp-cat-action">View Wings &amp; Snacks &rarr;</div>
+      </a>
+
+      <!-- 3. Espresso & Coffee -->
+      <a class="hp-cat-card" href="menu.html#espresso-coffee">
+        <div>
+          <div class="hp-cat-top">
+            <div class="hp-cat-icon">
+              <svg viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M8.5 4.5c1.5 1 1.8 2.2.9 3.4M12 4.5c1.5 1 1.8 2.2.9 3.4" stroke-linecap="round"/></svg>
+            </div>
+            <span class="hp-cat-badge">From ₱90</span>
+          </div>
+          <h3 class="hp-cat-name">Espresso &amp; Coffee</h3>
+          <p class="hp-cat-desc">Freshly pulled espresso handcrafted hot or iced — Americano, Spanish Latte, Caramel Macchiato &amp; Mocha.</p>
+        </div>
+        <div class="hp-cat-action">View Coffee Menu &rarr;</div>
+      </a>
+
+      <!-- 4. Specialty Beverages -->
+      <a class="hp-cat-card" href="menu.html#specialty-beverages">
+        <div>
+          <div class="hp-cat-top">
+            <div class="hp-cat-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7 10c1.5 1 3 1.4 5 1.4s3.5-.4 5-1.4M6 14c2 1.2 4 1.7 6 1.7s4-.5 6-1.7" stroke-linecap="round"/></svg>
+            </div>
+            <span class="hp-cat-badge">From ₱80</span>
+          </div>
+          <h3 class="hp-cat-name">Specialty Beverages</h3>
+          <p class="hp-cat-desc">Artisan ceremonial matcha, blended frappes, refreshing fruit teas, and non-coffee favorites.</p>
+        </div>
+        <div class="hp-cat-action">View Beverages &rarr;</div>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -585,14 +695,16 @@
       </div>
       <div style="margin-top:28px;"><a href="menu.html#wings-noodles-snacks" class="btn btn-outline" style="border-color:rgba(242,236,223,.3); color:#f2ecdf;">See Noodle Menu</a></div>
     </div>
-    <div class="specialty-photo">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7 10c1.5 1 3 1.4 5 1.4s3.5-.4 5-1.4M6 14c2 1.2 4 1.7 6 1.7s4-.5 6-1.7" stroke-linecap="round"/></svg>
+    <div class="specialty-photo-wrap">
+      <div class="specialty-photo">
+        <video autoplay loop muted playsinline>
+          <source src="../pics&vids/pancit.mp4" type="video/mp4">
+          <img src="../pics&vids/the-yo's_sample-pic-3.jpg" alt="Pancit Batil Patung">
+        </video>
+      </div>
     </div>
   </div>
 </section>
-
-<!-- ============ BESTSELLERS ============ -->
-
 
 <!-- ============ GALLERY TEASER ============ -->
 <section class="gallery-teaser">
@@ -601,9 +713,18 @@
       <div><p class="gs-eyebrow" style="display:block; margin-bottom:8px;">Life at The~Yo's</p><h2 style="font-size:clamp(1.6rem,3vw,2.1rem);">See it before you order</h2></div>
     </div>
     <div class="gt-grid">
-      <a class="gt-item" href="gallery.html"><span>Full Catering Setups &rarr;</span></a>
-      <a class="gt-item" href="gallery.html"><span>Espresso Bar &rarr;</span></a>
-      <a class="gt-item" href="gallery.html"><span>Family Gatherings &rarr;</span></a>
+      <a class="gt-item" href="gallery.html">
+        <img src="../pics&vids/the-yo's_sample-pic-cateting.jpg" alt="Full Catering Setups">
+        <span>Full Catering Setups &rarr;</span>
+      </a>
+      <a class="gt-item" href="gallery.html">
+        <img src="../pics&vids/the-yo's_sample-pic-4.jpg" alt="Espresso Bar">
+        <span>Espresso Bar &rarr;</span>
+      </a>
+      <a class="gt-item" href="gallery.html">
+        <img src="../pics&vids/the-yo's_customer-1.jpg" alt="Family Gatherings">
+        <span>Family Gatherings &rarr;</span>
+      </a>
     </div>
   </div>
 </section>
