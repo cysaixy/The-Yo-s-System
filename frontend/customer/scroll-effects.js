@@ -1,9 +1,15 @@
 /* Homepage scroll scenes; business logic remains in global.js and cart.js. */
 (() => {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // home-anim.js drives everything (all breakpoints) once GSAP + ScrollTrigger
+  // are available - this plain-JS version is only a fallback for when that
+  // CDN script fails to load. Running both at once means two systems set
+  // transforms on the same Find Us image layers every scroll frame, which
+  // is what caused the jumpy/broken-looking scroll behavior.
+  const hasGsap = window.gsap && window.ScrollTrigger;
   const clamp = n => Math.max(0, Math.min(1, n));
   const chapter = (root, draw) => {
-    if (!root || reduce || innerWidth <= 900) return;
+    if (!root || reduce || hasGsap) return;
     let queued = false;
     const update = () => { const r = root.getBoundingClientRect(); draw(clamp(-r.top / Math.max(1, root.offsetHeight - innerHeight))); queued = false; };
     const request = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };

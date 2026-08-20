@@ -63,7 +63,9 @@
       if (track) horiz(story, track);
     }
 
-    // --- Location journey (parallax layers + arrival) ---
+    // --- Location journey: ONE pinned scene on every breakpoint. Scroll
+    // only drives the SVG layers + the step copy - the section itself
+    // never moves and never splits into separate screens. ---
     const journey = document.getElementById('locationJourney');
     const scene = document.getElementById('mapFrame');
     if (journey && scene) {
@@ -71,12 +73,41 @@
       ['background', 'midground', 'road', 'foreground', 'store', 'marker']
         .forEach(k => (l[k] = scene.querySelector('.' + k)));
       const arrival = document.getElementById('arrivalCard');
+      const titleEl = document.getElementById('findUsTitle');
+      const labelEl = document.getElementById('journeyLabel');
+      const textEl = document.getElementById('locationText');
+
+      // Same four steps used by the no-GSAP fallback (scroll-effects.js),
+      // kept here so the copy updates even when GSAP is driving the show.
+      const steps = [
+        ["01 / 04 \u00b7 You're on the road", "Follow the way to The~Yo's Resto Bar in the heart of Baggao.", "Walk to<br>The~Yo's."],
+        ["02 / 04 \u00b7 Approaching Baggao", "The road gets closer to the heart of Baggao.", "Walk to<br>The~Yo's."],
+        ["03 / 04 \u00b7 There you are", "The~Yo's Resto Bar is just ahead.", "Walk to<br>The~Yo's."],
+        ["04 / 04 \u00b7 You've arrived", "Welcome to The~Yo's Resto Bar.", "You've<br>arrived."]
+      ];
+      let activeStep = -1;
+      const setStep = i => {
+        if (i === activeStep) return;
+        activeStep = i;
+        const [label, text, title] = steps[i];
+        if (labelEl) labelEl.textContent = label;
+        if (textEl) textEl.textContent = text;
+        if (titleEl) titleEl.innerHTML = title;
+      };
+
+      // Scroll distance scales with viewport so the animation reads at the
+      // same pace on a short phone as on a tall desktop screen, instead of
+      // using one fixed desktop-tuned pixel value everywhere.
+      const journeyDistance = () => Math.max(1200, Math.min(2400, window.innerHeight * 2.4));
+
       ScrollTrigger.create({
         trigger: journey,
         start: 'top top',
-        end: '+=2200',
+        end: () => '+=' + journeyDistance(),
         scrub: 1,
-        pin: innerWidth > 900 ? scene : false,
+        pin: scene,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
         onUpdate: self => {
           const p = self.progress;
           if (l.background) gsap.set(l.background, { y: p * -12, scale: 1 + p * 0.05 });
@@ -87,11 +118,31 @@
           if (l.store) gsap.set(l.store, { opacity: near, filter: `blur(${(1 - near) * 9}px)`, y: (1 - near) * 54, scale: 0.58 + near * 0.42 });
           if (l.marker) gsap.set(l.marker, { opacity: done, y: (1 - done) * -45, scale: 0.6 + done * 0.4 });
           if (arrival) gsap.set(arrival, { opacity: done, y: (1 - done) * 24 });
+          setStep(Math.min(3, Math.floor(p * 4)));
         }
       });
+
+      // The location SVGs are external <img> assets - their real box size
+      // isn't known until they load, which can throw ScrollTrigger's pinned
+      // measurements off (especially on mobile where layout is tighter).
+      // Re-measure once everything has actually loaded.
+      const artImgs = Array.from(scene.querySelectorAll('.location-layer'));
+      Promise.all(artImgs.map(img => img.complete
+        ? Promise.resolve()
+        : new Promise(res => { img.addEventListener('load', res, { once: true }); img.addEventListener('error', res, { once: true }); })
+      )).then(() => ScrollTrigger.refresh());
     }
 
     ScrollTrigger.refresh();
+
+    // Re-measure on resize/orientation change (debounced) so the pin
+    // distance and step boundaries stay correct - covers rotating a
+    // tablet/phone and the mobile browser chrome resizing the viewport.
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => ScrollTrigger.refresh(), 200);
+    });
   };
 
   // Script runs at the end of <body>, so the DOM is already parsed.

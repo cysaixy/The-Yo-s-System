@@ -201,33 +201,69 @@
   }
 
   /* ---------- LOCATION JOURNEY ---------- */
+  /* One continuous pinned scene: the section stays anchored on every
+     breakpoint and scroll only drives the SVG layers + copy below.
+     100dvh (with 100vh fallback for older browsers) is used everywhere,
+     not just desktop, so the pin has a stable box to pin on mobile too. */
   .find-us { background: var(--hp-bg); position: relative; }
   #locationJourney { position: relative; }
-  #mapFrame { position: relative; overflow: hidden; display: grid; place-items: center; padding: 0 22px; }
-  body.js-anim #mapFrame { height: 100vh; }
-  .journey-copy { width: min(1120px, 100%); display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+  #mapFrame {
+    position: relative; overflow: hidden; display: grid; place-items: center;
+    padding: 0 22px; width: 100%;
+  }
+  body.js-anim #mapFrame { height: 100vh; height: 100dvh; }
+  /* Safety valve: on very short viewports (small phones, landscape),
+     allow the pinned frame to scroll internally rather than clip content -
+     this never fights the page-level pin/scrub since it's a separate,
+     inner scroll container. */
+  @media (max-height: 700px) {
+    body.js-anim #mapFrame { overflow-y: auto; padding: 18px 22px; }
+  }
+  .journey-copy {
+    width: min(1120px, 100%); display: grid; grid-template-columns: 1fr 1fr;
+    gap: 60px; align-items: center; margin: 0 auto;
+  }
   .journey-copy h2 {
     font: 900 clamp(2.6rem,6.4vw,6.2rem)/.85 'Archivo', sans-serif; text-transform: uppercase;
     letter-spacing: -.05em; margin: 16px 0 20px; color: var(--ink);
   }
   .journey-copy p { color: var(--hp-ink-soft); max-width: 430px; }
   .journey-label { font: 700 .68rem 'Space Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--brass); margin-top: 22px; }
-  .journey-art { position: relative; height: min(56vh, 460px); }
-  .journey-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; will-change: transform, opacity, filter; }
+  .journey-art { position: relative; width: 100%; max-width: 100%; height: min(56vh, 460px); }
+  .journey-art img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+    will-change: transform, opacity, filter; max-width: 100%;
+  }
   .arrival { padding: 26px; border: 1px solid var(--hp-line-strong); background: var(--hp-panel); }
   body.js-anim .arrival { opacity: 0; transform: translateY(22px); }
   .arrival h3 { font: 900 clamp(1.7rem,3vw,2.6rem)/.9 'Archivo', sans-serif; text-transform: uppercase; margin-bottom: 14px; color: var(--ink); }
   .arrival address { font-style: normal; color: var(--hp-ink-soft); line-height: 1.6; }
   .arrival .hours { display: block; margin: 14px 0; color: var(--brass); font: 700 .66rem 'Space Mono', monospace; text-transform: uppercase; letter-spacing: .08em; }
   .arrival-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* Tablet + mobile: same single scene, same pin - just a stacked,
+     compacted layout so it all still fits inside one screen height. */
   @media (max-width: 900px) {
-    #mapFrame { height: auto; padding: 90px 22px; }
-    body.js-anim #mapFrame { height: auto; position: relative; }
-    .journey-copy { grid-template-columns: 1fr; gap: 34px; text-align: center; justify-items: center; }
-    .journey-copy p { margin: 0 auto; }
-    .journey-art { height: 300px; }
-    .arrival { opacity: 1 !important; transform: none !important; }
-    .journey-art img { transform: none !important; opacity: 1 !important; filter: none !important; }
+    #mapFrame { padding: 70px 20px; }
+    .journey-copy {
+      grid-template-columns: 1fr; gap: 18px; text-align: center; justify-items: center;
+    }
+    .journey-copy h2 { font-size: clamp(1.9rem, 7.5vw, 3.2rem); margin: 10px 0 12px; }
+    .journey-copy p { margin: 0 auto; font-size: .92rem; }
+    .journey-label { margin-top: 12px; }
+    .journey-art { height: min(30vh, 260px); margin-top: 4px; }
+    .arrival { padding: 18px; }
+    .arrival h3 { font-size: clamp(1.3rem, 5vw, 1.8rem); margin-bottom: 8px; }
+    .arrival address { font-size: .88rem; }
+    .arrival-actions { justify-content: center; }
+    .arrival-actions .btn { flex: 1 1 auto; text-align: center; }
+  }
+  @media (max-width: 520px) {
+    #mapFrame { padding: 60px 16px; }
+    .journey-copy { gap: 12px; }
+    .journey-art { height: min(26vh, 210px); }
+    .arrival { padding: 14px; }
+    .arrival .hours { margin: 10px 0; }
   }
 
   /* ---------- SPECIALTY ---------- */
