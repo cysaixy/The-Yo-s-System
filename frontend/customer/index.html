@@ -47,12 +47,27 @@
 
   /* ---------- HERO ---------- */
   .gs-hero {
-    position: relative; min-height: 100vh; display: grid; align-items: center;
-    overflow: hidden; padding: 150px 0 90px;
+    position: relative; min-height: 100vh; min-height: 100svh; display: grid; align-items: center;
+    overflow-x: hidden; padding: 150px 0 90px;
     background:
       radial-gradient(980px 560px at 80% 8%, var(--hp-glow-a), transparent 60%),
       radial-gradient(720px 460px at 4% 96%, var(--hp-glow-b), transparent 55%),
       var(--hp-bg);
+  }
+  /* Short desktop viewports (1366x768, 1280x720, 1280x600, etc.) must
+     never squeeze the title/copy to force everything into the window.
+     Only the fixed-height decorative plate graphic is scaled down here,
+     which frees up vertical room without shrinking or compressing any
+     of the actual text content or its spacing. */
+  @media (min-width: 981px) and (max-height: 800px) {
+    .gs-hero { padding: 130px 0 60px; }
+    .gs-hero-figure { height: 340px; }
+    .gs-hero-plate { width: min(250px, 54vw); height: min(250px, 54vw); }
+  }
+  @media (min-width: 981px) and (max-height: 650px) {
+    .gs-hero { padding: 115px 0 46px; }
+    .gs-hero-figure { height: 260px; }
+    .gs-hero-plate { width: min(200px, 48vw); height: min(200px, 48vw); }
   }
   .gs-hero::before {
     content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -81,6 +96,14 @@
   .gs-title {
     font: 900 clamp(3.1rem,10vw,9.5rem)/.84 'Archivo', sans-serif;
     text-transform: uppercase; letter-spacing: -.045em; color: var(--ink); margin: 18px 0 8px;
+    /* Flex + align-items:flex-end replaces reliance on inline
+       vertical-align/line-height (which is sensitive to per-glyph metrics
+       and to the GSAP entrance transform still settling on the
+       last-staggered letter) so every letter, including the final S,
+       is guaranteed to rest on the exact same baseline at every screen
+       size. flex-wrap:nowrap + white-space:nowrap guarantee the title
+       can never break onto a second line. */
+    display: flex; flex-wrap: nowrap; align-items: flex-end; white-space: nowrap;
   }
   .gs-title .l { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: .04em; margin-bottom: -.04em; }
   .gs-sub {
@@ -126,6 +149,7 @@
   @media (max-width: 980px) {
     .gs-hero { padding: 120px 0 70px; text-align: center; justify-items: center; }
     .gs-hero-inner { grid-template-columns: 1fr; width: min(1200px, calc(100% - 44px)); }
+    .gs-title { justify-content: center; }
     .gs-eyebrow { justify-content: center; } .gs-eyebrow::before { display: none; }
     .gs-hero-figure { order: -1; height: 250px; }
     .gs-hero-desc { margin: 0 auto 30px; }
