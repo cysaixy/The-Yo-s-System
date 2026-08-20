@@ -55,6 +55,10 @@ export async function syncCustomerProfile(idToken, profileFields = {}) {
     body: JSON.stringify(profileFields),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Could not sync your profile.");
+  if (!res.ok) {
+    const err = new Error(data.error || "Could not sync your profile.");
+    if (data.code) err.code = data.code;
+    throw err;
+  }
   return data.customer;
 }

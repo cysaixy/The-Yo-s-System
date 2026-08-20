@@ -2,7 +2,7 @@ import rateLimit from "express-rate-limit";
 
 // Global limiter for standard API routes
 export const globalLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
+  windowMs: 5 * 60 * 1000, // 5 minutes
   max: 100, // Limit each IP to 100 requests per window
   standardHeaders: true,
   legacyHeaders: false,

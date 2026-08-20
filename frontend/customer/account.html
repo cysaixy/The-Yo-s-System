@@ -261,6 +261,27 @@
       </form>
     </div>
 
+    <!-- PHONE-REQUIRED GATE -->
+    <!-- Shown instead of the sign-in card (new sign-ups, esp. via Google,
+         which doesn't ask for a phone on its own) or instead of the
+         logged-in card (legacy accounts that already exist with phone =
+         NULL). Nothing past this point is reachable until a phone is
+         saved. -->
+    <div class="account-card" id="phoneGateCard" style="display:none;">
+      <div class="login-heading">
+        <h1>One Last Step</h1>
+        <p>We need a mobile number on file so we can reach you about your orders and reservations.</p>
+      </div>
+      <form id="panelPhoneGate" onsubmit="return handlePhoneGateSubmit(event)">
+        <div>
+          <label for="pgPhone">Mobile Number</label>
+          <input id="pgPhone" type="text" inputmode="numeric" required placeholder="09xxxxxxxxx" oninput="this.value = this.value.replace(/[^0-9]/g, '');" autocomplete="tel">
+        </div>
+        <button type="submit" class="btn account-submit">Save &amp; Continue</button>
+        <div class="account-status" id="pgStatus"></div>
+      </form>
+    </div>
+
     <!-- LOGGED-IN CARD -->
     <div class="account-card logged-in-card" id="loggedInCard">
       <div class="profile-header">
@@ -431,11 +452,56 @@
     }
   }
 
+  // Holds the in-progress auth context while the phone gate is showing, so
+  // handlePhoneGateSubmit can finish the sync once the number is entered.
+  let pendingGate = null;
+
   async function finishAuth(userCred, profileFields) {
     const idToken = await userCred.user.getIdToken();
-    await syncCustomerProfile(idToken, profileFields);
+    let customer = null;
+    try {
+      customer = await syncCustomerProfile(idToken, profileFields);
+    } catch (err) {
+      if (err.code !== 'PHONE_REQUIRED') throw err;
+      // Brand-new customer (e.g. Google sign-in) - the backend refused to
+      // create the row without a phone. Fall through to the gate below.
+    }
+
+    if (!customer || !customer.phone) {
+      showPhoneGate(userCred, profileFields);
+      return;
+    }
+
     window.location.href = getRedirectTarget();
   }
+
+  function showPhoneGate(userCred, profileFields) {
+    pendingGate = { userCred, profileFields };
+    document.getElementById('authCard').style.display = 'none';
+    document.getElementById('loggedInCard').classList.remove('active');
+    document.getElementById('phoneGateCard').style.display = 'block';
+    setStatus('pgStatus', '', null);
+  }
+
+  window.handlePhoneGateSubmit = async function (e) {
+    e.preventDefault();
+    const phone = document.getElementById('pgPhone').value.trim();
+    if (!pendingGate) return false;
+
+    setStatus('pgStatus', 'Saving…', 'info');
+    try {
+      const idToken = await pendingGate.userCred.user.getIdToken();
+      const customer = await syncCustomerProfile(idToken, { ...pendingGate.profileFields, phone });
+      if (!customer || !customer.phone) {
+        throw new Error('Could not save your mobile number. Please try again.');
+      }
+      pendingGate = null;
+      window.location.href = getRedirectTarget();
+    } catch (err) {
+      setStatus('pgStatus', err.message || 'Could not save your mobile number.', 'err');
+    }
+    return false;
+  };
 
   window.handleSignIn = async function (e) {
     e.preventDefault();
@@ -739,10 +805,14 @@
   onAuthStateChanged(auth, async (user) => {
     const authCard = document.getElementById('authCard');
     const loggedInCard = document.getElementById('loggedInCard');
-    if (user) {
-      authCard.style.display = 'none';
-      loggedInCard.classList.add('active');
+    const phoneGateCard = document.getElementById('phoneGateCard');
 
+    // finishAuth/handlePhoneGateSubmit are already mid-flow (e.g. right
+    // after a fresh Google sign-in) - let them own the screen instead of
+    // this listener yanking the gate away or flashing the logged-in card.
+    if (pendingGate) return;
+
+    if (user) {
       const label = user.displayName || user.email || 'there';
       document.getElementById('loggedInName').textContent = 'Welcome back, ' + label.split(' ')[0];
       document.getElementById('loggedInEmail').textContent = user.email || '';
@@ -752,15 +822,32 @@
       try {
         const idToken = await user.getIdToken();
         const customer = await syncCustomerProfile(idToken, {});
-        if (customer) {
-          document.getElementById('accName').value = customer.name || user.displayName || '';
-          document.getElementById('accPhone').value = customer.phone || '';
-          document.getElementById('accAddress').value = customer.address || '';
+
+        if (!customer || !customer.phone) {
+          // Legacy account (created before the phone gate existed, or an
+          // insert that predates the PHONE_REQUIRED check) - block access
+          // to the rest of the account page until it's filled in.
+          authCard.style.display = 'none';
+          loggedInCard.classList.remove('active');
+          showPhoneGate({ user }, {});
+          return;
         }
+
+        phoneGateCard.style.display = 'none';
+        authCard.style.display = 'none';
+        loggedInCard.classList.add('active');
+        document.getElementById('accName').value = customer.name || user.displayName || '';
+        document.getElementById('accPhone').value = customer.phone || '';
+        document.getElementById('accAddress').value = customer.address || '';
       } catch (err) {
         console.warn('Could not pre-fill customer profile details:', err);
+        // Sync failed outright - still show the logged-in shell rather than
+        // silently stranding the user on neither card.
+        authCard.style.display = 'none';
+        loggedInCard.classList.add('active');
       }
     } else {
+      phoneGateCard.style.display = 'none';
       authCard.style.display = 'block';
       loggedInCard.classList.remove('active');
     }

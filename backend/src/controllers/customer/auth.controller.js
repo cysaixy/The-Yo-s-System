@@ -62,7 +62,20 @@ export async function syncCustomerProfile(req, res) {
       ]);
       customer = rows[0];
     } else {
-      // New user: Insert record
+      // New user: Insert record.
+      // Phone is required from this point on - it must not be possible to
+      // create a customer row with phone = NULL, regardless of which auth
+      // path (email/password, Google, etc.) got them here. The frontend
+      // gate in account.html normally supplies this before this branch is
+      // ever hit; this check exists so the rule holds even if that gate is
+      // bypassed or a future auth path forgets to collect it.
+      if (!phone || !String(phone).trim()) {
+        return res.status(400).json({
+          error: "A mobile number is required to create your account.",
+          code: "PHONE_REQUIRED",
+        });
+      }
+
       const insertQuery = `
         INSERT INTO customers (firebase_uid, email, name, phone, address)
         VALUES ($1, $2, $3, $4, $5)
