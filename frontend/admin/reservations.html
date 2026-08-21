@@ -168,6 +168,12 @@
     const content = document.getElementById('adminContent');
     content.innerHTML = `
       <div class="filter-bar">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <button class="prd-btn prd-btn-gold" id="addWalkinBtn" style="font-size:0.75rem; padding:8px 14px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add Walk-in Reservation
+          </button>
+        </div>
         <div><label>Search</label>
           <input type="text" id="filterQ" placeholder="Name, email, table, notes…" style="min-width:220px;">
         </div>
@@ -191,6 +197,7 @@
     ['filterQ', 'filterStatus', 'filterFrom', 'filterTo'].forEach(id => {
       document.getElementById(id).addEventListener('input', () => { page = 1; render(); });
     });
+    document.getElementById('addWalkinBtn').addEventListener('click', openWalkinModal);
     load();
   }
 
@@ -473,6 +480,125 @@
     });
 
     function close() { backdrop.remove(); }
+  }
+
+  // ---- Walk-in Reservation Modal ----
+  function openWalkinModal() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() + 4);
+    const minDateStr = minDate.toISOString().split('T')[0];
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop active';
+    backdrop.innerHTML = `
+      <div class="modal-box" style="max-width:520px;">
+        <h3>Add Walk-in Reservation</h3>
+        <p style="font-size:0.8rem; color:var(--ink-muted); margin-bottom:16px;">For customers who reserve in-person at the store.</p>
+        <div class="detail-list" style="margin-bottom:16px;">
+          <dt>Customer Name</dt><dd><input type="text" id="walkinName" placeholder="e.g. Juan Dela Cruz" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;"></dd>
+          <dt>Contact Number</dt><dd><input type="text" id="walkinPhone" placeholder="09XXXXXXXXX" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;"></dd>
+          <dt>Email (optional)</dt><dd><input type="email" id="walkinEmail" placeholder="customer@email.com" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;"></dd>
+        </div>
+        <div class="form-field">
+          <label for="walkinDate">Date *</label>
+          <input type="date" id="walkinDate" min="${minDateStr}" value="${minDateStr}" required style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;">
+        </div>
+        <div class="form-field">
+          <label for="walkinTime">Time *</label>
+          <input type="time" id="walkinTime" min="09:00" max="21:00" value="18:00" required style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;">
+        </div>
+        <div class="form-field">
+          <label for="walkinGuests">Number of Guests *</label>
+          <input type="number" id="walkinGuests" min="1" max="20" value="2" required style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;">
+        </div>
+        <div class="form-field">
+          <label for="walkinNotes">Notes / Special Requests</label>
+          <textarea id="walkinNotes" placeholder="Birthday, dietary needs, etc." style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; min-height:60px;"></textarea>
+        </div>
+        <div class="form-field">
+          <label for="walkinCustomOrder">Custom Order Details (for large/group orders)</label>
+          <textarea id="walkinCustomOrder" placeholder="e.g. 360 pcs of wings, 20 packs of spaghetti, 50 pcs burger steak..." style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; min-height:80px; font-family:inherit; font-size:0.85rem;"></textarea>
+          <small style="color:var(--ink-muted);">Enter detailed order items for kitchen preparation. Each line: quantity + item name.</small>
+        </div>
+        <div class="modal-error" id="walkinError"></div>
+        <div class="modal-close-row">
+          <button class="btn btn-outline" id="walkinClose">Cancel</button>
+          <button class="btn" id="walkinSubmit">Create Reservation</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    const close = () => backdrop.remove();
+    backdrop.querySelector('#walkinClose').addEventListener('click', close);
+    backdrop.querySelector('#walkinSubmit').addEventListener('click', async () => {
+      const btn = backdrop.querySelector('#walkinSubmit');
+      const errEl = backdrop.querySelector('#walkinError');
+      errEl.classList.remove('show');
+      
+      const name = document.getElementById('walkinName').value.trim();
+      const phone = document.getElementById('walkinPhone').value.trim();
+      const email = document.getElementById('walkinEmail').value.trim();
+      const date = document.getElementById('walkinDate').value;
+      const time = document.getElementById('walkinTime').value;
+      const guests = parseInt(document.getElementById('walkinGuests').value) || 1;
+      const notes = document.getElementById('walkinNotes').value.trim();
+      const customOrder = document.getElementById('walkinCustomOrder').value.trim();
+
+      if (!name || !phone || !date || !time) {
+        errEl.textContent = 'Name, phone, date, and time are required.';
+        errEl.classList.add('show');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating...';
+
+      try {
+        // Create a walk-in customer or find existing
+        const customerRes = await adminFetch('/api/admin/customers', {
+          method: 'POST',
+          body: JSON.stringify({ name, phone, email: email || null }),
+        });
+        if (!customerRes.ok) {
+          const err = await customerRes.json();
+          throw new Error(err.error || 'Could not create customer.');
+        }
+        const customerData = await customerRes.json();
+        const customerId = customerData.customer.id;
+
+        // Create reservation with custom order in notes
+        const combinedNotes = [notes, customOrder].filter(Boolean).join('\n\n--- CUSTOM ORDER ---\n');
+        const res = await adminFetch('/api/admin/reservations', {
+          method: 'POST',
+          body: JSON.stringify({
+            customer_id: customerId,
+            reservation_date: date,
+            reservation_time: time,
+            guests,
+            notes: combinedNotes || null,
+            status: 'pending',
+            reservation_status: 'pending',
+            order_status: 'no_order',
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not create reservation.');
+
+        close();
+        toast('Walk-in reservation created.', 'success');
+        load(); // reload reservations list
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.add('show');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Reservation';
+      }
+    });
+
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
   }
 
   // ---- Manage Reservation Order Modal ----
@@ -1035,7 +1161,10 @@
 
   function parseDateOnly(s) {
     if (!s) return null;
-    const [y, m, d] = String(s).split('-').map(Number);
+    // Handle both "YYYY-MM-DD" and ISO "YYYY-MM-DDTHH:mm:ss.sssZ" formats
+    const str = String(s);
+    const datePart = str.split('T')[0]; // Get date portion before 'T'
+    const [y, m, d] = datePart.split('-').map(Number);
     return new Date(y, (m || 1) - 1, d || 1);
   }
 

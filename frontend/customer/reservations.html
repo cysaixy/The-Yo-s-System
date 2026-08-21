@@ -426,8 +426,9 @@
 
       // Confirmation state with a reference the customer can track.
       const r = data.reservation || {};
+      // Handle both "YYYY-MM-DD" and ISO "YYYY-MM-DDTHH:mm:ss.sssZ" formats
       const dateStr = r.reservation_date
-        ? new Date(r.reservation_date + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
+        ? new Date(r.reservation_date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
         : '';
       document.getElementById('reserveRef').textContent =
         `Ref #${r.id} · ${dateStr} at ${(r.reservation_time || '').slice(0, 5)} · Status: Pending`;

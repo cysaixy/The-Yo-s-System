@@ -21,3 +21,21 @@ export async function searchCustomers(req, res, next) {
     next(err);
   }
 }
+
+export async function createCustomer(req, res, next) {
+  try {
+    const { name, phone, email } = req.body;
+    if (!name || !phone) {
+      return res.status(400).json({ error: "Name and phone are required." });
+    }
+    const { rows } = await pool.query(
+      `INSERT INTO customers (name, phone, email)
+       VALUES ($1, $2, $3)
+       RETURNING id, name, phone, email`,
+      [name, phone, email || null]
+    );
+    res.status(201).json({ customer: rows[0] });
+  } catch (err) {
+    next(err);
+  }
+}

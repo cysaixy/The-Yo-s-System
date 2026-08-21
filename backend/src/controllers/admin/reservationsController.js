@@ -1,7 +1,9 @@
 // src/controllers/admin/reservations.controller.js
 import pool from "../../config/db.js";
 
-const VALID_STATUSES = ["pending", "confirmed", "cancelled", "completed"];
+const VALID_STATUSES = ["pending", "confirmed", "cancelled", "completed", "contact_customer", "order_preparing", "order_finalized"];
+const VALID_ORDER_STATUSES = ["no_order", "editable", "finalized", "locked"];
+const VALID_RESERVATION_STATUSES = ["pending", "contact_customer", "order_preparing", "order_finalized", "confirmed", "cancelled", "completed"];
 // Two reservations on the same table can't be closer than this many
 // minutes apart - the booking window covers a full seating.
 const CONFLICT_WINDOW_MINUTES = 120;
@@ -141,6 +143,44 @@ export async function updateStatus(req, res, next) {
     );
     if (!rows[0]) return res.status(404).json({ error: "Reservation not found." });
     res.json({ reservation: rows[0] });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createReservationAdmin(req, res, next) {
+  try {
+    const { customer_id, reservation_date, reservation_time, guests, notes, status, reservation_status, order_status } = req.body;
+    
+    if (!customer_id || !reservation_date || !reservation_time || !guests) {
+      return res.status(400).json({ error: "customer_id, reservation_date, reservation_time, and guests are required." });
+    }
+
+    // Calculate order editing deadline (2 days before reservation)
+    const [y, m, d] = String(reservation_date).split('-').map(Number);
+    const resDate = new Date(y, m - 1, d);
+    const deadline = new Date(resDate);
+    deadline.setDate(deadline.getDate() - 2);
+    const deadlineStr = deadline.toISOString().split('T')[0];
+
+    const { rows } = await pool.query(
+      `INSERT INTO reservations (customer_id, reservation_date, reservation_time, guests, notes, status, datetime_reserved, order_status, order_editing_deadline, reservation_status)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8, $9)
+       RETURNING *`,
+      [
+        customer_id, 
+        reservation_date, 
+        reservation_time, 
+        guests, 
+        notes || null, 
+        status || 'pending', 
+        order_status || 'no_order', 
+        deadlineStr, 
+        reservation_status || 'pending'
+      ]
+    );
+
+    res.status(201).json({ reservation: rows[0] });
   } catch (err) {
     next(err);
   }
