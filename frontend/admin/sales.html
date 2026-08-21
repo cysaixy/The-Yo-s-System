@@ -934,6 +934,7 @@
         <div class="row"><span>Status</span><b>${statusLabel(o.status)}</b></div>
         <div class="row"><span>Payment</span><b>${payment}</b></div>
         <div class="row"><span>Placed</span><b>${formatDate(o.datetime_ordered)}</b></div>
+        ${o.reservation_date ? `<div class="row"><span>Reservation Date</span><b>${formatDate(o.reservation_date)} at ${String(o.reservation_time || '').slice(0, 5)}</b></div>` : ''}
       </div>
 
       ${deliveryBlock}

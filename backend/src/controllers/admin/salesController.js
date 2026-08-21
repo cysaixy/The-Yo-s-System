@@ -287,10 +287,12 @@ export async function getOrder(req, res, next) {
     const { rows } = await pool.query(
       `SELECT o.*, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
               s.name AS staff_name,
+              r.reservation_date, r.reservation_time,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source
        FROM orders o
        JOIN customers c ON c.id = o.customer_id
        LEFT JOIN staff s ON s.id = o.staff_id
+       LEFT JOIN reservations r ON r.id = o.reservation_id
        WHERE o.id = $1`,
       [req.params.id]
     );
