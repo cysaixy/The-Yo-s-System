@@ -94,6 +94,14 @@
     font-family: 'Space Mono', monospace; font-size: 0.9rem; font-weight: 700;
     color: var(--brass); margin: 0 0 10px; line-height: 1.6;
   }
+
+  /* Reservation workflow note */
+  .workflow-note {
+    background: rgba(163,132,74,0.08); border: 1px solid rgba(163,132,74,0.3);
+    border-radius: 4px; padding: 12px; margin-bottom: 18px;
+    font-size: 0.8rem; line-height: 1.5; color: var(--brass-dark);
+  }
+  .workflow-note strong { display: block; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -143,6 +151,9 @@
         </div>
 
         <form id="reservationForm">
+          <div class="workflow-note">
+            <strong>How it works:</strong> Submit your request → Our staff will contact you to discuss your order → We'll confirm your reservation once the order is finalized.
+          </div>
           <div class="form-row">
             <div><label for="resDate">Date</label><input id="resDate" type="date" required></div>
             <div><label for="resTime">Time</label><input id="resTime" type="time" min="09:00" max="21:00" required></div>
@@ -157,7 +168,6 @@
               </div>
               <p class="reserve-guests-hint">1 – 20 guests</p>
             </div>
-            <div><label for="resTable">Table Preference <span style="opacity:.6; text-transform:none;">(optional)</span></label><input id="resTable" type="text" maxlength="50" placeholder="e.g. Near the window"></div>
           </div>
           <div><label for="resNotes">Notes for the Restaurant <span style="opacity:.6; text-transform:none;">(optional)</span></label><textarea id="resNotes" maxlength="500" placeholder="Birthday celebration, dietary needs, etc."></textarea></div>
 
@@ -165,7 +175,7 @@
 
           <hr class="reserve-divider">
           <button type="submit" class="btn" style="width:100%; justify-content:center; padding:14px; margin-top:6px; border-radius:6px;">Request Reservation</button>
-          <p class="reserve-note" style="text-align:center;">We'll confirm your reservation within 24 hours.</p>
+          <p class="reserve-note" style="text-align:center;">We'll contact you within 24 hours to confirm your order and reservation.</p>
           <div class="reserve-status" id="reserveStatus"></div>
         </form>
       </div>
@@ -174,8 +184,8 @@
         <div class="check-ring">✓</div>
         <h3 style="font-family:'Archivo', sans-serif; text-transform:uppercase; font-size:1.2rem; margin-bottom:10px;">Reservation Requested</h3>
         <div class="reserve-ref" id="reserveRef"></div>
-        <p style="opacity:0.65; font-size:0.9rem; margin-bottom:12px;">We've received your request and it's pending confirmation from the restaurant.</p>
-        <p class="reserve-note" style="text-align:center; margin-bottom:26px;">Track its status in the "Your Reservations" list above.</p>
+        <p style="opacity:0.65; font-size:0.9rem; margin-bottom:12px;">Your reservation request has been received. Our staff will contact you to confirm your order and reservation.</p>
+        <p class="reserve-note" style="text-align:center; margin-bottom:26px;">Submitting a reservation request does not guarantee immediate confirmation.</p>
         <a href="index.html" class="btn btn-outline" style="width:100%; justify-content:center; padding:14px; border-radius:6px;">Back to Home</a>
       </div>
 
@@ -247,11 +257,13 @@
     if (next >= 1 && next <= 20) input.value = next;
   };
 
-  // Prevent picking dates in the past - the server enforces this too.
+  // Prevent picking dates less than 4 days in advance - the server enforces this too.
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const minDate = new Date(today);
+  minDate.setDate(minDate.getDate() + 4); // 4-day advance booking rule
   const dateInput = document.getElementById('resDate');
-  if (dateInput) dateInput.min = today.toISOString().split('T')[0];
+  if (dateInput) dateInput.min = minDate.toISOString().split('T')[0];
 
   // Dates (next 90 days) that are already fully booked - the server computes
   // and enforces this; here it just stops the picker from letting you keep
@@ -270,7 +282,7 @@
     }
   }
 
-  // Live warnings: past dates, short-notice bookings (within 3 days), and
+  // Live warnings: past dates, dates less than 4 days away, and
   // times outside opening hours.
   function updateWarnings() {
     const warn = document.getElementById('reserveWarn');
@@ -285,8 +297,7 @@
       const diffDays = Math.round((selected - today) / 86400000);
       if (blockedDates.has(dateVal)) msg.push("Sorry — we're fully booked on that date. Please pick another day.");
       else if (diffDays < 0) msg.push('That date is in the past.');
-      else if (diffDays === 0) msg.push('Same-day reservations may not be accommodated. Please call ahead.');
-      else if (diffDays <= 3) msg.push(`Only ${diffDays} day${diffDays > 1 ? 's' : ''} away — short notice may not be accommodated. We'll confirm as soon as possible.`);
+      else if (diffDays < 4) msg.push(`Reservations must be made at least 4 days in advance. Please select a later date.`);
     }
 
     const timeVal = document.getElementById('resTime').value;
@@ -389,7 +400,6 @@
       reservation_date: document.getElementById('resDate').value,
       reservation_time: document.getElementById('resTime').value,
       guests: Number(document.getElementById('resGuests').value),
-      table_no: document.getElementById('resTable').value.trim() || null,
       notes: document.getElementById('resNotes').value.trim() || null,
     };
 
@@ -420,7 +430,7 @@
         ? new Date(r.reservation_date + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
         : '';
       document.getElementById('reserveRef').textContent =
-        `Ref #${r.id} · ${dateStr} at ${(r.reservation_time || '').slice(0, 5)} · Status: Pending confirmation`;
+        `Ref #${r.id} · ${dateStr} at ${(r.reservation_time || '').slice(0, 5)} · Status: Pending`;
 
       document.getElementById('reserveFormWrap').style.display = 'none';
       document.getElementById('reserveSuccess').classList.add('active');

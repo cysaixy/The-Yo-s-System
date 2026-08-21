@@ -57,8 +57,58 @@
   }
   .modal-error.show { display: block; }
 
+  /* Order status pills */
+  .order-status-pill {
+    padding: 3px 10px; border-radius: 20px; font-size: 0.6rem; font-family: 'Space Mono', monospace;
+    font-weight: 700; text-transform: uppercase; white-space: nowrap;
+  }
+  .order-status-no_order { background: rgba(21,23,26,0.08); color: var(--ink); opacity: 0.65; }
+  .order-status-editable { background: rgba(46,125,79,0.12); color: #1e6b41; }
+  .order-status-finalized { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
+  .order-status-locked { background: rgba(192,57,43,0.12); color: #a3271b; }
+
+  /* Reservation status pills */
+  .res-status-pill {
+    padding: 3px 10px; border-radius: 20px; font-size: 0.6rem; font-family: 'Space Mono', monospace;
+    font-weight: 700; text-transform: uppercase; white-space: nowrap;
+  }
+  .res-status-pending { background: rgba(184,134,11,0.14); color: #b8860b; }
+  .res-status-contact_customer { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
+  .res-status-order_preparing { background: rgba(46,125,79,0.12); color: #1e6b41; }
+  .res-status-order_finalized { background: rgba(163,132,74,0.2); color: var(--brass-dark); }
+  .res-status-confirmed { background: rgba(163,132,74,0.15); color: var(--brass); }
+  .res-status-cancelled { background: rgba(192,57,43,0.14); color: #c0392b; }
+  .res-status-completed { background: rgba(46,125,79,0.14); color: #2e7d4f; }
+
   .pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
   .pager-info { font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; opacity: 0.6; }
+
+  /* Order items table in modal */
+  .order-items-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
+  .order-items-table th { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); font-family: 'Space Mono', monospace; font-size: 0.6rem; text-transform: uppercase; opacity: 0.55; }
+  .order-items-table td { padding: 8px; border-bottom: 1px dashed var(--line); }
+  .order-items-table .item-name { font-weight: 600; }
+  .order-items-table .item-qty { font-family: 'Space Mono', monospace; text-align: center; width: 60px; }
+  .order-items-table .item-price { font-family: 'Space Mono', monospace; text-align: right; width: 80px; }
+  .order-items-table .item-subtotal { font-family: 'Space Mono', monospace; text-align: right; width: 90px; font-weight: 700; color: var(--brass-dark); }
+  .order-items-table .item-notes { font-size: 0.75rem; opacity: 0.6; margin-top: 2px; }
+  .order-items-table .addon-row { font-size: 0.7rem; opacity: 0.6; color: var(--brass-dark); padding-left: 16px; }
+
+  .order-total-row { display: flex; justify-content: flex-end; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--line); font-family: 'Space Mono', monospace; font-size: 0.9rem; font-weight: 700; color: var(--brass); }
+
+  .deadline-display { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .deadline-label { font-family: 'Space Mono', monospace; font-size: 0.6rem; text-transform: uppercase; opacity: 0.55; }
+  .deadline-value { font-weight: 700; }
+  .deadline-value.locked { color: var(--danger); }
+  .deadline-value.editable { color: var(--success); }
+  .deadline-value.final-day { color: var(--warning); }
+
+  .admin-override-btn {
+    background: none; border: 1px solid var(--danger); color: var(--danger);
+    border-radius: 5px; padding: 6px 12px; font-size: 0.7rem; font-family: 'Space Mono', monospace;
+    font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all .15s;
+  }
+  .admin-override-btn:hover { background: var(--danger); color: #fff; }
 
   .toast {
     position: fixed; bottom: 20px; right: 20px; z-index: 200;
@@ -75,6 +125,7 @@
     .detail-list dt { margin-top: 8px; }
     .notes-cell { max-width: 140px; }
     .toast { left: 12px; right: 12px; bottom: 12px; }
+    .order-items-table { display: block; overflow-x: auto; }
   }
 </style>
 </head>
@@ -84,17 +135,33 @@
 
 <script type="module">
   import { renderAdminShell, confirmDialog } from "./admin-shell.js";
-  import { adminFetch, formatDate, escapeHtml } from "./admin-api.js";
+  import { adminFetch, formatDate, escapeHtml, peso } from "./admin-api.js";
 
   const session = renderAdminShell({ active: 'reservations', title: 'Reservations' });
   if (session) init();
 
   let reservations = [];
   let tables = [];
+  let menuItems = []; // loaded for order editor
   const PAGE_SIZE = 8;
   let page = 1;
 
   const STATUS_PILL = { pending: 'pill-warning', confirmed: 'pill-brass', cancelled: 'pill-danger', completed: 'pill-success' };
+  const RES_STATUS_PILL = { 
+    pending: 'res-status-pending', 
+    contact_customer: 'res-status-contact_customer',
+    order_preparing: 'res-status-order_preparing',
+    order_finalized: 'res-status-order_finalized',
+    confirmed: 'res-status-confirmed',
+    cancelled: 'res-status-cancelled',
+    completed: 'res-status-completed'
+  };
+  const ORDER_STATUS_PILL = {
+    no_order: 'order-status-no_order',
+    editable: 'order-status-editable',
+    finalized: 'order-status-finalized',
+    locked: 'order-status-locked'
+  };
   const TERMINAL = ['cancelled', 'completed'];
 
   function init() {
@@ -129,16 +196,20 @@
 
   async function load() {
     try {
-      const [resData, tableData] = await Promise.all([
+      const [resData, tableData, menuData] = await Promise.all([
         adminFetch('/api/admin/reservations'),
         adminFetch('/api/admin/reservations/tables'),
+        adminFetch('/api/admin/products/menuitems'),
       ]);
       const resJson = await resData.json();
       const tableJson = await tableData.json();
+      const menuJson = await menuData.json();
       if (!resData.ok) throw new Error(resJson.error || 'Could not load reservations.');
       if (!tableData.ok) throw new Error(tableJson.error || 'Could not load tables.');
+      if (!menuData.ok) throw new Error(menuJson.error || 'Could not load menu items.');
       reservations = resJson.reservations || [];
       tables = tableJson.tables || [];
+      menuItems = menuJson.items || [];
       render();
     } catch (err) {
       document.getElementById('resWrap').innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
@@ -192,7 +263,7 @@
       <table class="admin-table">
         <thead><tr>
           <th>Customer</th><th>Table</th><th>Date</th><th>Time</th><th>Guests</th>
-          <th>Requested</th><th>Status</th><th>Notes</th><th>Actions</th>
+          <th>Requested</th><th>Res. Status</th><th>Order Status</th><th>Order Deadline</th><th>Notes</th><th>Actions</th>
         </tr></thead>
         <tbody>
           ${slice.map(r => rowHtml(r, today)).join('')}
@@ -213,8 +284,13 @@
     wrap.querySelectorAll('button[data-action]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        if (btn.dataset.action === 'confirmed') openConfirmModal(id);
-        else updateStatus(id, btn.dataset.action);
+        const action = btn.dataset.action;
+        if (action === 'confirmed') openConfirmModal(id);
+        else if (action === 'manage') openManageModal(id);
+        else if (action === 'contact') updateReservationStatus(id, 'contact_customer');
+        else if (action === 'order') openManageModal(id);
+        else if (action === 'finalize') updateReservationStatus(id, 'order_finalized');
+        else updateStatus(id, action);
       });
     });
     wrap.querySelectorAll('[data-customer]').forEach(el => {
@@ -230,6 +306,21 @@
     const tag = !terminal && diff === 0 ? '<span class="urgency-tag today">Today</span>'
               : !terminal && diff < 0 ? '<span class="urgency-tag overdue">Overdue</span>' : '';
     const notes = r.notes || '';
+    
+    // Order deadline display
+    const deadline = r.order_editing_deadline ? fmtDate(r.order_editing_deadline) : '—';
+    const deadlineDaysLeft = r.order_editing_deadline ? dayDiff(r.order_editing_deadline, today) : null;
+    let deadlineClass = '';
+    if (deadlineDaysLeft !== null) {
+      if (deadlineDaysLeft < 0) deadlineClass = 'locked';
+      else if (deadlineDaysLeft === 0) deadlineClass = 'final-day';
+      else deadlineClass = 'editable';
+    }
+    
+    // Status labels
+    const resStatusLabel = r.reservation_status || r.status;
+    const orderStatusLabel = r.order_status || 'no_order';
+    
     return `
       <tr class="${urgency}">
         <td>
@@ -243,7 +334,9 @@
         <td>${r.reservation_time ? String(r.reservation_time).slice(0, 5) : '—'}</td>
         <td>${r.guests}</td>
         <td title="${formatDate(r.datetime_reserved)}" style="white-space:nowrap;">${formatDate(r.datetime_reserved, { dateStyle: 'medium', timeStyle: 'short' })}</td>
-        <td><span class="pill ${STATUS_PILL[r.status] || 'pill-neutral'}">${escapeHtml(r.status)}</span></td>
+        <td><span class="res-status-pill ${RES_STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></td>
+        <td><span class="order-status-pill ${ORDER_STATUS_PILL[orderStatusLabel] || 'order-status-no_order'}">${escapeHtml(orderStatusLabel.replace(/_/g, ' '))}</span></td>
+        <td><span class="deadline-value ${deadlineClass}">${deadline}</span></td>
         <td><div class="notes-cell${notes ? '' : ' empty'}" title="${escapeHtml(notes)}">${notes ? escapeHtml(notes) : '—'}</div></td>
         <td><div class="row-actions">${actionButtons(r)}</div></td>
       </tr>
@@ -251,8 +344,36 @@
   }
 
   function actionButtons(r) {
-    if (r.status === 'pending') {
-      return `<button class="primary" data-action="confirmed" data-id="${r.id}">Confirm</button>
+    const resStatus = r.reservation_status || r.status;
+    const orderStatus = r.order_status || 'no_order';
+    const today = startOfDay(new Date());
+    const deadline = r.order_editing_deadline ? new Date(r.order_editing_deadline) : null;
+    const isPastDeadline = deadline && today > deadline;
+    const isLocked = isPastDeadline && orderStatus !== 'locked';
+    const isAdmin = session?.staff?.role === 'Admin';
+
+    // If order is locked (past deadline) and not admin, show locked state
+    if (isLocked) {
+      return `<span class="pill pill-danger" style="font-size:0.7rem;">Order Locked</span>
+              ${isAdmin ? `<button class="primary" data-action="manage" data-id="${r.id}" style="margin-left:4px; font-size:0.65rem; padding:4px 8px;">Admin Override</button>` : ''}`;
+    }
+
+    if (resStatus === 'pending') {
+      return `<button class="primary" data-action="contact" data-id="${r.id}" style="font-size:0.7rem;">Contact Customer</button>
+              <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+    }
+    if (resStatus === 'contact_customer') {
+      return `<button class="primary" data-action="order" data-id="${r.id}" style="font-size:0.7rem;">Add Order</button>
+              <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+    }
+    if (resStatus === 'order_preparing') {
+      return `<button class="primary" data-action="manage" data-id="${r.id}" style="font-size:0.7rem;">Edit Order</button>
+              <button class="primary" data-action="finalize" data-id="${r.id}" style="font-size:0.7rem;">Finalize Order</button>
+              <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+    }
+    if (resStatus === 'order_finalized') {
+      return `<button class="primary" data-action="confirmed" data-id="${r.id}" style="font-size:0.7rem;">Confirm Reservation</button>
+              <button class="primary" data-action="manage" data-id="${r.id}" style="font-size:0.7rem;">Edit Order</button>
               <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
     if (r.status === 'confirmed') {
@@ -335,7 +456,12 @@
           return;
         }
         const r0 = reservations.find(x => x.id == id);
-        if (r0) { r0.status = 'confirmed'; r0.table_no = data.reservation.table_no; }
+        if (r0) { 
+          r0.status = 'confirmed'; 
+          r0.table_no = data.reservation.table_no;
+          r0.reservation_status = 'confirmed';
+          r0.order_status = 'finalized';
+        }
         close();
         toast(`Confirmed — ${data.reservation.table_no} assigned.`, 'success');
         render();
@@ -347,6 +473,453 @@
     });
 
     function close() { backdrop.remove(); }
+  }
+
+  // ---- Manage Reservation Order Modal ----
+  async function openManageModal(id) {
+    const r = reservations.find(x => x.id == id);
+    if (!r) return;
+
+    // Fetch order details
+    let orderData = null;
+    try {
+      const res = await adminFetch(`/api/admin/reservations/${id}/order`);
+      if (res.ok) orderData = await res.json();
+    } catch (err) {
+      console.error('Failed to load order:', err);
+    }
+
+    const resStatus = r.reservation_status || r.status;
+    const orderStatus = r.order_status || 'no_order';
+    const today = startOfDay(new Date());
+    const deadline = r.order_editing_deadline ? new Date(r.order_editing_deadline) : null;
+    const isPastDeadline = deadline && today > deadline;
+    const canEdit = (orderStatus === 'editable' || orderStatus === 'finalized') && !isPastDeadline;
+    const isAdmin = session?.staff?.role === 'Admin';
+
+    const order = orderData?.order;
+    const menuItems = orderData?.menu_items || [];
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop active';
+    backdrop.innerHTML = `
+      <div class="modal-box" style="max-width:700px; max-height:90vh; overflow-y:auto;">
+        <div class="prd-modal-head" style="margin-bottom:16px;">
+          <h3>Manage Reservation #${r.id} — ${escapeHtml(r.customer_name)}</h3>
+          <button class="close-btn" id="manageCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        
+        <div class="detail-list" style="margin-bottom:16px; font-size:0.8rem;">
+          <dt>Date</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dt>Guests</dt><dd>${r.guests}</dd>
+          <dt>Reservation Status</dt><dd><span class="res-status-pill ${RES_STATUS_PILL[resStatus] || 'res-status-pending'}">${escapeHtml(resStatus.replace(/_/g, ' '))}</span></dd>
+          <dt>Order Status</dt><dd><span class="order-status-pill ${ORDER_STATUS_PILL[orderStatus] || 'order-status-no_order'}">${escapeHtml(orderStatus.replace(/_/g, ' '))}</span></dd>
+          <dt>Order Editing Deadline</dt><dd>
+            <span class="deadline-value ${deadline ? (isPastDeadline ? 'locked' : (dayDiff(r.order_editing_deadline, today) === 0 ? 'final-day' : 'editable')) : ''}">
+              ${deadline ? fmtDate(r.order_editing_deadline) : '—'}
+            </span>
+            ${isPastDeadline ? ' <span style="color:var(--danger); font-size:0.7rem;">(PASSED)</span>' : (deadline && dayDiff(r.order_editing_deadline, today) === 0 ? ' <span style="color:var(--warning); font-size:0.7rem;">(TODAY)</span>' : '')}
+          </dd>
+          ${isPastDeadline && isAdmin ? '<dt></dt><dd><button class="admin-override-btn" id="adminOverrideBtn">Admin Override</button></dd>' : ''}
+        </div>
+
+        ${order ? `
+        <div style="border-top:1px solid var(--line); padding-top:16px;">
+          <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.85rem; margin-bottom:10px;">Order Items</h4>
+          <table class="order-items-table">
+            <thead><tr>
+              <th style="width:40%;">Item</th>
+              <th class="item-qty">Qty</th>
+              <th class="item-price">Price</th>
+              <th class="item-subtotal">Subtotal</th>
+            </tr></thead>
+            <tbody>
+              ${order.items.map(item => `
+                <tr>
+                  <td>
+                    <div class="item-name">${escapeHtml(item.name)}</div>
+                    ${item.add_ons?.length ? item.add_ons.map(a => `<div class="addon-row">+ ${a.name} × ${a.quantity}</div>`).join('') : ''}
+                    ${item.notes ? `<div class="item-notes">${escapeHtml(item.notes)}</div>` : ''}
+                  </td>
+                  <td class="item-qty">${item.quantity}</td>
+                  <td class="item-price">${peso(item.price)}</td>
+                  <td class="item-subtotal">${peso(item.subtotal)}</td>
+                </tr>
+              `).join('') || '<tr><td colspan="4">No items in order</td></tr>'}
+            </tbody>
+          </table>
+          <div class="order-total-row">
+            <span>Total:</span>
+            <span>${peso(order.total_amount)}</span>
+          </div>
+        </div>
+        ` : `
+        <div style="border-top:1px solid var(--line); padding-top:16px; text-align:center; color:var(--ink-muted);">
+          <p>No order recorded yet.</p>
+        </div>
+        `}
+
+        <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+          ${!order ? `
+            <button class="btn" id="addOrderBtn" style="flex:1; min-width:140px;">Add Order</button>
+          ` : `
+            ${canEdit ? `
+              <button class="btn" id="editOrderBtn" style="flex:1; min-width:140px;">Edit Order</button>
+            ` : ''}
+            ${resStatus === 'order_preparing' ? `
+              <button class="btn" id="finalizeOrderBtn" style="flex:1; min-width:140px; background:var(--success); border-color:var(--success);">Finalize Order</button>
+            ` : ''}
+            ${resStatus === 'order_finalized' ? `
+              <button class="btn" id="confirmReservationBtn" style="flex:1; min-width:140px;">Confirm Reservation</button>
+            ` : ''}
+            ${isAdmin && isPastDeadline && orderStatus === 'locked' ? `
+              <button class="btn" id="adminOverrideEditBtn" style="flex:1; min-width:140px; background:var(--danger); border-color:var(--danger);">Admin Override: Edit</button>
+            ` : ''}
+          `}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    const close = () => backdrop.remove();
+    backdrop.querySelector('#manageCloseBtn').addEventListener('click', close);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+
+    // Add Order button
+    const addOrderBtn = backdrop.querySelector('#addOrderBtn');
+    if (addOrderBtn) addOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, menuItems, false));
+
+    // Edit Order button
+    const editOrderBtn = backdrop.querySelector('#editOrderBtn');
+    if (editOrderBtn) editOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, menuItems, true, order));
+
+    // Finalize Order button
+    const finalizeOrderBtn = backdrop.querySelector('#finalizeOrderBtn');
+    if (finalizeOrderBtn) finalizeOrderBtn.addEventListener('click', () => finalizeOrder(id));
+
+    // Confirm Reservation button
+    const confirmReservationBtn = backdrop.querySelector('#confirmReservationBtn');
+    if (confirmReservationBtn) confirmReservationBtn.addEventListener('click', () => openConfirmModal(id));
+
+    // Admin Override button
+    const adminOverrideBtn = backdrop.querySelector('#adminOverrideBtn');
+    if (adminOverrideBtn) adminOverrideBtn.addEventListener('click', () => {
+      const ok = confirm('The order editing deadline has passed. Are you sure you want to override the cutoff and modify this order?');
+      if (ok) openOrderEditorModal(id, r, menuItems, true, order, true);
+    });
+
+    const adminOverrideEditBtn = backdrop.querySelector('#adminOverrideEditBtn');
+    if (adminOverrideEditBtn) adminOverrideEditBtn.addEventListener('click', () => openOrderEditorModal(id, r, menuItems, true, order, true));
+  }
+
+  // Order Editor Modal
+  function openOrderEditorModal(reservationId, reservation, menuItems, isEdit, existingOrder = null, adminOverride = false) {
+    // Close the manage modal first
+    closeModals();
+
+    // Group menu items by category
+    const categories = {};
+    menuItems.forEach(item => {
+      const cat = item.category_name || 'Uncategorized';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(item);
+    });
+
+    // Build existing order items map for editing
+    const existingItems = new Map();
+    if (existingOrder?.items) {
+      existingOrder.items.forEach(item => {
+        const key = `${item.menu_id}|${item.notes || ''}|${JSON.stringify(item.add_ons?.map(a => `${a.addon_id}:${a.quantity}`).sort() || [])}`;
+        existingItems.set(key, item);
+      });
+    }
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop active';
+    backdrop.innerHTML = `
+      <div class="modal-box" style="max-width:800px; max-height:90vh; overflow-y:auto;">
+        <div class="prd-modal-head" style="margin-bottom:16px;">
+          <h3>${isEdit ? 'Edit' : 'Add'} Order — Reservation #${reservationId}</h3>
+          <button class="close-btn" id="orderEditorCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+
+        <div style="margin-bottom:16px; padding:12px; background:var(--stone); border-radius:8px; font-size:0.8rem;">
+          <strong>${escapeHtml(reservation.customer_name)}</strong> • 
+          ${reservation.reservation_date ? fmtDate(reservation.reservation_date) : '—'} at ${String(reservation.reservation_time || '').slice(0, 5)} • 
+          ${reservation.guests} guests
+        </div>
+
+        <div id="orderEditorContent">
+          <!-- Category tabs and items will be rendered here -->
+        </div>
+
+        <div style="margin-top:16px; border-top:1px solid var(--line); padding-top:16px;">
+          <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.85rem; margin-bottom:10px;">Current Order Items</h4>
+          <div id="currentOrderItems" style="max-height:200px; overflow-y:auto;"></div>
+          <div class="order-total-row" id="orderTotalRow" style="display:none;">
+            <span>Total:</span>
+            <span id="orderTotalDisplay">₱0.00</span>
+          </div>
+        </div>
+
+        <div class="modal-error" id="orderEditorError"></div>
+        <div class="modal-close-row" style="margin-top:20px;">
+          <button class="btn btn-outline" id="orderEditorCancelBtn">Cancel</button>
+          <button class="btn" id="orderEditorSaveBtn">${isEdit ? 'Update Order' : 'Save Order'}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    const close = () => backdrop.remove();
+    backdrop.querySelector('#orderEditorCloseBtn').addEventListener('click', close);
+    backdrop.querySelector('#orderEditorCancelBtn').addEventListener('click', close);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+
+    // Render category tabs and items
+    renderOrderEditorCategories(backdrop, categories, existingItems);
+
+    // Save button
+    backdrop.querySelector('#orderEditorSaveBtn').addEventListener('click', async () => {
+      await saveOrderFromEditor(reservationId, backdrop, adminOverride);
+    });
+  }
+
+  // Order Editor State
+  let orderEditorState = {
+    selectedItems: new Map(), // key -> { menuItem, quantity, notes, addons: Map<addonId, quantity> }
+  };
+
+  function renderOrderEditorCategories(backdrop, categories, existingItems) {
+    const contentEl = backdrop.querySelector('#orderEditorContent');
+    const categoryNames = Object.keys(categories).sort();
+    let activeCategory = categoryNames[0];
+
+    const renderCategoryTabs = () => {
+      return `
+        <div style="display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; border-bottom:1px solid var(--line); padding-bottom:8px;">
+          ${categoryNames.map(cat => `
+            <button type="button" class="prd-sub-tab ${cat === activeCategory ? 'active' : ''}" data-category="${escapeHtml(cat)}" style="padding:6px 12px; font-size:0.75rem;">
+              ${escapeHtml(cat)}
+            </button>
+          `).join('')}
+        </div>
+      `;
+    };
+
+    const renderItems = (cat) => {
+      const items = categories[cat];
+      if (!items || !items.length) return '<div style="padding:12px; color:var(--ink-muted);">No items in this category</div>';
+
+      return `
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; max-height:300px; overflow-y:auto;">
+          ${items.map(item => {
+            // Check if this item is already in the order
+            const existingKey = Array.from(orderEditorState.selectedItems.keys()).find(k => k.startsWith(`${item.id}|`));
+            const isSelected = !!existingKey;
+            const existingItem = existingKey ? orderEditorState.selectedItems.get(existingKey) : null;
+            const qty = existingItem?.quantity || 1;
+
+            return `
+              <div class="prd-form-field" style="background:#fff; border:1px solid ${isSelected ? 'var(--brass)' : 'var(--line)'}; border-radius:8px; padding:10px; ${isSelected ? 'box-shadow:0 0 0 2px rgba(163,132,74,0.2);' : ''}">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <strong style="font-size:0.8rem;">${escapeHtml(item.name)}</strong>
+                  <span style="font-family:'Space Mono',monospace; color:var(--brass-dark);">₱${Number(item.price).toFixed(2)}</span>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <div class="stepper" style="flex-shrink:0;">
+                    <button type="button" class="qty-dec" data-id="${item.id}" ${qty <= 1 ? 'disabled' : ''}>−</button>
+                    <span class="qty-val" data-id="${item.id}">${qty}</span>
+                    <button type="button" class="qty-inc" data-id="${item.id}">+</button>
+                  </div>
+                  <button type="button" class="btn ${isSelected ? 'btn-danger' : 'btn-ghost'}" 
+                    data-action="${isSelected ? 'remove' : 'add'}" 
+                    data-id="${item.id}"
+                    style="flex:1; padding:6px 10px; font-size:0.7rem;"
+                  >${isSelected ? 'Remove' : 'Add'}</button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    };
+
+    const updateView = () => {
+      contentEl.innerHTML = renderCategoryTabs() + renderItems(activeCategory);
+      
+      // Bind category tabs
+      contentEl.querySelectorAll('[data-category]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeCategory = btn.dataset.category;
+          updateView();
+        });
+      });
+
+      // Bind quantity buttons
+      contentEl.querySelectorAll('.qty-inc, .qty-dec').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const itemId = Number(btn.dataset.id);
+          handleQuantityChange(itemId, btn.classList.contains('qty-inc') ? 1 : -1);
+          updateView();
+        });
+      });
+
+      // Bind add/remove buttons
+      contentEl.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const itemId = Number(btn.dataset.id);
+          const action = btn.dataset.action;
+          if (action === 'add') {
+            addItemToOrder(itemId);
+          } else {
+            removeItemFromOrder(itemId);
+          }
+          updateView();
+          updateCurrentOrderDisplay(backdrop);
+        });
+      });
+    };
+
+    updateView();
+    updateCurrentOrderDisplay(backdrop);
+  }
+
+  function addItemToOrder(itemId) {
+    const item = menuItems.find(m => m.id === itemId);
+    if (!item) return;
+    
+    const key = `${itemId}||`;
+    orderEditorState.selectedItems.set(key, {
+      menuItem: item,
+      quantity: 1,
+      notes: '',
+      addons: new Map()
+    });
+  }
+
+  function removeItemFromOrder(itemId) {
+    // Find and remove all entries for this menu item
+    const keysToRemove = Array.from(orderEditorState.selectedItems.keys()).filter(k => k.startsWith(`${itemId}|`));
+    keysToRemove.forEach(k => orderEditorState.selectedItems.delete(k));
+  }
+
+  function handleQuantityChange(itemId, delta) {
+    const key = Array.from(orderEditorState.selectedItems.keys()).find(k => k.startsWith(`${itemId}|`));
+    if (!key) return;
+    
+    const item = orderEditorState.selectedItems.get(key);
+    item.quantity = Math.max(1, item.quantity + delta);
+    orderEditorState.selectedItems.set(key, item);
+  }
+
+  function updateCurrentOrderDisplay(backdrop) {
+    const container = backdrop.querySelector('#currentOrderItems');
+    const totalRow = backdrop.querySelector('#orderTotalRow');
+    const totalDisplay = backdrop.querySelector('#orderTotalDisplay');
+
+    if (orderEditorState.selectedItems.size === 0) {
+      container.innerHTML = '<div style="padding:12px; color:var(--ink-muted); text-align:center;">No items added yet</div>';
+      totalRow.style.display = 'none';
+      return;
+    }
+
+    let total = 0;
+    container.innerHTML = Array.from(orderEditorState.selectedItems.entries()).map(([key, data]) => {
+      const subtotal = data.menuItem.price * data.quantity;
+      total += subtotal;
+      const addonTotal = Array.from(data.addons.values()).reduce((sum, a) => sum + a.price * a.quantity, 0);
+      total += addonTotal;
+
+      return `
+        <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px dashed var(--line);">
+          <div>
+            <strong>${escapeHtml(data.menuItem.name)}</strong>
+            ${data.notes ? `<div class="item-notes">${escapeHtml(data.notes)}</div>` : ''}
+            <span style="font-family:'Space Mono',monospace; color:var(--brass);">× ${data.quantity}</span>
+          </div>
+          <span style="font-family:'Space Mono',monospace; font-weight:700; color:var(--brass-dark);">
+            ₱${(subtotal + addonTotal).toFixed(2)}
+          </span>
+        </div>
+      `;
+    }).join('');
+
+    totalDisplay.textContent = `₱${total.toFixed(2)}`;
+    totalRow.style.display = 'flex';
+  }
+
+  async function saveOrderFromEditor(reservationId, backdrop, adminOverride) {
+    const errEl = backdrop.querySelector('#orderEditorError');
+    const saveBtn = backdrop.querySelector('#orderEditorSaveBtn');
+
+    if (orderEditorState.selectedItems.size === 0) {
+      errEl.textContent = 'Please add at least one item to the order.';
+      errEl.classList.add('show');
+      return;
+    }
+
+    const items = Array.from(orderEditorState.selectedItems.values()).map(data => ({
+      menu_id: data.menuItem.id,
+      quantity: data.quantity,
+      notes: data.notes,
+      add_ons: Array.from(data.addons.entries()).map(([addonId, addon]) => ({
+        addon_id: addonId,
+        quantity: addon.quantity
+      }))
+    }));
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    errEl.classList.remove('show');
+
+    try {
+      const res = await adminFetch(`/api/admin/reservations/${reservationId}/order`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          items, 
+          status: 'editable',
+          admin_override: adminOverride 
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save order.');
+
+      toast('Order saved successfully.', 'success');
+      closeModals();
+      // Reopen manage modal to show updated order
+      openManageModal(reservationId);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.add('show');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Order';
+    }
+  }
+
+  async function finalizeOrder(id) {
+    const ok = await confirmDialog('Finalize this order? The customer will no longer be able to request changes (except admin override).', { confirmLabel: 'Finalize Order' });
+    if (!ok) return;
+    try {
+      const res = await adminFetch(`/api/admin/reservations/${id}/reservation-status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reservation_status: 'order_finalized' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not finalize order.');
+      const r0 = reservations.find(x => x.id == id);
+      if (r0) { r0.reservation_status = 'order_finalized'; r0.order_status = 'finalized'; }
+      toast('Order finalized.', 'success');
+      render();
+      closeModals();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
+  function closeModals() {
+    document.querySelectorAll('.modal-backdrop').forEach(m => m.remove());
   }
 
   // ---- Customer details modal (contact info for follow-up calls) ----
@@ -378,6 +951,48 @@
     document.body.appendChild(backdrop);
     backdrop.querySelector('#detailsClose').addEventListener('click', () => backdrop.remove());
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
+  }
+
+  async function updateReservationStatus(id, reservationStatus, contactNotes = null) {
+    const r = reservations.find(x => x.id == id);
+    if (!r) return;
+
+    const verbMap = {
+      contact_customer: 'Mark as contacted customer?',
+      order_finalized: 'Finalize this order? Changes will be locked after this (except admin override).',
+    };
+    const verb = verbMap[reservationStatus] || `Change reservation status to ${reservationStatus}?`;
+    const confirmLabelMap = {
+      contact_customer: 'Mark Contacted',
+      order_finalized: 'Finalize Order',
+    };
+    const confirmLabel = confirmLabelMap[reservationStatus] || 'Confirm';
+    
+    const ok = await confirmDialog(verb, { confirmLabel, danger: reservationStatus === 'cancelled' });
+    if (!ok) return;
+
+    try {
+      const res = await adminFetch(`/api/admin/reservations/${id}/reservation-status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reservation_status: reservationStatus, contact_notes: contactNotes }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not update reservation status.');
+
+      // Update local data
+      const r0 = reservations.find(x => x.id == id);
+      if (r0) {
+        r0.reservation_status = reservationStatus;
+        if (data.reservation) {
+          Object.assign(r0, data.reservation);
+        }
+      }
+      toast(`${reservationStatus.replace(/_/g, ' ')} updated.`, 'success');
+      render();
+      closeModals();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
   }
 
   async function updateStatus(id, status) {

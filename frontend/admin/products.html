@@ -206,14 +206,76 @@
   padding: 12px; margin-top: 6px; display: flex; flex-direction: column; gap: 10px;
 }
 .multi-comp-row {
-  display: grid; grid-template-columns: 2fr 1fr 1fr 30px; gap: 8px; align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(80px, 140px) minmax(60px, 90px) 32px;
+  gap: 8px; align-items: center;
+}
+.multi-comp-row > * {
+  min-width: 0;
 }
 .remove-row-btn {
   width: 28px; height: 28px; border: 1px solid rgba(192,57,43,0.3); border-radius: 6px;
   background: #fff; color: var(--danger); font-size: 1.1rem; line-height: 1; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .remove-row-btn:hover { background: rgba(192,57,43,0.08); }
+
+/* Ensure form controls in multi-comp-row fit properly */
+.multi-comp-row select,
+.multi-comp-row input {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Hide placeholder divs in bundle rows */
+.multi-comp-row .bundle-prod-placeholder { display: none; }
+
+/* Responsive stacking for multi-comp-row */
+@media (max-width: 700px) {
+  .multi-comp-row {
+    grid-template-columns: minmax(0, 1fr) minmax(70px, 120px);
+    grid-template-areas:
+      "selector selector"
+      "qty unit"
+      "remove remove";
+    gap: 6px 8px;
+  }
+  .multi-comp-row > select,
+  .multi-comp-row > input:not([type="number"]):not(.addon-inv-unit):not(.bundle-prod-placeholder) {
+    grid-area: selector;
+  }
+  .multi-comp-row > input[type="number"] {
+    grid-area: qty;
+  }
+  .multi-comp-row > .remove-row-btn {
+    grid-area: remove;
+    justify-self: end;
+  }
+  .multi-comp-row .addon-inv-unit {
+    grid-area: unit;
+  }
+  .multi-comp-row .bundle-prod-placeholder {
+    grid-area: unit;
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .multi-comp-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "selector"
+      "qty"
+      "unit"
+      "remove";
+    gap: 6px;
+  }
+  .multi-comp-row > * { grid-area: auto; }
+  .multi-comp-row .remove-row-btn { justify-self: start; }
+  .multi-comp-row .bundle-prod-placeholder { display: none; }
+}
 
 .prod-checkbox-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px;
@@ -234,6 +296,7 @@
   background: #fff; border-radius: 12px; padding: 28px;
   width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
   box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+  box-sizing: border-box;
 }
 .prd-modal.wide { max-width: 660px; }
 .prd-modal.narrow { max-width: 440px; }
@@ -268,6 +331,7 @@
   padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px;
   font-family: 'Inter', sans-serif; font-size: 0.84rem; background: var(--bone);
   color: var(--ink); outline: none; transition: border-color .15s;
+  box-sizing: border-box; width: 100%; max-width: 100%;
 }
 .prd-form-field input:focus, .prd-form-field select:focus, .prd-form-field textarea:focus {
   border-color: var(--brass);
@@ -284,7 +348,6 @@
 @media (max-width: 900px) {
   .prd-summary-row { grid-template-columns: 1fr 1fr; }
   .prd-header-search input { width: 160px; }
-  .multi-comp-row { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 640px) {
   .prd-summary-row { grid-template-columns: 1fr; }
@@ -292,7 +355,6 @@
   .prd-form-grid { grid-template-columns: 1fr; }
   .prd-header-row { flex-direction: column; align-items: flex-start; }
   .prd-header-search input { width: 100%; }
-  .multi-comp-row { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -1252,7 +1314,7 @@ function addBundleProdRow(menuId = '', qty = '1') {
   div.innerHTML = `
     <select class="bundle-prod-id"><option value="">Select Menu Product…</option>${menuOptions}</select>
     <input type="number" min="1" class="bundle-prod-qty" placeholder="Qty" value="${qty}">
-    <div></div>
+    <div class="bundle-prod-placeholder"></div>
     <button class="remove-row-btn" type="button" onclick="this.parentElement.remove(); window.recalculateBundleRegTotal();">×</button>
   `;
   if (menuId) div.querySelector('.bundle-prod-id').value = menuId;

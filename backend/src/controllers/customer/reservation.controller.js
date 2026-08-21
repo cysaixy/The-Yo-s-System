@@ -5,15 +5,15 @@ import pool from "../../config/db.js";
 const MAX_GUESTS = 20;
 const OPENING_MINUTES = 9 * 60;   // 9:00 AM
 const CLOSING_MINUTES = 21 * 60;  // 9:00 PM
-const MAX_TABLE_NO_LENGTH = 50;
 const MAX_NOTES_LENGTH = 500;
+const MIN_ADVANCE_DAYS = 4;       // Reservations must be made at least 4 days in advance
 
 export async function createReservation(req, res, next) {
   try {
     // Same rule as orders: customer_id comes from the verified token, never
     // from the request body.
     const customer_id = req.user?.customer?.id;
-    const { table_no, reservation_date, reservation_time, guests, notes } = req.body;
+    const { reservation_date, reservation_time, guests, notes } = req.body;
 
     if (!customer_id) {
       return res.status(400).json({
@@ -26,8 +26,7 @@ export async function createReservation(req, res, next) {
       });
     }
 
-    // Reject past dates server-side too - the picker guards the frontend, but
-    // the API must not trust the client.
+    // Validate date format
     const [y, m, d] = String(reservation_date).split("-").map(Number);
     if (!y || !m || !d) {
       return res.status(400).json({ error: "reservation_date must be YYYY-MM-DD." });
@@ -35,6 +34,17 @@ export async function createReservation(req, res, next) {
     const date = new Date(y, m - 1, d);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // Enforce 4-day advance booking rule (both frontend and backend)
+    const minDate = new Date(today);
+    minDate.setDate(minDate.getDate() + MIN_ADVANCE_DAYS);
+    if (date < minDate) {
+      return res.status(400).json({
+        error: `Reservations must be made at least ${MIN_ADVANCE_DAYS} days in advance. Please select a later date.`,
+      });
+    }
+
+    // Also reject past dates (redundant but safe)
     if (date < today) {
       return res.status(400).json({ error: "Reservation date can't be in the past." });
     }
@@ -68,11 +78,6 @@ export async function createReservation(req, res, next) {
     }
 
     // Keep free-text fields short enough that nothing absurd hits Postgres.
-    if (table_no && table_no.length > MAX_TABLE_NO_LENGTH) {
-      return res.status(400).json({
-        error: `Table preference must be ${MAX_TABLE_NO_LENGTH} characters or fewer.`,
-      });
-    }
     if (notes && notes.length > MAX_NOTES_LENGTH) {
       return res.status(400).json({
         error: `Notes must be ${MAX_NOTES_LENGTH} characters or fewer.`,
@@ -93,11 +98,16 @@ export async function createReservation(req, res, next) {
       });
     }
 
+    // Calculate order editing deadline (2 days before reservation date)
+    const orderEditingDeadline = new Date(date);
+    orderEditingDeadline.setDate(orderEditingDeadline.getDate() - 2);
+    const deadlineStr = orderEditingDeadline.toISOString().split('T')[0];
+
     const { rows } = await pool.query(
-      `INSERT INTO reservations (customer_id, table_no, reservation_date, reservation_time, guests, notes, status, datetime_reserved)
-       VALUES ($1, $2, $3, $4, $5, $6, 'pending', NOW())
+      `INSERT INTO reservations (customer_id, reservation_date, reservation_time, guests, notes, status, datetime_reserved, order_status, order_editing_deadline, reservation_status)
+       VALUES ($1, $2, $3, $4, $5, 'pending', NOW(), 'no_order', $6, 'pending')
        RETURNING *`,
-      [customer_id, table_no || null, reservation_date, reservation_time, guestsNum, notes || null]
+      [customer_id, reservation_date, reservation_time, guestsNum, notes || null, deadlineStr]
     );
 
     res.status(201).json({ reservation: rows[0] });
@@ -153,7 +163,8 @@ export async function getCustomerReservations(req, res, next) {
     }
 
     const { rows } = await pool.query(
-      `SELECT id, table_no, reservation_date, reservation_time, guests, notes, status, datetime_reserved
+      `SELECT id, table_no, reservation_date, reservation_time, guests, notes, status, datetime_reserved,
+              order_status, order_editing_deadline, reservation_status
        FROM reservations
        WHERE customer_id = $1
        ORDER BY reservation_date DESC, reservation_time DESC`,
@@ -176,9 +187,10 @@ export async function cancelReservation(req, res, next) {
 
     const { rows } = await pool.query(
       `UPDATE reservations
-       SET status = 'cancelled'
+       SET status = 'cancelled', reservation_status = 'cancelled'
        WHERE id = $1 AND customer_id = $2 AND status = 'pending'
-       RETURNING id, table_no, reservation_date, reservation_time, guests, notes, status, datetime_reserved`,
+       RETURNING id, table_no, reservation_date, reservation_time, guests, notes, status, datetime_reserved,
+               order_status, order_editing_deadline, reservation_status`,
       [id, customer_id]
     );
 
