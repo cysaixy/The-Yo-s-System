@@ -292,7 +292,8 @@
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
         const action = btn.dataset.action;
-        if (action === 'confirmed') openConfirmModal(id);
+        if (action === 'view') openDetailsModal(id);
+        else if (action === 'confirmed') openConfirmModal(id);
         else if (action === 'manage') openManageModal(id);
         else if (action === 'contact') updateReservationStatus(id, 'contact_customer');
         else if (action === 'order') openManageModal(id);
@@ -359,35 +360,45 @@
     const isLocked = isPastDeadline && orderStatus !== 'locked';
     const isAdmin = session?.staff?.role === 'Admin';
 
+    // View Details button (always available)
+    const viewDetailsBtn = `<button class="primary" data-action="view" data-id="${r.id}" style="font-size:0.7rem; padding:4px 8px;">View Details</button>`;
+
     // If order is locked (past deadline) and not admin, show locked state
     if (isLocked) {
-      return `<span class="pill pill-danger" style="font-size:0.7rem;">Order Locked</span>
+      return `${viewDetailsBtn}
+              <span class="pill pill-danger" style="font-size:0.7rem;">Order Locked</span>
               ${isAdmin ? `<button class="primary" data-action="manage" data-id="${r.id}" style="margin-left:4px; font-size:0.65rem; padding:4px 8px;">Admin Override</button>` : ''}`;
     }
 
     if (resStatus === 'pending') {
-      return `<button class="primary" data-action="contact" data-id="${r.id}" style="font-size:0.7rem;">Contact Customer</button>
+      return `${viewDetailsBtn}
+              <button class="primary" data-action="contact" data-id="${r.id}" style="font-size:0.7rem;">Contact Customer</button>
               <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
     if (resStatus === 'contact_customer') {
-      return `<button class="primary" data-action="order" data-id="${r.id}" style="font-size:0.7rem;">Add Order</button>
+      return `${viewDetailsBtn}
+              <button class="primary" data-action="order" data-id="${r.id}" style="font-size:0.7rem;">Add Order</button>
               <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
     if (resStatus === 'order_preparing') {
-      return `<button class="primary" data-action="manage" data-id="${r.id}" style="font-size:0.7rem;">Edit Order</button>
+      return `${viewDetailsBtn}
+              <button class="primary" data-action="manage" data-id="${r.id}" style="font-size:0.7rem;">Edit Order</button>
               <button class="primary" data-action="finalize" data-id="${r.id}" style="font-size:0.7rem;">Finalize Order</button>
               <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
     if (resStatus === 'order_finalized') {
-      return `<button class="primary" data-action="confirmed" data-id="${r.id}" style="font-size:0.7rem;">Confirm Reservation</button>
+      return `${viewDetailsBtn}
+              <button class="primary" data-action="confirmed" data-id="${r.id}" style="font-size:0.7rem;">Confirm Reservation</button>
               <button class="primary" data-action="manage" data-id="${r.id}" style="font-size:0.7rem;">Edit Order</button>
               <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
     if (r.status === 'confirmed') {
-      return `<button class="primary" data-action="completed" data-id="${r.id}">Mark Completed</button>
+      return `${viewDetailsBtn}
+              <button class="primary" data-action="completed" data-id="${r.id}">Mark Completed</button>
               <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
-    return `<span style="font-size:0.75rem; color:var(--ink-muted);">No further action</span>`;
+    return `${viewDetailsBtn}
+            <span style="font-size:0.75rem; color:var(--ink-muted);">No further action</span>`;
   }
 
   // ---- Confirm modal: table assignment is mandatory, capacity checked live ----
@@ -775,6 +786,13 @@
           ${reservation.guests} guests
         </div>
 
+        <!-- Custom Order Notes - for phone orders -->
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-family:'Space Mono',monospace; font-size:0.65rem; text-transform:uppercase; opacity:0.55; margin-bottom:6px;">Custom Order Details (from customer call)</label>
+          <textarea id="customOrderNotes" placeholder="e.g. 360 pcs wings, 20 packs spaghetti, 50 burger steak...&#10;Each line: quantity + item name" style="width:100%; min-height:80px; padding:10px; border:1px solid var(--line); border-radius:6px; font-family:inherit; font-size:0.85rem; resize:vertical; box-sizing:border-box;"></textarea>
+          <small style="display:block; margin-top:4px; color:var(--ink-muted); font-size:0.7rem;">Enter detailed order items customer requested over the phone. This will be saved with the order.</small>
+        </div>
+
         <div id="orderEditorContent">
           <!-- Category tabs and items will be rendered here -->
         </div>
@@ -985,6 +1003,8 @@
       return;
     }
 
+    const customOrderNotes = backdrop.querySelector('#customOrderNotes')?.value.trim() || '';
+
     const items = Array.from(orderEditorState.selectedItems.values()).map(data => ({
       menu_id: data.menuItem.id,
       quantity: data.quantity,
@@ -1005,7 +1025,8 @@
         body: JSON.stringify({ 
           items, 
           status: 'editable',
-          admin_override: adminOverride 
+          admin_override: adminOverride,
+          custom_order_notes: customOrderNotes
         }),
       });
       const data = await res.json();

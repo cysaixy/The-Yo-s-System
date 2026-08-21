@@ -108,7 +108,7 @@ async function getAvailableMenuItems() {
 export async function upsertReservationOrder(req, res, next) {
   try {
     const { id } = req.params;
-    const { items, notes, status } = req.body;
+    const { items, notes, status, custom_order_notes } = req.body;
     const staff_id = req.user?.staff?.id;
 
     // Check reservation exists
@@ -172,13 +172,16 @@ export async function upsertReservationOrder(req, res, next) {
         [id]
       );
 
+      // Combine custom order notes with existing notes
+      const combinedNotes = [notes, custom_order_notes].filter(Boolean).join('\n\n--- CUSTOM ORDER (from call) ---\n');
+
       let order;
       if (orderRes.rows[0]) {
         order = orderRes.rows[0];
         // Update order
         const updateRes = await client.query(
           `UPDATE orders SET notes = $1, status = $2 WHERE id = $3 RETURNING *`,
-          [notes || order.notes, status || order.status, order.id]
+          [combinedNotes || order.notes, status || order.status, order.id]
         );
         order = updateRes.rows[0];
 
@@ -194,7 +197,7 @@ export async function upsertReservationOrder(req, res, next) {
           `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, datetime_ordered, notes)
            VALUES ($1, $2, $3, 'dine_in', $4, 0, NOW(), $5)
            RETURNING *`,
-          [reservation.customer_id, staff_id, id, status || 'pending', notes || null]
+          [reservation.customer_id, staff_id, id, status || 'pending', combinedNotes || null]
         );
         order = createRes.rows[0];
       }
