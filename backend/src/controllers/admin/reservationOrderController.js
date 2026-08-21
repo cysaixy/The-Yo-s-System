@@ -145,7 +145,7 @@ export async function upsertReservationOrder(req, res, next) {
       });
     }
 
-    // Validate order status transition
+    // Validate order status transition (for reservation's order_status)
     const currentOrderStatus = reservation.order_status || 'no_order';
     const newOrderStatus = status || (currentOrderStatus === 'no_order' ? 'editable' : currentOrderStatus);
 
@@ -157,6 +157,9 @@ export async function upsertReservationOrder(req, res, next) {
     if (currentOrderStatus === 'locked' && newOrderStatus !== 'locked' && !admin_override) {
       return res.status(400).json({ error: "Cannot change status from locked without admin override." });
     }
+
+    // Orders table uses different status values - default to 'pending' for new orders
+    const orderStatus = 'pending';
 
     // Can't go back from finalized to editable without good reason (but allow for now)
     // This is a business rule - we'll allow staff to move between editable and finalized
@@ -178,10 +181,10 @@ export async function upsertReservationOrder(req, res, next) {
       let order;
       if (orderRes.rows[0]) {
         order = orderRes.rows[0];
-        // Update order
+        // Update order - keep existing order status, only update notes
         const updateRes = await client.query(
-          `UPDATE orders SET notes = $1, status = $2 WHERE id = $3 RETURNING *`,
-          [combinedNotes || order.notes, status || order.status, order.id]
+          `UPDATE orders SET notes = $1 WHERE id = $2 RETURNING *`,
+          [combinedNotes || order.notes, order.id]
         );
         order = updateRes.rows[0];
 
@@ -197,7 +200,7 @@ export async function upsertReservationOrder(req, res, next) {
           `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, datetime_ordered, notes)
            VALUES ($1, $2, $3, 'dine_in', $4, 0, NOW(), $5)
            RETURNING *`,
-          [reservation.customer_id, staff_id, id, status || 'pending', combinedNotes || null]
+          [reservation.customer_id, staff_id, id, orderStatus, combinedNotes || null]
         );
         order = createRes.rows[0];
       }
