@@ -198,7 +198,15 @@
 
   let currentUser = null;
 
-  const STATUS_LABEL = { pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' };
+  const STATUS_LABEL = { 
+  pending: 'Pending', 
+  contact_customer: 'Contacted', 
+  order_preparing: 'Order Being Prepared', 
+  order_finalized: 'Order Finalized', 
+  confirmed: 'Confirmed', 
+  completed: 'Completed', 
+  cancelled: 'Cancelled' 
+};
   // Mirrors the server: the room is open 9:00 AM - 9:00 PM.
   const OPENING_MINUTES = 9 * 60;
   const CLOSING_MINUTES = 21 * 60;
@@ -368,7 +376,9 @@
       wrap.style.display = 'block';
       list.innerHTML = reservations.map(r => {
         const dateStr = r.reservation_date ? new Date(r.reservation_date).toLocaleDateString('en-PH', { dateStyle: 'medium' }) : '';
-        const cancelBtn = r.status === 'pending'
+        // Use reservation_status if available, fallback to status
+        const displayStatus = r.reservation_status || r.status;
+        const cancelBtn = displayStatus === 'pending'
           ? `<button type="button" class="btn btn-outline" style="padding:7px 12px; font-size:0.68rem; margin:10px 0 0; border-radius:4px;" onclick="cancelReservation(${r.id})">Cancel</button>`
           : '';
         return `
@@ -379,7 +389,7 @@
               ${r.notes ? `<span style="display:block; margin-top:4px;">“${esc(r.notes)}”</span>` : ''}
               ${cancelBtn}
             </div>
-            <span class="res-status-pill res-status-${r.status}">${STATUS_LABEL[r.status] || r.status}</span>
+            <span class="res-status-pill res-status-${displayStatus}">${STATUS_LABEL[displayStatus] || displayStatus}</span>
           </div>
         `;
       }).join('');
@@ -430,8 +440,9 @@
       const dateStr = r.reservation_date
         ? new Date(r.reservation_date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
         : '';
+      const displayStatus = r.reservation_status || r.status || 'pending';
       document.getElementById('reserveRef').textContent =
-        `Ref #${r.id} · ${dateStr} at ${(r.reservation_time || '').slice(0, 5)} · Status: Pending`;
+        `Ref #${r.id} · ${dateStr} at ${(r.reservation_time || '').slice(0, 5)} · Status: ${STATUS_LABEL[displayStatus] || displayStatus}`;
 
       document.getElementById('reserveFormWrap').style.display = 'none';
       document.getElementById('reserveSuccess').classList.add('active');
