@@ -13,7 +13,7 @@ export async function listAll(req, res, next) {
     const { rows } = await pool.query(
       `SELECT r.id, c.name AS customer_name, c.email AS customer_email,
               c.phone AS customer_phone, r.table_no, r.reservation_date,
-              r.reservation_time, r.guests, r.status, r.notes, r.datetime_reserved
+              r.reservation_time, r.guests, r.status, r.reservation_status, r.order_status, r.notes, r.datetime_reserved
        FROM reservations r
        JOIN customers c ON c.id = r.customer_id
        ORDER BY r.reservation_date, r.reservation_time`

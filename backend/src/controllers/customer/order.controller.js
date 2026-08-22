@@ -265,6 +265,8 @@ const ORDER_ITEM_AGG = (orderRef) => `
      GROUP BY oi.id, mi.name
    ) sub) AS items`;
 
+const RESERVATION_FIELDS = `r.reservation_id, r.reservation_status, r.reservation_date, r.reservation_time`;
+
 export async function getOrder(req, res, next) {
   try {
     const { rows } = await pool.query(
