@@ -770,6 +770,16 @@
         existingItems.set(key, item);
       });
     }
+    
+    // Initialize order editor state with existing items
+    existingItems.forEach((value, key) => {
+      orderEditorState.selectedItems.set(key, {
+        menuItem: { id: value.menu_id, name: value.item_name || value.name, price: value.price, cost: value.cost },
+        quantity: value.quantity,
+        notes: value.notes || '',
+        addons: new Map(value.add_ons?.map(a => [a.addon_id, { price: a.price, quantity: a.quantity }]) || [])
+      });
+    });
 
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop active';
