@@ -262,6 +262,7 @@ export async function listOrders(req, res, next) {
     const { rows } = await pool.query(
       `SELECT o.id, c.name AS customer_name, s.name AS staff_name, o.order_type,
               o.status, o.total_amount, o.delivery_fee, o.datetime_ordered,
+              o.reservation_id,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
               (SELECT p.payment_method FROM payments p WHERE p.order_id = o.id ORDER BY p.id DESC LIMIT 1) AS payment_method,
               (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count

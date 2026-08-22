@@ -113,6 +113,7 @@
   }
   .source-online { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
   .source-pos { background: rgba(21,23,26,0.08); color: var(--ink); opacity: 0.7; }
+  .source-reservation { background: rgba(163,132,74,0.2); color: var(--brass-dark); }
   .view-daily-orders-btn, .view-daily-order-detail { border:1px solid rgba(163,132,74,.38); border-radius:6px; background:#fff; color:var(--brass-dark); padding:6px 9px; font:700 .67rem 'Space Mono',monospace; text-transform:uppercase; cursor:pointer; }
   .view-daily-orders-btn:hover, .view-daily-order-detail:hover { background:rgba(163,132,74,.12); border-color:var(--brass); }
   .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.66rem; font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
@@ -122,6 +123,8 @@
   .status-completed { background: rgba(46,125,79,0.14); color: var(--success); }
   .status-cancelled { background: rgba(192,57,43,0.14); color: var(--danger); }
   .needs-action td:first-child { border-left: 3px solid var(--warning); }
+  .reservation-order td { background: rgba(163,132,74,0.03); }
+  .reservation-order:hover td { background: rgba(163,132,74,0.06); }
 
   .row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
   .row-actions button {
@@ -327,6 +330,12 @@
                   <option value="pickup">Takeout</option>
                   <option value="delivery">Delivery</option>
                   <option value="online">Online Order</option>
+                  <option value="reservation">Reservation Orders</option>
+                </select>
+                <select id="filterReservation">
+                  <option value="hide">Hide Reservation Orders</option>
+                  <option value="show">Show Reservation Orders</option>
+                  <option value="only">Only Reservation Orders</option>
                 </select>
                 <select id="filterStatus">
                   <option value="all">All Status</option>
@@ -658,11 +667,18 @@
 
   function getFilteredRows() {
     const orderTypeFilter = document.getElementById('filterOrderType').value;
+    const reservationFilter = document.getElementById('filterReservation').value;
     const statusFilter = document.getElementById('filterStatus').value;
     const search = document.getElementById('filterSearch').value.trim().toLowerCase();
 
     return allOrders.filter(o => {
       if (!showCancelled && o.status === 'cancelled') return false;
+      
+      // Filter by reservation orders
+      const isReservation = !!o.reservation_id;
+      if (reservationFilter === 'hide' && isReservation) return false;
+      if (reservationFilter === 'only' && !isReservation) return false;
+      
       const effectiveType = (o.order_type === 'online' && o.delivery_address) ? 'delivery' : o.order_type;
       if (orderTypeFilter !== 'all' && effectiveType !== orderTypeFilter) return false;
       if (statusFilter !== 'all' && o.status !== statusFilter) return false;
@@ -760,18 +776,21 @@
 
   function rowHTML(o) {
     const isOnline = o.source === 'online';
+    const isReservation = !!o.reservation_id;
     const needsAction = isOnline && o.status === 'pending';
     const subtotal = (Number(o.total_amount) || 0) - (Number(o.delivery_fee) || 0);
     const cashier = isOnline ? '—' : escapeHtml(o.staff_name || 'Staff');
 
     return `
-      <tr class="${needsAction ? 'needs-action' : ''}">
+      <tr class="${needsAction ? 'needs-action' : ''} ${isReservation ? 'reservation-order' : ''}">
         <td class="mono">#${o.id}</td>
         <td style="white-space:nowrap;">${formatDate(o.datetime_ordered)}</td>
         <td>
-          ${isOnline
-            ? `<span class="source-pill source-online">Online</span>`
-            : `<span class="source-pill source-pos">POS · ${cashier}</span>`}
+          ${isReservation
+            ? `<span class="source-pill source-reservation">Reservation</span>`
+            : isOnline
+              ? `<span class="source-pill source-online">Online</span>`
+              : `<span class="source-pill source-pos">POS · ${cashier}</span>`}
           <div style="font-size:0.74rem; color:var(--ink-muted); margin-top:2px;">${orderTypeLabel(o.order_type, o)}</div>
         </td>
         <td>${escapeHtml(o.customer_name) || '—'}</td>
@@ -788,7 +807,14 @@
 
   function actionButtons(o) {
     const id = o.id;
+    const isReservation = !!o.reservation_id;
     const view = `<button data-view="${id}">View</button>`;
+    
+    // Reservation orders are confirmed through the reservation system
+    if (isReservation) {
+      return `${view}`;
+    }
+    
     switch (o.status) {
       case 'pending':
         return `${view}<button class="primary" data-action="confirmed" data-id="${id}">Confirm</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
