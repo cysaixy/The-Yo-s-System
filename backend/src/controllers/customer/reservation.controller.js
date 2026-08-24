@@ -1,5 +1,6 @@
 // src/controllers/customer/reservation.controller.js
 import pool from "../../config/db.js";
+import { checkTimeSlotCapacity, getMaxRoomCapacity } from "../../utils/reservationCapacity.js";
 
 // Restaurant rules the booking form must respect (mirrored on the client).
 const MAX_GUESTS = 20;
@@ -49,26 +50,6 @@ export async function createReservation(req, res, next) {
       return res.status(400).json({ error: "Reservation date can't be in the past." });
     }
 
-    // The trap: even if the client lets someone pick a fully-booked date,
-    // the server refuses it. "Full" means the confirmed reservations that
-    // day already occupy every seat in the room (sum of assigned table
-    // capacities). Pending reservations don't hold a seat yet.
-    const roomCapacity = await pool.query(
-      `SELECT COALESCE(SUM(capacity), 0)::int AS seats FROM tables WHERE status = 'active'`
-    );
-    const seatsBooked = await pool.query(
-      `SELECT COALESCE(SUM(t.capacity), 0)::int AS seats_taken
-       FROM reservations r
-       JOIN tables t ON t.table_no = r.table_no
-       WHERE r.status = 'confirmed' AND r.reservation_date = $1`,
-      [reservation_date]
-    );
-    if (roomCapacity.rows[0].seats > 0 && seatsBooked.rows[0].seats_taken >= roomCapacity.rows[0].seats) {
-      return res.status(400).json({
-        error: "Sorry — we're fully booked on that date. Please pick another day.",
-      });
-    }
-
     // Guests must be a whole number within the room's capacity.
     const guestsNum = Number(guests);
     if (!Number.isInteger(guestsNum) || guestsNum < 1 || guestsNum > MAX_GUESTS) {
@@ -98,6 +79,17 @@ export async function createReservation(req, res, next) {
       });
     }
 
+    // Perform capacity validation based on total guest count in the overlapping time window (±2 hours)
+    const capacityCheck = await checkTimeSlotCapacity(reservation_date, reservation_time, guestsNum);
+    if (!capacityCheck.isAvailable) {
+      return res.status(409).json({
+        error: `This time slot is fully booked for ${guestsNum} guest${guestsNum === 1 ? '' : 's'}. Maximum capacity per time slot is ${capacityCheck.maxCapacity} guests (${capacityCheck.occupiedGuests} reserved in this time window). Please choose another time.`,
+        suggested_slots: capacityCheck.suggestedSlots,
+        occupied_guests: capacityCheck.occupiedGuests,
+        max_capacity: capacityCheck.maxCapacity,
+      });
+    }
+
     // Calculate order editing deadline (2 days before reservation date)
     const orderEditingDeadline = new Date(date);
     orderEditingDeadline.setDate(orderEditingDeadline.getDate() - 2);
@@ -117,32 +109,28 @@ export async function createReservation(req, res, next) {
 }
 
 // Fully-booked dates over the next 90 days, so the booking form can grey
-// them out up front. "Full" is the same rule createReservation enforces:
-// confirmed reservations that day occupy every seat in the room.
+// them out up front.
 export async function getAvailability(req, res, next) {
   try {
-    const roomCapacity = await pool.query(
-      `SELECT COALESCE(SUM(capacity), 0)::int AS seats FROM tables WHERE status = 'active'`
-    );
-    const totalSeats = roomCapacity.rows[0].seats;
-    if (totalSeats <= 0) {
+    const maxCapacity = await getMaxRoomCapacity();
+    if (maxCapacity <= 0) {
       return res.json({ room_capacity: 0, blocked_dates: [] });
     }
 
     const { rows } = await pool.query(
       `SELECT TO_CHAR(r.reservation_date, 'YYYY-MM-DD') AS date_str,
-              SUM(t.capacity)::int AS seats_taken
+              SUM(r.guests)::int AS seats_taken
        FROM reservations r
-       JOIN tables t ON t.table_no = r.table_no
-       WHERE r.status = 'confirmed'
+       WHERE r.status NOT IN ('cancelled')
+         AND (r.reservation_status IS NULL OR r.reservation_status NOT IN ('cancelled'))
          AND r.reservation_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 90
        GROUP BY r.reservation_date
-       HAVING SUM(t.capacity) >= $1`,
-      [totalSeats]
+       HAVING SUM(r.guests) >= $1`,
+      [maxCapacity * 6]
     );
 
     res.json({
-      room_capacity: totalSeats,
+      room_capacity: maxCapacity,
       blocked_dates: rows.map((r) => r.date_str),
     });
   } catch (err) {

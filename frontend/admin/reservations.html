@@ -595,7 +595,20 @@
           }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Could not create reservation.');
+        if (!res.ok) {
+          if (data.suggested_slots && data.suggested_slots.length > 0) {
+            errEl.innerHTML = `
+              <div>⚠ ${escapeHtml(data.error || 'This time slot is full.')}</div>
+              <div style="margin-top:6px; font-weight:600;">Suggested available times:</div>
+              <div style="display:flex; gap:6px; margin-top:4px; flex-wrap:wrap;">
+                ${data.suggested_slots.map(slot => `<button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.7rem; border-radius:4px;" onclick="document.getElementById('walkinTime').value='${slot}'; document.getElementById('walkinError').classList.remove('show');">${slot}</button>`).join('')}
+              </div>
+            `;
+            errEl.classList.add('show');
+            return;
+          }
+          throw new Error(data.error || 'Could not create reservation.');
+        }
 
         close();
         toast('Walk-in reservation created.', 'success');

@@ -466,10 +466,6 @@
             </select>
           </div>
           <div class="order-type-dynamic">
-            <div id="tableNoField" style="display:none;">
-              <label for="tableNoInput">Table # <span style="opacity:.55; font-weight:400;">(dine-in only)</span></label>
-              <input id="tableNoInput" type="text" placeholder="e.g. Table 4">
-            </div>
             <div id="deliveryField" style="display:none;">
               <label for="deliveryAddress">Delivery Address</label>
               <input id="deliveryAddress" type="text" placeholder="House No., Street, Barangay, Landmarks">
@@ -1132,13 +1128,9 @@
   // ---------- STEP 2: DYNAMIC ORDER-TYPE FIELDS ----------
   window.onOrderTypeChange = function () {
     const type = document.getElementById('orderType').value;
-    const tableField = document.getElementById('tableNoField');
     const deliveryField = document.getElementById('deliveryField');
-    const tableInput = document.getElementById('tableNoInput');
     const addressInput = document.getElementById('deliveryAddress');
-    if (tableField) tableField.style.display = type === 'Dine-In' ? '' : 'none';
     if (deliveryField) deliveryField.style.display = type === 'Delivery' ? '' : 'none';
-    if (type !== 'Dine-In' && tableInput) tableInput.value = '';
     if (type !== 'Delivery' && addressInput) addressInput.value = '';
     if (type === 'Delivery' && addressInput && !addressInput.value.trim()) {
       addressInput.value = sessionStorage.getItem('yo-customer-address') || '';
@@ -1181,7 +1173,7 @@
   };
 
   function resetCheckoutForm() {
-    ['name', 'phone', 'timeInput', 'notes', 'tableNoInput'].forEach(id => {
+    ['name', 'phone', 'timeInput', 'notes'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -1294,17 +1286,12 @@
       const phone = document.getElementById('phone').value.trim();
       const timeInput = document.getElementById('timeInput').value.trim();
       const orderType = document.getElementById('orderType').value;
-      const tableNo = document.getElementById('tableNoInput').value.trim();
       const addrEl = document.getElementById('deliveryAddress');
       const addr = addrEl ? addrEl.value.trim() : '';
 
       if (!orderType) { showStep2Error('Please select an order type.'); return; }
       if (!name || !phone || !timeInput) {
         showStep2Error('Please fill in your name, mobile number, and preferred time before continuing.');
-        return;
-      }
-      if (orderType === 'Dine-In' && !tableNo) {
-        showStep2Error('Please enter your table number before continuing.');
         return;
       }
       if (orderType === 'Delivery' && !addr) {
@@ -1347,7 +1334,7 @@
     }
     const serviceType = document.getElementById('orderType').value;
     const paymentChoice = document.querySelector('input[name="paymentChoice"]:checked')?.value || 'Cash';
-    const tableNoInput = document.getElementById('tableNoInput').value.trim();
+    const tableNoInput = document.getElementById('tableNoInput')?.value?.trim() || '';
     const timeInput = document.getElementById('timeInput').value;
     const notesInput = document.getElementById('notes').value.trim();
 

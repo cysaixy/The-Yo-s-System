@@ -1,5 +1,6 @@
 // src/controllers/admin/reservations.controller.js
 import pool from "../../config/db.js";
+import { checkTimeSlotCapacity } from "../../utils/reservationCapacity.js";
 
 const VALID_STATUSES = ["pending", "confirmed", "cancelled", "completed", "contact_customer", "order_preparing", "order_finalized"];
 const VALID_ORDER_STATUSES = ["no_order", "editable", "finalized", "locked"];
@@ -156,6 +157,19 @@ export async function createReservationAdmin(req, res, next) {
       return res.status(400).json({ error: "customer_id, reservation_date, reservation_time, and guests are required." });
     }
 
+    const guestsNum = Number(guests);
+
+    // Validate capacity for the time slot
+    const capacityCheck = await checkTimeSlotCapacity(reservation_date, reservation_time, guestsNum);
+    if (!capacityCheck.isAvailable) {
+      return res.status(409).json({
+        error: `This time slot is fully booked for ${guestsNum} guest${guestsNum === 1 ? '' : 's'}. Maximum capacity per time slot is ${capacityCheck.maxCapacity} guests (${capacityCheck.occupiedGuests} reserved in this time window). Please choose another time.`,
+        suggested_slots: capacityCheck.suggestedSlots,
+        occupied_guests: capacityCheck.occupiedGuests,
+        max_capacity: capacityCheck.maxCapacity,
+      });
+    }
+
     // Calculate order editing deadline (2 days before reservation)
     const [y, m, d] = String(reservation_date).split('-').map(Number);
     const resDate = new Date(y, m - 1, d);
@@ -171,7 +185,7 @@ export async function createReservationAdmin(req, res, next) {
         customer_id, 
         reservation_date, 
         reservation_time, 
-        guests, 
+        guestsNum, 
         notes || null, 
         status || 'pending', 
         order_status || 'no_order', 

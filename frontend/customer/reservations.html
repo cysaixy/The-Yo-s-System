@@ -457,8 +457,18 @@
       const data = await res.json();
 
       if (!res.ok) {
-        status.textContent = data.error || 'Could not submit your reservation.';
         status.className = 'reserve-status err';
+        if (data.suggested_slots && data.suggested_slots.length > 0) {
+          status.innerHTML = `
+            <div>${esc(data.error || 'This time slot is full.')}</div>
+            <div style="margin-top:8px; font-weight:600;">Available time slots:</div>
+            <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:6px;">
+              ${data.suggested_slots.map(slot => `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-radius:4px;" onclick="selectSuggestedSlot('${slot}')">${slot}</button>`).join('')}
+            </div>
+          `;
+        } else {
+          status.textContent = data.error || 'Could not submit your reservation.';
+        }
         return;
       }
 
@@ -480,6 +490,17 @@
       status.className = 'reserve-status err';
     }
   });
+
+  window.selectSuggestedSlot = function(slot) {
+    const timeInput = document.getElementById('resTime');
+    if (timeInput) {
+      timeInput.value = slot;
+      updateWarnings();
+      const status = document.getElementById('reserveStatus');
+      if (status) status.textContent = `Selected time updated to ${slot}. Click "Request Reservation" to submit.`;
+      if (status) status.className = 'reserve-status info';
+    }
+  };
 </script>
 
 <footer>
