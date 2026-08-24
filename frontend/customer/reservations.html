@@ -405,10 +405,38 @@
       return;
     }
 
+    const dateVal = document.getElementById('resDate').value;
+    const timeVal = document.getElementById('resTime').value;
     const status = document.getElementById('reserveStatus');
+
+    // Client-side validation before submitting
+    if (!dateVal || !timeVal) {
+      status.textContent = 'Please select a date and time.';
+      status.className = 'reserve-status err';
+      return;
+    }
+
+    // Check 4-day advance rule
+    const [yy, mm, dd] = dateVal.split('-').map(Number);
+    const selected = new Date(yy, mm - 1, dd);
+    selected.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((selected - today) / 86400000);
+    if (diffDays < 4) {
+      status.textContent = `Reservations must be made at least 4 days in advance. Please select a later date.`;
+      status.className = 'reserve-status err';
+      return;
+    }
+    if (blockedDates.has(dateVal)) {
+      status.textContent = `Sorry — we're fully booked on that date. Please pick another day.`;
+      status.className = 'reserve-status err';
+      return;
+    }
+
     const payload = {
-      reservation_date: document.getElementById('resDate').value,
-      reservation_time: document.getElementById('resTime').value,
+      reservation_date: dateVal,
+      reservation_time: timeVal,
       guests: Number(document.getElementById('resGuests').value),
       notes: document.getElementById('resNotes').value.trim() || null,
     };
