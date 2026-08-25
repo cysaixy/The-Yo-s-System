@@ -4,17 +4,36 @@ import pool from "../config/db.js";
 export const CONFLICT_WINDOW_MINUTES = 120; // ±2 hours seating window
 export const OPENING_MINUTES = 9 * 60;      // 9:00 AM (540 mins)
 export const CLOSING_MINUTES = 21 * 60;     // 9:00 PM (1260 mins)
-export const DEFAULT_MAX_CAPACITY = 20;
+export const MAX_CAPACITY_PER_SLOT = 20;    // 20 guests max per time slot window
 
 /**
- * Gets the maximum room capacity per time slot from active tables or default fallback.
+ * Gets the maximum room guest capacity per time slot (20 guests max per slot).
  */
 export async function getMaxRoomCapacity() {
-  const roomCapacity = await pool.query(
-    `SELECT COALESCE(SUM(capacity), 0)::int AS seats FROM tables WHERE status = 'active'`
+  return MAX_CAPACITY_PER_SLOT;
+}
+
+/**
+ * Checks if a specific customer already has an active reservation in the overlapping time window.
+ */
+export async function checkCustomerExistingReservation(customerId, reservationDate, reservationTime, excludeId = null) {
+  if (!customerId) return null;
+
+  const { rows } = await pool.query(
+    `SELECT id, reservation_time, status, reservation_status
+     FROM reservations
+     WHERE customer_id = $1
+       AND reservation_date = $2
+       AND status NOT IN ('cancelled')
+       AND (reservation_status IS NULL OR reservation_status NOT IN ('cancelled'))
+       AND ABS(EXTRACT(EPOCH FROM (reservation_time - $3::time))) / 60 < $4
+       AND ($5::int IS NULL OR id <> $5::int)
+     ORDER BY reservation_time
+     LIMIT 1`,
+    [customerId, reservationDate, reservationTime, CONFLICT_WINDOW_MINUTES, excludeId]
   );
-  const seats = roomCapacity.rows[0]?.seats;
-  return seats && seats > 0 ? seats : DEFAULT_MAX_CAPACITY;
+
+  return rows[0] || null;
 }
 
 /**
@@ -23,7 +42,7 @@ export async function getMaxRoomCapacity() {
  * If over capacity, returns nearby suggested time slots within operating hours.
  */
 export async function checkTimeSlotCapacity(reservationDate, reservationTime, requestedGuests, excludeId = null) {
-  const maxCapacity = await getMaxRoomCapacity();
+  const maxCapacity = MAX_CAPACITY_PER_SLOT;
 
   // Query sum of guests in overlapping time window (within CONFLICT_WINDOW_MINUTES)
   const sumQuery = await pool.query(

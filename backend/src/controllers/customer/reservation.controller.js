@@ -1,6 +1,6 @@
 // src/controllers/customer/reservation.controller.js
 import pool from "../../config/db.js";
-import { checkTimeSlotCapacity, getMaxRoomCapacity } from "../../utils/reservationCapacity.js";
+import { checkTimeSlotCapacity, checkCustomerExistingReservation, getMaxRoomCapacity } from "../../utils/reservationCapacity.js";
 
 // Restaurant rules the booking form must respect (mirrored on the client).
 const MAX_GUESTS = 20;
@@ -79,7 +79,16 @@ export async function createReservation(req, res, next) {
       });
     }
 
-    // Perform capacity validation based on total guest count in the overlapping time window (±2 hours)
+    // Prevent duplicate active reservation requests by the same customer on the same date/time window
+    const existing = await checkCustomerExistingReservation(customer_id, reservation_date, reservation_time);
+    if (existing) {
+      const existingTimeStr = String(existing.reservation_time).slice(0, 5);
+      return res.status(409).json({
+        error: `You already have an active reservation request on this date at ${existingTimeStr}. Please cancel your existing request if you wish to change your time.`,
+      });
+    }
+
+    // Perform capacity validation based on total guest count in the overlapping time window (±2 hours, max 20 guests)
     const capacityCheck = await checkTimeSlotCapacity(reservation_date, reservation_time, guestsNum);
     if (!capacityCheck.isAvailable) {
       return res.status(409).json({
