@@ -19,18 +19,18 @@ onAuthStateChanged(auth, (user) => {
 
   if (user) {
     const label = user.displayName || user.email || "My Account";
-    link.textContent = label.split(" ")[0].split("@")[0];
+    const shortName = label.split(" ")[0].split("@")[0];
+    link.title = `My Account (${shortName})`;
     link.href = "account.html";
+    link.classList.add("is-logged-in");
     if (signOutItem) signOutItem.style.display = "";
   } else {
-    link.textContent = "Sign In";
+    link.title = "Sign In / My Account";
     link.href = "account.html";
+    link.classList.remove("is-logged-in");
     if (signOutItem) signOutItem.style.display = "none";
   }
 
-  // Only reveal the link once we actually know the auth state - this is
-  // what stops the "Sign In" -> "Cyrus" flash on page load. The link
-  // starts hidden via inline style in the HTML (visibility:hidden).
   link.style.visibility = "visible";
 });
 

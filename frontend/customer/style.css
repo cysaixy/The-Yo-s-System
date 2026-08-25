@@ -62,7 +62,9 @@ nav a::after { content: ''; position: absolute; left: 0; bottom: 0; width: 0; he
 nav a:hover::after { width: 100%; }
 nav ul li a.active { color: var(--brass) !important; }
 nav ul li a.active::after { width: 100%; background: var(--brass); }
-#navAccountLink { min-width: 80px; text-align: center; }
+#navAccountLink { min-width: 40px; text-align: center; }
+.nav-account-icon { display: block; }
+.nav-account-btn.is-logged-in .nav-account-icon { stroke: var(--brass); }
 .nav-btn { background: var(--brass); color: #fff !important; padding: 12px 20px; font-size: 12px !important; line-height: 1; font-weight: 700; letter-spacing: 0.08em; border-radius: 2px; flex-shrink: 0; }
 .nav-btn::after { display: none !important; }
 .nav-btn:hover { background: var(--ink); color: var(--bone) !important; }
