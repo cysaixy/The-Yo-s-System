@@ -197,25 +197,22 @@ export function showAlert(message, { title = 'Notice' } = {}) {
 function showOnlineOrderToast(order) {
   const toast = document.createElement('div');
   toast.className = 'online-order-toast';
-  toast.innerHTML = `<span class="toast-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span><div><strong>New online order</strong><span>Order #${escapeNotificationHtml(order.id)} · ${escapeNotificationHtml(order.customer_name || 'Customer')} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}</span></div><button type="button" aria-label="Dismiss notification">×</button>`;
+  toast.innerHTML = `
+    <span class="toast-icon">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+    </span>
+    <div>
+      <strong>New online order</strong>
+      <span>Order #${escapeNotificationHtml(order.id)} · ${escapeNotificationHtml(order.customer_name || 'Customer')} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}</span>
+    </div>
+    <button type="button" aria-label="Dismiss notification">×</button>
+  `;
   document.body.appendChild(toast);
   toast.querySelector('button').addEventListener('click', () => toast.remove());
   window.setTimeout(() => toast.remove(), 8000);
-}
-
-function injectOnlineOrderNotificationStyles() {
-  if (document.getElementById('onlineOrderNotificationStyles')) return;
-  const style = document.createElement('style');
-  style.id = 'onlineOrderNotificationStyles';
-  style.textContent = `
-    .online-order-toast { position:fixed; z-index:1000; right:24px; bottom:24px; width:min(390px, calc(100vw - 32px)); display:flex; align-items:flex-start; gap:11px; padding:15px 42px 15px 15px; border-radius:14px; border:1px solid rgba(163,132,74,.25); background:linear-gradient(135deg,#fff,#fbf7ef); color:var(--ink,#15171a); box-shadow:0 18px 42px rgba(0,0,0,.18); animation:onlineOrderEnter .25s ease both; }
-    .online-order-toast .toast-icon { width:32px; height:32px; flex:0 0 32px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:rgba(163,132,74,.15); font-size:1rem; }
-    .online-order-toast strong { display:block; font:800 .76rem 'Space Mono',monospace; text-transform:uppercase; color:var(--brass-dark,#8a6d3a); }
-    .online-order-toast span { display:block; margin-top:5px; font-size:.8rem; color:var(--ink-muted,#5c6065); }
-    .online-order-toast button { position:absolute; right:12px; top:10px; border:0; background:transparent; font-size:1.2rem; cursor:pointer; opacity:.5; }
-    @keyframes onlineOrderEnter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
-  `;
-  document.head.appendChild(style);
 }
 
 function initOnlineOrderNotifications(token) {
@@ -264,7 +261,6 @@ function initOnlineOrderNotifications(token) {
       }
       const newOrders = onlineOrders.filter(order => !seen.includes(String(order.id)));
       if (newOrders.length) {
-        injectOnlineOrderNotificationStyles();
         newOrders.slice(0, 3).forEach(showOnlineOrderToast);
         writeSeenOnlineOrderIds([...seen, ...newOrders.map(order => order.id)]);
       }
@@ -369,11 +365,28 @@ export function renderAdminShell({ active, title }) {
     <div class="admin-shell">
       <div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div>
       <aside class="admin-sidebar">
-        <div class="admin-logo"><span class="mark">TY</span><span class="brand-label">THE~YO'S</span><button class="sidebar-toggle" id="adminSidebarToggle" type="button" aria-label="Minimize sidebar" title="Minimize sidebar">☰</button></div>
-        <div class="nav-group-label">Main Menu</div>
-        ${NAV_MAIN.map(item => navLinkHTML(item, active, staff)).join('')}
-        <div class="nav-group-label">Admin</div>
-        ${NAV_ADMIN.map(item => navLinkHTML(item, active, staff)).join('')}
+        <div class="admin-logo">
+          <span class="mark">TY</span>
+          <span class="brand-label">THE~YO'S</span>
+          <button class="sidebar-toggle" id="adminSidebarToggle" type="button" aria-label="Minimize sidebar" title="Minimize sidebar">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+        </div>
+        <nav class="sidebar-nav">
+          <div class="nav-group-label">Main Menu</div>
+          ${NAV_MAIN.map(item => navLinkHTML(item, active, staff)).join('')}
+          <div class="nav-group-label">Admin</div>
+          ${NAV_ADMIN.map(item => navLinkHTML(item, active, staff)).join('')}
+        </nav>
+        <div class="sidebar-user-section">
+          <div class="sidebar-user-avatar">${initial}</div>
+          <div class="sidebar-user-info">
+            <strong>${staff.name || staff.email}</strong>
+            <span>${staff.role || 'Staff'}</span>
+          </div>
+        </div>
       </aside>
       <div class="admin-main">
         <header class="admin-header">
@@ -384,7 +397,13 @@ export function renderAdminShell({ active, title }) {
             <h1>${title}</h1>
           </div>
           <div class="admin-user">
-            <div class="admin-notification-wrap"><button class="admin-notification-btn" id="adminOnlineOrdersBtn" title="Pending online orders" aria-label="Pending online orders"><svg viewBox="0 0 24 24" class="bell-icon"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="admin-notification-count" id="onlineOrderCount">0</span></button><div class="online-order-panel" id="onlineOrderPanel"></div></div>
+            <div class="admin-notification-wrap">
+              <button class="admin-notification-btn" id="adminOnlineOrdersBtn" title="Pending online orders" aria-label="Pending online orders">
+                <svg viewBox="0 0 24 24" class="bell-icon"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="admin-notification-count" id="onlineOrderCount">0</span>
+              </button>
+              <div class="online-order-panel" id="onlineOrderPanel"></div>
+            </div>
             <div class="who">
               <strong>${staff.name || staff.email}</strong>
               <span>${staff.role || 'Staff'}</span>
