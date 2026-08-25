@@ -24,8 +24,9 @@
   /* ---- Summary cards ---- */
   .stx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 22px; }
   .stx-card {
-    background: var(--component-bg); border: 1px solid var(--line); border-radius: 10px;
-    padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    background: var(--component-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
   .stx-card .label { font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
   .stx-card .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.55rem; line-height: 1.15; color: var(--ink); margin-top: 5px; }
@@ -35,14 +36,39 @@
   .stx-ring { flex-shrink: 0; color: var(--ink); }
 
   /* ---- Period controls ---- */
-  .stx-controls { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; }
-  .stx-field label { display: block; font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.5; margin-bottom: 6px; }
-  .stx-field select, .stx-field input[type="date"] {
-    padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--component-bg);
-    font-family: 'Inter', sans-serif; font-size: 0.84rem; color: var(--ink); min-width: 190px; cursor: pointer;
+  .stx-controls {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px;
+    background: var(--component-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
-  .stx-range { display: flex; gap: 8px; align-items: center; }
-  .stx-range input[type="date"] { min-width: 0; }
+  .stx-controls-label {
+    font-family: 'Space Mono', monospace; font-size: 0.60rem; text-transform: uppercase;
+    letter-spacing: 0.08em; opacity: 0.45; white-space: nowrap; margin-right: 2px;
+  }
+  .stx-period-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+  .stx-period-btn {
+    padding: 7px 14px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--stone); font-family: 'Inter', sans-serif; font-size: 0.80rem;
+    font-weight: 600; color: var(--ink); cursor: pointer; transition: all .15s ease;
+    white-space: nowrap;
+  }
+  .stx-period-btn:hover { border-color: var(--brass); color: var(--brass-dark); }
+  .stx-period-btn.active {
+    background: var(--brass-dark); color: #fff; border-color: var(--brass-dark);
+    box-shadow: 0 2px 8px rgba(163,132,74,0.3);
+  }
+  .stx-period-divider { width: 1px; height: 28px; background: var(--line); margin: 0 4px; flex-shrink: 0; }
+  .stx-date-wrap { display: flex; align-items: center; gap: 8px; }
+  .stx-date-wrap input[type="date"] {
+    padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--stone); font-family: 'Inter', sans-serif;
+    font-size: 0.82rem; color: var(--ink); cursor: pointer;
+  }
+  .stx-date-wrap span { font-size: 0.78rem; opacity: 0.5; }
+  .stx-period-summary {
+    margin-left: auto; font-family: 'Space Mono', monospace; font-size: 0.68rem;
+    opacity: 0.5; white-space: nowrap;
+  }
 
   /* ---- Secondary tabs ---- */
   .stx-subtabs { display: inline-flex; gap: 4px; background: var(--stone); border: 1px solid var(--line); border-radius: 9px; padding: 4px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -55,27 +81,40 @@
   .stx-subtab.active { background: var(--component-bg); color: var(--brass-dark); opacity: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
   /* ---- Toolbar ---- */
-  .stx-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
-  .stx-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .stx-filters .fb { font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.5; }
-  .stx-filters input, .stx-filters select {
-    padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--component-bg);
-    font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--ink); cursor: pointer;
+  .stx-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; flex-wrap: wrap; margin-bottom: 14px;
+    background: var(--component-bg); border: 1px solid var(--line);
+    border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
-  .stx-filters input[type="search"] { width: 240px; cursor: text; }
-  .stx-actions { display: flex; align-items: center; gap: 8px; }
+  .stx-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .stx-filters .fb {
+    font-family: 'Space Mono', monospace; font-size: 0.60rem; text-transform: uppercase;
+    letter-spacing: 0.06em; opacity: 0.45; white-space: nowrap;
+  }
+  .stx-filter-divider { width: 1px; height: 22px; background: var(--line); margin: 0 2px; }
+  .stx-filters input, .stx-filters select {
+    padding: 7px 11px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--stone); font-family: 'Inter', sans-serif;
+    font-size: 0.81rem; color: var(--ink); cursor: pointer; transition: border-color .15s;
+  }
+  .stx-filters input:focus, .stx-filters select:focus { outline: none; border-color: var(--brass); }
+  .stx-filters input[type="search"] { width: 210px; cursor: text; }
+  .stx-filters select { padding-right: 28px; }
+  .stx-filters select.filtered { border-color: var(--brass); color: var(--brass-dark); background: rgba(163,132,74,.06); font-weight: 600; }
+  .stx-actions { display: flex; align-items: center; gap: 6px; }
   .stx-icon-btn {
-    width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
-    border: 1px solid var(--line); background: var(--component-bg); border-radius: 8px;
+    width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); background: var(--stone); border-radius: 8px;
     cursor: pointer; color: var(--ink); transition: all .15s ease;
   }
-  .stx-icon-btn:hover { border-color: var(--brass); color: var(--brass-dark); }
-  .stx-icon-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .stx-icon-btn:hover { border-color: var(--brass); color: var(--brass-dark); background: rgba(163,132,74,.06); }
+  .stx-icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .stx-pos { position: relative; }
   .stx-pop {
     position: absolute; right: 0; top: calc(100% + 8px); background: var(--component-bg);
-    border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    min-width: 230px; z-index: 60; padding: 8px; display: none;
+    border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    min-width: 220px; z-index: 60; padding: 8px; display: none;
   }
   .stx-pop.open { display: block; }
   .stx-pop-item {
@@ -89,8 +128,20 @@
   .stx-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; font-size: 0.82rem; color: var(--ink); }
   .stx-toggle input { accent-color: var(--brass); cursor: pointer; }
 
+  /* ---- Result info bar ---- */
+  .stx-result-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.78rem; color: var(--ink); opacity: 0.6;
+    margin-bottom: 8px; padding: 0 2px;
+  }
+  .stx-result-bar b { font-weight: 700; color: var(--ink); opacity: 1; }
+  .stx-clear-filters-btn {
+    font-size: 0.74rem; color: var(--brass-dark); background: none; border: none;
+    cursor: pointer; text-decoration: underline; padding: 0; font-family: 'Inter', sans-serif;
+  }
+
   /* ---- Table ---- */
-  .stx-table-wrap { overflow-x: auto; background: var(--component-bg); border: 1px solid var(--line); border-radius: 10px; }
+  .stx-table-wrap { overflow-x: auto; background: var(--component-bg); border: 1px solid var(--line); border-radius: 12px; }
   .stx-table-wrap .admin-table { min-width: 980px; }
   .stx-table-wrap .admin-table th { background: #faf8f4; white-space: nowrap; }
   .stx-table-wrap th.sortable { cursor: pointer; user-select: none; }
@@ -199,8 +250,8 @@
   }
   @media (max-width: 640px) {
     .stx-controls { flex-direction: column; align-items: stretch; }
-    .stx-field select, .stx-field input[type="date"] { min-width: 0; width: 100%; }
-    .stx-range { flex-direction: column; align-items: stretch; }
+    .stx-period-btns { justify-content: stretch; }
+    .stx-period-btn { flex: 1; text-align: center; }
   }
 </style>
 </head>
@@ -290,26 +341,21 @@
         </div>` : ''}
 
         <div class="stx-controls">
-          <div class="stx-field">
-            <label>Report Duration</label>
-            <select id="periodSelect">
-              <option value="today" selected>Today</option>
-              <option value="yesterday">Yesterday</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="custom">Custom Date Range</option>
-            </select>
+          <span class="stx-controls-label">Report Duration</span>
+          <div class="stx-period-btns">
+            <button class="stx-period-btn active" data-period="today">Today</button>
+            <button class="stx-period-btn" data-period="yesterday">Yesterday</button>
+            <button class="stx-period-btn" data-period="week">This Week</button>
+            <button class="stx-period-btn" data-period="month">This Month</button>
+            <button class="stx-period-btn" data-period="custom">Custom Range</button>
           </div>
-          <div class="stx-field" id="anchorDateWrap">
-            <label>Date</label>
-            <input type="date" id="anchorDate">
+          <div class="stx-period-divider" id="customRangeDivider" style="display:none;"></div>
+          <div class="stx-date-wrap" id="customRangeWrap" style="display:none;">
+            <input type="date" id="fromDate" title="From date">
+            <span>—</span>
+            <input type="date" id="toDate" title="To date">
           </div>
-          <div class="stx-field" id="customRangeWrap" style="display:none;">
-            <label>Custom Range</label>
-            <div class="stx-range">
-              <input type="date" id="fromDate"><span style="color:var(--ink-muted);">—</span><input type="date" id="toDate">
-            </div>
-          </div>
+          <span class="stx-period-summary" id="periodSummaryText"></span>
         </div>
 
         <div id="stxView-transactions">
@@ -324,20 +370,15 @@
               <div class="stx-filters">
                 <span class="fb">Filter by</span>
                 <input type="search" id="filterSearch" placeholder="Customer, cashier or order #…">
-                <select id="filterOrderType">
+                <div class="stx-filter-divider"></div>
+                <select id="filterOrderType" title="Order Type">
                   <option value="all">All Order Types</option>
-                  <option value="dine_in">Dine-in</option>
-                  <option value="pickup">Takeout</option>
+                  <option value="dine_in">Dine-In</option>
+                  <option value="pickup">Takeout / Pickup</option>
                   <option value="delivery">Delivery</option>
-                  <option value="online">Online Order</option>
                   <option value="reservation">Reservation Orders</option>
                 </select>
-                <select id="filterReservation">
-                  <option value="hide">Hide Reservation Orders</option>
-                  <option value="show">Show Reservation Orders</option>
-                  <option value="only">Only Reservation Orders</option>
-                </select>
-                <select id="filterStatus">
+                <select id="filterStatus" title="Status">
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
                   <option value="confirmed">Confirmed</option>
@@ -382,6 +423,10 @@
                   </div>
                 </div>
               </div>
+            </div>
+            <div class="stx-result-bar" id="stxResultBar" style="margin-bottom:8px;"></div>
+            <div style="display:flex; justify-content:flex-end; margin-bottom:4px;">
+              <button class="stx-clear-filters-btn" id="stxClearFiltersBtn" style="display:none;">✕ Clear filters</button>
             </div>
             <div class="stx-table-wrap" id="ordersTableWrap">
               <div class="admin-loading">Loading transactions…</div>
@@ -434,19 +479,23 @@
       </div>
     `;
 
-    // Default the date field to today (dynamic, not hardcoded).
-    document.getElementById('anchorDate').value = toDateParam(new Date());
-
     /* ---- Period controls ---- */
-    document.getElementById('periodSelect').addEventListener('change', (e) => {
-      const custom = e.target.value === 'custom';
-      document.getElementById('customRangeWrap').style.display = custom ? '' : 'none';
-      document.getElementById('anchorDateWrap').style.display = custom ? 'none' : '';
-      refresh();
+    document.querySelectorAll('.stx-period-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.stx-period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const isCustom = btn.dataset.period === 'custom';
+        document.getElementById('customRangeWrap').style.display = isCustom ? '' : 'none';
+        document.getElementById('customRangeDivider').style.display = isCustom ? '' : 'none';
+        if (!isCustom) refresh();
+      });
     });
-    document.getElementById('anchorDate').addEventListener('change', refresh);
-    document.getElementById('fromDate').addEventListener('change', refresh);
-    document.getElementById('toDate').addEventListener('change', refresh);
+    document.getElementById('fromDate').addEventListener('change', () => {
+      if (activePeriod() === 'custom') refresh();
+    });
+    document.getElementById('toDate').addEventListener('change', () => {
+      if (activePeriod() === 'custom') refresh();
+    });
 
     /* ---- Primary tabs ---- */
     document.querySelectorAll('.stx-tab').forEach(btn => btn.addEventListener('click', () => {
@@ -473,9 +522,22 @@
     }
 
     /* ---- Filters ---- */
-    document.getElementById('filterOrderType').addEventListener('change', renderTable);
-    document.getElementById('filterStatus').addEventListener('change', renderTable);
+    document.getElementById('filterOrderType').addEventListener('change', () => {
+      updateFilterStyles();
+      renderTable();
+    });
+    document.getElementById('filterStatus').addEventListener('change', () => {
+      updateFilterStyles();
+      renderTable();
+    });
     document.getElementById('filterSearch').addEventListener('input', renderTable);
+    document.getElementById('stxClearFiltersBtn').addEventListener('click', () => {
+      document.getElementById('filterOrderType').value = 'all';
+      document.getElementById('filterStatus').value = 'all';
+      document.getElementById('filterSearch').value = '';
+      updateFilterStyles();
+      renderTable();
+    });
 
     /* ---- Toolbar actions ---- */
     document.getElementById('settingsBtn').addEventListener('click', (e) => { e.stopPropagation(); togglePop('settingsPop'); });
@@ -507,6 +569,18 @@
 
     refresh();
     startAutoRefresh();
+  }
+
+  function activePeriod() {
+    const btn = document.querySelector('.stx-period-btn.active');
+    return btn ? btn.dataset.period : 'today';
+  }
+
+  function updateFilterStyles() {
+    const ot = document.getElementById('filterOrderType');
+    const st = document.getElementById('filterStatus');
+    ot.classList.toggle('filtered', ot.value !== 'all');
+    st.classList.toggle('filtered', st.value !== 'all');
   }
 
   /* ================================================================
@@ -559,15 +633,20 @@
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
+  function formatDateShort(d) {
+    if (!d) return '';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
   function computePeriod() {
-    const dur = document.getElementById('periodSelect').value;
-    const anchorVal = document.getElementById('anchorDate').value;
-    const anchor = anchorVal ? new Date(`${anchorVal}T00:00:00`) : new Date();
-    const a = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+    const dur = activePeriod();
+    const now = new Date();
+    const a = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     let from, to;
-    if (dur === 'today') { from = a; to = a; }
-    else if (dur === 'yesterday') {
+    if (dur === 'today') {
+      from = a; to = a;
+    } else if (dur === 'yesterday') {
       from = new Date(a); from.setDate(a.getDate() - 1);
       to = new Date(a); to.setDate(a.getDate() - 1);
     } else if (dur === 'week') {
@@ -589,6 +668,18 @@
   function applyPeriod() {
     const { from, to } = computePeriod();
     currentPeriod = { from: from ? toDateParam(from) : null, to: to ? toDateParam(to) : null };
+
+    // Update the period summary text
+    const summaryEl = document.getElementById('periodSummaryText');
+    if (summaryEl) {
+      if (currentPeriod.from && currentPeriod.to && currentPeriod.from === currentPeriod.to) {
+        summaryEl.textContent = formatDateShort(new Date(`${currentPeriod.from}T00:00:00`));
+      } else if (currentPeriod.from && currentPeriod.to) {
+        summaryEl.textContent = `${formatDateShort(new Date(`${currentPeriod.from}T00:00:00`))} — ${formatDateShort(new Date(`${currentPeriod.to}T00:00:00`))}`;
+      } else {
+        summaryEl.textContent = '';
+      }
+    }
   }
 
   function periodQuery() {
@@ -667,27 +758,36 @@
 
   function getFilteredRows() {
     const orderTypeFilter = document.getElementById('filterOrderType').value;
-    const reservationFilter = document.getElementById('filterReservation').value;
     const statusFilter = document.getElementById('filterStatus').value;
     const search = document.getElementById('filterSearch').value.trim().toLowerCase();
 
     return allOrders.filter(o => {
       if (!showCancelled && o.status === 'cancelled') return false;
-      
-      // Filter by reservation orders
+
+      // Order type filter — 'reservation' maps to orders that have a reservation_id
       const isReservation = !!o.reservation_id;
-      if (reservationFilter === 'hide' && isReservation) return false;
-      if (reservationFilter === 'only' && !isReservation) return false;
-      
       const effectiveType = (o.order_type === 'online' && o.delivery_address) ? 'delivery' : o.order_type;
-      if (orderTypeFilter !== 'all' && effectiveType !== orderTypeFilter) return false;
+      if (orderTypeFilter === 'reservation') {
+        if (!isReservation) return false;
+      } else if (orderTypeFilter !== 'all') {
+        // For non-reservation filter: match effective type. Also allow reservation orders to show under their type (e.g. dine_in).
+        if (effectiveType !== orderTypeFilter) return false;
+      }
+
       if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+
       if (search) {
         const hay = `${o.customer_name || ''} ${o.staff_name || ''} #${o.id} ${orderTypeLabel(o.order_type, o)}`.toLowerCase();
         if (!hay.includes(search)) return false;
       }
       return true;
     });
+  }
+
+  function getResultSummaryText(count, total) {
+    const dur = activePeriod();
+    const labels = { today: 'today', yesterday: 'yesterday', week: 'this week', month: 'this month', custom: 'in this range' };
+    return `Showing <b>${count}</b> of <b>${total}</b> transactions ${labels[dur] || ''}`;
   }
 
   function sortRows(rows) {
@@ -716,10 +816,25 @@
   }
 
   function renderTable() {
-    const rows = sortRows(getFilteredRows());
+    const allFiltered = getFilteredRows();
+    const rows = sortRows(allFiltered);
     const wrap = document.getElementById('ordersTableWrap');
+
+    // Update result info bar
+    const bar = document.getElementById('stxResultBar');
+    if (bar) {
+      bar.innerHTML = getResultSummaryText(rows.length, allOrders.length);
+      const clearBtn = document.getElementById('stxClearFiltersBtn');
+      if (clearBtn) {
+        const hasFilter = document.getElementById('filterOrderType').value !== 'all' ||
+          document.getElementById('filterStatus').value !== 'all' ||
+          document.getElementById('filterSearch').value.trim() !== '';
+        clearBtn.style.display = hasFilter ? '' : 'none';
+      }
+    }
+
     if (rows.length === 0) {
-      wrap.innerHTML = `<div class="stx-empty">No entries found for this period.</div>`;
+      wrap.innerHTML = `<div class="stx-empty"><svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg><div>No transactions match the current filters.</div></div>`;
       return;
     }
 
