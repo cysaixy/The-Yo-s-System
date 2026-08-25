@@ -4,128 +4,517 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reservations — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css?v=4">
 <style>
-  .res-counts { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-  .res-count {
-    font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase;
-    letter-spacing: 0.05em; padding: 7px 12px; border: 1px solid var(--line);
-    border-radius: 20px; opacity: 0.85;
+  /* ================================================================
+     RESERVATIONS — Scoped Design System
+     ================================================================ */
+  
+  /* ---- Toolbar & Controls ---- */
+  .res-toolbar {
+    background: var(--component-bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
   }
-  .res-count b { font-size: 0.82rem; margin-left: 4px; }
-  .res-count.pending { border-color: rgba(184,134,11,0.35); color: var(--warning); }
-  .res-count.today { border-color: rgba(163,132,74,0.4); color: var(--brass-dark); }
-  .res-count.overdue { border-color: rgba(192,57,43,0.35); color: var(--danger); }
 
-  /* Urgency: overdue pending/confirmed rows get red, today's get amber. */
-  tr.urgency-overdue td { background: rgba(192,57,43,0.06); }
-  tr.urgency-overdue:hover td { background: rgba(192,57,43,0.1); }
-  tr.urgency-today td { background: rgba(184,134,11,0.07); }
-  tr.urgency-today:hover td { background: rgba(184,134,11,0.11); }
-  .urgency-tag {
-    font-family: 'Space Mono', monospace; font-size: 0.6rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.05em; margin-left: 6px; padding: 1px 6px;
-    border-radius: 10px;
+  .res-filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex: 1;
   }
-  .urgency-tag.today { background: rgba(163,132,74,0.2); color: var(--brass-dark); }
+
+  .res-filters .fb-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.60rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.5;
+    white-space: nowrap;
+  }
+
+  .res-filters input, .res-filters select {
+    padding: 7px 11px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--stone);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    color: var(--ink);
+    transition: border-color 0.15s ease;
+  }
+  .res-filters input:focus, .res-filters select:focus {
+    outline: none;
+    border-color: var(--brass);
+    box-shadow: 0 0 0 3px rgba(163,132,74,0.12);
+  }
+  .res-filters input[type="text"] {
+    width: 220px;
+  }
+  .res-filters input[type="date"] {
+    cursor: pointer;
+  }
+  .res-filters select.filtered {
+    border-color: var(--brass);
+    color: var(--brass-dark);
+    background: rgba(163,132,74,0.08);
+    font-weight: 600;
+  }
+
+  .res-date-range {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .res-date-range span {
+    font-size: 0.78rem;
+    opacity: 0.5;
+  }
+
+  .res-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: linear-gradient(135deg, var(--brass) 0%, var(--brass-dark) 100%);
+    color: #fff;
+    border: 1px solid var(--brass-dark);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 3px 10px rgba(138,109,58,0.2);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .res-add-btn:hover {
+    background: linear-gradient(135deg, #b8924e 0%, #7a5e2c 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(138,109,58,0.28);
+  }
+  .res-add-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  /* ---- Quick Filter Stat Chips ---- */
+  .res-stat-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .res-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: var(--component-bg);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .res-chip:hover {
+    border-color: var(--brass);
+    transform: translateY(-1px);
+  }
+  .res-chip.active {
+    background: var(--stone);
+    border-color: var(--brass);
+    color: var(--brass-dark);
+    box-shadow: 0 2px 8px rgba(163,132,74,0.15);
+  }
+  .res-chip-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+  .res-chip.chip-pending .res-chip-badge { background: rgba(184,134,11,0.15); color: var(--warning); }
+  .res-chip.chip-today .res-chip-badge { background: rgba(163,132,74,0.18); color: var(--brass-dark); }
+  .res-chip.chip-overdue .res-chip-badge { background: rgba(192,57,43,0.15); color: var(--danger); }
+  .res-chip.chip-all .res-chip-badge { background: rgba(21,23,26,0.08); color: var(--ink-muted); }
+
+  /* ---- Table Layout ---- */
+  .res-table-wrap {
+    background: var(--component-bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow-x: auto;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .res-table-wrap .admin-table {
+    min-width: 1060px;
+  }
+  .res-table-wrap .admin-table th {
+    background: #f8f4ed;
+    white-space: nowrap;
+    padding: 12px 14px;
+    font-size: 0.62rem;
+  }
+  .res-table-wrap .admin-table td {
+    padding: 12px 14px;
+    vertical-align: middle;
+  }
+
+  /* Urgency indicators */
+  tr.urgency-overdue td:first-child {
+    border-left: 4px solid var(--danger);
+  }
+  tr.urgency-today td:first-child {
+    border-left: 4px solid var(--warning);
+  }
+  tr.urgency-overdue {
+    background: rgba(192,57,43,0.02);
+  }
+  tr.urgency-today {
+    background: rgba(184,134,11,0.02);
+  }
+
+  .urgency-tag {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-left: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+    vertical-align: middle;
+  }
+  .urgency-tag.today { background: rgba(184,134,11,0.15); color: var(--warning); }
   .urgency-tag.overdue { background: rgba(192,57,43,0.15); color: var(--danger); }
 
-  /* Notes truncation: keep the row a fixed height, hover for full text. */
-  .notes-cell {
-    max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    font-size: 0.8rem; opacity: 0.75; cursor: help;
+  /* Customer Cell */
+  .contact-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
-  .notes-cell.empty { opacity: 0.4; font-style: italic; }
+  .contact-cell .name {
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .contact-cell .name:hover {
+    color: var(--brass-dark);
+    text-decoration: underline;
+  }
+  .contact-cell .sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.70rem;
+    color: var(--ink-muted);
+    opacity: 0.8;
+  }
 
-  .clickable { cursor: pointer; }
-  .clickable:hover { text-decoration: underline; text-underline-offset: 2px; }
+  /* Table cell & Guest badge */
+  .table-badge {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--stone);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .guests-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 24px;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 700;
+    background: var(--stone);
+    color: var(--ink);
+  }
 
-  .contact-row { display: flex; flex-direction: column; gap: 2px; }
-  .contact-row .sub { font-size: 0.72rem; opacity: 0.6; }
+  /* Notes truncation */
+  .notes-cell {
+    max-width: 160px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    cursor: help;
+  }
+  .notes-cell.empty {
+    opacity: 0.35;
+    font-style: italic;
+  }
 
-  .detail-list { display: grid; grid-template-columns: 130px 1fr; gap: 8px 14px; font-size: 0.85rem; }
-  .detail-list dt { font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase; opacity: 0.55; align-self: center; }
+  /* Status Pills */
+  .res-status-pill, .order-status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 14px;
+    font-size: 0.62rem;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .res-status-pending { background: rgba(184,134,11,0.14); color: #9e7308; }
+  .res-status-contact_customer { background: rgba(163,132,74,0.16); color: var(--brass-dark); }
+  .res-status-order_preparing { background: rgba(52,109,196,0.12); color: #2c5fb0; }
+  .res-status-order_finalized { background: rgba(163,132,74,0.22); color: var(--brass-dark); }
+  .res-status-confirmed { background: rgba(46,125,79,0.14); color: #23633e; }
+  .res-status-cancelled { background: rgba(192,57,43,0.12); color: #c0392b; }
+  .res-status-completed { background: rgba(46,125,79,0.14); color: var(--success); }
+
+  .order-status-no_order { background: rgba(21,23,26,0.06); color: var(--ink-muted); }
+  .order-status-editable { background: rgba(46,125,79,0.12); color: #23633e; }
+  .order-status-finalized { background: rgba(163,132,74,0.16); color: var(--brass-dark); }
+  .order-status-locked { background: rgba(192,57,43,0.12); color: #c0392b; }
+
+  /* Deadline indicator */
+  .deadline-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.74rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .deadline-value.locked { color: var(--danger); font-weight: 700; }
+  .deadline-value.editable { color: var(--success); }
+  .deadline-value.final-day { color: var(--warning); font-weight: 700; }
+
+  /* ---- Action Buttons (Compact & Sleek) ---- */
+  .res-actions-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .res-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 9px;
+    border-radius: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink);
+    transition: all 0.14s ease;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+  .res-btn:hover {
+    border-color: var(--brass);
+    color: var(--brass-dark);
+    background: rgba(163,132,74,0.06);
+  }
+  .res-btn.res-btn-primary {
+    background: var(--brass);
+    color: #fff;
+    border-color: var(--brass-dark);
+  }
+  .res-btn.res-btn-primary:hover {
+    background: var(--brass-dark);
+    box-shadow: 0 2px 6px rgba(138,109,58,0.25);
+  }
+  .res-btn.res-btn-danger {
+    color: var(--danger);
+    border-color: rgba(192,57,43,0.25);
+    background: transparent;
+  }
+  .res-btn.res-btn-danger:hover {
+    background: rgba(192,57,43,0.08);
+    border-color: var(--danger);
+  }
+
+  /* ---- Pagination ---- */
+  .res-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--line);
+    background: #faf8f4;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  /* ---- Modals & Detail Lists ---- */
+  .detail-list {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 8px 14px;
+    font-size: 0.85rem;
+  }
+  .detail-list dt {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.63rem;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    opacity: 0.7;
+    align-self: center;
+  }
   .detail-list dd { margin: 0; }
-  .detail-list a { color: var(--brass-dark); }
+  .detail-list a { color: var(--brass-dark); text-decoration: none; }
+  .detail-list a:hover { text-decoration: underline; }
 
-  .confirm-capacity { margin-top: 8px; font-size: 0.78rem; opacity: 0.75; }
-  .confirm-capacity.bad { color: var(--danger); opacity: 1; font-weight: 600; }
+  .confirm-capacity {
+    margin-top: 8px;
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+  }
+  .confirm-capacity.bad {
+    color: var(--danger);
+    font-weight: 600;
+  }
   .modal-error {
-    margin-top: 12px; padding: 10px 12px; border-radius: 5px; font-size: 0.8rem;
-    background: rgba(192,57,43,0.1); color: var(--danger); display: none;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 0.80rem;
+    background: rgba(192,57,43,0.08);
+    color: var(--danger);
+    border: 1px solid rgba(192,57,43,0.2);
+    display: none;
   }
   .modal-error.show { display: block; }
 
-  /* Order status pills */
-  .order-status-pill {
-    padding: 3px 10px; border-radius: 20px; font-size: 0.6rem; font-family: 'Space Mono', monospace;
-    font-weight: 700; text-transform: uppercase; white-space: nowrap;
-  }
-  .order-status-no_order { background: rgba(21,23,26,0.08); color: var(--ink); opacity: 0.65; }
-  .order-status-editable { background: rgba(46,125,79,0.12); color: #1e6b41; }
-  .order-status-finalized { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
-  .order-status-locked { background: rgba(192,57,43,0.12); color: #a3271b; }
-
-  /* Reservation status pills */
-  .res-status-pill {
-    padding: 3px 10px; border-radius: 20px; font-size: 0.6rem; font-family: 'Space Mono', monospace;
-    font-weight: 700; text-transform: uppercase; white-space: nowrap;
-  }
-  .res-status-pending { background: rgba(184,134,11,0.14); color: #b8860b; }
-  .res-status-contact_customer { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
-  .res-status-order_preparing { background: rgba(46,125,79,0.12); color: #1e6b41; }
-  .res-status-order_finalized { background: rgba(163,132,74,0.2); color: var(--brass-dark); }
-  .res-status-confirmed { background: rgba(163,132,74,0.15); color: var(--brass); }
-  .res-status-cancelled { background: rgba(192,57,43,0.14); color: #c0392b; }
-  .res-status-completed { background: rgba(46,125,79,0.14); color: #2e7d4f; }
-
-  .pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
-  .pager-info { font-family: 'Space Mono', monospace; font-size: 0.68rem; text-transform: uppercase; opacity: 0.6; }
-
   /* Order items table in modal */
-  .order-items-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
-  .order-items-table th { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); font-family: 'Space Mono', monospace; font-size: 0.6rem; text-transform: uppercase; opacity: 0.55; }
-  .order-items-table td { padding: 8px; border-bottom: 1px dashed var(--line); }
+  .order-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-top: 10px;
+  }
+  .order-items-table th {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    background: var(--stone);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.60rem;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .order-items-table td {
+    padding: 9px 10px;
+    border-bottom: 1px dashed var(--line);
+  }
   .order-items-table .item-name { font-weight: 600; }
   .order-items-table .item-qty { font-family: 'Space Mono', monospace; text-align: center; width: 60px; }
   .order-items-table .item-price { font-family: 'Space Mono', monospace; text-align: right; width: 80px; }
   .order-items-table .item-subtotal { font-family: 'Space Mono', monospace; text-align: right; width: 90px; font-weight: 700; color: var(--brass-dark); }
-  .order-items-table .item-notes { font-size: 0.75rem; opacity: 0.6; margin-top: 2px; }
-  .order-items-table .addon-row { font-size: 0.7rem; opacity: 0.6; color: var(--brass-dark); padding-left: 16px; }
+  .order-items-table .item-notes { font-size: 0.72rem; color: var(--ink-muted); margin-top: 2px; }
+  .order-items-table .addon-row { font-size: 0.70rem; color: var(--brass-dark); padding-left: 14px; }
 
-  .order-total-row { display: flex; justify-content: flex-end; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--line); font-family: 'Space Mono', monospace; font-size: 0.9rem; font-weight: 700; color: var(--brass); }
-
-  .deadline-display { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-  .deadline-label { font-family: 'Space Mono', monospace; font-size: 0.6rem; text-transform: uppercase; opacity: 0.55; }
-  .deadline-value { font-weight: 700; }
-  .deadline-value.locked { color: var(--danger); }
-  .deadline-value.editable { color: var(--success); }
-  .deadline-value.final-day { color: var(--warning); }
-
-  .admin-override-btn {
-    background: none; border: 1px solid var(--danger); color: var(--danger);
-    border-radius: 5px; padding: 6px 12px; font-size: 0.7rem; font-family: 'Space Mono', monospace;
-    font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all .15s;
+  .order-total-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 2px solid var(--ink);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.90rem;
+    font-weight: 700;
+    color: var(--ink);
   }
-  .admin-override-btn:hover { background: var(--danger); color: #fff; }
 
+  /* Stepper in order modal */
+  .stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--stone);
+    overflow: hidden;
+  }
+  .stepper button {
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink);
+  }
+  .stepper button:hover:not(:disabled) {
+    background: var(--line);
+  }
+  .stepper button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .stepper .qty-val {
+    min-width: 24px;
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  /* Toast Notification */
   .toast {
-    position: fixed; bottom: 20px; right: 20px; z-index: 200;
-    background: var(--ink); color: var(--bone); padding: 12px 18px; border-radius: 6px;
-    font-size: 0.84rem; font-family: 'Inter', sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    opacity: 0; transform: translateY(8px); pointer-events: none; transition: all .2s ease;
+    position: fixed; bottom: 22px; right: 22px; z-index: 250;
+    background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 8px;
+    font-size: 0.84rem; font-family: 'Inter', sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+    opacity: 0; transform: translateY(10px); pointer-events: none; transition: all 0.2s ease;
   }
   .toast.show { opacity: 1; transform: translateY(0); }
-  .toast.success { border-left: 3px solid var(--success); }
-  .toast.error { border-left: 3px solid var(--danger); }
+  .toast.success { border-left: 4px solid var(--success); }
+  .toast.error { border-left: 4px solid var(--danger); }
 
+  @media (max-width: 900px) {
+    .res-toolbar { flex-direction: column; align-items: stretch; }
+    .res-filters { width: 100%; }
+    .res-add-btn { width: 100%; justify-content: center; }
+  }
   @media (max-width: 640px) {
     .detail-list { grid-template-columns: 1fr; gap: 2px 0; }
     .detail-list dt { margin-top: 8px; }
-    .notes-cell { max-width: 140px; }
-    .toast { left: 12px; right: 12px; bottom: 12px; }
-    .order-items-table { display: block; overflow-x: auto; }
+    .notes-cell { max-width: 120px; }
   }
 </style>
 </head>
@@ -142,13 +531,13 @@
 
   let reservations = [];
   let tables = [];
-  let menuItems = []; // loaded for order editor
-  const PAGE_SIZE = 8;
+  let menuItems = [];
+  const PAGE_SIZE = 10;
   let page = 1;
+  let activeQuickFilter = 'all';
 
-  const STATUS_PILL = { pending: 'pill-warning', confirmed: 'pill-brass', cancelled: 'pill-danger', completed: 'pill-success' };
-  const RES_STATUS_PILL = { 
-    pending: 'res-status-pending', 
+  const STATUS_PILL = {
+    pending: 'res-status-pending',
     contact_customer: 'res-status-contact_customer',
     order_preparing: 'res-status-order_preparing',
     order_finalized: 'res-status-order_finalized',
@@ -156,47 +545,62 @@
     cancelled: 'res-status-cancelled',
     completed: 'res-status-completed'
   };
+
   const ORDER_STATUS_PILL = {
     no_order: 'order-status-no_order',
     editable: 'order-status-editable',
     finalized: 'order-status-finalized',
     locked: 'order-status-locked'
   };
+
   const TERMINAL = ['cancelled', 'completed'];
 
   function init() {
     const content = document.getElementById('adminContent');
     content.innerHTML = `
-      <div class="filter-bar">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-          <button class="prd-btn prd-btn-gold" id="addWalkinBtn" style="font-size:0.75rem; padding:8px 14px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            Add Walk-in Reservation
-          </button>
-        </div>
-        <div><label>Search</label>
-          <input type="text" id="filterQ" placeholder="Name, email, table, notes…" style="min-width:220px;">
-        </div>
-        <div><label>Status</label>
-          <select id="filterStatus">
-            <option value="all">All</option>
+      <div class="res-toolbar">
+        <div class="res-filters">
+          <span class="fb-label">Filter by</span>
+          <input type="text" id="filterQ" placeholder="Name, email, table, notes…">
+          <select id="filterStatus" title="Reservation Status">
+            <option value="all">All Status</option>
             <option value="pending">Pending</option>
+            <option value="contact_customer">Contact Customer</option>
+            <option value="order_preparing">Order Preparing</option>
+            <option value="order_finalized">Order Finalized</option>
             <option value="confirmed">Confirmed</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
+          <div class="res-date-range">
+            <input type="date" id="filterFrom" title="From date">
+            <span>—</span>
+            <input type="date" id="filterTo" title="To date">
+          </div>
         </div>
-        <div><label>From</label><input type="date" id="filterFrom"></div>
-        <div><label>To</label><input type="date" id="filterTo"></div>
+        <button class="res-add-btn" id="addWalkinBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Add Walk-in Reservation
+        </button>
       </div>
-      <div class="res-counts" id="resCounts"></div>
-      <div class="admin-panel">
-        <div class="admin-panel-body" style="padding:0;" id="resWrap"><div class="admin-loading">Loading reservations…</div></div>
+
+      <div class="res-stat-chips" id="resCounts"></div>
+
+      <div class="res-table-wrap" id="resWrap">
+        <div class="admin-loading">Loading reservations…</div>
       </div>
     `;
-    ['filterQ', 'filterStatus', 'filterFrom', 'filterTo'].forEach(id => {
+
+    ['filterQ', 'filterFrom', 'filterTo'].forEach(id => {
       document.getElementById(id).addEventListener('input', () => { page = 1; render(); });
     });
+    document.getElementById('filterStatus').addEventListener('change', (e) => {
+      e.target.classList.toggle('filtered', e.target.value !== 'all');
+      activeQuickFilter = 'all';
+      page = 1;
+      render();
+    });
+
     document.getElementById('addWalkinBtn').addEventListener('click', openWalkinModal);
     load();
   }
@@ -228,13 +632,33 @@
     const status = document.getElementById('filterStatus').value;
     const from = document.getElementById('filterFrom').value;
     const to = document.getElementById('filterTo').value;
+    const today = startOfDay(new Date());
+
     return reservations.filter(r => {
-      if (status !== 'all' && r.status !== status) return false;
+      const resStatus = r.reservation_status || r.status;
+
+      // Quick filter chips
+      if (activeQuickFilter === 'pending' && resStatus !== 'pending') return false;
+      if (activeQuickFilter === 'today') {
+        if (TERMINAL.includes(r.status)) return false;
+        if (dayDiff(r.reservation_date, today) !== 0) return false;
+      }
+      if (activeQuickFilter === 'overdue') {
+        if (TERMINAL.includes(r.status)) return false;
+        if (dayDiff(r.reservation_date, today) >= 0) return false;
+      }
+
+      // Status dropdown
+      if (status !== 'all' && resStatus !== status && r.status !== status) return false;
+
+      // Date range
       const d = r.reservation_date || '';
       if (from && d < from) return false;
       if (to && d > to) return false;
+
+      // Search text
       if (q) {
-        const hay = [r.customer_name, r.customer_email, r.customer_phone, r.table_no, r.notes]
+        const hay = [r.customer_name, r.customer_email, r.customer_phone, r.table_no, r.notes, `#${r.id}`]
           .map(x => (x || '').toLowerCase()).join(' ');
         if (!hay.includes(q)) return false;
       }
@@ -245,20 +669,41 @@
   function render() {
     const rows = filteredRows();
     const wrap = document.getElementById('resWrap');
-
-    const pending = reservations.filter(r => r.status === 'pending').length;
     const today = startOfDay(new Date());
-    const open = rows.filter(r => !TERMINAL.includes(r.status));
+
+    const pendingCount = reservations.filter(r => (r.reservation_status || r.status) === 'pending').length;
+    const open = reservations.filter(r => !TERMINAL.includes(r.status));
     const todayCount = open.filter(r => dayDiff(r.reservation_date, today) === 0).length;
     const overdueCount = open.filter(r => dayDiff(r.reservation_date, today) < 0).length;
-    document.getElementById('resCounts').innerHTML = `
-      <span class="res-count pending">Pending <b>${pending}</b></span>
-      <span class="res-count today">Today <b>${todayCount}</b></span>
-      <span class="res-count overdue">Overdue <b>${overdueCount}</b></span>
+    const totalCount = reservations.length;
+
+    // Render Quick Filter Chips
+    const countsEl = document.getElementById('resCounts');
+    countsEl.innerHTML = `
+      <div class="res-chip chip-all ${activeQuickFilter === 'all' ? 'active' : ''}" data-chip="all">
+        All Reservations <span class="res-chip-badge">${totalCount}</span>
+      </div>
+      <div class="res-chip chip-pending ${activeQuickFilter === 'pending' ? 'active' : ''}" data-chip="pending">
+        Pending <span class="res-chip-badge">${pendingCount}</span>
+      </div>
+      <div class="res-chip chip-today ${activeQuickFilter === 'today' ? 'active' : ''}" data-chip="today">
+        Today's Schedule <span class="res-chip-badge">${todayCount}</span>
+      </div>
+      <div class="res-chip chip-overdue ${activeQuickFilter === 'overdue' ? 'active' : ''}" data-chip="overdue">
+        Overdue <span class="res-chip-badge">${overdueCount}</span>
+      </div>
     `;
 
+    countsEl.querySelectorAll('.res-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        activeQuickFilter = chip.dataset.chip;
+        page = 1;
+        render();
+      });
+    });
+
     if (rows.length === 0) {
-      wrap.innerHTML = `<div class="panel-empty" style="padding:20px;">No reservations match this filter.</div>`;
+      wrap.innerHTML = `<div class="panel-empty" style="padding:48px 20px; text-align:center; color:var(--ink-muted);">No reservations match the current filter criteria.</div>`;
       return;
     }
 
@@ -269,18 +714,26 @@
     wrap.innerHTML = `
       <table class="admin-table">
         <thead><tr>
-          <th>Customer</th><th>Table</th><th>Date</th><th>Time</th><th>Guests</th>
-          <th>Requested</th><th>Res. Status</th><th>Order Status</th><th>Order Deadline</th><th>Notes</th><th>Actions</th>
+          <th>Customer</th>
+          <th>Table</th>
+          <th>Date &amp; Time</th>
+          <th style="text-align:center;">Guests</th>
+          <th>Reserved At</th>
+          <th>Res. Status</th>
+          <th>Order Status</th>
+          <th>Order Deadline</th>
+          <th>Notes</th>
+          <th style="text-align:right;">Actions</th>
         </tr></thead>
         <tbody>
           ${slice.map(r => rowHtml(r, today)).join('')}
         </tbody>
       </table>
-      <div class="pager">
-        <span class="pager-info">${rows.length} result${rows.length === 1 ? '' : 's'} · Page ${page} of ${pageCount}</span>
-        <div class="row-actions">
-          <button type="button" ${page <= 1 ? 'disabled' : ''} data-nav="prev">‹ Prev</button>
-          <button type="button" ${page >= pageCount ? 'disabled' : ''} data-nav="next">Next ›</button>
+      <div class="res-pager">
+        <span>Showing <b>${rows.length}</b> total result${rows.length === 1 ? '' : 's'} · Page ${page} of ${pageCount}</span>
+        <div class="res-actions-wrap">
+          <button type="button" class="res-btn" ${page <= 1 ? 'disabled' : ''} data-nav="prev">‹ Prev</button>
+          <button type="button" class="res-btn" ${page >= pageCount ? 'disabled' : ''} data-nav="next">Next ›</button>
         </div>
       </div>
     `;
@@ -288,6 +741,7 @@
     wrap.querySelectorAll('button[data-nav]').forEach(btn => {
       btn.addEventListener('click', () => { page += btn.dataset.nav === 'next' ? 1 : -1; render(); });
     });
+
     wrap.querySelectorAll('button[data-action]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
@@ -301,6 +755,7 @@
         else updateStatus(id, action);
       });
     });
+
     wrap.querySelectorAll('[data-customer]').forEach(el => {
       el.addEventListener('click', () => openDetailsModal(el.dataset.customer));
     });
@@ -332,21 +787,25 @@
     return `
       <tr class="${urgency}">
         <td>
-          <div class="contact-row">
-            <span class="clickable" data-customer="${r.id}" title="View contact details">${escapeHtml(r.customer_name)}</span>
+          <div class="contact-cell">
+            <span class="name" data-customer="${r.id}" title="View details">${escapeHtml(r.customer_name)}</span>
             ${r.customer_phone ? `<span class="sub">${escapeHtml(r.customer_phone)}</span>` : ''}
           </div>
         </td>
-        <td>${r.table_no ? escapeHtml(r.table_no) : '<span style="color:var(--ink-muted);">—</span>'}</td>
-        <td>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}${tag}</td>
-        <td>${r.reservation_time ? String(r.reservation_time).slice(0, 5) : '—'}</td>
-        <td>${r.guests}</td>
-        <td title="${formatDate(r.datetime_reserved)}" style="white-space:nowrap;">${formatDate(r.datetime_reserved, { dateStyle: 'medium', timeStyle: 'short' })}</td>
-        <td><span class="res-status-pill ${RES_STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></td>
+        <td>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span style="color:var(--ink-muted); opacity:0.5;">—</span>'}</td>
+        <td>
+          <div><strong>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}</strong>${tag}</div>
+          <div style="font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--ink-muted); margin-top:2px;">${r.reservation_time ? String(r.reservation_time).slice(0, 5) : '—'}</div>
+        </td>
+        <td style="text-align:center;"><span class="guests-badge">${r.guests}</span></td>
+        <td title="${formatDate(r.datetime_reserved)}" style="font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--ink-muted); white-space:nowrap;">
+          ${formatDate(r.datetime_reserved, { dateStyle: 'short', timeStyle: 'short' })}
+        </td>
+        <td><span class="res-status-pill ${STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></td>
         <td><span class="order-status-pill ${ORDER_STATUS_PILL[orderStatusLabel] || 'order-status-no_order'}">${escapeHtml(orderStatusLabel.replace(/_/g, ' '))}</span></td>
         <td><span class="deadline-value ${deadlineClass}">${deadline}</span></td>
         <td><div class="notes-cell${notes ? '' : ' empty'}" title="${escapeHtml(notes)}">${notes ? escapeHtml(notes) : '—'}</div></td>
-        <td><div class="row-actions">${actionButtons(r)}</div></td>
+        <td style="text-align:right;"><div class="res-actions-wrap" style="justify-content:flex-end;">${actionButtons(r)}</div></td>
       </tr>
     `;
   }
@@ -360,49 +819,46 @@
     const isLocked = isPastDeadline && orderStatus !== 'locked';
     const isAdmin = session?.staff?.role === 'Admin';
 
-    // View Details button (always available)
-    const viewDetailsBtn = `<button class="primary" data-action="view" data-id="${r.id}" style="font-size:0.7rem; padding:4px 8px;">View Details</button>`;
+    // View Details button
+    const viewBtn = `<button class="res-btn" data-action="view" data-id="${r.id}" title="View details">Details</button>`;
 
-    // If order is locked (past deadline) and not admin, show locked state
     if (isLocked) {
-      return `${viewDetailsBtn}
-              <span class="pill pill-danger" style="font-size:0.7rem;">Order Locked</span>
-              ${isAdmin ? `<button class="primary" data-action="manage" data-id="${r.id}" style="margin-left:4px; font-size:0.65rem; padding:4px 8px;">Admin Override</button>` : ''}`;
+      return `${viewBtn}
+              <span class="res-status-pill res-status-cancelled" style="font-size:0.62rem;">Locked</span>
+              ${isAdmin ? `<button class="res-btn res-btn-primary" data-action="manage" data-id="${r.id}">Override</button>` : ''}`;
     }
 
     if (resStatus === 'pending') {
-      return `${viewDetailsBtn}
-              <button class="primary" data-action="contact" data-id="${r.id}" style="font-size:0.7rem;">Contact Customer</button>
-              <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+      return `${viewBtn}
+              <button class="res-btn res-btn-primary" data-action="contact" data-id="${r.id}">Contact</button>
+              <button class="res-btn res-btn-danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
     if (resStatus === 'contact_customer') {
-      return `${viewDetailsBtn}
-              <button class="primary" data-action="order" data-id="${r.id}" style="font-size:0.7rem;">Add Order</button>
-              <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+      return `${viewBtn}
+              <button class="res-btn res-btn-primary" data-action="order" data-id="${r.id}">+ Order</button>
+              <button class="res-btn res-btn-danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
     if (resStatus === 'order_preparing') {
-      return `${viewDetailsBtn}
-              <button class="primary" data-action="manage" data-id="${r.id}" style="font-size:0.7rem;">Edit Order</button>
-              <button class="primary" data-action="finalize" data-id="${r.id}" style="font-size:0.7rem;">Finalize Order</button>
-              <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+      return `${viewBtn}
+              <button class="res-btn" data-action="manage" data-id="${r.id}">Edit Order</button>
+              <button class="res-btn res-btn-primary" data-action="finalize" data-id="${r.id}">Finalize</button>
+              <button class="res-btn res-btn-danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
     if (resStatus === 'order_finalized') {
-      return `${viewDetailsBtn}
-              <button class="primary" data-action="confirmed" data-id="${r.id}" style="font-size:0.7rem;">Confirm Reservation</button>
-              <button class="primary" data-action="manage" data-id="${r.id}" style="font-size:0.7rem;">Edit Order</button>
-              <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+      return `${viewBtn}
+              <button class="res-btn res-btn-primary" data-action="confirmed" data-id="${r.id}">Confirm</button>
+              <button class="res-btn" data-action="manage" data-id="${r.id}">Edit</button>
+              <button class="res-btn res-btn-danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
     if (r.status === 'confirmed') {
-      return `${viewDetailsBtn}
-              <button class="primary" data-action="completed" data-id="${r.id}">Mark Completed</button>
-              <button class="danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+      return `${viewBtn}
+              <button class="res-btn res-btn-primary" data-action="completed" data-id="${r.id}">Complete</button>
+              <button class="res-btn res-btn-danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
     }
-    return `${viewDetailsBtn}
-            <span style="font-size:0.75rem; color:var(--ink-muted);">No further action</span>`;
+    return `${viewBtn}`;
   }
 
   // ---- Confirm modal: table assignment is mandatory, capacity checked live ----
-
   function openConfirmModal(id) {
     const r = reservations.find(x => x.id == id);
     if (!r) return;
@@ -414,22 +870,22 @@
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop active';
     backdrop.innerHTML = `
-      <div class="modal-box" style="max-width:520px;">
-        <h3>Confirm reservation</h3>
-        <div class="detail-list">
-          <dt>Customer</dt><dd>${escapeHtml(r.customer_name)}</dd>
-          <dt>Date</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
-          <dt>Guests</dt><dd>${r.guests}</dd>
+      <div class="modal-box" style="max-width:480px;">
+        <h3>Confirm Reservation #${r.id}</h3>
+        <div class="detail-list" style="margin-bottom:18px;">
+          <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
+          <dt>Date &amp; Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dt>Guests</dt><dd><span class="guests-badge">${r.guests} guests</span></dd>
         </div>
         <div class="form-field" style="margin-top:16px;">
-          <label for="confirmTable">Assign table</label>
+          <label for="confirmTable">Assign Table *</label>
           <select id="confirmTable">${options}</select>
           <div class="confirm-capacity" id="confirmCapacity"></div>
         </div>
         <div class="modal-error" id="confirmError"></div>
         <div class="modal-close-row">
           <button class="btn btn-outline" id="confirmClose">Back</button>
-          <button class="btn" id="confirmSubmit">Confirm</button>
+          <button class="btn" id="confirmSubmit">Confirm Reservation</button>
         </div>
       </div>
     `;
@@ -444,10 +900,11 @@
         capEl.textContent = 'No active tables available.';
         capEl.className = 'confirm-capacity bad';
       } else if (cap >= r.guests) {
-        capEl.textContent = `Seats ${cap} — fits your ${r.guests} guests.`;
+        capEl.textContent = `✓ Seats ${cap} — fits your ${r.guests} guests.`;
         capEl.className = 'confirm-capacity';
+        capEl.style.color = 'var(--success)';
       } else {
-        capEl.textContent = `Only seats ${cap}, but this reservation is for ${r.guests}. Pick a bigger table.`;
+        capEl.textContent = `⚠ Table only seats ${cap}, but reservation has ${r.guests} guests.`;
         capEl.className = 'confirm-capacity bad';
       }
     }
@@ -481,7 +938,7 @@
           r0.order_status = 'finalized';
         }
         close();
-        toast(`Confirmed — ${data.reservation.table_no} assigned.`, 'success');
+        toast(`Confirmed — Table ${data.reservation.table_no} assigned.`, 'success');
         render();
       } catch (err) {
         errEl.textContent = err.message;
@@ -495,7 +952,6 @@
 
   // ---- Walk-in Reservation Modal ----
   function openWalkinModal() {
-    const todayStr = new Date().toISOString().split('T')[0];
     const minDate = new Date();
     minDate.setDate(minDate.getDate() + 4);
     const minDateStr = minDate.toISOString().split('T')[0];
@@ -503,34 +959,45 @@
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop active';
     backdrop.innerHTML = `
-      <div class="modal-box" style="max-width:520px;">
+      <div class="modal-box" style="max-width:540px;">
         <h3>Add Walk-in Reservation</h3>
-        <p style="font-size:0.8rem; color:var(--ink-muted); margin-bottom:16px;">For customers who reserve in-person at the store.</p>
-        <div class="detail-list" style="margin-bottom:16px;">
-          <dt>Customer Name</dt><dd><input type="text" id="walkinName" placeholder="e.g. Juan Dela Cruz" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;"></dd>
-          <dt>Contact Number</dt><dd><input type="text" id="walkinPhone" placeholder="09XXXXXXXXX" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;"></dd>
-          <dt>Email (optional)</dt><dd><input type="email" id="walkinEmail" placeholder="customer@email.com" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;"></dd>
+        <p style="font-size:0.80rem; color:var(--ink-muted); margin:0 0 16px;">Record a reservation for a customer visiting the store in-person.</p>
+        <div class="form-grid" style="margin-bottom:14px;">
+          <div class="form-field">
+            <label for="walkinName">Customer Name *</label>
+            <input type="text" id="walkinName" placeholder="e.g. Juan Dela Cruz" required>
+          </div>
+          <div class="form-field">
+            <label for="walkinPhone">Contact Phone *</label>
+            <input type="text" id="walkinPhone" placeholder="09XXXXXXXXX" required>
+          </div>
         </div>
-        <div class="form-field">
-          <label for="walkinDate">Date *</label>
-          <input type="date" id="walkinDate" min="${minDateStr}" value="${minDateStr}" required style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;">
+        <div class="form-field" style="margin-bottom:14px;">
+          <label for="walkinEmail">Email (optional)</label>
+          <input type="email" id="walkinEmail" placeholder="customer@email.com">
         </div>
-        <div class="form-field">
-          <label for="walkinTime">Time *</label>
-          <input type="time" id="walkinTime" min="09:00" max="21:00" value="18:00" required style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;">
+        <div class="form-grid" style="margin-bottom:14px;">
+          <div class="form-field">
+            <label for="walkinDate">Reservation Date *</label>
+            <input type="date" id="walkinDate" min="${minDateStr}" value="${minDateStr}" required>
+          </div>
+          <div class="form-field">
+            <label for="walkinTime">Time *</label>
+            <input type="time" id="walkinTime" min="09:00" max="21:00" value="18:00" required>
+          </div>
+          <div class="form-field">
+            <label for="walkinGuests">Number of Guests *</label>
+            <input type="number" id="walkinGuests" min="1" max="20" value="2" required>
+          </div>
         </div>
-        <div class="form-field">
-          <label for="walkinGuests">Number of Guests *</label>
-          <input type="number" id="walkinGuests" min="1" max="20" value="2" required style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;">
-        </div>
-        <div class="form-field">
+        <div class="form-field" style="margin-bottom:14px;">
           <label for="walkinNotes">Notes / Special Requests</label>
-          <textarea id="walkinNotes" placeholder="Birthday, dietary needs, etc." style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; min-height:60px;"></textarea>
+          <textarea id="walkinNotes" placeholder="Birthday celebration, high chair, dietary needs, etc."></textarea>
         </div>
-        <div class="form-field">
-          <label for="walkinCustomOrder">Custom Order Details (for large/group orders)</label>
-          <textarea id="walkinCustomOrder" placeholder="e.g. 360 pcs of wings, 20 packs of spaghetti, 50 pcs burger steak..." style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; min-height:80px; font-family:inherit; font-size:0.85rem;"></textarea>
-          <small style="color:var(--ink-muted);">Enter detailed order items for kitchen preparation. Each line: quantity + item name.</small>
+        <div class="form-field" style="margin-bottom:14px;">
+          <label for="walkinCustomOrder">Custom Advance Order Details</label>
+          <textarea id="walkinCustomOrder" placeholder="e.g. 360 pcs wings, 20 packs spaghetti, 50 pcs burger steak...&#10;Each line: quantity + item name"></textarea>
+          <small style="color:var(--ink-muted); font-size:0.70rem; margin-top:3px; display:block;">Enter preliminary food items for kitchen pre-order preparation.</small>
         </div>
         <div class="modal-error" id="walkinError"></div>
         <div class="modal-close-row">
@@ -564,22 +1031,20 @@
       }
 
       btn.disabled = true;
-      btn.textContent = 'Creating...';
+      btn.textContent = 'Creating…';
 
       try {
-        // Create a walk-in customer or find existing
         const customerRes = await adminFetch('/api/admin/customers', {
           method: 'POST',
           body: JSON.stringify({ name, phone, email: email || null }),
         });
         if (!customerRes.ok) {
           const err = await customerRes.json();
-          throw new Error(err.error || 'Could not create customer.');
+          throw new Error(err.error || 'Could not create or find customer.');
         }
         const customerData = await customerRes.json();
         const customerId = customerData.customer.id;
 
-        // Create reservation with custom order in notes
         const combinedNotes = [notes, customOrder].filter(Boolean).join('\n\n--- CUSTOM ORDER ---\n');
         const res = await adminFetch('/api/admin/reservations', {
           method: 'POST',
@@ -600,8 +1065,8 @@
             errEl.innerHTML = `
               <div>⚠ ${escapeHtml(data.error || 'This time slot is full.')}</div>
               <div style="margin-top:6px; font-weight:600;">Suggested available times:</div>
-              <div style="display:flex; gap:6px; margin-top:4px; flex-wrap:wrap;">
-                ${data.suggested_slots.map(slot => `<button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.7rem; border-radius:4px;" onclick="document.getElementById('walkinTime').value='${slot}'; document.getElementById('walkinError').classList.remove('show');">${slot}</button>`).join('')}
+              <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+                ${data.suggested_slots.map(slot => `<button type="button" class="btn btn-outline small" style="padding:3px 8px;" onclick="document.getElementById('walkinTime').value='${slot}'; document.getElementById('walkinError').classList.remove('show');">${slot}</button>`).join('')}
               </div>
             `;
             errEl.classList.add('show');
@@ -612,7 +1077,7 @@
 
         close();
         toast('Walk-in reservation created.', 'success');
-        load(); // reload reservations list
+        load();
       } catch (err) {
         errEl.textContent = err.message;
         errEl.classList.add('show');
@@ -630,7 +1095,6 @@
     const r = reservations.find(x => x.id == id);
     if (!r) return;
 
-    // Fetch order details
     let orderData = null;
     try {
       const res = await adminFetch(`/api/admin/reservations/${id}/order`);
@@ -648,34 +1112,34 @@
     const isAdmin = session?.staff?.role === 'Admin';
 
     const order = orderData?.order;
-    const menuItems = orderData?.menu_items || [];
+    const fetchedMenuItems = orderData?.menu_items || menuItems || [];
 
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop active';
     backdrop.innerHTML = `
-      <div class="modal-box" style="max-width:700px; max-height:90vh; overflow-y:auto;">
-        <div class="prd-modal-head" style="margin-bottom:16px;">
-          <h3>Manage Reservation #${r.id} — ${escapeHtml(r.customer_name)}</h3>
-          <button class="close-btn" id="manageCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      <div class="modal-box" style="max-width:680px; max-height:90vh; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3 style="margin:0;">Manage Order — Reservation #${r.id}</h3>
+          <button type="button" class="res-btn" id="manageCloseBtn">✕</button>
         </div>
         
-        <div class="detail-list" style="margin-bottom:16px; font-size:0.8rem;">
-          <dt>Date</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
-          <dt>Guests</dt><dd>${r.guests}</dd>
-          <dt>Reservation Status</dt><dd><span class="res-status-pill ${RES_STATUS_PILL[resStatus] || 'res-status-pending'}">${escapeHtml(resStatus.replace(/_/g, ' '))}</span></dd>
+        <div class="detail-list" style="margin-bottom:16px; font-size:0.82rem; background:var(--stone); border-radius:10px; padding:14px;">
+          <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
+          <dt>Date &amp; Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dt>Guests</dt><dd>${r.guests} guests</dd>
+          <dt>Res. Status</dt><dd><span class="res-status-pill ${STATUS_PILL[resStatus] || 'res-status-pending'}">${escapeHtml(resStatus.replace(/_/g, ' '))}</span></dd>
           <dt>Order Status</dt><dd><span class="order-status-pill ${ORDER_STATUS_PILL[orderStatus] || 'order-status-no_order'}">${escapeHtml(orderStatus.replace(/_/g, ' '))}</span></dd>
-          <dt>Order Editing Deadline</dt><dd>
+          <dt>Deadline</dt><dd>
             <span class="deadline-value ${deadline ? (isPastDeadline ? 'locked' : (dayDiff(r.order_editing_deadline, today) === 0 ? 'final-day' : 'editable')) : ''}">
               ${deadline ? fmtDate(r.order_editing_deadline) : '—'}
             </span>
-            ${isPastDeadline ? ' <span style="color:var(--danger); font-size:0.7rem;">(PASSED)</span>' : (deadline && dayDiff(r.order_editing_deadline, today) === 0 ? ' <span style="color:var(--warning); font-size:0.7rem;">(TODAY)</span>' : '')}
+            ${isPastDeadline ? ' <span style="color:var(--danger); font-size:0.7rem; font-weight:700;">(PASSED)</span>' : ''}
           </dd>
-          ${isPastDeadline && isAdmin ? '<dt></dt><dd><button class="admin-override-btn" id="adminOverrideBtn">Admin Override</button></dd>' : ''}
         </div>
 
-        ${order ? `
-        <div style="border-top:1px solid var(--line); padding-top:16px;">
-          <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.85rem; margin-bottom:10px;">Order Items</h4>
+        ${order && order.items && order.items.length ? `
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.85rem; margin:0 0 10px;">Order Items</h4>
           <table class="order-items-table">
             <thead><tr>
               <th style="width:40%;">Item</th>
@@ -687,15 +1151,15 @@
               ${order.items.map(item => `
                 <tr>
                   <td>
-                    <div class="item-name">${escapeHtml(item.name)}</div>
-                    ${item.add_ons?.length ? item.add_ons.map(a => `<div class="addon-row">+ ${a.name} × ${a.quantity}</div>`).join('') : ''}
+                    <div class="item-name">${escapeHtml(item.name || item.item_name)}</div>
+                    ${item.add_ons?.length ? item.add_ons.map(a => `<div class="addon-row">+ ${escapeHtml(a.name)} × ${a.quantity}</div>`).join('') : ''}
                     ${item.notes ? `<div class="item-notes">${escapeHtml(item.notes)}</div>` : ''}
                   </td>
                   <td class="item-qty">${item.quantity}</td>
                   <td class="item-price">${peso(item.price)}</td>
                   <td class="item-subtotal">${peso(item.subtotal)}</td>
                 </tr>
-              `).join('') || '<tr><td colspan="4">No items in order</td></tr>'}
+              `).join('')}
             </tbody>
           </table>
           <div class="order-total-row">
@@ -704,26 +1168,26 @@
           </div>
         </div>
         ` : `
-        <div style="border-top:1px solid var(--line); padding-top:16px; text-align:center; color:var(--ink-muted);">
-          <p>No order recorded yet.</p>
+        <div style="border-top:1px solid var(--line); padding:24px 10px; text-align:center; color:var(--ink-muted);">
+          No menu order attached to this reservation yet.
         </div>
         `}
 
-        <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div style="margin-top:22px; display:flex; gap:10px; flex-wrap:wrap;">
           ${!order ? `
-            <button class="btn" id="addOrderBtn" style="flex:1; min-width:140px;">Add Order</button>
+            <button class="btn" id="addOrderBtn" style="flex:1;">+ Add Order Items</button>
           ` : `
             ${canEdit ? `
-              <button class="btn" id="editOrderBtn" style="flex:1; min-width:140px;">Edit Order</button>
+              <button class="btn" id="editOrderBtn" style="flex:1;">Edit Order</button>
             ` : ''}
             ${resStatus === 'order_preparing' ? `
-              <button class="btn" id="finalizeOrderBtn" style="flex:1; min-width:140px; background:var(--success); border-color:var(--success);">Finalize Order</button>
+              <button class="btn" id="finalizeOrderBtn" style="flex:1; background:var(--success); border-color:var(--success);">Finalize Order</button>
             ` : ''}
             ${resStatus === 'order_finalized' ? `
-              <button class="btn" id="confirmReservationBtn" style="flex:1; min-width:140px;">Confirm Reservation</button>
+              <button class="btn" id="confirmReservationBtn" style="flex:1;">Confirm Reservation</button>
             ` : ''}
-            ${isAdmin && isPastDeadline && orderStatus === 'locked' ? `
-              <button class="btn" id="adminOverrideEditBtn" style="flex:1; min-width:140px; background:var(--danger); border-color:var(--danger);">Admin Override: Edit</button>
+            ${isAdmin && isPastDeadline ? `
+              <button class="btn btn-danger" id="adminOverrideEditBtn" style="flex:1;">Admin Override: Edit</button>
             ` : ''}
           `}
         </div>
@@ -735,94 +1199,66 @@
     backdrop.querySelector('#manageCloseBtn').addEventListener('click', close);
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
 
-    // Add Order button
     const addOrderBtn = backdrop.querySelector('#addOrderBtn');
-    if (addOrderBtn) addOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, menuItems, false));
+    if (addOrderBtn) addOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, fetchedMenuItems, false));
 
-    // Edit Order button
     const editOrderBtn = backdrop.querySelector('#editOrderBtn');
-    if (editOrderBtn) editOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, menuItems, true, order));
+    if (editOrderBtn) editOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, fetchedMenuItems, true, order));
 
-    // Finalize Order button
     const finalizeOrderBtn = backdrop.querySelector('#finalizeOrderBtn');
     if (finalizeOrderBtn) finalizeOrderBtn.addEventListener('click', () => finalizeOrder(id));
 
-    // Confirm Reservation button
     const confirmReservationBtn = backdrop.querySelector('#confirmReservationBtn');
     if (confirmReservationBtn) confirmReservationBtn.addEventListener('click', () => openConfirmModal(id));
 
-    // Admin Override button
-    const adminOverrideBtn = backdrop.querySelector('#adminOverrideBtn');
-    if (adminOverrideBtn) adminOverrideBtn.addEventListener('click', () => {
-      const ok = confirm('The order editing deadline has passed. Are you sure you want to override the cutoff and modify this order?');
-      if (ok) openOrderEditorModal(id, r, menuItems, true, order, true);
-    });
-
     const adminOverrideEditBtn = backdrop.querySelector('#adminOverrideEditBtn');
-    if (adminOverrideEditBtn) adminOverrideEditBtn.addEventListener('click', () => openOrderEditorModal(id, r, menuItems, true, order, true));
+    if (adminOverrideEditBtn) adminOverrideEditBtn.addEventListener('click', () => openOrderEditorModal(id, r, fetchedMenuItems, true, order, true));
   }
 
   // Order Editor Modal
-  function openOrderEditorModal(reservationId, reservation, menuItems, isEdit, existingOrder = null, adminOverride = false) {
-    // Close the manage modal first
+  function openOrderEditorModal(reservationId, reservation, fetchedMenuItems, isEdit, existingOrder = null, adminOverride = false) {
     closeModals();
 
-    // Group menu items by category
     const categories = {};
-    menuItems.forEach(item => {
+    fetchedMenuItems.forEach(item => {
       const cat = item.category_name || 'Uncategorized';
       if (!categories[cat]) categories[cat] = [];
       categories[cat].push(item);
     });
 
-    // Build existing order items map for editing
-    const existingItems = new Map();
+    orderEditorState.selectedItems.clear();
     if (existingOrder?.items) {
       existingOrder.items.forEach(item => {
-        const key = `${item.menu_id}|${item.notes || ''}|${JSON.stringify(item.add_ons?.map(a => `${a.addon_id}:${a.quantity}`).sort() || [])}`;
-        existingItems.set(key, item);
+        const key = `${item.menu_id}||`;
+        orderEditorState.selectedItems.set(key, {
+          menuItem: { id: item.menu_id, name: item.item_name || item.name, price: item.price, cost: item.cost },
+          quantity: item.quantity,
+          notes: item.notes || '',
+          addons: new Map(item.add_ons?.map(a => [a.addon_id, { price: a.price, quantity: a.quantity }]) || [])
+        });
       });
     }
-    
-    // Initialize order editor state with existing items
-    existingItems.forEach((value, key) => {
-      orderEditorState.selectedItems.set(key, {
-        menuItem: { id: value.menu_id, name: value.item_name || value.name, price: value.price, cost: value.cost },
-        quantity: value.quantity,
-        notes: value.notes || '',
-        addons: new Map(value.add_ons?.map(a => [a.addon_id, { price: a.price, quantity: a.quantity }]) || [])
-      });
-    });
 
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop active';
     backdrop.innerHTML = `
-      <div class="modal-box" style="max-width:800px; max-height:90vh; overflow-y:auto;">
-        <div class="prd-modal-head" style="margin-bottom:16px;">
-          <h3>${isEdit ? 'Edit' : 'Add'} Order — Reservation #${reservationId}</h3>
-          <button class="close-btn" id="orderEditorCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      <div class="modal-box" style="max-width:760px; max-height:90vh; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3 style="margin:0;">${isEdit ? 'Edit' : 'Add'} Order — Reservation #${reservationId}</h3>
+          <button type="button" class="res-btn" id="orderEditorCloseBtn">✕</button>
         </div>
 
-        <div style="margin-bottom:16px; padding:12px; background:var(--stone); border-radius:8px; font-size:0.8rem;">
-          <strong>${escapeHtml(reservation.customer_name)}</strong> • 
+        <div style="margin-bottom:14px; padding:10px 14px; background:var(--stone); border-radius:8px; font-size:0.80rem;">
+          <b>${escapeHtml(reservation.customer_name)}</b> • 
           ${reservation.reservation_date ? fmtDate(reservation.reservation_date) : '—'} at ${String(reservation.reservation_time || '').slice(0, 5)} • 
           ${reservation.guests} guests
         </div>
 
-        <!-- Custom Order Notes - for phone orders -->
-        <div style="margin-bottom:16px;">
-          <label style="display:block; font-family:'Space Mono',monospace; font-size:0.65rem; text-transform:uppercase; opacity:0.55; margin-bottom:6px;">Custom Order Details (from customer call)</label>
-          <textarea id="customOrderNotes" placeholder="e.g. 360 pcs wings, 20 packs spaghetti, 50 burger steak...&#10;Each line: quantity + item name" style="width:100%; min-height:80px; padding:10px; border:1px solid var(--line); border-radius:6px; font-family:inherit; font-size:0.85rem; resize:vertical; box-sizing:border-box;"></textarea>
-          <small style="display:block; margin-top:4px; color:var(--ink-muted); font-size:0.7rem;">Enter detailed order items customer requested over the phone. This will be saved with the order.</small>
-        </div>
+        <div id="orderEditorContent"></div>
 
-        <div id="orderEditorContent">
-          <!-- Category tabs and items will be rendered here -->
-        </div>
-
-        <div style="margin-top:16px; border-top:1px solid var(--line); padding-top:16px;">
-          <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.85rem; margin-bottom:10px;">Current Order Items</h4>
-          <div id="currentOrderItems" style="max-height:200px; overflow-y:auto;"></div>
+        <div style="margin-top:16px; border-top:1px solid var(--line); padding-top:14px;">
+          <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.82rem; margin:0 0 10px;">Selected Order Items</h4>
+          <div id="currentOrderItems" style="max-height:180px; overflow-y:auto;"></div>
           <div class="order-total-row" id="orderTotalRow" style="display:none;">
             <span>Total:</span>
             <span id="orderTotalDisplay">₱0.00</span>
@@ -830,7 +1266,7 @@
         </div>
 
         <div class="modal-error" id="orderEditorError"></div>
-        <div class="modal-close-row" style="margin-top:20px;">
+        <div class="modal-close-row" style="margin-top:18px;">
           <button class="btn btn-outline" id="orderEditorCancelBtn">Cancel</button>
           <button class="btn" id="orderEditorSaveBtn">${isEdit ? 'Update Order' : 'Save Order'}</button>
         </div>
@@ -843,55 +1279,49 @@
     backdrop.querySelector('#orderEditorCancelBtn').addEventListener('click', close);
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
 
-    // Render category tabs and items
-    renderOrderEditorCategories(backdrop, categories, existingItems);
+    renderOrderEditorCategories(backdrop, categories);
 
-    // Save button
     backdrop.querySelector('#orderEditorSaveBtn').addEventListener('click', async () => {
       await saveOrderFromEditor(reservationId, backdrop, adminOverride);
     });
   }
 
-  // Order Editor State
   let orderEditorState = {
-    selectedItems: new Map(), // key -> { menuItem, quantity, notes, addons: Map<addonId, quantity> }
+    selectedItems: new Map(),
   };
 
-  function renderOrderEditorCategories(backdrop, categories, existingItems) {
+  function renderOrderEditorCategories(backdrop, categories) {
     const contentEl = backdrop.querySelector('#orderEditorContent');
     const categoryNames = Object.keys(categories).sort();
-    let activeCategory = categoryNames[0];
+    let activeCategory = categoryNames[0] || 'Uncategorized';
 
-    const renderCategoryTabs = () => {
-      return `
-        <div style="display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; border-bottom:1px solid var(--line); padding-bottom:8px;">
-          ${categoryNames.map(cat => `
-            <button type="button" class="prd-sub-tab ${cat === activeCategory ? 'active' : ''}" data-category="${escapeHtml(cat)}" style="padding:6px 12px; font-size:0.75rem;">
-              ${escapeHtml(cat)}
-            </button>
-          `).join('')}
-        </div>
-      `;
-    };
+    const renderCategoryTabs = () => `
+      <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; border-bottom:1px solid var(--line); padding-bottom:8px;">
+        ${categoryNames.map(cat => `
+          <button type="button" class="res-chip ${cat === activeCategory ? 'active' : ''}" data-category="${escapeHtml(cat)}">
+            ${escapeHtml(cat)}
+          </button>
+        `).join('')}
+      </div>
+    `;
 
     const renderItems = (cat) => {
       const items = categories[cat];
       if (!items || !items.length) return '<div style="padding:12px; color:var(--ink-muted);">No items in this category</div>';
 
       return `
-        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; max-height:300px; overflow-y:auto;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:10px; max-height:260px; overflow-y:auto; padding:2px;">
           ${items.map(item => {
-            // Check if this item is already in the order
             const existingKey = Array.from(orderEditorState.selectedItems.keys()).find(k => k.startsWith(`${item.id}|`));
             const isSelected = !!existingKey;
             const existingItem = existingKey ? orderEditorState.selectedItems.get(existingKey) : null;
             const qty = existingItem?.quantity || 1;
 
             return `
-              <div class="prd-form-field" style="background:#fff; border:1px solid ${isSelected ? 'var(--brass)' : 'var(--line)'}; border-radius:8px; padding:10px; ${isSelected ? 'box-shadow:0 0 0 2px rgba(163,132,74,0.2);' : ''}">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <strong style="font-size:0.8rem;">${escapeHtml(item.name)}</strong>
-                  <span style="font-family:'Space Mono',monospace; color:var(--brass-dark);">₱${Number(item.price).toFixed(2)}</span>
+              <div style="background:#fff; border:1px solid ${isSelected ? 'var(--brass)' : 'var(--line)'}; border-radius:8px; padding:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px;">
+                  <strong style="font-size:0.80rem; line-height:1.2;">${escapeHtml(item.name)}</strong>
+                  <span style="font-family:'Space Mono',monospace; font-size:0.78rem; font-weight:700; color:var(--brass-dark); white-space:nowrap;">₱${Number(item.price).toFixed(2)}</span>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                   <div class="stepper" style="flex-shrink:0;">
@@ -899,10 +1329,10 @@
                     <span class="qty-val" data-id="${item.id}">${qty}</span>
                     <button type="button" class="qty-inc" data-id="${item.id}">+</button>
                   </div>
-                  <button type="button" class="btn ${isSelected ? 'btn-danger' : 'btn-ghost'}" 
+                  <button type="button" class="res-btn ${isSelected ? 'res-btn-danger' : 'res-btn-primary'}" 
                     data-action="${isSelected ? 'remove' : 'add'}" 
                     data-id="${item.id}"
-                    style="flex:1; padding:6px 10px; font-size:0.7rem;"
+                    style="flex:1;"
                   >${isSelected ? 'Remove' : 'Add'}</button>
                 </div>
               </div>
@@ -915,7 +1345,6 @@
     const updateView = () => {
       contentEl.innerHTML = renderCategoryTabs() + renderItems(activeCategory);
       
-      // Bind category tabs
       contentEl.querySelectorAll('[data-category]').forEach(btn => {
         btn.addEventListener('click', () => {
           activeCategory = btn.dataset.category;
@@ -923,7 +1352,6 @@
         });
       });
 
-      // Bind quantity buttons
       contentEl.querySelectorAll('.qty-inc, .qty-dec').forEach(btn => {
         btn.addEventListener('click', () => {
           const itemId = Number(btn.dataset.id);
@@ -932,16 +1360,12 @@
         });
       });
 
-      // Bind add/remove buttons
       contentEl.querySelectorAll('[data-action]').forEach(btn => {
         btn.addEventListener('click', () => {
           const itemId = Number(btn.dataset.id);
           const action = btn.dataset.action;
-          if (action === 'add') {
-            addItemToOrder(itemId);
-          } else {
-            removeItemFromOrder(itemId);
-          }
+          if (action === 'add') addItemToOrder(itemId, categories);
+          else removeItemFromOrder(itemId);
           updateView();
           updateCurrentOrderDisplay(backdrop);
         });
@@ -952,8 +1376,12 @@
     updateCurrentOrderDisplay(backdrop);
   }
 
-  function addItemToOrder(itemId) {
-    const item = menuItems.find(m => m.id === itemId);
+  function addItemToOrder(itemId, categories) {
+    let item = null;
+    for (const cat in categories) {
+      const found = categories[cat].find(m => m.id === itemId);
+      if (found) { item = found; break; }
+    }
     if (!item) return;
     
     const key = `${itemId}||`;
@@ -966,7 +1394,6 @@
   }
 
   function removeItemFromOrder(itemId) {
-    // Find and remove all entries for this menu item
     const keysToRemove = Array.from(orderEditorState.selectedItems.keys()).filter(k => k.startsWith(`${itemId}|`));
     keysToRemove.forEach(k => orderEditorState.selectedItems.delete(k));
   }
@@ -974,7 +1401,6 @@
   function handleQuantityChange(itemId, delta) {
     const key = Array.from(orderEditorState.selectedItems.keys()).find(k => k.startsWith(`${itemId}|`));
     if (!key) return;
-    
     const item = orderEditorState.selectedItems.get(key);
     item.quantity = Math.max(1, item.quantity + delta);
     orderEditorState.selectedItems.set(key, item);
@@ -986,7 +1412,7 @@
     const totalDisplay = backdrop.querySelector('#orderTotalDisplay');
 
     if (orderEditorState.selectedItems.size === 0) {
-      container.innerHTML = '<div style="padding:12px; color:var(--ink-muted); text-align:center;">No items added yet</div>';
+      container.innerHTML = '<div style="padding:12px; color:var(--ink-muted); text-align:center; font-size:0.80rem;">No items selected yet.</div>';
       totalRow.style.display = 'none';
       return;
     }
@@ -999,11 +1425,10 @@
       total += addonTotal;
 
       return `
-        <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px dashed var(--line);">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--line); font-size:0.82rem;">
           <div>
             <strong>${escapeHtml(data.menuItem.name)}</strong>
-            ${data.notes ? `<div class="item-notes">${escapeHtml(data.notes)}</div>` : ''}
-            <span style="font-family:'Space Mono',monospace; color:var(--brass);">× ${data.quantity}</span>
+            <span style="font-family:'Space Mono',monospace; color:var(--brass-dark); margin-left:6px;">× ${data.quantity}</span>
           </div>
           <span style="font-family:'Space Mono',monospace; font-weight:700; color:var(--brass-dark);">
             ₱${(subtotal + addonTotal).toFixed(2)}
@@ -1026,8 +1451,6 @@
       return;
     }
 
-    const customOrderNotes = backdrop.querySelector('#customOrderNotes')?.value.trim() || '';
-
     const items = Array.from(orderEditorState.selectedItems.values()).map(data => ({
       menu_id: data.menuItem.id,
       quantity: data.quantity,
@@ -1039,7 +1462,7 @@
     }));
 
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving...';
+    saveBtn.textContent = 'Saving…';
     errEl.classList.remove('show');
 
     try {
@@ -1048,8 +1471,7 @@
         body: JSON.stringify({ 
           items, 
           status: 'editable',
-          admin_override: adminOverride,
-          custom_order_notes: customOrderNotes
+          admin_override: adminOverride
         }),
       });
       const data = await res.json();
@@ -1057,7 +1479,6 @@
 
       toast('Order saved successfully.', 'success');
       closeModals();
-      // Reopen manage modal to show updated order
       openManageModal(reservationId);
     } catch (err) {
       errEl.textContent = err.message;
@@ -1069,7 +1490,7 @@
   }
 
   async function finalizeOrder(id) {
-    const ok = await confirmDialog('Finalize this order? The customer will no longer be able to request changes (except admin override).', { confirmLabel: 'Finalize Order' });
+    const ok = await confirmDialog('Finalize this order? The customer will no longer be able to request modifications.', { confirmLabel: 'Finalize Order' });
     if (!ok) return;
     try {
       const res = await adminFetch(`/api/admin/reservations/${id}/reservation-status`, {
@@ -1092,34 +1513,39 @@
     document.querySelectorAll('.modal-backdrop').forEach(m => m.remove());
   }
 
-  // ---- Customer details modal (contact info for follow-up calls) ----
-
+  // ---- Customer details modal ----
   function openDetailsModal(id) {
     const r = reservations.find(x => x.id == id);
     if (!r) return;
+    const resStatusLabel = r.reservation_status || r.status;
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop active';
     backdrop.innerHTML = `
-      <div class="modal-box" style="max-width:520px;">
-        <h3>${escapeHtml(r.customer_name)}</h3>
-        <div class="detail-list">
+      <div class="modal-box" style="max-width:500px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3 style="margin:0;">Reservation #${r.id}</h3>
+          <button type="button" class="res-btn" id="detailsCloseBtn">✕</button>
+        </div>
+        <div class="detail-list" style="margin-bottom:20px;">
+          <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
           <dt>Email</dt>
           <dd>${r.customer_email ? `<a href="mailto:${escapeHtml(r.customer_email)}">${escapeHtml(r.customer_email)}</a>` : '—'}</dd>
           <dt>Phone</dt>
           <dd>${r.customer_phone ? `<a href="tel:${escapeHtml(r.customer_phone)}">${escapeHtml(r.customer_phone)}</a>` : '—'}</dd>
-          <dt>Reservation</dt>
-          <dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
-          <dt>Guests</dt><dd>${r.guests}</dd>
-          <dt>Table</dt><dd>${r.table_no ? escapeHtml(r.table_no) : 'Not yet assigned'}</dd>
-          <dt>Status</dt><dd><span class="pill ${STATUS_PILL[r.status] || 'pill-neutral'}">${escapeHtml(r.status)}</span></dd>
-          <dt>Requested</dt><dd>${formatDate(r.datetime_reserved)}</dd>
-          <dt>Notes</dt><dd style="white-space:pre-wrap;">${r.notes ? escapeHtml(r.notes) : '—'}</dd>
+          <dt>Date &amp; Time</dt>
+          <dd><b>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}</b> at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dt>Guests</dt><dd><span class="guests-badge">${r.guests} guests</span></dd>
+          <dt>Table</dt><dd>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span style="color:var(--ink-muted);">Not yet assigned</span>'}</dd>
+          <dt>Status</dt><dd><span class="res-status-pill ${STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></dd>
+          <dt>Requested</dt><dd style="font-family:'Space Mono',monospace; font-size:0.74rem;">${formatDate(r.datetime_reserved)}</dd>
+          <dt>Notes</dt><dd style="white-space:pre-wrap; font-size:0.82rem;">${r.notes ? escapeHtml(r.notes) : '—'}</dd>
         </div>
         <div class="modal-close-row"><button class="btn" id="detailsClose">Close</button></div>
       </div>
     `;
     document.body.appendChild(backdrop);
     backdrop.querySelector('#detailsClose').addEventListener('click', () => backdrop.remove());
+    backdrop.querySelector('#detailsCloseBtn').addEventListener('click', () => backdrop.remove());
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
   }
 
@@ -1128,8 +1554,8 @@
     if (!r) return;
 
     const verbMap = {
-      contact_customer: 'Mark as contacted customer?',
-      order_finalized: 'Finalize this order? Changes will be locked after this (except admin override).',
+      contact_customer: 'Mark customer as contacted?',
+      order_finalized: 'Finalize this order? Modifications will be locked after this.',
     };
     const verb = verbMap[reservationStatus] || `Change reservation status to ${reservationStatus}?`;
     const confirmLabelMap = {
@@ -1149,15 +1575,12 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not update reservation status.');
 
-      // Update local data
       const r0 = reservations.find(x => x.id == id);
       if (r0) {
         r0.reservation_status = reservationStatus;
-        if (data.reservation) {
-          Object.assign(r0, data.reservation);
-        }
+        if (data.reservation) Object.assign(r0, data.reservation);
       }
-      toast(`${reservationStatus.replace(/_/g, ' ')} updated.`, 'success');
+      toast(`Status updated: ${reservationStatus.replace(/_/g, ' ')}.`, 'success');
       render();
       closeModals();
     } catch (err) {
@@ -1187,7 +1610,6 @@
   }
 
   // ---- Shared helpers ----
-
   function toast(msg, kind = '') {
     let el = document.querySelector('.toast');
     if (!el) {
@@ -1205,15 +1627,12 @@
 
   function parseDateOnly(s) {
     if (!s) return null;
-    // Handle both "YYYY-MM-DD" and ISO "YYYY-MM-DDTHH:mm:ss.sssZ" formats
     const str = String(s);
-    const datePart = str.split('T')[0]; // Get date portion before 'T'
+    const datePart = str.split('T')[0];
     const [y, m, d] = datePart.split('-').map(Number);
     return new Date(y, (m || 1) - 1, d || 1);
   }
 
-  // Whole-day difference; date-only strings avoid the UTC/local TZ mismatch
-  // you get from `new Date('YYYY-MM-DD')`.
   function dayDiff(dateStr, today) {
     const d = parseDateOnly(dateStr);
     if (!d) return Infinity;
@@ -1222,7 +1641,7 @@
 
   function fmtDate(dateStr) {
     const d = parseDateOnly(dateStr);
-    return d ? d.toLocaleDateString('en-PH') : '—';
+    return d ? d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
   }
 </script>
 </body>

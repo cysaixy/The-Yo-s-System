@@ -258,12 +258,13 @@ body {
 }
 
 .admin-header {
-  background: linear-gradient(112deg, #1c1e24 0%, #23201a 100%);
+  background: #1b1d22;
   color: #fff;
   padding: 0 28px;
   height: var(--header-h);
   display: flex; align-items: center; justify-content: space-between;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.16), 0 1px 0 rgba(255,255,255,0.04) inset;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   position: sticky; top: 0; z-index: 50;
   flex-shrink: 0;
 }
@@ -275,10 +276,7 @@ body {
   font-size: 1.15rem;
   letter-spacing: 0.03em;
   margin: 0;
-  background: linear-gradient(90deg, #fff 60%, rgba(196,169,110,0.85) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff;
 }
 
 .admin-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
