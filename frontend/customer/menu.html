@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Menu — The~Yo's</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=5">
 <style>
   /* ---------- Menu page: photo cards + add-to-cart ---------- */
   .menu-grid { grid-template-columns: 1fr 1fr; gap: 16px 32px; }
@@ -93,12 +93,12 @@
 
     <p class="menu-photo-note" style="margin-top:-40px; margin-bottom:36px;">Tip: tap <strong style="color:var(--brass);">+ Add</strong> on anything you like — your picks are waiting for you when you check out.</p>
 
-    <nav class="menu-tabs" role="tablist" aria-label="Menu categories">
+    <div class="menu-tabs" role="tablist" aria-label="Menu categories">
       <button class="tab-btn active" data-tab="rice-meals-bowls" role="tab" aria-selected="true" aria-controls="rice-meals-bowls" id="tab-rice">Rice Meals &amp; Bowls</button>
       <button class="tab-btn" data-tab="wings-noodles-snacks" role="tab" aria-selected="false" aria-controls="wings-noodles-snacks" id="tab-wings">Wings, Noodles &amp; Snacks</button>
       <button class="tab-btn" data-tab="espresso-coffee" role="tab" aria-selected="false" aria-controls="espresso-coffee" id="tab-espresso">Espresso &amp; Coffee</button>
       <button class="tab-btn" data-tab="specialty-beverages" role="tab" aria-selected="false" aria-controls="specialty-beverages" id="tab-specialty">Specialty Beverages</button>
-    </nav>
+    </div>
 
     <div class="menu-grid active" id="rice-meals-bowls" role="tabpanel" aria-labelledby="tab-rice">
       <div class="menu-item" data-id="pork-sisig-rice-meal" data-name="Pork Sisig Rice Meal" data-price="100">

@@ -7,152 +7,494 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css?v=4">
 <style>
-  .pos-layout { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 22px; align-items: start; }
-  @media (max-width: 1000px) { .pos-layout { grid-template-columns: 1fr; } }
 
-  .pos-search-row { display: flex; gap: 10px; margin-bottom: 14px; }
-  .pos-search-row input[type="text"] {
-    flex: 1; padding: 11px 14px; border: 1px solid var(--line); border-radius: 6px;
-    font-family: 'Inter', sans-serif; font-size: 0.88rem; background: var(--component-bg); color: var(--ink);
-  }
-  .pos-search-row select {
-    padding: 11px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--component-bg);
-    font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--ink); min-width: 200px;
-  }
+/* ================================================================
+   POS PAGE OVERRIDE — make admin-body fill height, no padding
+   ================================================================ */
+.admin-body { padding: 0 !important; display: flex; flex-direction: column; }
+.admin-section { max-width: none !important; flex: 1; display: flex; flex-direction: column; }
 
-  .pos-list { background:transparent; border:0; border-radius:0; overflow:visible; }
-  .pos-product-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:14px; }
-  .pos-product-card { overflow:hidden; min-height:230px; border:1px solid var(--line); border-radius:12px; background:var(--component-bg); box-shadow:var(--shadow-sm); cursor:pointer; transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
-  .pos-product-card:hover { transform:translateY(-3px); border-color:var(--brass); box-shadow:var(--shadow-md); }
-  .pos-product-image { height:112px; position:relative; overflow:hidden; background:linear-gradient(135deg, #ebe1d0, #c5ad80); }
-  .pos-product-image img { width:100%; height:100%; object-fit:cover; display:block; }
-  .pos-product-fallback { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:2rem; color:rgba(255,255,255,.9); }
-  .pos-product-image.has-image .pos-product-fallback { display:none; }
-  .pos-product-copy { padding:12px 13px 13px; display:flex; flex-direction:column; min-height:118px; }
-  .pos-product-card .n { font-weight:700; font-size:.86rem; line-height:1.3; }
-  .pos-product-card .cat { font-size:.68rem; color:var(--ink-muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .pos-product-card .product-foot { display:flex; align-items:flex-end; justify-content:space-between; gap:8px; margin-top:auto; padding-top:10px; }
-  .pos-product-card .p { font-family:'Space Mono', monospace; color:var(--brass-dark); font-weight:700; font-size:.88rem; }
-  .pos-add-mark { width:29px; height:29px; border:0; border-radius:8px; background:var(--brass); color:#fff; font-size:1rem; font-weight:700; pointer-events:none; }
-  .addon-flag {
-    display: inline-block; margin-left: 8px; padding: 2px 7px; border-radius: 20px;
-    font-family: 'Space Mono', monospace; font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
-    background: rgba(163,132,74,0.15); color: var(--brass-dark); vertical-align: middle;
-  }
-  .pos-layout > .admin-panel { position:sticky; top:20px; box-shadow:var(--shadow-md); }
+/* ================================================================
+   POS WORKSPACE — two-panel horizontal split
+   ================================================================ */
+.pos-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  height: calc(100vh - var(--header-h));
+  overflow: hidden;
+}
 
-  .pos-right-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
-  .pos-right-head h3 { margin: 0; font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 0.95rem; }
-  .pos-right-head select {
-    padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bone);
-    font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--ink);
-  }
+/* LEFT PANEL */
+.pos-left {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+  background: var(--bone);
+}
 
-  .pos-order-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  .pos-order-table th {
-    text-align: left; padding: 10px 16px; font-family: 'Space Mono', monospace; font-size: 0.62rem;
-    text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.5; border-bottom: 1px solid var(--line);
-  }
-  .pos-order-table th:last-child, .pos-order-table td:last-child { text-align: right; }
-  .pos-order-table th:nth-child(2), .pos-order-table td:nth-child(2) { text-align: right; }
-  .pos-order-table td { padding: 10px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  .pos-order-table .item-notes { display: block; font-size: 0.72rem; opacity: 0.55; margin-top: 2px; }
-  .pos-order-table .addon-notes { color: var(--brass-dark); opacity: 0.85; }
-  .cart-item-head { display: flex; align-items: center; gap: 6px; }
-  .cart-item-head .nm { font-weight: 600; }
-  .edit-line-btn {
-    border: 1px solid var(--line); background: var(--bone); border-radius: 4px; cursor: pointer;
-    width: 20px; height: 20px; font-size: 0.72rem; line-height: 1; color: var(--brass-dark); flex-shrink: 0;
-  }
-  .edit-line-btn:hover { border-color: var(--brass); }
-  .qty-controls { display: flex; align-items: center; gap: 6px; }
-  .qty-controls button {
-    width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--line); background: var(--component-bg);
-    cursor: pointer; font-weight: 700; color: var(--ink); line-height: 1;
-  }
-  .qty-controls span { font-family: 'Space Mono', monospace; min-width: 18px; text-align: center; }
-  .remove-line-btn { border: none; background: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; }
+.pos-left-toolbar {
+  flex-shrink: 0;
+  padding: 18px 22px 14px;
+  background: var(--component-bg);
+  border-bottom: 1px solid var(--line);
+}
 
-  .pos-empty-orders { padding: 40px 20px; text-align: center; opacity: 0.5; font-size: 0.85rem; }
+.pos-search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
 
-  .pos-summary { padding: 14px 20px; border-top: 1px solid var(--line); }
-  .pos-summary .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 0.86rem; }
-  .pos-summary .row.grand { font-weight: 700; font-size: 1rem; border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 12px; }
-  .pos-summary .row input[type="number"] {
-    width: 100px; text-align: right; padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px;
-    font-family: 'Space Mono', monospace; font-size: 0.85rem; background: var(--bone); color: var(--ink);
-  }
+.pos-search-row input[type="text"] {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.88rem;
+  background: var(--bone);
+  color: var(--ink);
+  transition: border-color 0.14s;
+}
+.pos-search-row input[type="text"]:focus {
+  outline: none;
+  border-color: var(--brass);
+  background: #fff;
+}
 
-  .pos-actions { padding: 16px 20px; border-top: 1px solid var(--line); }
-  .pos-actions input[type="number"] {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 10px;
-    font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bone); color: var(--ink);
-  }
-  .pos-payment {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 10px;
-    font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bone); color: var(--ink); cursor: pointer;
-  }
-  .pos-actions-row { display: flex; gap: 10px; }
-  .pos-actions-row button { flex: 1; }
+.pos-cat-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-  .cust-search-wrap { position: relative; }
-  .cust-results {
-    position: absolute; top: 100%; left: 0; right: 0; z-index: 20;
-    background: var(--component-bg); border: 1px solid var(--line); border-radius: 6px;
-    margin-top: 4px; max-height: 220px; overflow-y: auto; box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-  }
-  .cust-result-row { padding: 10px 12px; cursor: pointer; font-size: 0.85rem; border-bottom: 1px solid var(--line); }
-  .cust-result-row:last-child { border-bottom: none; }
-  .cust-result-row:hover { background: var(--stone); }
-  .cust-result-row .cn { font-weight: 700; }
-  .cust-result-row .ce { font-size: 0.75rem; opacity: 0.6; font-family: 'Space Mono', monospace; }
-  .cust-empty-hint { padding: 10px 12px; font-size: 0.8rem; opacity: 0.55; }
-  .cust-selected {
-    display: flex; align-items: center; justify-content: space-between;
-    background: var(--stone); border: 1px solid var(--line); border-radius: 6px;
-    padding: 10px 12px; font-size: 0.85rem; margin-bottom: 10px;
-  }
-  .cust-selected .cn { font-weight: 700; }
-  .cust-selected .ce { font-size: 0.72rem; opacity: 0.6; font-family: 'Space Mono', monospace; }
-  .cust-selected button { border: none; background: none; color: var(--brass-dark); font-size: 0.72rem; text-transform: uppercase; font-family: 'Space Mono', monospace; cursor: pointer; font-weight: 700; }
-  .pos-actions input[type="text"] {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px;
-    font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bone); color: var(--ink);
-  }
+.pos-cat-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--bone);
+  color: var(--ink-muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.14s;
+  white-space: nowrap;
+}
+.pos-cat-pill:hover {
+  border-color: var(--brass);
+  color: var(--brass-dark);
+  background: rgba(163,132,74,0.07);
+}
+.pos-cat-pill.active {
+  background: var(--brass);
+  border-color: var(--brass);
+  color: #fff;
+}
 
-  /* ---- Customize modal ---- */
-  .cust-qty-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .cust-qty-row label { font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase; opacity: 0.55; }
-  .cust-qty-row .qty-controls button { width: 30px; height: 30px; font-size: 1rem; }
+/* SCROLLABLE PRODUCT AREA */
+.pos-product-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 22px;
+  overscroll-behavior: contain;
+}
 
-  .cust-addon-section { margin-bottom: 16px; }
-  .cust-addon-section > label { font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase; opacity: 0.55; display: block; margin-bottom: 6px; }
-  .cust-addon-list { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .cust-addon-row {
-    display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
-    padding: 10px 14px; border-bottom: 1px solid var(--line); transition: background .12s;
+.pos-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 14px;
+}
+
+.pos-product-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--component-bg);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+.pos-product-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--brass);
+  box-shadow: var(--shadow-md);
+}
+
+.pos-product-image {
+  height: 110px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ebe1d0, #c5ad80);
+}
+.pos-product-image img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+.pos-product-fallback {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; color: rgba(255,255,255,.9);
+}
+.pos-product-image.has-image .pos-product-fallback { display: none; }
+
+.pos-product-copy {
+  padding: 11px 13px 12px;
+  display: flex; flex-direction: column;
+}
+.pos-product-card .n {
+  font-weight: 700; font-size: .85rem; line-height: 1.3;
+}
+.pos-product-card .cat {
+  font-size: .68rem; color: var(--ink-muted);
+  margin-top: 3px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.pos-product-card .product-foot {
+  display: flex; align-items: flex-end;
+  justify-content: space-between; gap: 8px;
+  margin-top: 10px;
+}
+.pos-product-card .p {
+  font-family: 'Space Mono', monospace;
+  color: var(--brass-dark); font-weight: 700; font-size: .88rem;
+}
+.pos-add-mark {
+  width: 30px; height: 30px;
+  border: 0; border-radius: 8px;
+  background: var(--brass); color: #fff;
+  font-size: 1.1rem; font-weight: 700;
+  pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.14s;
+}
+.pos-product-card:hover .pos-add-mark { background: var(--brass-dark); }
+
+.addon-flag {
+  display: inline-block; margin-left: 6px;
+  padding: 2px 6px; border-radius: 20px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem; font-weight: 700; text-transform: uppercase;
+  background: rgba(163,132,74,0.14); color: var(--brass-dark);
+  vertical-align: middle;
+}
+
+/* ================================================================
+   RIGHT PANEL — Orders cart
+   ================================================================ */
+.pos-right {
+  display: flex;
+  flex-direction: column;
+  background: var(--component-bg);
+  overflow: hidden;
+}
+
+/* Orders Header */
+.pos-orders-head {
+  flex-shrink: 0;
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(to bottom, #fdfaf5, #fff);
+}
+.pos-orders-head h3 {
+  margin: 0;
+  font-family: 'Archivo', sans-serif;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+}
+.pos-orders-head select {
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bone);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* Order table header */
+.pos-order-thead {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--stone);
+}
+.pos-order-thead span {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+.pos-order-thead span:nth-child(2),
+.pos-order-thead span:nth-child(3),
+.pos-order-thead span:nth-child(4) { text-align: right; }
+
+/* Cart items — scrollable */
+.pos-cart-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pos-empty-orders {
+  padding: 50px 20px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+.pos-empty-orders svg {
+  display: block; margin: 0 auto 12px;
+  opacity: 0.25;
+}
+
+/* Cart rows */
+.pos-cart-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0;
+  align-items: start;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.12s;
+}
+.pos-cart-row:hover { background: #faf7f2; }
+.pos-cart-row:last-child { border-bottom: none; }
+
+.pos-cart-row .item-name { font-weight: 600; font-size: 0.84rem; line-height: 1.3; }
+.pos-cart-row .item-notes {
+  display: block; font-size: 0.71rem;
+  opacity: 0.55; margin-top: 2px;
+}
+.pos-cart-row .addon-notes { color: var(--brass-dark); opacity: 0.85; }
+
+.cart-row-actions { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.edit-line-btn {
+  border: 1px solid var(--line); background: var(--bone);
+  border-radius: 4px; cursor: pointer;
+  width: 20px; height: 20px; font-size: 0.72rem;
+  line-height: 1; color: var(--brass-dark); flex-shrink: 0;
+}
+.edit-line-btn:hover { border-color: var(--brass); }
+
+.pos-cart-row .unit-price {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem; color: var(--ink-muted);
+  text-align: right; padding: 0 10px;
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+.qty-controls {
+  display: flex; align-items: center; gap: 4px;
+  padding: 0 8px;
+}
+.qty-controls button {
+  width: 22px; height: 22px;
+  border-radius: 4px; border: 1px solid var(--line);
+  background: var(--component-bg);
+  cursor: pointer; font-weight: 700;
+  color: var(--ink); line-height: 1;
+  transition: border-color 0.12s, background 0.12s;
+}
+.qty-controls button:hover { border-color: var(--brass); background: var(--stone); }
+.qty-controls span {
+  font-family: 'Space Mono', monospace;
+  min-width: 20px; text-align: center; font-size: 0.82rem;
+}
+
+.pos-cart-row .line-total {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.82rem; font-weight: 700;
+  text-align: right; white-space: nowrap;
+  padding-top: 2px;
+}
+.remove-line-btn {
+  display: block; width: 100%;
+  border: none; background: none;
+  color: var(--danger); cursor: pointer;
+  font-size: 0.75rem; text-align: right;
+  padding: 2px 0;
+  opacity: 0.6; transition: opacity 0.12s;
+}
+.remove-line-btn:hover { opacity: 1; }
+
+/* Totals area */
+.pos-summary {
+  flex-shrink: 0;
+  padding: 14px 20px;
+  border-top: 2px solid var(--line);
+  background: #fdfaf5;
+}
+.pos-summary .sum-row {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 5px 0;
+  font-size: 0.84rem;
+}
+.pos-summary .sum-row span:first-child { color: var(--ink-muted); }
+.pos-summary .sum-row input[type="number"] {
+  width: 90px; text-align: right;
+  padding: 4px 7px;
+  border: 1px solid var(--line); border-radius: 5px;
+  font-family: 'Space Mono', monospace; font-size: 0.82rem;
+  background: var(--bone); color: var(--ink);
+}
+.pos-summary .sum-grand {
+  display: flex; justify-content: space-between;
+  align-items: center;
+  font-weight: 700; font-size: 1rem;
+  border-top: 2px solid var(--ink);
+  margin-top: 8px; padding-top: 10px;
+}
+
+/* Actions */
+.pos-actions {
+  flex-shrink: 0;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+
+.pos-payment-select {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--line); border-radius: 7px;
+  margin-bottom: 10px;
+  font-family: 'Inter', sans-serif; font-size: 0.84rem;
+  background: var(--bone); color: var(--ink);
+  cursor: pointer;
+}
+
+.cust-search-wrap { position: relative; margin-bottom: 8px; }
+.cust-search-wrap input[type="text"] {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--line); border-radius: 7px;
+  font-family: 'Inter', sans-serif; font-size: 0.84rem;
+  background: var(--bone); color: var(--ink);
+}
+.cust-results {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 20;
+  background: var(--component-bg); border: 1px solid var(--line);
+  border-radius: 6px; margin-top: 4px;
+  max-height: 200px; overflow-y: auto;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
+.cust-result-row {
+  padding: 10px 12px; cursor: pointer;
+  font-size: 0.84rem; border-bottom: 1px solid var(--line);
+}
+.cust-result-row:last-child { border-bottom: none; }
+.cust-result-row:hover { background: var(--stone); }
+.cust-result-row .cn { font-weight: 700; }
+.cust-result-row .ce { font-size: 0.73rem; opacity: 0.6; font-family: 'Space Mono', monospace; }
+.cust-empty-hint { padding: 10px 12px; font-size: 0.8rem; opacity: 0.55; }
+.cust-selected {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--stone); border: 1px solid var(--line); border-radius: 6px;
+  padding: 9px 12px; font-size: 0.84rem; margin-bottom: 8px;
+}
+.cust-selected .cn { font-weight: 700; }
+.cust-selected .ce { font-size: 0.71rem; opacity: 0.6; font-family: 'Space Mono', monospace; }
+.cust-selected button {
+  border: none; background: none; color: var(--brass-dark);
+  font-size: 0.70rem; text-transform: uppercase;
+  font-family: 'Space Mono', monospace; cursor: pointer; font-weight: 700;
+}
+
+.pos-hint {
+  font-size: 0.70rem; color: var(--ink-muted);
+  margin: 4px 0 10px;
+}
+
+.pos-actions-row {
+  display: flex; gap: 10px; margin-top: 4px;
+}
+.pos-actions-row button { flex: 1; }
+
+/* ================================================================
+   CUSTOMIZE MODAL
+   ================================================================ */
+.cust-qty-row {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 16px;
+}
+.cust-qty-row label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.66rem; text-transform: uppercase; opacity: 0.55;
+}
+.cust-qty-row .qty-controls button { width: 30px; height: 30px; font-size: 1rem; }
+
+.cust-addon-section { margin-bottom: 16px; }
+.cust-addon-section > label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.66rem; text-transform: uppercase;
+  opacity: 0.55; display: block; margin-bottom: 6px;
+}
+.cust-addon-list { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.cust-addon-row {
+  display: grid; grid-template-columns: 1fr auto auto;
+  gap: 12px; align-items: center;
+  padding: 10px 14px; border-bottom: 1px solid var(--line);
+  transition: background .12s;
+}
+.cust-addon-row:last-child { border-bottom: none; }
+.cust-addon-row.is-selected { background: rgba(163,132,74,0.06); }
+.cust-addon-row.is-disabled { opacity: 0.5; }
+.cust-addon-check { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.cust-addon-check input { width: 16px; height: 16px; accent-color: var(--brass-dark); flex-shrink: 0; }
+.cust-addon-check .cn { font-size: 0.86rem; font-weight: 600; }
+.cust-addon-check .cs { font-size: 0.72rem; opacity: 0.55; margin-top: 1px; }
+.cust-addon-row .cp { font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 700; color: var(--brass-dark); }
+.cust-addon-row .qty-controls button { width: 22px; height: 22px; }
+
+.modal-box.cust-modal { max-width: 520px; width: 100%; }
+.cust-totals {
+  background: var(--stone); border: 1px solid var(--line);
+  border-radius: 8px; padding: 12px 14px; margin: 16px 0;
+}
+.cust-totals .row {
+  display: flex; justify-content: space-between;
+  padding: 4px 0; font-size: 0.84rem;
+}
+.cust-totals .row.grand {
+  font-weight: 700; border-top: 2px solid var(--ink);
+  margin-top: 6px; padding-top: 10px; font-size: 0.95rem;
+}
+
+/* ================================================================
+   RESPONSIVE — stack on narrow screens
+   ================================================================ */
+@media (max-width: 900px) {
+  .pos-workspace {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
   }
-  .cust-addon-row:last-child { border-bottom: none; }
-  .cust-addon-row.is-selected { background: rgba(163,132,74,0.06); }
-  .cust-addon-row.is-disabled { opacity: 0.5; }
-  .cust-addon-check { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-  .cust-addon-check input { width: 16px; height: 16px; accent-color: var(--brass-dark); flex-shrink: 0; }
-  .cust-addon-check .cn { font-size: 0.86rem; font-weight: 600; }
-  .cust-addon-check .cs { font-size: 0.72rem; opacity: 0.55; margin-top: 1px; }
-  .cust-addon-row .cp { font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 700; color: var(--brass-dark); }
-  .cust-addon-row .qty-controls button { width: 22px; height: 22px; }
-
-  .modal-box.cust-modal { max-width: 520px; width: 100%; }
-  .cust-totals { background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 16px 0; }
-  .cust-totals .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.84rem; }
-  .cust-totals .row.grand { font-weight: 700; border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 10px; font-size: 0.95rem; }
-
-  @media (max-width: 640px) {
-    .pos-search-row { flex-direction: column; }
-    .pos-search-row select { min-width: 0; width: 100%; }
-    .pos-product-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-    .pos-actions-row { flex-direction: column; }
+  .pos-left {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
   }
+  .pos-product-scroll { overflow: visible; max-height: none; }
+  .pos-right { overflow: visible; }
+  .pos-cart-scroll { overflow: visible; max-height: none; }
+  .admin-body { overflow: auto; }
+  .admin-section { overflow: visible; }
+}
+
+@media (max-width: 480px) {
+  .pos-product-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .pos-actions-row { flex-direction: column; }
+}
+
 </style>
 </head>
 <body>
@@ -183,17 +525,28 @@
   function init() {
     const content = document.getElementById('adminContent');
     content.innerHTML = `
-      <div class="pos-layout">
-        <div>
-          <div class="pos-search-row">
-            <input type="text" id="posSearch" placeholder="Search by product name...">
-            <select id="catFilterSelect"><option value="all">All Categories</option></select>
+      <div class="pos-workspace">
+
+        <!-- ============ LEFT: Product Area ============ -->
+        <div class="pos-left">
+          <div class="pos-left-toolbar">
+            <div class="pos-search-row">
+              <input type="text" id="posSearch" placeholder="Search by product name…">
+            </div>
+            <div class="pos-cat-pills" id="catPillsWrap">
+              <button class="pos-cat-pill active" data-cat="all">All</button>
+            </div>
           </div>
-          <div class="pos-list" id="posListWrap"><div class="admin-loading">Loading menu…</div></div>
+          <div class="pos-product-scroll" id="posListWrap">
+            <div class="admin-loading">Loading menu…</div>
+          </div>
         </div>
 
-        <div class="admin-panel">
-          <div class="pos-right-head">
+        <!-- ============ RIGHT: Orders Panel ============ -->
+        <div class="pos-right">
+
+          <!-- Header row -->
+          <div class="pos-orders-head">
             <h3>Orders</h3>
             <select id="posOrderType">
               <option value="dine_in">Dine In</option>
@@ -201,42 +554,66 @@
             </select>
           </div>
 
-          <table class="pos-order-table">
-            <thead>
-              <tr><th>Description</th><th>Unit Price</th><th>Qty</th><th>Total</th><th></th></tr>
-            </thead>
-            <tbody id="cartTableBody"></tbody>
-          </table>
-          <div id="cartEmptyState" class="pos-empty-orders">Select from the menu to add orders</div>
-
-          <div class="pos-summary">
-            <div class="row"><span>Total Amount</span><span id="sumTotal">₱0.00</span></div>
-            <div class="row"><span>Delivery Fee</span><input type="number" id="deliveryFeeInput" value="0" min="0" step="0.01"></div>
-            <div class="row grand"><span>Grand Total</span><span id="sumGrand">₱0.00</span></div>
+          <!-- Table head -->
+          <div class="pos-order-thead">
+            <span>Description</span>
+            <span>Unit Price</span>
+            <span>Qty</span>
+            <span>Total</span>
           </div>
 
+          <!-- Scrollable cart list -->
+          <div class="pos-cart-scroll" id="cartScrollArea">
+            <div id="cartEmptyState" class="pos-empty-orders">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+              </svg>
+              Select from the menu to add orders
+            </div>
+            <div id="cartRowsWrap"></div>
+          </div>
+
+          <!-- Totals -->
+          <div class="pos-summary">
+            <div class="sum-row"><span>Total Amount</span><span id="sumTotal">₱0.00</span></div>
+            <div class="sum-row">
+              <span>Delivery Fee</span>
+              <input type="number" id="deliveryFeeInput" value="0" min="0" step="0.01">
+            </div>
+            <div class="sum-grand">
+              <span>Grand Total</span>
+              <span id="sumGrand">₱0.00</span>
+            </div>
+          </div>
+
+          <!-- Payment + Customer + Buttons -->
           <div class="pos-actions">
-            <select id="posPayment" class="pos-payment">
+            <select id="posPayment" class="pos-payment-select">
               <option value="cash">Payment Method — Cash</option>
               <option value="card">Payment Method — Card</option>
               <option value="gcash">Payment Method — GCash</option>
               <option value="other">Payment Method — Other</option>
             </select>
+
             <div id="custSelectedWrap" style="display:none;"></div>
             <div id="custSearchWrap" class="cust-search-wrap">
               <input type="text" id="custSearchInput" placeholder="Optional: search customer by name, email, or phone…" autocomplete="off">
               <div class="cust-results" id="custResults" style="display:none;"></div>
             </div>
-            <p style="font-size:0.72rem; color:var(--ink-muted); margin:8px 0 0;">No customer attached? Orders are logged under "Walk-in Customer" automatically.</p>
-            <div class="pos-actions-row" style="margin-top:10px;">
+            <p class="pos-hint">No customer? Orders logged under "Walk-in Customer" automatically.</p>
+
+            <div class="pos-actions-row">
               <button class="btn btn-outline" id="clearOrderBtn">Clear</button>
               <button class="btn" id="submitOrderBtn">Place Order</button>
             </div>
             <div class="admin-error" id="posError" style="display:none; margin-top:10px;"></div>
           </div>
+
         </div>
       </div>
 
+      <!-- ============ CUSTOMIZE MODAL ============ -->
       <div class="modal-backdrop" id="customizeModal">
         <div class="modal-box cust-modal">
           <h3 id="customizeModalTitle">Customize Item</h3>
@@ -275,7 +652,6 @@
     `;
 
     document.getElementById('posSearch').addEventListener('input', (e) => { searchTerm = e.target.value.toLowerCase(); renderList(); });
-    document.getElementById('catFilterSelect').addEventListener('change', (e) => { activeCategoryId = e.target.value; renderList(); });
     document.getElementById('deliveryFeeInput').addEventListener('input', renderCart);
     document.getElementById('clearOrderBtn').addEventListener('click', clearOrder);
     document.getElementById('submitOrderBtn').addEventListener('click', submitOrder);
@@ -306,9 +682,19 @@
       const data = await res.json();
       if (!res.ok) return;
       categories = data.data || [];
-      const select = document.getElementById('catFilterSelect');
-      select.innerHTML = `<option value="all">All Categories</option>` +
-        categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+      const pillsWrap = document.getElementById('catPillsWrap');
+      pillsWrap.innerHTML =
+        `<button class="pos-cat-pill active" data-cat="all">All</button>` +
+        categories.map(c => `<button class="pos-cat-pill" data-cat="${c.id}">${escapeHtml(c.name)}</button>`).join('');
+
+      pillsWrap.querySelectorAll('.pos-cat-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          pillsWrap.querySelectorAll('.pos-cat-pill').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeCategoryId = btn.dataset.cat;
+          renderList();
+        });
+      });
     } catch { /* non-fatal */ }
   }
 
@@ -334,9 +720,6 @@
     } catch { /* non-fatal */ }
   }
 
-  // Add-ons that can go on a given product. An add-on with no product links
-  // is a global add-on and applies to everything; otherwise it must be
-  // explicitly linked to the product.
   function getAddonsForProduct(menuId) {
     return addons.filter(a => {
       if (!a.products || a.products.length === 0) return true;
@@ -357,7 +740,9 @@
       wrap.innerHTML = `<div class="pos-empty-orders">No items match.</div>`;
       return;
     }
-    wrap.innerHTML = visible.map(i => {
+    const grid = document.createElement('div');
+    grid.className = 'pos-product-grid';
+    grid.innerHTML = visible.map(i => {
       const hasAddons = getAddonsForProduct(i.id).length > 0;
       return `
         <div class="pos-product-card" data-id="${i.id}" data-name="${escapeHtml(i.name)}" data-price="${i.price}">
@@ -373,8 +758,11 @@
         </div>
       `;
     }).join('');
-    wrap.innerHTML = `<div class="pos-product-grid">${wrap.innerHTML}</div>`;
-    wrap.querySelectorAll('.pos-product-card').forEach(el => {
+
+    wrap.innerHTML = '';
+    wrap.appendChild(grid);
+
+    grid.querySelectorAll('.pos-product-card').forEach(el => {
       el.addEventListener('click', () => openCustomizeModal(el.dataset.id, el.dataset.name, Number(el.dataset.price)));
     });
   }
@@ -490,8 +878,8 @@
   }
 
   function lineTotal(c) {
-    const addons = (c.add_ons || []).reduce((s, a) => s + Number(a.price) * Number(a.qty), 0);
-    return Number(c.price) * Number(c.qty) + addons;
+    const adds = (c.add_ons || []).reduce((s, a) => s + Number(a.price) * Number(a.qty), 0);
+    return Number(c.price) * Number(c.qty) + adds;
   }
 
   function confirmAddToCart() {
@@ -548,45 +936,44 @@
   }
 
   function renderCart() {
-    const tbody = document.getElementById('cartTableBody');
+    const rowsWrap = document.getElementById('cartRowsWrap');
     const emptyState = document.getElementById('cartEmptyState');
 
     if (cart.length === 0) {
-      tbody.innerHTML = '';
+      rowsWrap.innerHTML = '';
       emptyState.style.display = 'block';
     } else {
       emptyState.style.display = 'none';
-      tbody.innerHTML = cart.map(c => `
-        <tr>
-          <td>
-            <div class="cart-item-head">
-              <span class="nm">${escapeHtml(c.name)}</span>
+      rowsWrap.innerHTML = cart.map(c => `
+        <div class="pos-cart-row">
+          <div>
+            <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+              <span class="item-name">${escapeHtml(c.name)}</span>
               <button class="edit-line-btn" data-id="${c.uniqueId}" title="Customize">✎</button>
             </div>
             ${c.notes ? `<span class="item-notes">${escapeHtml(c.notes)}</span>` : ''}
             ${(c.add_ons || []).length ? `
               <span class="item-notes addon-notes">+ ${c.add_ons.map(a => `${escapeHtml(a.name)} ×${a.qty} (${peso(a.price * a.qty)})`).join(', ')}</span>
             ` : ''}
-          </td>
-          <td>${peso(c.price)}</td>
-          <td>
-            <div class="qty-controls">
-              <button data-id="${c.uniqueId}" data-delta="-1" class="qty-btn">−</button>
-              <span>${c.qty}</span>
-              <button data-id="${c.uniqueId}" data-delta="1" class="qty-btn">+</button>
-            </div>
-          </td>
-          <td>${peso(lineTotal(c))}</td>
-          <td><button data-id="${c.uniqueId}" class="remove-line-btn">✕</button></td>
-        </tr>
+            <button class="remove-line-btn" data-id="${c.uniqueId}">✕ Remove</button>
+          </div>
+          <div class="unit-price">${peso(c.price)}</div>
+          <div class="qty-controls" style="padding: 0 6px;">
+            <button data-id="${c.uniqueId}" data-delta="-1" class="qty-btn">−</button>
+            <span>${c.qty}</span>
+            <button data-id="${c.uniqueId}" data-delta="1" class="qty-btn">+</button>
+          </div>
+          <div class="line-total">${peso(lineTotal(c))}</div>
+        </div>
       `).join('');
-      tbody.querySelectorAll('.qty-btn').forEach(btn => {
+
+      rowsWrap.querySelectorAll('.qty-btn').forEach(btn => {
         btn.addEventListener('click', () => changeQty(btn.dataset.id, Number(btn.dataset.delta)));
       });
-      tbody.querySelectorAll('.remove-line-btn').forEach(btn => {
+      rowsWrap.querySelectorAll('.remove-line-btn').forEach(btn => {
         btn.addEventListener('click', () => removeLine(btn.dataset.id));
       });
-      tbody.querySelectorAll('.edit-line-btn').forEach(btn => {
+      rowsWrap.querySelectorAll('.edit-line-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const line = cart.find(c => c.uniqueId == btn.dataset.id);
           if (line) openCustomizeModal(line.menu_id, line.name, line.price, line);
@@ -637,8 +1024,8 @@
 
       showAlert(`Order #${data.order.id} placed successfully (${peso(data.order.total_amount)}).`, { title: 'Order placed' });
       clearOrder();
-      loadMenu();   // stock quantities changed
-      loadAddons(); // add-on stock may have changed too
+      loadMenu();
+      loadAddons();
     } catch (err) {
       errEl.textContent = err.message;
       errEl.style.display = 'block';
