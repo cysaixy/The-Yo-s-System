@@ -46,6 +46,17 @@ export async function initTables() {
       );
     `);
 
+    // 3b. menu_item_inventory (product ingredients)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS menu_item_inventory (
+        id SERIAL PRIMARY KEY,
+        menu_id INTEGER REFERENCES menu_items(id) ON DELETE CASCADE,
+        inventory_id INTEGER REFERENCES inventory_items(id) ON DELETE CASCADE,
+        quantity NUMERIC(10,2) NOT NULL DEFAULT 1,
+        unit VARCHAR(50)
+      );
+    `);
+
     // 4. addon_products
     await pool.query(`
       CREATE TABLE IF NOT EXISTS addon_products (
@@ -80,6 +91,9 @@ export async function initTables() {
     `);
 
     // 7. Safe column additions for older databases.
+    await pool.query(
+      `ALTER TABLE inventory_log ALTER COLUMN quantity_change TYPE NUMERIC(10,2)`
+    );
     await pool.query(
       `ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS cost NUMERIC(10,2) NOT NULL DEFAULT 0`
     );

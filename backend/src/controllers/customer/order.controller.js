@@ -46,6 +46,7 @@ export async function createOrder(req, res, next) {
 
     // Delivery orders require the customer to provide a
     // delivery location and a contact number. Customers can NEVER set the
+    // delivery location and a contact number. Customers can NEVER set the
     // delivery fee themselves — it starts pending and the Admin assigns it
     // later after checking the location. Any delivery_fee value the client
     // sends is deliberately ignored (never trusted from the browser).
@@ -89,6 +90,20 @@ export async function createOrder(req, res, next) {
       }
       if (menuItem.stock_quantity !== null && menuItem.stock_quantity < menuQty) {
         return res.status(409).json({ error: `${menuItem.name} is out of stock.` });
+      }
+
+      // Check linked raw ingredients for this menu item
+      const { rows: itemComps } = await client.query(
+        `SELECT mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
+         FROM menu_item_inventory mii
+         JOIN inventory_items ii ON ii.id = mii.inventory_id
+         WHERE mii.menu_id = $1`,
+        [menuItem.id]
+      );
+      for (const comp of itemComps) {
+        if (Number(comp.stock_quantity) < Number(comp.quantity) * menuQty) {
+          return res.status(409).json({ error: `${menuItem.name} is out of stock (missing ingredient: ${comp.inventory_name}).` });
+        }
       }
 
       // Validate add-ons with the same rule the kitchen uses: an add-on with
@@ -155,10 +170,12 @@ export async function createOrder(req, res, next) {
       const addonsTotal = addons.reduce((s, a) => s + a.price * a.quantity, 0);
       validatedItems.push({
         menu_id: menuItem.id,
+        name: menuItem.name,
         quantity: menuQty,
         price: round2(menuItem.price),
         cost: round2(menuItem.cost || 0),
         notes: line.notes || null,
+        inventory_components: itemComps,
         addons,
       });
       total_amount += menuItem.price * menuQty + addonsTotal;
@@ -198,6 +215,20 @@ export async function createOrder(req, res, next) {
         [order.id, item.menu_id, item.quantity, item.price, item.cost, subtotal, item.notes]
       );
       const orderItemId = oiRows[0].id;
+
+      // Deduct the product's raw ingredients from inventory
+      for (const comp of item.inventory_components) {
+        const consumed = Number(comp.quantity) * item.quantity;
+        await client.query(
+          `UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2`,
+          [consumed, comp.inventory_id]
+        );
+        await client.query(
+          `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
+           VALUES ($1, NULL, 'sale', $2, $3)`,
+          [item.menu_id, -consumed, `Online Order #${order.id} · ${item.name} (${comp.inventory_name})`]
+        );
+      }
 
       for (const a of item.addons) {
         await client.query(
@@ -239,10 +270,6 @@ export async function createOrder(req, res, next) {
     client.release();
   }
 }
-
-// Builds the correlated JSON-array subquery of an order's line items,
-// including each line's add-on snapshots. `orderRef` is an SQL expression
-// referencing the outer order's id (interpolated constant, never user input).
 const ORDER_ITEM_AGG = (orderRef) => `
   (SELECT COALESCE(json_agg(sub.*), '[]')
    FROM (

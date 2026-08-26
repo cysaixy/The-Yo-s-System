@@ -64,14 +64,31 @@ export const deleteCategory = async (req, res, next) => {
 
 export const listAllMenuItems = async (req, res, next) => {
   try {
-    const { rows } = await pool.query(
+    const { rows: items } = await pool.query(
       `SELECT mi.id, mi.category_id, mi.name, mi.description, mi.price, mi.cost,
               mi.image_url, mi.stock_quantity, mi.status, c.name AS category_name
        FROM menu_items mi
        LEFT JOIN categories c ON c.id = mi.category_id
        ORDER BY mi.name`
     );
-    res.json({ items: rows });
+
+    const itemsWithInv = await Promise.all(
+      items.map(async (item) => {
+        const { rows: invComp } = await pool.query(
+          `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
+           FROM menu_item_inventory mii
+           JOIN inventory_items ii ON ii.id = mii.inventory_id
+           WHERE mii.menu_id = $1`,
+          [item.id]
+        );
+        return {
+          ...item,
+          inventory_components: invComp,
+        };
+      })
+    );
+
+    res.json({ items: itemsWithInv });
   } catch (err) {
     next(err);
   }
@@ -82,7 +99,7 @@ export const getMenuItem = async (req, res, next) => {
     const { id } = req.params;
 
     const { rows } = await pool.query(
-      `SELECT mi.id, mi.category_id, mi.name, mi.description, mi.price, 
+      `SELECT mi.id, mi.category_id, mi.name, mi.description, mi.price, mi.cost,
               mi.image_url, mi.stock_quantity, mi.status, c.name AS category_name
        FROM menu_items mi
        LEFT JOIN categories c ON c.id = mi.category_id
@@ -97,9 +114,20 @@ export const getMenuItem = async (req, res, next) => {
       });
     }
 
+    const { rows: invComp } = await pool.query(
+      `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
+       FROM menu_item_inventory mii
+       JOIN inventory_items ii ON ii.id = mii.inventory_id
+       WHERE mii.menu_id = $1`,
+      [id]
+    );
+
     return res.status(200).json({
       success: true,
-      data: rows[0],
+      data: {
+        ...rows[0],
+        inventory_components: invComp,
+      },
     });
   } catch (err) {
     if (err.code === "22P02") {
@@ -113,44 +141,110 @@ export const getMenuItem = async (req, res, next) => {
 };
 
 export const createMenuItem = async (req, res, next) => {
+  const client = await pool.connect();
   try {
-    const { category_id, name, description, price, cost, image_url, stock_quantity, status } = req.body;
+    const { category_id, name, description, price, cost, image_url, stock_quantity, status, inventory_components } = req.body;
     if (!category_id || !name || price === undefined) {
       return res.status(400).json({ error: "category_id, name, and price are required." });
     }
 
-    const { rows } = await pool.query(
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
       `INSERT INTO menu_items (category_id, name, description, price, cost, image_url, stock_quantity, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, name, price, cost, stock_quantity, status`,
+       RETURNING id, category_id, name, description, price, cost, image_url, stock_quantity, status`,
       [category_id, name, description || null, price, cost || 0, image_url || null, stock_quantity || 0, status || 'available']
     );
-    res.status(201).json({ item: rows[0] });
+    const item = rows[0];
+
+    // Insert linked inventory components
+    if (Array.isArray(inventory_components)) {
+      for (const comp of inventory_components) {
+        if (comp.inventory_id && Number(comp.quantity) > 0) {
+          await client.query(
+            `INSERT INTO menu_item_inventory (menu_id, inventory_id, quantity, unit)
+             VALUES ($1, $2, $3, $4)`,
+            [item.id, comp.inventory_id, comp.quantity, comp.unit || 'g']
+          );
+        }
+      }
+    }
+
+    await client.query("COMMIT");
+
+    const { rows: invComp } = await pool.query(
+      `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
+       FROM menu_item_inventory mii
+       JOIN inventory_items ii ON ii.id = mii.inventory_id
+       WHERE mii.menu_id = $1`,
+      [item.id]
+    );
+
+    res.status(201).json({ item: { ...item, inventory_components: invComp } });
   } catch (err) {
+    await client.query("ROLLBACK");
     next(err);
+  } finally {
+    client.release();
   }
 };
 
 export const updateMenuItem = async (req, res, next) => {
+  const client = await pool.connect();
   try {
-    const { name, description, price, cost, image_url, status, stock_quantity } = req.body;
-    const { rows } = await pool.query(
+    const { category_id, name, description, price, cost, image_url, status, stock_quantity, inventory_components } = req.body;
+
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
       `UPDATE menu_items
-       SET name = COALESCE($1, name),
-           description = COALESCE($2, description),
-           price = COALESCE($3, price),
-           cost = COALESCE($4, cost),
-           image_url = COALESCE($5, image_url),
-           status = COALESCE($6, status),
-           stock_quantity = COALESCE($7, stock_quantity)
-       WHERE id = $8
-       RETURNING id, name, price, cost, status, stock_quantity`,
-      [name, description, price, cost !== undefined ? Number(cost) : undefined, image_url, status, stock_quantity, req.params.id]
+       SET category_id = COALESCE($1, category_id),
+           name = COALESCE($2, name),
+           description = COALESCE($3, description),
+           price = COALESCE($4, price),
+           cost = COALESCE($5, cost),
+           image_url = COALESCE($6, image_url),
+           status = COALESCE($7, status),
+           stock_quantity = COALESCE($8, stock_quantity)
+       WHERE id = $9
+       RETURNING id, category_id, name, description, price, cost, image_url, status, stock_quantity`,
+      [category_id, name, description, price, cost !== undefined ? Number(cost) : undefined, image_url, status, stock_quantity, req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: "Menu item not found." });
-    res.json({ item: rows[0] });
+    if (!rows[0]) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Menu item not found." });
+    }
+
+    // Re-create inventory components if supplied
+    if (Array.isArray(inventory_components)) {
+      await client.query(`DELETE FROM menu_item_inventory WHERE menu_id = $1`, [req.params.id]);
+      for (const comp of inventory_components) {
+        if (comp.inventory_id && Number(comp.quantity) > 0) {
+          await client.query(
+            `INSERT INTO menu_item_inventory (menu_id, inventory_id, quantity, unit) VALUES ($1, $2, $3, $4)`,
+            [req.params.id, comp.inventory_id, comp.quantity, comp.unit || 'g']
+          );
+        }
+      }
+    }
+
+    await client.query("COMMIT");
+
+    const { rows: invComp } = await pool.query(
+      `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
+       FROM menu_item_inventory mii
+       JOIN inventory_items ii ON ii.id = mii.inventory_id
+       WHERE mii.menu_id = $1`,
+      [req.params.id]
+    );
+
+    res.json({ item: { ...rows[0], inventory_components: invComp } });
   } catch (err) {
+    await client.query("ROLLBACK");
     next(err);
+  } finally {
+    client.release();
   }
 };
 

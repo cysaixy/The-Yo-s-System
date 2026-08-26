@@ -135,17 +135,24 @@ export async function deleteItem(req, res, next) {
   try {
     const { id } = req.params;
 
-    // Check if linked to any add-ons
+    // Check if linked to any products or add-ons
+    const linkedProducts = await pool.query(
+      `SELECT m.name FROM menu_items m JOIN menu_item_inventory mii ON mii.menu_id = m.id WHERE mii.inventory_id = $1`,
+      [id]
+    );
     const linkedAddons = await pool.query(
       `SELECT a.name FROM add_ons a JOIN addon_inventory ai ON ai.addon_id = a.id WHERE ai.inventory_id = $1`,
       [id]
     );
 
-    if (linkedAddons.rows.length > 0) {
-      const addonNames = linkedAddons.rows.map(r => r.name).join(", ");
+    if (linkedProducts.rows.length > 0 || linkedAddons.rows.length > 0) {
+      const parts = [];
+      if (linkedProducts.rows.length > 0) parts.push(`products (${linkedProducts.rows.map(r => r.name).join(", ")})`);
+      if (linkedAddons.rows.length > 0) parts.push(`add-ons (${linkedAddons.rows.map(r => r.name).join(", ")})`);
       return res.status(409).json({
-        error: `This inventory item is currently linked to add-ons (${addonNames}). Please remove the linkage first or deactivate the item.`,
-        linked: linkedAddons.rows
+        error: `This inventory item is currently linked to ${parts.join(" and ")}. Please remove the linkage first or deactivate the item.`,
+        linkedProducts: linkedProducts.rows,
+        linkedAddons: linkedAddons.rows
       });
     }
 
