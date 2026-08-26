@@ -9,10 +9,10 @@
 <style>
 
 /* ================================================================
-   POS PAGE OVERRIDE — make admin-body fill height, no padding
+   POS PAGE OVERRIDE — admin-body fills height edge-to-edge
    ================================================================ */
-.admin-body { padding: 0 !important; display: flex; flex-direction: column; }
-.admin-section { max-width: none !important; flex: 1; display: flex; flex-direction: column; }
+.admin-body { padding: 0 !important; display: flex; flex-direction: column; overflow: hidden; }
+.admin-section { max-width: none !important; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ================================================================
    POS WORKSPACE — two-panel horizontal split
@@ -26,372 +26,167 @@
 
 /* LEFT PANEL */
 .pos-left {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  display: flex; flex-direction: column; overflow: hidden;
   border-right: 1px solid var(--line);
   background: var(--bone);
 }
-
 .pos-left-toolbar {
-  flex-shrink: 0;
-  padding: 18px 22px 14px;
+  flex-shrink: 0; padding: 18px 22px 14px;
   background: var(--component-bg);
   border-bottom: 1px solid var(--line);
 }
-
-.pos-search-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
+.pos-search-row { display: flex; gap: 10px; margin-bottom: 12px; }
 .pos-search-row input[type="text"] {
-  flex: 1;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.88rem;
-  background: var(--bone);
-  color: var(--ink);
-  transition: border-color 0.14s;
+  flex: 1; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px;
+  font-family: 'Inter', sans-serif; font-size: 0.88rem;
+  background: var(--bone); color: var(--ink); transition: border-color 0.14s;
 }
-.pos-search-row input[type="text"]:focus {
-  outline: none;
-  border-color: var(--brass);
-  background: #fff;
-}
+.pos-search-row input[type="text"]:focus { outline: none; border-color: var(--brass); background: #fff; }
 
-.pos-cat-pills {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
+.pos-cat-pills { display: flex; gap: 8px; flex-wrap: wrap; }
 .pos-cat-pill {
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid var(--line);
-  background: var(--bone);
-  color: var(--ink-muted);
-  font-family: 'Space Mono', monospace;
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  transition: all 0.14s;
-  white-space: nowrap;
+  padding: 6px 14px; border-radius: 20px; border: 1px solid var(--line);
+  background: var(--bone); color: var(--ink-muted);
+  font-family: 'Space Mono', monospace; font-size: 0.62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  cursor: pointer; transition: all 0.14s; white-space: nowrap;
 }
-.pos-cat-pill:hover {
-  border-color: var(--brass);
-  color: var(--brass-dark);
-  background: rgba(163,132,74,0.07);
-}
-.pos-cat-pill.active {
-  background: var(--brass);
-  border-color: var(--brass);
-  color: #fff;
-}
+.pos-cat-pill:hover { border-color: var(--brass); color: var(--brass-dark); background: rgba(163,132,74,0.07); }
+.pos-cat-pill.active { background: var(--brass); border-color: var(--brass); color: #fff; }
 
-/* SCROLLABLE PRODUCT AREA */
-.pos-product-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 22px;
-  overscroll-behavior: contain;
-}
-
-.pos-product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
-  gap: 14px;
-}
-
+.pos-product-scroll { flex: 1; overflow-y: auto; padding: 20px 22px; overscroll-behavior: contain; }
+.pos-product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 14px; }
 .pos-product-card {
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--component-bg);
-  box-shadow: var(--shadow-xs);
-  cursor: pointer;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  overflow: hidden; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--component-bg); box-shadow: var(--shadow-xs);
+  cursor: pointer; transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
-.pos-product-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--brass);
-  box-shadow: var(--shadow-md);
-}
-
+.pos-product-card:hover { transform: translateY(-3px); border-color: var(--brass); box-shadow: var(--shadow-md); }
 .pos-product-image {
-  height: 110px;
-  position: relative;
-  overflow: hidden;
+  height: 110px; position: relative; overflow: hidden;
   background: linear-gradient(135deg, #ebe1d0, #c5ad80);
 }
-.pos-product-image img {
-  width: 100%; height: 100%;
-  object-fit: cover; display: block;
-}
+.pos-product-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pos-product-fallback {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
   font-size: 2rem; color: rgba(255,255,255,.9);
 }
 .pos-product-image.has-image .pos-product-fallback { display: none; }
-
-.pos-product-copy {
-  padding: 11px 13px 12px;
-  display: flex; flex-direction: column;
-}
-.pos-product-card .n {
-  font-weight: 700; font-size: .85rem; line-height: 1.3;
-}
-.pos-product-card .cat {
-  font-size: .68rem; color: var(--ink-muted);
-  margin-top: 3px; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap;
-}
-.pos-product-card .product-foot {
-  display: flex; align-items: flex-end;
-  justify-content: space-between; gap: 8px;
-  margin-top: 10px;
-}
-.pos-product-card .p {
-  font-family: 'Space Mono', monospace;
-  color: var(--brass-dark); font-weight: 700; font-size: .88rem;
-}
+.pos-product-copy { padding: 11px 13px 12px; display: flex; flex-direction: column; }
+.pos-product-card .n { font-weight: 700; font-size: .85rem; line-height: 1.3; }
+.pos-product-card .cat { font-size: .68rem; color: var(--ink-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pos-product-card .product-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.pos-product-card .p { font-family: 'Space Mono', monospace; color: var(--brass-dark); font-weight: 700; font-size: .88rem; }
 .pos-add-mark {
-  width: 30px; height: 30px;
-  border: 0; border-radius: 8px;
-  background: var(--brass); color: #fff;
-  font-size: 1.1rem; font-weight: 700;
-  pointer-events: none;
-  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border: 0; border-radius: 8px;
+  background: var(--brass); color: #fff; font-size: 1.1rem; font-weight: 700;
+  pointer-events: none; display: flex; align-items: center; justify-content: center;
   transition: background 0.14s;
 }
 .pos-product-card:hover .pos-add-mark { background: var(--brass-dark); }
-
 .addon-flag {
-  display: inline-block; margin-left: 6px;
-  padding: 2px 6px; border-radius: 20px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.52rem; font-weight: 700; text-transform: uppercase;
-  background: rgba(163,132,74,0.14); color: var(--brass-dark);
-  vertical-align: middle;
+  display: inline-block; margin-left: 6px; padding: 2px 6px; border-radius: 20px;
+  font-family: 'Space Mono', monospace; font-size: 0.52rem; font-weight: 700; text-transform: uppercase;
+  background: rgba(163,132,74,0.14); color: var(--brass-dark); vertical-align: middle;
 }
 
-/* ================================================================
-   RIGHT PANEL — Orders cart
-   ================================================================ */
-.pos-right {
-  display: flex;
-  flex-direction: column;
-  background: var(--component-bg);
-  overflow: hidden;
-}
-
-/* Orders Header */
+/* RIGHT PANEL */
+.pos-right { display: flex; flex-direction: column; background: var(--component-bg); overflow: hidden; }
 .pos-orders-head {
-  flex-shrink: 0;
-  display: flex; align-items: center;
-  justify-content: space-between; gap: 10px;
-  padding: 16px 20px;
+  flex-shrink: 0; display: flex; align-items: center;
+  justify-content: space-between; gap: 10px; padding: 16px 20px;
   border-bottom: 1px solid var(--line);
   background: linear-gradient(to bottom, #fdfaf5, #fff);
 }
-.pos-orders-head h3 {
-  margin: 0;
-  font-family: 'Archivo', sans-serif;
-  text-transform: uppercase;
-  font-size: 0.95rem;
-  letter-spacing: 0.03em;
-}
+.pos-orders-head h3 { margin: 0; font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 0.95rem; letter-spacing: 0.03em; }
 .pos-orders-head select {
-  padding: 7px 12px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--bone);
-  font-family: 'Inter', sans-serif;
-  font-size: 0.8rem;
-  color: var(--ink);
-  cursor: pointer;
+  padding: 7px 12px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bone); font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--ink); cursor: pointer;
 }
-
-/* Order table header */
 .pos-order-thead {
-  flex-shrink: 0;
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  gap: 0;
-  padding: 9px 16px;
-  border-bottom: 1px solid var(--line);
-  background: var(--stone);
+  flex-shrink: 0; display: grid; grid-template-columns: 1fr auto auto auto;
+  padding: 9px 16px; border-bottom: 1px solid var(--line); background: var(--stone);
 }
 .pos-order-thead span {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.58rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-muted);
+  font-family: 'Space Mono', monospace; font-size: 0.58rem;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted);
 }
 .pos-order-thead span:nth-child(2),
 .pos-order-thead span:nth-child(3),
 .pos-order-thead span:nth-child(4) { text-align: right; }
 
-/* Cart items — scrollable */
-.pos-cart-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
+.pos-cart-scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.pos-empty-orders { padding: 50px 20px; text-align: center; color: var(--ink-muted); font-size: 0.85rem; }
+.pos-empty-orders svg { display: block; margin: 0 auto 12px; opacity: 0.25; }
 
-.pos-empty-orders {
-  padding: 50px 20px;
-  text-align: center;
-  color: var(--ink-muted);
-  font-size: 0.85rem;
-}
-.pos-empty-orders svg {
-  display: block; margin: 0 auto 12px;
-  opacity: 0.25;
-}
-
-/* Cart rows */
 .pos-cart-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  gap: 0;
-  align-items: start;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
-  transition: background 0.12s;
+  display: grid; grid-template-columns: 1fr auto auto auto;
+  align-items: start; padding: 12px 16px; border-bottom: 1px solid var(--line); transition: background 0.12s;
 }
 .pos-cart-row:hover { background: #faf7f2; }
 .pos-cart-row:last-child { border-bottom: none; }
-
 .pos-cart-row .item-name { font-weight: 600; font-size: 0.84rem; line-height: 1.3; }
-.pos-cart-row .item-notes {
-  display: block; font-size: 0.71rem;
-  opacity: 0.55; margin-top: 2px;
-}
+.pos-cart-row .item-notes { display: block; font-size: 0.71rem; opacity: 0.55; margin-top: 2px; }
 .pos-cart-row .addon-notes { color: var(--brass-dark); opacity: 0.85; }
-
-.cart-row-actions { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
 .edit-line-btn {
-  border: 1px solid var(--line); background: var(--bone);
-  border-radius: 4px; cursor: pointer;
-  width: 20px; height: 20px; font-size: 0.72rem;
-  line-height: 1; color: var(--brass-dark); flex-shrink: 0;
+  border: 1px solid var(--line); background: var(--bone); border-radius: 4px; cursor: pointer;
+  width: 20px; height: 20px; font-size: 0.72rem; line-height: 1; color: var(--brass-dark); flex-shrink: 0;
 }
 .edit-line-btn:hover { border-color: var(--brass); }
-
 .pos-cart-row .unit-price {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.78rem; color: var(--ink-muted);
-  text-align: right; padding: 0 10px;
-  white-space: nowrap;
-  padding-top: 2px;
+  font-family: 'Space Mono', monospace; font-size: 0.78rem; color: var(--ink-muted);
+  text-align: right; padding: 0 10px; white-space: nowrap; padding-top: 2px;
 }
-
-.qty-controls {
-  display: flex; align-items: center; gap: 4px;
-  padding: 0 8px;
-}
+.qty-controls { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
 .qty-controls button {
-  width: 22px; height: 22px;
-  border-radius: 4px; border: 1px solid var(--line);
-  background: var(--component-bg);
-  cursor: pointer; font-weight: 700;
-  color: var(--ink); line-height: 1;
+  width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--component-bg); cursor: pointer; font-weight: 700; color: var(--ink); line-height: 1;
   transition: border-color 0.12s, background 0.12s;
 }
 .qty-controls button:hover { border-color: var(--brass); background: var(--stone); }
-.qty-controls span {
-  font-family: 'Space Mono', monospace;
-  min-width: 20px; text-align: center; font-size: 0.82rem;
-}
-
+.qty-controls span { font-family: 'Space Mono', monospace; min-width: 20px; text-align: center; font-size: 0.82rem; }
 .pos-cart-row .line-total {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.82rem; font-weight: 700;
-  text-align: right; white-space: nowrap;
-  padding-top: 2px;
+  font-family: 'Space Mono', monospace; font-size: 0.82rem; font-weight: 700;
+  text-align: right; white-space: nowrap; padding-top: 2px;
 }
 .remove-line-btn {
-  display: block; width: 100%;
-  border: none; background: none;
-  color: var(--danger); cursor: pointer;
-  font-size: 0.75rem; text-align: right;
-  padding: 2px 0;
-  opacity: 0.6; transition: opacity 0.12s;
+  display: block; width: 100%; border: none; background: none;
+  color: var(--danger); cursor: pointer; font-size: 0.75rem;
+  text-align: right; padding: 2px 0; opacity: 0.6; transition: opacity 0.12s;
 }
 .remove-line-btn:hover { opacity: 1; }
 
-/* Totals area */
-.pos-summary {
-  flex-shrink: 0;
-  padding: 14px 20px;
-  border-top: 2px solid var(--line);
-  background: #fdfaf5;
-}
+.pos-summary { flex-shrink: 0; padding: 14px 20px; border-top: 2px solid var(--line); background: #fdfaf5; }
 .pos-summary .sum-row {
-  display: flex; justify-content: space-between;
-  align-items: center; padding: 5px 0;
-  font-size: 0.84rem;
+  display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 0.84rem;
 }
 .pos-summary .sum-row span:first-child { color: var(--ink-muted); }
 .pos-summary .sum-row input[type="number"] {
-  width: 90px; text-align: right;
-  padding: 4px 7px;
-  border: 1px solid var(--line); border-radius: 5px;
-  font-family: 'Space Mono', monospace; font-size: 0.82rem;
-  background: var(--bone); color: var(--ink);
+  width: 90px; text-align: right; padding: 4px 7px; border: 1px solid var(--line); border-radius: 5px;
+  font-family: 'Space Mono', monospace; font-size: 0.82rem; background: var(--bone); color: var(--ink);
 }
 .pos-summary .sum-grand {
-  display: flex; justify-content: space-between;
-  align-items: center;
-  font-weight: 700; font-size: 1rem;
-  border-top: 2px solid var(--ink);
-  margin-top: 8px; padding-top: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 700; font-size: 1rem; border-top: 2px solid var(--ink); margin-top: 8px; padding-top: 10px;
 }
 
-/* Actions */
-.pos-actions {
-  flex-shrink: 0;
-  padding: 14px 20px;
-  border-top: 1px solid var(--line);
-  background: #fff;
-}
-
+.pos-actions { flex-shrink: 0; padding: 14px 20px; border-top: 1px solid var(--line); background: #fff; }
 .pos-payment-select {
-  width: 100%; padding: 9px 12px;
-  border: 1px solid var(--line); border-radius: 7px;
-  margin-bottom: 10px;
-  font-family: 'Inter', sans-serif; font-size: 0.84rem;
-  background: var(--bone); color: var(--ink);
-  cursor: pointer;
+  width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px; margin-bottom: 10px;
+  font-family: 'Inter', sans-serif; font-size: 0.84rem; background: var(--bone); color: var(--ink); cursor: pointer;
 }
-
 .cust-search-wrap { position: relative; margin-bottom: 8px; }
 .cust-search-wrap input[type="text"] {
-  width: 100%; padding: 9px 12px;
-  border: 1px solid var(--line); border-radius: 7px;
-  font-family: 'Inter', sans-serif; font-size: 0.84rem;
-  background: var(--bone); color: var(--ink);
+  width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px;
+  font-family: 'Inter', sans-serif; font-size: 0.84rem; background: var(--bone); color: var(--ink);
 }
 .cust-results {
   position: absolute; top: 100%; left: 0; right: 0; z-index: 20;
-  background: var(--component-bg); border: 1px solid var(--line);
-  border-radius: 6px; margin-top: 4px;
-  max-height: 200px; overflow-y: auto;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+  background: var(--component-bg); border: 1px solid var(--line); border-radius: 6px;
+  margin-top: 4px; max-height: 200px; overflow-y: auto; box-shadow: 0 6px 16px rgba(0,0,0,0.1);
 }
-.cust-result-row {
-  padding: 10px 12px; cursor: pointer;
-  font-size: 0.84rem; border-bottom: 1px solid var(--line);
-}
+.cust-result-row { padding: 10px 12px; cursor: pointer; font-size: 0.84rem; border-bottom: 1px solid var(--line); }
 .cust-result-row:last-child { border-bottom: none; }
 .cust-result-row:hover { background: var(--stone); }
 .cust-result-row .cn { font-weight: 700; }
@@ -406,45 +201,27 @@
 .cust-selected .ce { font-size: 0.71rem; opacity: 0.6; font-family: 'Space Mono', monospace; }
 .cust-selected button {
   border: none; background: none; color: var(--brass-dark);
-  font-size: 0.70rem; text-transform: uppercase;
-  font-family: 'Space Mono', monospace; cursor: pointer; font-weight: 700;
+  font-size: 0.70rem; text-transform: uppercase; font-family: 'Space Mono', monospace; cursor: pointer; font-weight: 700;
 }
-
-.pos-hint {
-  font-size: 0.70rem; color: var(--ink-muted);
-  margin: 4px 0 10px;
-}
-
-.pos-actions-row {
-  display: flex; gap: 10px; margin-top: 4px;
-}
+.pos-hint { font-size: 0.70rem; color: var(--ink-muted); margin: 4px 0 10px; }
+.pos-actions-row { display: flex; gap: 10px; margin-top: 4px; }
 .pos-actions-row button { flex: 1; }
 
 /* ================================================================
    CUSTOMIZE MODAL
    ================================================================ */
-.cust-qty-row {
-  display: flex; align-items: center;
-  justify-content: space-between; margin-bottom: 16px;
-}
-.cust-qty-row label {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.66rem; text-transform: uppercase; opacity: 0.55;
-}
+.cust-qty-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.cust-qty-row label { font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase; opacity: 0.55; }
 .cust-qty-row .qty-controls button { width: 30px; height: 30px; font-size: 1rem; }
-
 .cust-addon-section { margin-bottom: 16px; }
 .cust-addon-section > label {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.66rem; text-transform: uppercase;
+  font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase;
   opacity: 0.55; display: block; margin-bottom: 6px;
 }
 .cust-addon-list { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .cust-addon-row {
-  display: grid; grid-template-columns: 1fr auto auto;
-  gap: 12px; align-items: center;
-  padding: 10px 14px; border-bottom: 1px solid var(--line);
-  transition: background .12s;
+  display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
+  padding: 10px 14px; border-bottom: 1px solid var(--line); transition: background .12s;
 }
 .cust-addon-row:last-child { border-bottom: none; }
 .cust-addon-row.is-selected { background: rgba(163,132,74,0.06); }
@@ -455,44 +232,431 @@
 .cust-addon-check .cs { font-size: 0.72rem; opacity: 0.55; margin-top: 1px; }
 .cust-addon-row .cp { font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 700; color: var(--brass-dark); }
 .cust-addon-row .qty-controls button { width: 22px; height: 22px; }
-
 .modal-box.cust-modal { max-width: 520px; width: 100%; }
-.cust-totals {
-  background: var(--stone); border: 1px solid var(--line);
-  border-radius: 8px; padding: 12px 14px; margin: 16px 0;
-}
-.cust-totals .row {
-  display: flex; justify-content: space-between;
-  padding: 4px 0; font-size: 0.84rem;
-}
-.cust-totals .row.grand {
-  font-weight: 700; border-top: 2px solid var(--ink);
-  margin-top: 6px; padding-top: 10px; font-size: 0.95rem;
-}
+.cust-totals { background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 16px 0; }
+.cust-totals .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.84rem; }
+.cust-totals .row.grand { font-weight: 700; border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 10px; font-size: 0.95rem; }
 
 /* ================================================================
-   RESPONSIVE — stack on narrow screens
+   PAYMENT SCREEN — full overlay on the admin content area
+   ================================================================ */
+.pay-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(21,23,26,0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+.pay-screen.active { display: flex; animation: payScreenIn 0.2s cubic-bezier(0.16,1,0.3,1) both; }
+
+@keyframes payScreenIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+.pay-card {
+  background: var(--component-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 560px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 40px);
+}
+
+/* Payment header */
+.pay-card-header {
+  background: #1b1d22;
+  color: #fff;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.pay-card-header .breadcrumb {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+}
+.pay-card-header .breadcrumb-sep { opacity: 0.35; margin: 0 4px; }
+.pay-card-header .breadcrumb-current {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 900;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--brass-light);
+}
+
+/* Payment body scrollable */
+.pay-card-body {
+  overflow-y: auto;
+  flex: 1;
+  overscroll-behavior: contain;
+}
+
+/* Total Amount Payable box */
+.pay-total-box {
+  margin: 20px 22px 0;
+  background: linear-gradient(135deg, rgba(163,132,74,0.10) 0%, rgba(163,132,74,0.04) 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+}
+.pay-total-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--brass-dark);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.pay-total-amount {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 900;
+  font-size: 2.2rem;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* Payment method selector */
+.pay-method-section { padding: 18px 22px 0; }
+.pay-method-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.pay-method-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pay-method-pill {
+  flex: 1;
+  min-width: 80px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bone);
+  color: var(--ink-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.14s;
+}
+.pay-method-pill:hover { border-color: var(--brass); color: var(--brass-dark); background: rgba(163,132,74,0.06); }
+.pay-method-pill.active {
+  background: var(--brass); border-color: var(--brass); color: #fff;
+  box-shadow: 0 4px 12px rgba(163,132,74,0.28);
+}
+
+/* Amount received box */
+.pay-received-section {
+  margin: 16px 22px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #fff;
+}
+.pay-received-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--line);
+  background: var(--stone);
+}
+.pay-received-header span {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+.pay-split-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s;
+}
+.pay-split-btn:hover { border-color: var(--brass); color: var(--brass-dark); }
+.pay-split-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+.pay-received-display {
+  padding: 10px 16px 4px;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 900;
+  font-size: 2rem;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+}
+.pay-received-display.insufficient { color: var(--danger); }
+
+/* Numeric Keypad */
+.pay-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--line);
+  padding: 4px;
+  background: var(--stone);
+}
+.pay-key {
+  margin: 3px;
+  padding: 14px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.10s;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pay-key:hover { background: var(--bone); border-color: var(--brass); color: var(--brass-dark); }
+.pay-key:active { transform: scale(0.95); background: rgba(163,132,74,0.12); }
+.pay-key.backspace {
+  color: var(--danger);
+  font-size: 1.1rem;
+}
+.pay-key.backspace:hover { border-color: var(--danger); background: rgba(192,57,43,0.06); color: var(--danger); }
+
+/* Quick amounts (no-change shortcuts) */
+.pay-quick-amounts {
+  padding: 10px 22px 0;
+}
+.pay-quick-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.60rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  margin-bottom: 8px;
+}
+.pay-quick-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pay-quick-pill {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--bone);
+  color: var(--ink-muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.pay-quick-pill:hover { border-color: var(--brass); color: var(--brass-dark); background: rgba(163,132,74,0.07); }
+
+/* Change display */
+.pay-change-row {
+  margin: 16px 22px 0;
+  background: var(--stone);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+}
+.pay-change-row .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 0.86rem;
+}
+.pay-change-row .row span:first-child { color: var(--ink-muted); }
+.pay-change-row .change-value {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--success);
+}
+.pay-change-row .change-value.negative { color: var(--danger); }
+.pay-validation-msg {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(192,57,43,0.07);
+  border: 1px solid rgba(192,57,43,0.2);
+  border-radius: 6px;
+  color: var(--danger);
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: none;
+}
+.pay-validation-msg.visible { display: block; }
+
+/* Split payment section (optional, shown when split toggled) */
+.pay-split-section {
+  display: none;
+  margin: 14px 22px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.pay-split-section.open { display: block; }
+.pay-split-header {
+  padding: 10px 14px;
+  background: var(--stone);
+  border-bottom: 1px solid var(--line);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pay-split-close {
+  background: none; border: none; color: var(--ink-muted);
+  cursor: pointer; font-size: 0.9rem; padding: 0;
+}
+.pay-split-row {
+  display: grid; grid-template-columns: 1fr auto auto;
+  gap: 10px; align-items: center; padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.pay-split-row:last-child { border-bottom: none; }
+.pay-split-row select {
+  padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px;
+  font-family: 'Inter', sans-serif; font-size: 0.82rem; background: var(--bone); color: var(--ink);
+}
+.pay-split-row input[type="number"] {
+  width: 110px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px;
+  font-family: 'Space Mono', monospace; font-size: 0.82rem; background: var(--bone); color: var(--ink); text-align: right;
+}
+.pay-split-add-btn {
+  display: flex; align-items: center; gap: 6px; padding: 8px 14px;
+  margin: 8px 14px; border: 1px dashed var(--line); border-radius: 6px;
+  background: none; color: var(--ink-muted); cursor: pointer; font-size: 0.8rem;
+  transition: all 0.12s; width: calc(100% - 28px);
+}
+.pay-split-add-btn:hover { border-color: var(--brass); color: var(--brass-dark); }
+.pay-split-total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: var(--stone); border-top: 2px solid var(--line);
+  font-size: 0.84rem; font-weight: 700;
+}
+.pay-split-total-row .split-overage { color: var(--success); }
+.pay-split-total-row .split-shortage { color: var(--danger); }
+
+/* Card footer — actions */
+.pay-card-footer {
+  flex-shrink: 0;
+  padding: 16px 22px;
+  border-top: 1px solid var(--line);
+  background: #fff;
+  display: flex;
+  gap: 12px;
+  margin-top: 0;
+}
+.pay-card-footer .btn { flex: 1; padding: 13px; font-size: 0.9rem; }
+
+/* Success screen */
+.pay-success {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px 24px;
+  text-align: center;
+}
+.pay-success.active { display: flex; }
+.pay-success-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, #2e7d4f, #1e5933);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(46,125,79,0.28);
+}
+.pay-success-icon svg { width: 32px; height: 32px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.pay-success h3 {
+  margin: 0 0 6px;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 900;
+  font-size: 1.3rem;
+  text-transform: uppercase;
+  color: var(--success);
+}
+.pay-success .txn-id {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  margin-bottom: 20px;
+}
+.pay-receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  text-align: left;
+  font-size: 0.86rem;
+}
+.pay-receipt-table td { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.pay-receipt-table td:last-child { text-align: right; font-family: 'Space Mono', monospace; font-weight: 700; }
+.pay-receipt-table tr:last-child td { border-bottom: none; }
+.pay-receipt-table .grand-row td {
+  font-weight: 700; font-size: 0.95rem; border-top: 2px solid var(--ink); padding-top: 12px;
+}
+.pay-receipt-table .change-row td:last-child { color: var(--success); }
+
+/* ================================================================
+   RESPONSIVE
    ================================================================ */
 @media (max-width: 900px) {
-  .pos-workspace {
-    grid-template-columns: 1fr;
-    height: auto;
-    overflow: visible;
-  }
-  .pos-left {
-    border-right: none;
-    border-bottom: 1px solid var(--line);
-  }
+  .pos-workspace { grid-template-columns: 1fr; height: auto; overflow: visible; }
+  .pos-left { border-right: none; border-bottom: 1px solid var(--line); }
   .pos-product-scroll { overflow: visible; max-height: none; }
   .pos-right { overflow: visible; }
   .pos-cart-scroll { overflow: visible; max-height: none; }
-  .admin-body { overflow: auto; }
-  .admin-section { overflow: visible; }
+  .admin-body { overflow: auto !important; }
+  .admin-section { overflow: visible !important; }
+  .pay-card { max-height: none; }
 }
-
 @media (max-width: 480px) {
   .pos-product-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
   .pos-actions-row { flex-direction: column; }
+  .pay-method-pill { min-width: 60px; font-size: 0.75rem; }
+  .pay-total-amount { font-size: 1.8rem; }
+  .pay-received-display { font-size: 1.6rem; }
 }
 
 </style>
@@ -511,23 +675,35 @@
   let menuItems = [];
   let addons = [];
   let categories = [];
-  // cart line: { uniqueId, menu_id, name, price, qty, notes, add_ons: [{ addon_id, name, price, qty }] }
   let cart = [];
   let searchTerm = '';
   let activeCategoryId = 'all';
-  let selectedCustomer = null; // { id, name, email }
+  let selectedCustomer = null;
   let custSearchDebounce = null;
 
-  // Customize modal state.
-  let customize = null; // { menu_id, name, base_price, qty, notes, selected: Map(addon_id -> qty) }
+  // Customize modal state
+  let customize = null;
   let editingUniqueId = null;
 
+  // Payment screen state
+  let paymentGrandTotal = 0;
+  let paymentReceivedStr = '0';
+  let paymentMethod = 'cash';
+  let splitRows = [];    // [{ method, amount }]
+  let splitMode = false;
+
+  // ---- Cached order params for final submit ----
+  let pendingOrderParams = null;
+
+  /* ================================================================
+     INIT
+     ================================================================ */
   function init() {
     const content = document.getElementById('adminContent');
     content.innerHTML = `
       <div class="pos-workspace">
 
-        <!-- ============ LEFT: Product Area ============ -->
+        <!-- LEFT: Product Area -->
         <div class="pos-left">
           <div class="pos-left-toolbar">
             <div class="pos-search-row">
@@ -542,10 +718,8 @@
           </div>
         </div>
 
-        <!-- ============ RIGHT: Orders Panel ============ -->
+        <!-- RIGHT: Orders Panel -->
         <div class="pos-right">
-
-          <!-- Header row -->
           <div class="pos-orders-head">
             <h3>Orders</h3>
             <select id="posOrderType">
@@ -554,7 +728,6 @@
             </select>
           </div>
 
-          <!-- Table head -->
           <div class="pos-order-thead">
             <span>Description</span>
             <span>Unit Price</span>
@@ -562,7 +735,6 @@
             <span>Total</span>
           </div>
 
-          <!-- Scrollable cart list -->
           <div class="pos-cart-scroll" id="cartScrollArea">
             <div id="cartEmptyState" class="pos-empty-orders">
               <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -574,7 +746,6 @@
             <div id="cartRowsWrap"></div>
           </div>
 
-          <!-- Totals -->
           <div class="pos-summary">
             <div class="sum-row"><span>Total Amount</span><span id="sumTotal">₱0.00</span></div>
             <div class="sum-row">
@@ -587,15 +758,7 @@
             </div>
           </div>
 
-          <!-- Payment + Customer + Buttons -->
           <div class="pos-actions">
-            <select id="posPayment" class="pos-payment-select">
-              <option value="cash">Payment Method — Cash</option>
-              <option value="card">Payment Method — Card</option>
-              <option value="gcash">Payment Method — GCash</option>
-              <option value="other">Payment Method — Other</option>
-            </select>
-
             <div id="custSelectedWrap" style="display:none;"></div>
             <div id="custSearchWrap" class="cust-search-wrap">
               <input type="text" id="custSearchInput" placeholder="Optional: search customer by name, email, or phone…" autocomplete="off">
@@ -609,7 +772,6 @@
             </div>
             <div class="admin-error" id="posError" style="display:none; margin-top:10px;"></div>
           </div>
-
         </div>
       </div>
 
@@ -649,12 +811,135 @@
           </div>
         </div>
       </div>
+
+      <!-- ============ PAYMENT SCREEN ============ -->
+      <div class="pay-screen" id="payScreen">
+        <div class="pay-card">
+
+          <!-- Header -->
+          <div class="pay-card-header">
+            <span class="breadcrumb">Point of Sale</span>
+            <span class="breadcrumb-sep">›</span>
+            <span class="breadcrumb-current">Payment</span>
+          </div>
+
+          <!-- Scrollable body -->
+          <div class="pay-card-body" id="payCardBody">
+
+            <!-- Total Amount Payable -->
+            <div class="pay-total-box">
+              <div class="pay-total-label">Total Amount Payable</div>
+              <div class="pay-total-amount" id="payTotalDisplay">₱0.00</div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="pay-method-section">
+              <div class="pay-method-label">Payment Method</div>
+              <div class="pay-method-pills">
+                <button class="pay-method-pill active" data-method="cash">💵 Cash</button>
+                <button class="pay-method-pill" data-method="gcash">📱 GCash</button>
+                <button class="pay-method-pill" data-method="card">💳 Card</button>
+                <button class="pay-method-pill" data-method="other">🏷 Other</button>
+              </div>
+            </div>
+
+            <!-- Amount Received -->
+            <div class="pay-received-section" id="payReceivedSection">
+              <div class="pay-received-header">
+                <span>Amount Received</span>
+                <button class="pay-split-btn" id="paySplitBtn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  Split
+                </button>
+              </div>
+              <div class="pay-received-display" id="payReceivedDisplay">₱0</div>
+              <div class="pay-keypad" id="payKeypad">
+                <button class="pay-key" data-key="1">1</button>
+                <button class="pay-key" data-key="2">2</button>
+                <button class="pay-key" data-key="3">3</button>
+                <button class="pay-key" data-key="4">4</button>
+                <button class="pay-key" data-key="5">5</button>
+                <button class="pay-key" data-key="6">6</button>
+                <button class="pay-key" data-key="7">7</button>
+                <button class="pay-key" data-key="8">8</button>
+                <button class="pay-key" data-key="9">9</button>
+                <button class="pay-key" data-key=".">.</button>
+                <button class="pay-key" data-key="0">0</button>
+                <button class="pay-key backspace" data-key="back">⌫</button>
+              </div>
+            </div>
+
+            <!-- Quick Amount Buttons -->
+            <div class="pay-quick-amounts" id="payQuickAmounts">
+              <div class="pay-quick-label">Quick Amounts</div>
+              <div class="pay-quick-pills" id="payQuickPills"></div>
+            </div>
+
+            <!-- Split Payment Section -->
+            <div class="pay-split-section" id="paySplitSection">
+              <div class="pay-split-header">
+                <span>Split Payment</span>
+                <button class="pay-split-close" id="paySplitClose">✕</button>
+              </div>
+              <div id="paySplitRows"></div>
+              <button class="pay-split-add-btn" id="paySplitAddRow">+ Add payment method</button>
+              <div class="pay-split-total-row">
+                <span>Total Paid</span>
+                <span id="paySplitTotalDisplay">₱0.00</span>
+              </div>
+            </div>
+
+            <!-- Change -->
+            <div class="pay-change-row" id="payChangeRow">
+              <div class="row">
+                <span>Amount Received</span>
+                <span id="payChangeReceived" style="font-family:'Space Mono',monospace; font-weight:700;">₱0.00</span>
+              </div>
+              <div class="row">
+                <span>Grand Total</span>
+                <span id="payChangeDue" style="font-family:'Space Mono',monospace; font-weight:700;">₱0.00</span>
+              </div>
+              <div class="row" style="border-top:1px solid var(--line); margin-top:6px; padding-top:10px;">
+                <span style="font-weight:700;">Change</span>
+                <span class="change-value" id="payChangeValue">₱0.00</span>
+              </div>
+              <div class="pay-validation-msg" id="payValidationMsg">
+                ⚠ Amount received is insufficient.
+              </div>
+            </div>
+
+            <!-- Success screen (shown after confirm) -->
+            <div class="pay-success" id="paySuccess">
+              <div class="pay-success-icon">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h3>Payment Successful</h3>
+              <div class="txn-id" id="paySuccessTxnId">Transaction #—</div>
+              <table class="pay-receipt-table" id="payReceiptTable"></table>
+            </div>
+
+          </div><!-- end pay-card-body -->
+
+          <!-- Footer buttons -->
+          <div class="pay-card-footer" id="payCardFooter">
+            <button class="btn btn-outline" id="payCancelBtn">Cancel</button>
+            <button class="btn" id="payConfirmBtn">Confirm Payment</button>
+          </div>
+
+        </div>
+      </div>
     `;
 
+    // POS event listeners
     document.getElementById('posSearch').addEventListener('input', (e) => { searchTerm = e.target.value.toLowerCase(); renderList(); });
     document.getElementById('deliveryFeeInput').addEventListener('input', renderCart);
     document.getElementById('clearOrderBtn').addEventListener('click', clearOrder);
-    document.getElementById('submitOrderBtn').addEventListener('click', submitOrder);
+    document.getElementById('submitOrderBtn').addEventListener('click', openPaymentScreen);
     document.getElementById('customizeCancelBtn').addEventListener('click', () => { resetCustomize(); toggleModal(false); });
     document.getElementById('customizeAddBtn').addEventListener('click', confirmAddToCart);
     document.getElementById('custQtyMinus').addEventListener('click', () => changeCustomizeQty(-1));
@@ -665,6 +950,33 @@
       const wrap = document.getElementById('custSearchWrap');
       if (wrap && !wrap.contains(e.target)) document.getElementById('custResults').style.display = 'none';
     });
+
+    // Payment screen event listeners
+    document.getElementById('payCancelBtn').addEventListener('click', closePaymentScreen);
+    document.getElementById('payConfirmBtn').addEventListener('click', confirmPayment);
+
+    // Keypad
+    document.getElementById('payKeypad').addEventListener('click', (e) => {
+      const key = e.target.closest('.pay-key');
+      if (!key) return;
+      handleKeypadInput(key.dataset.key);
+    });
+
+    // Payment method pills
+    document.querySelectorAll('.pay-method-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pay-method-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        paymentMethod = btn.dataset.method;
+        toggleKeypadVisibility();
+        updatePaymentUI();
+      });
+    });
+
+    // Split payment
+    document.getElementById('paySplitBtn').addEventListener('click', openSplitPayment);
+    document.getElementById('paySplitClose').addEventListener('click', closeSplitPayment);
+    document.getElementById('paySplitAddRow').addEventListener('click', addSplitRow);
 
     loadCategories();
     loadMenu();
@@ -686,7 +998,6 @@
       pillsWrap.innerHTML =
         `<button class="pos-cat-pill active" data-cat="all">All</button>` +
         categories.map(c => `<button class="pos-cat-pill" data-cat="${c.id}">${escapeHtml(c.name)}</button>`).join('');
-
       pillsWrap.querySelectorAll('.pos-cat-pill').forEach(btn => {
         btn.addEventListener('click', () => {
           pillsWrap.querySelectorAll('.pos-cat-pill').forEach(b => b.classList.remove('active'));
@@ -716,7 +1027,7 @@
       const data = await res.json();
       if (!res.ok) return;
       addons = data.addons || [];
-      renderList(); // refresh "add-ons available" badges
+      renderList();
     } catch { /* non-fatal */ }
   }
 
@@ -755,13 +1066,11 @@
             <div class="cat">${escapeHtml(i.category_name || 'Menu item')}</div>
             <div class="product-foot"><div class="p">${peso(i.price)}</div><span class="pos-add-mark">+</span></div>
           </div>
-        </div>
-      `;
+        </div>`;
     }).join('');
 
     wrap.innerHTML = '';
     wrap.appendChild(grid);
-
     grid.querySelectorAll('.pos-product-card').forEach(el => {
       el.addEventListener('click', () => openCustomizeModal(el.dataset.id, el.dataset.name, Number(el.dataset.price)));
     });
@@ -773,8 +1082,7 @@
   function openCustomizeModal(menuId, name, price, line = null) {
     editingUniqueId = line ? line.uniqueId : null;
     customize = {
-      menu_id: menuId,
-      name,
+      menu_id: menuId, name,
       base_price: Number(price),
       qty: line ? line.qty : 1,
       notes: line ? (line.notes || '') : '',
@@ -783,7 +1091,6 @@
     if (line) {
       (line.add_ons || []).forEach(a => customize.selected.set(String(a.addon_id), a.qty));
     }
-
     document.getElementById('customizeModalTitle').textContent = `Customize — ${name}`;
     document.getElementById('customizeNotes').value = customize.notes;
     document.getElementById('customizeAddBtn').textContent = line ? 'Update Item' : 'Add to Order';
@@ -862,10 +1169,7 @@
     document.getElementById('custLineTotal').textContent = peso(itemTotal + addonsTotal);
   }
 
-  function resetCustomize() {
-    customize = null;
-    editingUniqueId = null;
-  }
+  function resetCustomize() { customize = null; editingUniqueId = null; }
 
   /* ================================================================
      CART
@@ -889,15 +1193,7 @@
       const a = addons.find(x => String(x.id) === String(id));
       return { addon_id: Number(id), name: a ? a.name : 'Add-On', price: a ? Number(a.price) : 0, qty: q };
     });
-
-    const line = {
-      menu_id: customize.menu_id,
-      name: customize.name,
-      price: customize.base_price,
-      qty: customize.qty,
-      notes,
-      add_ons: addOns,
-    };
+    const line = { menu_id: customize.menu_id, name: customize.name, price: customize.base_price, qty: customize.qty, notes, add_ons: addOns };
 
     if (editingUniqueId) {
       const idx = cart.findIndex(c => c.uniqueId === editingUniqueId);
@@ -908,7 +1204,6 @@
       if (existing) existing.qty += line.qty;
       else cart.push({ ...line, uniqueId: Date.now() + Math.random() });
     }
-
     resetCustomize();
     toggleModal(false);
     renderCart();
@@ -930,8 +1225,8 @@
   function clearOrder() {
     cart = [];
     clearSelectedCustomer();
-    document.getElementById('deliveryFeeInput').value = '0';
-    document.getElementById('posPayment').value = 'cash';
+    const dfi = document.getElementById('deliveryFeeInput');
+    if (dfi) dfi.value = '0';
     renderCart();
   }
 
@@ -952,9 +1247,7 @@
               <button class="edit-line-btn" data-id="${c.uniqueId}" title="Customize">✎</button>
             </div>
             ${c.notes ? `<span class="item-notes">${escapeHtml(c.notes)}</span>` : ''}
-            ${(c.add_ons || []).length ? `
-              <span class="item-notes addon-notes">+ ${c.add_ons.map(a => `${escapeHtml(a.name)} ×${a.qty} (${peso(a.price * a.qty)})`).join(', ')}</span>
-            ` : ''}
+            ${(c.add_ons || []).length ? `<span class="item-notes addon-notes">+ ${c.add_ons.map(a => `${escapeHtml(a.name)} ×${a.qty} (${peso(a.price * a.qty)})`).join(', ')}</span>` : ''}
             <button class="remove-line-btn" data-id="${c.uniqueId}">✕ Remove</button>
           </div>
           <div class="unit-price">${peso(c.price)}</div>
@@ -964,8 +1257,7 @@
             <button data-id="${c.uniqueId}" data-delta="1" class="qty-btn">+</button>
           </div>
           <div class="line-total">${peso(lineTotal(c))}</div>
-        </div>
-      `).join('');
+        </div>`).join('');
 
       rowsWrap.querySelectorAll('.qty-btn').forEach(btn => {
         btn.addEventListener('click', () => changeQty(btn.dataset.id, Number(btn.dataset.delta)));
@@ -988,62 +1280,300 @@
   }
 
   /* ================================================================
-     SUBMIT ORDER
+     PAYMENT SCREEN
      ================================================================ */
-  async function submitOrder() {
+  function openPaymentScreen() {
     const errEl = document.getElementById('posError');
     errEl.style.display = 'none';
 
+    if (cart.length === 0) {
+      errEl.textContent = 'Cart is empty.';
+      errEl.style.display = 'block';
+      return;
+    }
+
     const order_type = document.getElementById('posOrderType').value;
     const delivery_fee = Number(document.getElementById('deliveryFeeInput').value) || 0;
-    const payment_method = document.getElementById('posPayment').value;
+    const totalAmount = cart.reduce((sum, c) => sum + lineTotal(c), 0);
+    paymentGrandTotal = totalAmount + delivery_fee;
 
-    if (cart.length === 0) { errEl.textContent = 'Cart is empty.'; errEl.style.display = 'block'; return; }
+    // Cache params for final submit
+    pendingOrderParams = {
+      order_type,
+      delivery_fee,
+      customer_id: selectedCustomer ? Number(selectedCustomer.id) : null,
+      cart: cart.map(c => ({
+        menu_id: c.menu_id,
+        quantity: c.qty,
+        notes: c.notes,
+        add_ons: (c.add_ons || []).map(a => ({ addon_id: a.addon_id, quantity: a.qty })),
+      })),
+    };
 
-    const submitBtn = document.getElementById('submitOrderBtn');
-    submitBtn.disabled = true; submitBtn.textContent = 'Placing…';
+    // Reset payment state
+    paymentReceivedStr = '0';
+    paymentMethod = 'cash';
+    splitRows = [];
+    splitMode = false;
+
+    // Reset method pills
+    document.querySelectorAll('.pay-method-pill').forEach(b => b.classList.remove('active'));
+    document.querySelector('.pay-method-pill[data-method="cash"]').classList.add('active');
+
+    // Reset split section
+    closeSplitPayment();
+
+    // Reset success view
+    document.getElementById('paySuccess').classList.remove('active');
+    document.getElementById('payCardBody').style.display = '';
+    document.getElementById('payCardFooter').innerHTML = `
+      <button class="btn btn-outline" id="payCancelBtn">Cancel</button>
+      <button class="btn" id="payConfirmBtn">Confirm Payment</button>
+    `;
+    document.getElementById('payCancelBtn').addEventListener('click', closePaymentScreen);
+    document.getElementById('payConfirmBtn').addEventListener('click', confirmPayment);
+
+    // Set total display
+    document.getElementById('payTotalDisplay').textContent = peso(paymentGrandTotal);
+
+    // Generate quick-amount pills (exact, round up to nearest 50/100/200/500/1000)
+    generateQuickAmounts(paymentGrandTotal);
+
+    toggleKeypadVisibility();
+    updatePaymentUI();
+
+    document.getElementById('payScreen').classList.add('active');
+  }
+
+  function closePaymentScreen() {
+    document.getElementById('payScreen').classList.remove('active');
+  }
+
+  function generateQuickAmounts(total) {
+    const pillsEl = document.getElementById('payQuickPills');
+    const amounts = [];
+    // Always include exact amount
+    amounts.push(Math.ceil(total));
+    // Round up to neat amounts
+    [50, 100, 200, 500, 1000].forEach(step => {
+      const rounded = Math.ceil(total / step) * step;
+      if (!amounts.includes(rounded) && rounded <= total * 3) amounts.push(rounded);
+    });
+    amounts.sort((a, b) => a - b);
+
+    pillsEl.innerHTML = amounts.slice(0, 6).map(amt =>
+      `<button class="pay-quick-pill" data-amount="${amt}">${peso(amt)}</button>`
+    ).join('');
+
+    pillsEl.querySelectorAll('.pay-quick-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        paymentReceivedStr = String(Number(btn.dataset.amount));
+        updatePaymentUI();
+      });
+    });
+  }
+
+  function toggleKeypadVisibility() {
+    const keypadArea = document.getElementById('payReceivedSection');
+    const quickArea = document.getElementById('payQuickAmounts');
+    // Show keypad for cash; for digital, we still show it for amount confirmation
+    // but label changes
+    const isCash = paymentMethod === 'cash';
+    keypadArea.style.display = '';
+    quickArea.style.display = isCash ? '' : 'none';
+  }
+
+  function handleKeypadInput(key) {
+    if (key === 'back') {
+      if (paymentReceivedStr.length <= 1) paymentReceivedStr = '0';
+      else paymentReceivedStr = paymentReceivedStr.slice(0, -1);
+    } else if (key === '.') {
+      if (!paymentReceivedStr.includes('.')) paymentReceivedStr += '.';
+    } else {
+      if (paymentReceivedStr === '0') paymentReceivedStr = key;
+      else paymentReceivedStr += key;
+    }
+    // Limit to 2 decimal places
+    const parts = paymentReceivedStr.split('.');
+    if (parts[1] && parts[1].length > 2) paymentReceivedStr = parts[0] + '.' + parts[1].slice(0, 2);
+    updatePaymentUI();
+  }
+
+  function getEffectiveReceived() {
+    if (splitMode) {
+      return splitRows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+    }
+    return parseFloat(paymentReceivedStr) || 0;
+  }
+
+  function updatePaymentUI() {
+    const received = getEffectiveReceived();
+    const change = received - paymentGrandTotal;
+    const isSufficient = received >= paymentGrandTotal - 0.001;
+
+    // Display
+    const displayEl = document.getElementById('payReceivedDisplay');
+    displayEl.textContent = splitMode
+      ? peso(received)
+      : (paymentReceivedStr.endsWith('.') ? `₱${paymentReceivedStr}` : peso(received || 0));
+    displayEl.classList.toggle('insufficient', !isSufficient && received > 0);
+
+    // Change row
+    document.getElementById('payChangeReceived').textContent = peso(received);
+    document.getElementById('payChangeDue').textContent = peso(paymentGrandTotal);
+    const changeEl = document.getElementById('payChangeValue');
+    changeEl.textContent = change >= 0 ? peso(change) : `-${peso(Math.abs(change))}`;
+    changeEl.className = 'change-value' + (change < 0 ? ' negative' : '');
+
+    // Validation
+    const validEl = document.getElementById('payValidationMsg');
+    validEl.classList.toggle('visible', received > 0 && !isSufficient);
+
+    // Confirm button
+    const confirmBtn = document.getElementById('payConfirmBtn');
+    if (confirmBtn) {
+      confirmBtn.disabled = !isSufficient;
+      confirmBtn.style.opacity = isSufficient ? '1' : '0.5';
+    }
+  }
+
+  /* ================================================================
+     SPLIT PAYMENT
+     ================================================================ */
+  function openSplitPayment() {
+    splitMode = true;
+    splitRows = [
+      { method: paymentMethod, amount: paymentGrandTotal },
+    ];
+    document.getElementById('paySplitSection').classList.add('open');
+    renderSplitRows();
+    updatePaymentUI();
+  }
+
+  function closeSplitPayment() {
+    splitMode = false;
+    splitRows = [];
+    document.getElementById('paySplitSection').classList.remove('open');
+    updatePaymentUI();
+  }
+
+  function addSplitRow() {
+    splitRows.push({ method: 'cash', amount: 0 });
+    renderSplitRows();
+    updatePaymentUI();
+  }
+
+  function renderSplitRows() {
+    const container = document.getElementById('paySplitRows');
+    container.innerHTML = splitRows.map((row, idx) => `
+      <div class="pay-split-row">
+        <select data-idx="${idx}" class="split-method-sel">
+          <option value="cash" ${row.method === 'cash' ? 'selected' : ''}>💵 Cash</option>
+          <option value="gcash" ${row.method === 'gcash' ? 'selected' : ''}>📱 GCash</option>
+          <option value="card" ${row.method === 'card' ? 'selected' : ''}>💳 Card</option>
+          <option value="other" ${row.method === 'other' ? 'selected' : ''}>🏷 Other</option>
+        </select>
+        <input type="number" class="split-amount-inp" data-idx="${idx}" value="${row.amount}" min="0" step="0.01" placeholder="Amount">
+        <button class="remove-line-btn" data-idx="${idx}" style="width:auto; padding:4px 8px;">${splitRows.length > 1 ? '✕' : ''}</button>
+      </div>`).join('');
+
+    const splitTotal = splitRows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+    const diff = splitTotal - paymentGrandTotal;
+    const diffEl = document.getElementById('paySplitTotalDisplay');
+    diffEl.textContent = peso(splitTotal);
+    diffEl.className = diff >= 0 ? 'split-overage' : 'split-shortage';
+
+    container.querySelectorAll('.split-method-sel').forEach(sel => {
+      sel.addEventListener('change', () => { splitRows[Number(sel.dataset.idx)].method = sel.value; renderSplitRows(); updatePaymentUI(); });
+    });
+    container.querySelectorAll('.split-amount-inp').forEach(inp => {
+      inp.addEventListener('input', () => { splitRows[Number(inp.dataset.idx)].amount = Number(inp.value) || 0; renderSplitRows(); updatePaymentUI(); });
+    });
+    container.querySelectorAll('.remove-line-btn[data-idx]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (splitRows.length > 1) { splitRows.splice(Number(btn.dataset.idx), 1); renderSplitRows(); updatePaymentUI(); }
+      });
+    });
+  }
+
+  /* ================================================================
+     CONFIRM PAYMENT — send to API
+     ================================================================ */
+  async function confirmPayment() {
+    const received = getEffectiveReceived();
+    if (received < paymentGrandTotal - 0.001) {
+      document.getElementById('payValidationMsg').classList.add('visible');
+      return;
+    }
+
+    const confirmBtn = document.getElementById('payConfirmBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Processing…';
 
     try {
+      const finalPaymentMethod = splitMode ? 'split' : paymentMethod;
       const res = await adminFetch('/api/admin/sales/pos/orders', {
         method: 'POST',
         body: JSON.stringify({
-          customer_id: selectedCustomer ? Number(selectedCustomer.id) : null,
-          order_type,
-          delivery_fee,
-          payment_method,
-          cart: cart.map(c => ({
-            menu_id: c.menu_id,
-            quantity: c.qty,
-            notes: c.notes,
-            add_ons: (c.add_ons || []).map(a => ({ addon_id: a.addon_id, quantity: a.qty })),
-          })),
+          ...pendingOrderParams,
+          payment_method: finalPaymentMethod,
+          amount_received: received,
+          change_given: parseFloat((received - paymentGrandTotal).toFixed(2)),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not place order.');
 
-      showAlert(`Order #${data.order.id} placed successfully (${peso(data.order.total_amount)}).`, { title: 'Order placed' });
+      // Show success screen
+      showSuccessScreen(data.order, received);
       clearOrder();
       loadMenu();
       loadAddons();
+
     } catch (err) {
-      errEl.textContent = err.message;
-      errEl.style.display = 'block';
-    } finally {
-      submitBtn.disabled = false; submitBtn.textContent = 'Place Order';
+      const validEl = document.getElementById('payValidationMsg');
+      validEl.textContent = `⚠ ${err.message}`;
+      validEl.classList.add('visible');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirm Payment';
     }
   }
 
+  function showSuccessScreen(order, amountReceived) {
+    const change = amountReceived - paymentGrandTotal;
+    const orderId = order ? order.id : '—';
+    const orderTotal = order ? order.total_amount : paymentGrandTotal;
+    const methodLabel = { cash: 'Cash', gcash: 'GCash', card: 'Card', other: 'Other', split: 'Split Payment' };
+
+    document.getElementById('paySuccessTxnId').textContent = `Transaction #${orderId}`;
+    document.getElementById('payReceiptTable').innerHTML = `
+      <tr><td style="color:var(--ink-muted)">Subtotal</td><td>${peso(orderTotal)}</td></tr>
+      <tr><td style="color:var(--ink-muted)">Delivery Fee</td><td>${peso(pendingOrderParams.delivery_fee || 0)}</td></tr>
+      <tr class="grand-row"><td>Grand Total</td><td>${peso(paymentGrandTotal)}</td></tr>
+      <tr><td style="color:var(--ink-muted)">Amount Paid</td><td>${peso(amountReceived)}</td></tr>
+      <tr class="change-row"><td style="color:var(--ink-muted)">Change</td><td>${peso(Math.max(0, change))}</td></tr>
+      <tr><td style="color:var(--ink-muted)">Payment Method</td><td>${methodLabel[paymentMethod] || paymentMethod}</td></tr>
+    `;
+
+    document.getElementById('paySuccess').classList.add('active');
+    document.getElementById('payCardBody').scrollTop = 0;
+
+    // Replace footer with Done button
+    document.getElementById('payCardFooter').innerHTML = `
+      <button class="btn" id="payDoneBtn" style="flex:1;">Done</button>
+    `;
+    document.getElementById('payDoneBtn').addEventListener('click', () => {
+      closePaymentScreen();
+    });
+  }
+
   /* ================================================================
-     CUSTOMER SEARCH (walk-ins optional)
+     CUSTOMER SEARCH
      ================================================================ */
   function onCustomerSearchInput(e) {
     const q = e.target.value.trim();
     clearTimeout(custSearchDebounce);
-    if (q.length < 2) {
-      document.getElementById('custResults').style.display = 'none';
-      return;
-    }
+    if (q.length < 2) { document.getElementById('custResults').style.display = 'none'; return; }
     custSearchDebounce = setTimeout(() => searchCustomers(q), 250);
   }
 
@@ -1053,7 +1583,6 @@
       const res = await adminFetch(`/api/admin/customers/search?q=${encodeURIComponent(q)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Search failed.');
-
       const customers = data.customers || [];
       resultsEl.innerHTML = customers.length
         ? customers.map(c => `
@@ -1063,7 +1592,6 @@
             </div>`).join('')
         : `<div class="cust-empty-hint">No matching customers.</div>`;
       resultsEl.style.display = 'block';
-
       resultsEl.querySelectorAll('.cust-result-row[data-id]').forEach(row => {
         row.addEventListener('click', () => selectCustomer(row.dataset.id, row.dataset.name, row.dataset.email));
       });
@@ -1078,15 +1606,13 @@
     document.getElementById('custResults').style.display = 'none';
     document.getElementById('custSearchInput').value = '';
     document.getElementById('custSearchWrap').style.display = 'none';
-
     const selectedWrap = document.getElementById('custSelectedWrap');
     selectedWrap.style.display = 'block';
     selectedWrap.innerHTML = `
       <div class="cust-selected">
         <div><div class="cn">${escapeHtml(name)}</div><div class="ce">${escapeHtml(email || '')}</div></div>
         <button id="custChangeBtn">Change</button>
-      </div>
-    `;
+      </div>`;
     document.getElementById('custChangeBtn').addEventListener('click', clearSelectedCustomer);
   }
 
