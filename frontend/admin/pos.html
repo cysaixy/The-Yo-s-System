@@ -345,20 +345,22 @@
   margin-bottom: 10px;
 }
 .pay-method-pills {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 .pay-method-pill {
-  flex: 1;
-  min-width: 80px;
-  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--bone);
   color: var(--ink-muted);
   font-family: 'Inter', sans-serif;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   text-align: center;
@@ -368,6 +370,11 @@
 .pay-method-pill.active {
   background: var(--brass); border-color: var(--brass); color: #fff;
   box-shadow: 0 4px 12px rgba(163,132,74,0.28);
+}
+.pay-method-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 /* Amount received box */
@@ -836,10 +843,21 @@
             <div class="pay-method-section">
               <div class="pay-method-label">Payment Method</div>
               <div class="pay-method-pills">
-                <button class="pay-method-pill active" data-method="cash">💵 Cash</button>
-                <button class="pay-method-pill" data-method="gcash">📱 GCash</button>
-                <button class="pay-method-pill" data-method="card">💳 Card</button>
-                <button class="pay-method-pill" data-method="other">🏷 Other</button>
+                <button class="pay-method-pill active" data-method="cash">
+                  <svg viewBox="0 0 24 24" class="pay-method-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M6 12h.01M18 12h.01"></path>
+                  </svg>
+                  <span>Cash</span>
+                </button>
+                <button class="pay-method-pill" data-method="gcash">
+                  <svg viewBox="0 0 24 24" class="pay-method-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="3"></rect>
+                    <path d="M9 7h6M9 11h6M11 15h2M12 18h.01"></path>
+                  </svg>
+                  <span>GCash</span>
+                </button>
               </div>
             </div>
 
@@ -1468,10 +1486,8 @@
     container.innerHTML = splitRows.map((row, idx) => `
       <div class="pay-split-row">
         <select data-idx="${idx}" class="split-method-sel">
-          <option value="cash" ${row.method === 'cash' ? 'selected' : ''}>💵 Cash</option>
-          <option value="gcash" ${row.method === 'gcash' ? 'selected' : ''}>📱 GCash</option>
-          <option value="card" ${row.method === 'card' ? 'selected' : ''}>💳 Card</option>
-          <option value="other" ${row.method === 'other' ? 'selected' : ''}>🏷 Other</option>
+          <option value="cash" ${row.method === 'cash' ? 'selected' : ''}>Cash</option>
+          <option value="gcash" ${row.method === 'gcash' ? 'selected' : ''}>GCash</option>
         </select>
         <input type="number" class="split-amount-inp" data-idx="${idx}" value="${row.amount}" min="0" step="0.01" placeholder="Amount">
         <button class="remove-line-btn" data-idx="${idx}" style="width:auto; padding:4px 8px;">${splitRows.length > 1 ? '✕' : ''}</button>
@@ -1543,7 +1559,7 @@
     const change = amountReceived - paymentGrandTotal;
     const orderId = order ? order.id : '—';
     const orderTotal = order ? order.total_amount : paymentGrandTotal;
-    const methodLabel = { cash: 'Cash', gcash: 'GCash', card: 'Card', other: 'Other', split: 'Split Payment' };
+    const methodLabel = { cash: 'Cash', gcash: 'GCash', split: 'Split Payment' };
 
     document.getElementById('paySuccessTxnId').textContent = `Transaction #${orderId}`;
     document.getElementById('payReceiptTable').innerHTML = `
