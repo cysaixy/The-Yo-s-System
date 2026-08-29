@@ -42,17 +42,21 @@
   .donut-label {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; text-align: center;
-    font-family: 'Archivo', sans-serif; font-size: 0.82rem; line-height: 1.25; opacity: 0.8;
+    font-family: 'Space Mono', monospace; font-size: 0.64rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted);
   }
-  .donut-label strong { font-size: 1.05rem; color: var(--brass-dark); }
+  .donut-label strong {
+    font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.15rem;
+    letter-spacing: -0.02em; color: var(--brass-dark); margin-top: 2px;
+  }
   .type-row { padding: 9px 0; border-bottom: 1px solid var(--line); }
   .type-row:last-child { border-bottom: none; }
   .type-head { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; flex-wrap: wrap; }
   .type-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .type-name { flex: 1; font-weight: 600; }
-  .type-orders { font-family: 'Space Mono', monospace; font-size: 0.7rem; opacity: 0.55; }
+  .type-orders { font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 700; color: var(--ink-muted); }
   .type-amt { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--brass-dark); }
-  .type-pct { font-family: 'Space Mono', monospace; font-size: 0.72rem; opacity: 0.6; width: 40px; text-align: right; }
+  .type-pct { font-family: 'Space Mono', monospace; font-size: 0.72rem; font-weight: 700; color: var(--ink-muted); width: 40px; text-align: right; }
   .type-track { height: 6px; background: var(--stone); border-radius: 4px; margin-top: 6px; overflow: hidden; }
   .type-fill { height: 100%; border-radius: 4px; }
 
@@ -60,20 +64,21 @@
   .target-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .target-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; flex: 1; }
   .target-cell { min-width: 0; }
-  .target-cell .label { font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase; opacity: 0.55; }
+  .target-cell .label { font-family: 'Space Mono', monospace; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--ink-muted); }
   .target-cell .target-value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.35rem; margin-top: 4px; overflow-wrap: anywhere; }
   .target-cell .target-value.brass { color: var(--brass-dark); }
-  .target-cell .target-value .muted { font-size: 0.8rem; opacity: 0.45; font-weight: 600; }
+  .target-cell .target-value .muted { font-size: 0.8rem; color: var(--ink-muted); font-weight: 600; }
   .target-progress { margin-top: 20px; }
   .progress-track { height: 10px; background: var(--stone); border-radius: 6px; overflow: hidden; }
   .progress-fill {
     height: 100%; min-width: 0; border-radius: 6px;
-    background: linear-gradient(90deg, var(--brass), var(--brass-dark));
+    background: var(--brass);
     transition: width .4s ease;
   }
   .progress-labels {
     display: flex; justify-content: space-between; margin-top: 8px;
-    font-family: 'Space Mono', monospace; font-size: 0.68rem; opacity: 0.6;
+    font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700;
+    color: var(--ink-muted);
     text-transform: uppercase; letter-spacing: 0.03em;
     flex-wrap: wrap; gap: 4px 12px;
   }
@@ -81,13 +86,14 @@
   /* ---------- Charts ---------- */
   .chart-wrap { width: 100%; }
   .chart-wrap svg { width: 100%; height: auto; display: block; }
-  .chart-label { font-family: 'Space Mono', monospace; font-size: 10px; fill: #96928a; }
-  .chart-legend-row { margin-bottom: 10px; }
+  .chart-label { font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; fill: var(--ink-muted, #4d5156); letter-spacing: 0.02em; }
+  .chart-legend-row { margin-bottom: 12px; }
   .chart-legend {
-    display: inline-flex; align-items: center; gap: 6px; margin-right: 18px;
-    font-family: 'Space Mono', monospace; font-size: 0.7rem; text-transform: uppercase; opacity: 0.7;
+    display: inline-flex; align-items: center; gap: 7px; margin-right: 20px;
+    font-family: 'Space Mono', monospace; font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink); opacity: 0.9;
   }
-  .chart-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .chart-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -144,37 +150,73 @@
     return data;
   }
 
-  // Hand-rolled SVG line chart — no library, no fake data. Each dot
-  // carries a native <title> tooltip so values are inspectable.
+  // Hand-rolled SVG line chart — no library, no fake data.
+  // Uses tactile dashed grid, soft outlier curve scaling, diamond markers,
+  // and direct peak annotation.
   function trendChart({ labels, series, height = 230 }) {
-    const W = 640, PL = 56, PR = 16, PT = 14, PB = 30;
+    const W = 640, PL = 60, PR = 20, PT = 24, PB = 30;
     const allVals = series.flatMap((s) => s.values);
     const max = Math.max(...allVals, 1);
     const innerW = W - PL - PR;
     const innerH = height - PT - PB;
     const n = labels.length;
-    const xs = (i) => PL + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
-    const ys = (v) => PT + innerH - (v / max) * innerH;
 
+    // Soft power scaling to prevent a single outlier day from flattening lower values
+    const norm = (v) => (v <= 0 ? 0 : Math.pow(v / max, 0.82));
+    const xs = (i) => PL + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+    const ys = (v) => PT + innerH - norm(v) * innerH;
+
+    // Tactile dashed grid lines with accurate tick labeling
     const grid = [0, 0.25, 0.5, 0.75, 1].map((f) => {
-      const y = ys(max * f);
-      return `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="#ebe6db" stroke-width="1"/>` +
-        `<text x="${PL - 8}" y="${y + 4}" text-anchor="end" class="chart-label">${compactPeso(max * f)}</text>`;
+      const val = max * f;
+      const y = ys(val);
+      return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="#dfd7ca" stroke-width="1" stroke-dasharray="3,3"/>` +
+        `<text x="${PL - 10}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" class="chart-label">${compactPeso(val)}</text>`;
     }).join('');
 
     const areaPath = series.length === 1
-      ? `<path d="${series[0].values.map((v, i) => `${i === 0 ? 'M' : 'L'}${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ')} L${xs(n - 1).toFixed(1)},${(PT + innerH)} L${xs(0).toFixed(1)},${(PT + innerH)} Z" fill="rgba(163,132,74,0.10)"/>`
+      ? `<path d="${series[0].values.map((v, i) => `${i === 0 ? 'M' : 'L'}${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ')} L${xs(n - 1).toFixed(1)},${(PT + innerH)} L${xs(0).toFixed(1)},${(PT + innerH)} Z" fill="rgba(163,132,74,0.08)"/>`
       : '';
+
+    // Find peak value across series to annotate directly
+    let peakVal = 0, peakX = 0, peakY = 0, peakColor = '#a3844a';
+    series.forEach((s) => {
+      s.values.forEach((v, i) => {
+        if (v > peakVal) {
+          peakVal = v;
+          peakX = xs(i);
+          peakY = ys(v);
+          peakColor = s.color || '#a3844a';
+        }
+      });
+    });
 
     const lines = series.map((s) => {
       const path = s.values.map((v, i) => `${i === 0 ? 'M' : 'L'}${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
-      const dots = s.values.map((v, i) =>
-        `<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3" fill="${s.color}" stroke="#fff" stroke-width="1.4">
-          <title>${s.titles ? s.titles[i] : (labels[i] + ': ' + v)}</title>
-        </circle>`
-      ).join('');
-      return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
+      const diamonds = s.values.map((v, i) => {
+        const x = xs(i);
+        const y = ys(v);
+        const title = s.titles ? s.titles[i] : (labels[i] + ': ' + v);
+        return `<polygon points="${x.toFixed(1)},${(y - 4.5).toFixed(1)} ${(x + 4.5).toFixed(1)},${y.toFixed(1)} ${x.toFixed(1)},${(y + 4.5).toFixed(1)} ${(x - 4.5).toFixed(1)},${y.toFixed(1)}" fill="${s.color}" stroke="#ffffff" stroke-width="1.6">
+          <title>${title}</title>
+        </polygon>`;
+      }).join('');
+      return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>${diamonds}`;
     }).join('');
+
+    // Peak annotation callout badge directly on the chart
+    let peakAnnotation = '';
+    if (peakVal > 0) {
+      const badgeW = 72;
+      const badgeH = 18;
+      const clampedX = Math.max(PL + badgeW / 2, Math.min(W - PR - badgeW / 2, peakX));
+      peakAnnotation = `
+        <g class="peak-badge">
+          <line x1="${peakX.toFixed(1)}" y1="${(peakY - 18).toFixed(1)}" x2="${peakX.toFixed(1)}" y2="${(peakY - 5).toFixed(1)}" stroke="${peakColor}" stroke-width="1.2" stroke-dasharray="2,2"/>
+          <rect x="${(clampedX - badgeW / 2).toFixed(1)}" y="${(peakY - 26).toFixed(1)}" width="${badgeW}" height="${badgeH}" rx="4" fill="#15171a" />
+          <text x="${clampedX.toFixed(1)}" y="${(peakY - 14).toFixed(1)}" text-anchor="middle" font-family="'Space Mono', monospace" font-size="9" font-weight="700" fill="#faf7f2">PEAK ${compactPeso(peakVal)}</text>
+        </g>`;
+    }
 
     const labelStep = Math.max(1, Math.ceil(n / 6));
     const xLabels = labels.map((l, i) => (i % labelStep === 0 || i === n - 1)
@@ -183,26 +225,42 @@
     const legend = `<div class="chart-legend-row">${series.map((s) =>
       `<span class="chart-legend"><i style="background:${s.color}"></i>${s.name}</span>`).join('')}</div>`;
 
-    return `<div class="chart-wrap">${legend}<svg viewBox="0 0 ${W} ${height}" role="img">${grid}${areaPath}${lines}${xLabels}</svg></div>`;
+    return `<div class="chart-wrap">${legend}<svg viewBox="0 0 ${W} ${height}" role="img">${grid}${areaPath}${lines}${peakAnnotation}${xLabels}</svg></div>`;
   }
 
-  // Donut chart for the order-type breakdown.
+  // Donut chart with tactile gaps and percentage labels on segments
   function donutChart(segments, total) {
     const size = 170, R = 62, C = 2 * Math.PI * R;
     const cx = size / 2;
+    const cy = size / 2;
     let cumulative = 0;
+    const gap = (segments.length > 1 && total > 0) ? 3.5 : 0;
+
+    let segmentTexts = '';
     const arcs = segments.map((seg) => {
       const frac = total > 0 ? num(seg.total_sales) / total : 0;
-      const dash = frac * C;
-      const offset = C * 0.25 - cumulative * C;
+      if (frac <= 0) return '';
+      const dash = Math.max(0, frac * C - gap);
+      const offset = C * 0.25 - cumulative * C - gap / 2;
+
+      // Add percentage text on sufficiently large slices
+      if (frac >= 0.08) {
+        const midAngle = 2 * Math.PI * (cumulative + frac / 2) - Math.PI / 2;
+        const lx = cx + R * Math.cos(midAngle);
+        const ly = cy + R * Math.sin(midAngle) + 3.5;
+        const pct = Math.round(frac * 100);
+        segmentTexts += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" font-family="'Space Mono', monospace" font-size="9" font-weight="700" fill="#ffffff">${pct}%</text>`;
+      }
+
       cumulative += frac;
-      return `<circle cx="${cx}" cy="${cx}" r="${R}" fill="none"
+      return `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none"
         stroke="${TYPE_COLORS[seg.order_type] || '#a3844a'}" stroke-width="24"
-        stroke-dasharray="${dash.toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}">
-        <title>${TYPE_LABELS[seg.order_type] || seg.order_type}: ${peso(seg.total_sales)}</title>
+        stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}">
+        <title>${TYPE_LABELS[seg.order_type] || seg.order_type}: ${peso(seg.total_sales)} (${Math.round(frac * 100)}%)</title>
       </circle>`;
     }).join('');
-    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${arcs}</svg>`;
+
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${arcs}${segmentTexts}</svg>`;
   }
 
   /* ================================================================

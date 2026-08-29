@@ -368,6 +368,8 @@ export function renderAdminShell({ active, title }) {
         <div class="admin-logo">
           <span class="mark">TY</span>
           <span class="brand-label">THE~YO'S</span>
+        </div>
+        <div class="sidebar-toggle-row">
           <button class="sidebar-toggle" id="adminSidebarToggle" type="button" aria-label="Minimize sidebar" title="Minimize sidebar">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <path d="M4 6h16M4 12h16M4 18h16"/>
