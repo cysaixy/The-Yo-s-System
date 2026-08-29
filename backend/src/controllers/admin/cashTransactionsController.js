@@ -9,18 +9,19 @@ export async function listTransactions(req, res, next) {
 
     if (transaction_type) {
       params.push(transaction_type);
-      conditions.push(`ct.transaction_type = $${params.length}`);
+      conditions.push(`cash_transactions.transaction_type = $${params.length}`);
     }
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
     const { rows } = await pool.query(
-      `SELECT ct.id, ct.transaction_type, ct.amount, ct.category, ct.description, ct.transaction_date,
-              ca.name AS account_name, s.name AS staff_name
-       FROM cash_transactions ct
-       JOIN cash_accounts ca ON ca.id = ct.cash_account_id
-       LEFT JOIN staff s ON s.id = ct.staff_id
+      `SELECT cash_transactions.id, cash_transactions.transaction_type, cash_transactions.amount,
+              cash_transactions.category, cash_transactions.description, cash_transactions.transaction_date,
+              cash_accounts.name AS account_name, staff.name AS staff_name
+       FROM cash_transactions
+       JOIN cash_accounts ON cash_accounts.id = cash_transactions.cash_account_id
+       LEFT JOIN staff ON staff.id = cash_transactions.staff_id
        ${where}
-       ORDER BY ct.transaction_date DESC`,
+       ORDER BY cash_transactions.transaction_date DESC`,
       params
     );
     res.json({ transactions: rows });

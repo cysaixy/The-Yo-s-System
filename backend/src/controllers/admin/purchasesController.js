@@ -7,19 +7,19 @@ export async function list(req, res, next) {
     const conditions = [];
     const params = [];
 
-    if (from) { params.push(from); conditions.push(`si.stockin_date::date >= $${params.length}`); }
-    if (to) { params.push(to); conditions.push(`si.stockin_date::date <= $${params.length}`); }
+    if (from) { params.push(from); conditions.push(`stock_in.stockin_date::date >= $${params.length}`); }
+    if (to) { params.push(to); conditions.push(`stock_in.stockin_date::date <= $${params.length}`); }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
     const { rows } = await pool.query(
-      `SELECT si.id, mi.name AS item_name, s.name AS staff_name, si.quantity,
-              si.expiration_date, si.stockin_date, si.remarks
-       FROM stock_in si
-       JOIN menu_items mi ON mi.id = si.menu_id
-       LEFT JOIN staff s ON s.id = si.staff_id
+      `SELECT stock_in.id, menu_items.name AS item_name, staff.name AS staff_name, stock_in.quantity,
+              stock_in.expiration_date, stock_in.stockin_date, stock_in.remarks
+       FROM stock_in
+       JOIN menu_items ON menu_items.id = stock_in.menu_id
+       LEFT JOIN staff ON staff.id = stock_in.staff_id
        ${where}
-       ORDER BY si.stockin_date DESC`,
+       ORDER BY stock_in.stockin_date DESC`,
       params
     );
 

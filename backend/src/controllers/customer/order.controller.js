@@ -270,36 +270,37 @@ export async function createOrder(req, res, next) {
     client.release();
   }
 }
+
 const ORDER_ITEM_AGG = (orderRef) => `
   (SELECT COALESCE(json_agg(sub.*), '[]')
    FROM (
-     SELECT oi.menu_id, mi.name AS item_name, oi.quantity, oi.price, oi.subtotal, oi.notes,
+     SELECT order_items.menu_id, menu_items.name AS item_name, order_items.quantity, order_items.price, order_items.subtotal, order_items.notes,
             COALESCE(
               json_agg(
                 json_build_object(
-                  'name', oia.name,
-                  'quantity', oia.quantity,
-                  'price', oia.price,
-                  'subtotal', oia.subtotal
+                  'name', order_item_add_ons.name,
+                  'quantity', order_item_add_ons.quantity,
+                  'price', order_item_add_ons.price,
+                  'subtotal', order_item_add_ons.subtotal
                 )
-              ) FILTER (WHERE oia.id IS NOT NULL),
+              ) FILTER (WHERE order_item_add_ons.id IS NOT NULL),
               '[]'
             ) AS add_ons
-     FROM order_items oi
-     JOIN menu_items mi ON mi.id = oi.menu_id
-     LEFT JOIN order_item_add_ons oia ON oia.order_item_id = oi.id
-     WHERE oi.order_id = ${orderRef}
-     GROUP BY oi.id, mi.name
+     FROM order_items
+     JOIN menu_items ON menu_items.id = order_items.menu_id
+     LEFT JOIN order_item_add_ons ON order_item_add_ons.order_item_id = order_items.id
+     WHERE order_items.order_id = ${orderRef}
+     GROUP BY order_items.id, menu_items.name
    ) sub) AS items`;
 
-const RESERVATION_FIELDS = `r.reservation_id, r.reservation_status, r.reservation_date, r.reservation_time`;
+const RESERVATION_FIELDS = `reservations.id AS reservation_id, reservations.reservation_status, reservations.reservation_date, reservations.reservation_time`;
 
 export async function getOrder(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT o.*, ${ORDER_ITEM_AGG("o.id")}
-       FROM orders o
-       WHERE o.id = $1`,
+      `SELECT orders.*, ${ORDER_ITEM_AGG("orders.id")}
+       FROM orders
+       WHERE orders.id = $1`,
       [req.params.id]
     );
 
@@ -329,10 +330,10 @@ export async function getCustomerOrders(req, res, next) {
     }
 
     const { rows } = await pool.query(
-      `SELECT o.*, ${ORDER_ITEM_AGG("o.id")}
-       FROM orders o
-       WHERE o.customer_id = $1
-       ORDER BY o.datetime_ordered DESC`,
+      `SELECT orders.*, ${ORDER_ITEM_AGG("orders.id")}
+       FROM orders
+       WHERE orders.customer_id = $1
+       ORDER BY orders.datetime_ordered DESC`,
       [customer_id]
     );
 

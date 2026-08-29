@@ -23,13 +23,13 @@ export async function summary(req, res, next) {
          GROUP BY order_type`
       ),
       pool.query(
-        `SELECT c.name AS category_name, COALESCE(SUM(oi.subtotal), 0)::numeric AS total_sales
-         FROM order_items oi
-         JOIN menu_items mi ON mi.id = oi.menu_id
-         JOIN categories c ON c.id = mi.category_id
-         JOIN orders o ON o.id = oi.order_id
-         WHERE o.status <> 'cancelled'
-         GROUP BY c.id, c.name
+        `SELECT categories.name AS category_name, COALESCE(SUM(order_items.subtotal), 0)::numeric AS total_sales
+         FROM order_items
+         JOIN menu_items ON menu_items.id = order_items.menu_id
+         JOIN categories ON categories.id = menu_items.category_id
+         JOIN orders ON orders.id = order_items.order_id
+         WHERE orders.status <> 'cancelled'
+         GROUP BY categories.id, categories.name
          ORDER BY total_sales DESC`
       ),
     ]);

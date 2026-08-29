@@ -25,18 +25,18 @@ export async function summary(req, res, next) {
       // dashboard, not all-time.
       pool.query(
         `WITH today_orders AS (
-           SELECT o.id,
-                  CASE WHEN o.order_type = 'online' AND o.delivery_address IS NOT NULL
-                       THEN 'delivery' ELSE o.order_type END AS order_type,
-                  o.total_amount, o.delivery_fee,
-                  (SELECT COALESCE(SUM(oi.cost * oi.quantity), 0)
-                   FROM order_items oi WHERE oi.order_id = o.id) AS base_cogs,
-                  (SELECT COALESCE(SUM(oia.cost * oia.quantity), 0)
-                   FROM order_item_add_ons oia
-                   JOIN order_items oi2 ON oi2.id = oia.order_item_id
-                   WHERE oi2.order_id = o.id) AS addon_cogs
-           FROM orders o
-           WHERE o.datetime_ordered::date = CURRENT_DATE AND o.status <> 'cancelled'
+           SELECT orders.id,
+                  CASE WHEN orders.order_type = 'online' AND orders.delivery_address IS NOT NULL
+                       THEN 'delivery' ELSE orders.order_type END AS order_type,
+                  orders.total_amount, orders.delivery_fee,
+                  (SELECT COALESCE(SUM(order_items.cost * order_items.quantity), 0)
+                   FROM order_items WHERE order_items.order_id = orders.id) AS base_cogs,
+                  (SELECT COALESCE(SUM(order_item_add_ons.cost * order_item_add_ons.quantity), 0)
+                   FROM order_item_add_ons
+                   JOIN order_items AS oi2 ON oi2.id = order_item_add_ons.order_item_id
+                   WHERE oi2.order_id = orders.id) AS addon_cogs
+           FROM orders
+           WHERE orders.datetime_ordered::date = CURRENT_DATE AND orders.status <> 'cancelled'
          )
          SELECT COUNT(*)::int AS order_count,
                 COUNT(DISTINCT order_type)::int AS order_types_count,

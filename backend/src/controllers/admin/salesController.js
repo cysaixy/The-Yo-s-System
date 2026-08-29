@@ -33,10 +33,10 @@ function periodWhere({ from, to, status = "!cancelled" }, paramStart = 1) {
   const params = [];
   let n = paramStart;
 
-  if (from) { params.push(from); conditions.push(`o.datetime_ordered::date >= $${n}`); n++; }
-  if (to)   { params.push(to);   conditions.push(`o.datetime_ordered::date <= $${n}`); n++; }
-  if (status === "!cancelled") conditions.push(`o.status <> 'cancelled'`);
-  else if (status) { params.push(status); conditions.push(`o.status = $${n}`); n++; }
+  if (from) { params.push(from); conditions.push(`orders.datetime_ordered::date >= $${n}`); n++; }
+  if (to)   { params.push(to);   conditions.push(`orders.datetime_ordered::date <= $${n}`); n++; }
+  if (status === "!cancelled") conditions.push(`orders.status <> 'cancelled'`);
+  else if (status) { params.push(status); conditions.push(`orders.status = $${n}`); n++; }
 
   return { where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "", params, nextIndex: n };
 }
@@ -273,17 +273,17 @@ export async function listOrders(req, res, next) {
     const conditions = [];
     const params = [];
 
-    if (from) { params.push(from); conditions.push(`o.datetime_ordered::date >= $${params.length}`); }
-    if (to) { params.push(to); conditions.push(`o.datetime_ordered::date <= $${params.length}`); }
-    if (status) { params.push(status); conditions.push(`o.status = $${params.length}`); }
-    if (order_type) { params.push(order_type); conditions.push(`o.order_type = $${params.length}`); }
+    if (from) { params.push(from); conditions.push(`orders.datetime_ordered::date >= $${params.length}`); }
+    if (to) { params.push(to); conditions.push(`orders.datetime_ordered::date <= $${params.length}`); }
+    if (status) { params.push(status); conditions.push(`orders.status = $${params.length}`); }
+    if (order_type) { params.push(order_type); conditions.push(`orders.order_type = $${params.length}`); }
     if (payment) {
       params.push(payment);
-      conditions.push(`EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.id AND p.payment_method = $${params.length})`);
+      conditions.push(`EXISTS (SELECT 1 FROM payments WHERE payments.order_id = orders.id AND payments.payment_method = $${params.length})`);
     }
     if (search) {
       params.push(`%${search}%`);
-      conditions.push(`(c.name ILIKE $${params.length} OR s.name ILIKE $${params.length})`);
+      conditions.push(`(customers.name ILIKE $${params.length} OR staff.name ILIKE $${params.length})`);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -437,8 +437,8 @@ export async function updateDeliveryFee(req, res, next) {
 export async function listPayments(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT p.id, p.order_id, p.payment_method, p.amount, p.datetime_paid, p.status
-       FROM payments p ORDER BY p.datetime_paid DESC NULLS LAST`
+      `SELECT payments.id, payments.order_id, payments.payment_method, payments.amount, payments.datetime_paid, payments.status
+       FROM payments ORDER BY payments.datetime_paid DESC NULLS LAST`
     );
     res.json({ payments: rows });
   } catch (err) {
@@ -472,13 +472,13 @@ export async function salesSummary(req, res, next) {
 
     const { rows } = await pool.query(
       `WITH agg AS (
-         SELECT o.id, o.total_amount, o.delivery_fee,
-                (SELECT COALESCE(SUM(oi.cost * oi.quantity), 0) FROM order_items oi WHERE oi.order_id = o.id) AS base_cogs,
-                (SELECT COALESCE(SUM(oia.cost * oia.quantity), 0)
-                 FROM order_item_add_ons oia
-                 JOIN order_items oi2 ON oi2.id = oia.order_item_id
-                 WHERE oi2.order_id = o.id) AS addon_cogs
-         FROM orders o ${where}
+         SELECT orders.id, orders.total_amount, orders.delivery_fee,
+                (SELECT COALESCE(SUM(order_items.cost * order_items.quantity), 0) FROM order_items WHERE order_items.order_id = orders.id) AS base_cogs,
+                (SELECT COALESCE(SUM(order_item_add_ons.cost * order_item_add_ons.quantity), 0)
+                 FROM order_item_add_ons
+                 JOIN order_items AS oi2 ON oi2.id = order_item_add_ons.order_item_id
+                 WHERE oi2.order_id = orders.id) AS addon_cogs
+         FROM orders ${where}
        )
        SELECT COUNT(*)::int AS order_count,
               COALESCE(SUM(total_amount), 0) AS gross_sales,
@@ -532,15 +532,15 @@ export async function dailySales(req, res, next) {
 
     const { rows } = await pool.query(
       `WITH per_order AS (
-         SELECT o.id, to_char(o.datetime_ordered::date, 'YYYY-MM-DD') AS date,
-                o.total_amount, o.delivery_fee,
-                (SELECT COALESCE(SUM(oi.cost * oi.quantity), 0)
-                 FROM order_items oi WHERE oi.order_id = o.id) AS base_cogs,
-                (SELECT COALESCE(SUM(oia.cost * oia.quantity), 0)
-                 FROM order_item_add_ons oia
-                 JOIN order_items oi2 ON oi2.id = oia.order_item_id
-                 WHERE oi2.order_id = o.id) AS addon_cogs
-         FROM orders o ${where}
+         SELECT orders.id, to_char(orders.datetime_ordered::date, 'YYYY-MM-DD') AS date,
+                orders.total_amount, orders.delivery_fee,
+                (SELECT COALESCE(SUM(order_items.cost * order_items.quantity), 0)
+                 FROM order_items WHERE order_items.order_id = orders.id) AS base_cogs,
+                (SELECT COALESCE(SUM(order_item_add_ons.cost * order_item_add_ons.quantity), 0)
+                 FROM order_item_add_ons
+                 JOIN order_items AS oi2 ON oi2.id = order_item_add_ons.order_item_id
+                 WHERE oi2.order_id = orders.id) AS addon_cogs
+         FROM orders ${where}
        )
        SELECT date,
               COUNT(*)::int AS order_count,
@@ -732,7 +732,7 @@ export async function salesReport(req, res, next) {
     const { where, params } = periodWhere({ from: req.query.from, to: req.query.to });
     // periodWhere already emits "WHERE ..." including the non-cancelled
     // order guard; the payments aggregate just needs the paid guard chained.
-    const whereStr = `${where} AND p.status = 'paid'`;
+    const whereStr = `${where} AND payments.status = 'paid'`;
 
     const { rows } = await pool.query(
       `SELECT payments.payment_method, COUNT(*)::int AS transaction_count, SUM(payments.amount) AS total_amount
