@@ -12,12 +12,12 @@ const CONFLICT_WINDOW_MINUTES = 120;
 export async function listAll(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT r.id, c.name AS customer_name, c.email AS customer_email,
-              c.phone AS customer_phone, r.table_no, r.reservation_date,
-              r.reservation_time, r.guests, r.status, r.reservation_status, r.order_status, r.notes, r.datetime_reserved
-       FROM reservations r
-       JOIN customers c ON c.id = r.customer_id
-       ORDER BY r.reservation_date, r.reservation_time`
+      `SELECT reservations.id, customers.name AS customer_name, customers.email AS customer_email,
+              customers.phone AS customer_phone, reservations.table_no, reservations.reservation_date,
+              reservations.reservation_time, reservations.guests, reservations.status, reservations.reservation_status, reservations.order_status, reservations.notes, reservations.datetime_reserved
+       FROM reservations
+       JOIN customers ON customers.id = reservations.customer_id
+       ORDER BY reservations.reservation_date, reservations.reservation_time`
     );
     res.json({ reservations: rows });
   } catch (err) {
@@ -43,8 +43,8 @@ export async function listTables(req, res, next) {
 export async function getById(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT r.*, c.name AS customer_name FROM reservations r
-       JOIN customers c ON c.id = r.customer_id WHERE r.id = $1`,
+      `SELECT reservations.*, customers.name AS customer_name FROM reservations
+       JOIN customers ON customers.id = reservations.customer_id WHERE reservations.id = $1`,
       [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: "Reservation not found." });
@@ -96,13 +96,13 @@ export async function confirmReservation(req, res, next) {
     }
 
     const conflict = await pool.query(
-      `SELECT r.id, r.table_no, r.reservation_time, r.guests
-       FROM reservations r
-       WHERE r.table_no = $1
-         AND r.reservation_date = $2
-         AND r.status = 'confirmed'
-         AND r.id <> $3
-         AND ABS(EXTRACT(EPOCH FROM (r.reservation_time - $4::time))) / 60 < $5`,
+      `SELECT reservations.id, reservations.table_no, reservations.reservation_time, reservations.guests
+       FROM reservations
+       WHERE reservations.table_no = $1
+         AND reservations.reservation_date = $2
+         AND reservations.status = 'confirmed'
+         AND reservations.id <> $3
+         AND ABS(EXTRACT(EPOCH FROM (reservations.reservation_time - $4::time))) / 60 < $5`,
       [table.table_no, reservation.reservation_date, reservation.id,
        reservation.reservation_time, CONFLICT_WINDOW_MINUTES]
     );

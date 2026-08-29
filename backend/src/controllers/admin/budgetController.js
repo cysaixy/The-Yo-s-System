@@ -28,17 +28,17 @@ export async function list(req, res, next) {
     // the same category/month, so the planner always reflects real data
     // rather than a number you'd have to update by hand.
     const { rows } = await pool.query(
-      `SELECT b.id, b.category, b.budget_month, b.planned_amount, b.notes,
+      `SELECT budgets.id, budgets.category, budgets.budget_month, budgets.planned_amount, budgets.notes,
               COALESCE(actual.spent, 0) AS actual_spent
-       FROM budgets b
+       FROM budgets
        LEFT JOIN (
          SELECT LOWER(BTRIM(category)) AS category_key, date_trunc('month', transaction_date)::date AS month, SUM(amount) AS spent
          FROM cash_transactions
          WHERE transaction_type = 'out' AND NULLIF(BTRIM(category), '') IS NOT NULL
          GROUP BY LOWER(BTRIM(category)), date_trunc('month', transaction_date)
-       ) actual ON actual.category_key = LOWER(BTRIM(b.category)) AND actual.month = b.budget_month
+       ) actual ON actual.category_key = LOWER(BTRIM(budgets.category)) AND actual.month = budgets.budget_month
        ${where}
-       ORDER BY b.budget_month DESC, b.category ASC`,
+       ORDER BY budgets.budget_month DESC, budgets.category ASC`,
       params
     );
     res.json({ budgets: rows });

@@ -94,10 +94,10 @@ export async function createOrder(req, res, next) {
 
       // Check linked raw ingredients for this menu item
       const { rows: itemComps } = await client.query(
-        `SELECT mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
-         FROM menu_item_inventory mii
-         JOIN inventory_items ii ON ii.id = mii.inventory_id
-         WHERE mii.menu_id = $1`,
+        `SELECT menu_item_inventory.inventory_id, menu_item_inventory.quantity, menu_item_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
+         FROM menu_item_inventory
+         JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id
+         WHERE menu_item_inventory.menu_id = $1`,
         [menuItem.id]
       );
       for (const comp of itemComps) {
@@ -144,10 +144,10 @@ export async function createOrder(req, res, next) {
 
           // Check linked raw ingredients have enough stock for the add-on qty.
           const { rows: comps } = await client.query(
-            `SELECT ai.inventory_id, ai.quantity, ai.unit, ii.name AS inventory_name, ii.stock_quantity
-             FROM addon_inventory ai
-             JOIN inventory_items ii ON ii.id = ai.inventory_id
-             WHERE ai.addon_id = $1`,
+            `SELECT addon_inventory.inventory_id, addon_inventory.quantity, addon_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
+             FROM addon_inventory
+             JOIN inventory_items ON inventory_items.id = addon_inventory.inventory_id
+             WHERE addon_inventory.addon_id = $1`,
             [addon.id]
           );
           for (const comp of comps) {

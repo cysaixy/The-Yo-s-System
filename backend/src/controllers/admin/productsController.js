@@ -65,20 +65,20 @@ export const deleteCategory = async (req, res, next) => {
 export const listAllMenuItems = async (req, res, next) => {
   try {
     const { rows: items } = await pool.query(
-      `SELECT mi.id, mi.category_id, mi.name, mi.description, mi.price, mi.cost,
-              mi.image_url, mi.stock_quantity, mi.status, c.name AS category_name
-       FROM menu_items mi
-       LEFT JOIN categories c ON c.id = mi.category_id
-       ORDER BY mi.name`
+      `SELECT menu_items.id, menu_items.category_id, menu_items.name, menu_items.description, menu_items.price, menu_items.cost,
+              menu_items.image_url, menu_items.stock_quantity, menu_items.status, categories.name AS category_name
+       FROM menu_items
+       LEFT JOIN categories ON categories.id = menu_items.category_id
+       ORDER BY menu_items.name`
     );
 
     const itemsWithInv = await Promise.all(
       items.map(async (item) => {
         const { rows: invComp } = await pool.query(
-          `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
-           FROM menu_item_inventory mii
-           JOIN inventory_items ii ON ii.id = mii.inventory_id
-           WHERE mii.menu_id = $1`,
+          `SELECT menu_item_inventory.id, menu_item_inventory.inventory_id, menu_item_inventory.quantity, menu_item_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
+           FROM menu_item_inventory
+           JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id
+           WHERE menu_item_inventory.menu_id = $1`,
           [item.id]
         );
         return {
@@ -99,11 +99,11 @@ export const getMenuItem = async (req, res, next) => {
     const { id } = req.params;
 
     const { rows } = await pool.query(
-      `SELECT mi.id, mi.category_id, mi.name, mi.description, mi.price, mi.cost,
-              mi.image_url, mi.stock_quantity, mi.status, c.name AS category_name
-       FROM menu_items mi
-       LEFT JOIN categories c ON c.id = mi.category_id
-       WHERE mi.id = $1`,
+      `SELECT menu_items.id, menu_items.category_id, menu_items.name, menu_items.description, menu_items.price, menu_items.cost,
+              menu_items.image_url, menu_items.stock_quantity, menu_items.status, categories.name AS category_name
+       FROM menu_items
+       LEFT JOIN categories ON categories.id = menu_items.category_id
+       WHERE menu_items.id = $1`,
       [id]
     );
 
@@ -115,10 +115,10 @@ export const getMenuItem = async (req, res, next) => {
     }
 
     const { rows: invComp } = await pool.query(
-      `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
-       FROM menu_item_inventory mii
-       JOIN inventory_items ii ON ii.id = mii.inventory_id
-       WHERE mii.menu_id = $1`,
+      `SELECT menu_item_inventory.id, menu_item_inventory.inventory_id, menu_item_inventory.quantity, menu_item_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
+       FROM menu_item_inventory
+       JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id
+       WHERE menu_item_inventory.menu_id = $1`,
       [id]
     );
 
@@ -174,10 +174,10 @@ export const createMenuItem = async (req, res, next) => {
     await client.query("COMMIT");
 
     const { rows: invComp } = await pool.query(
-      `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
-       FROM menu_item_inventory mii
-       JOIN inventory_items ii ON ii.id = mii.inventory_id
-       WHERE mii.menu_id = $1`,
+      `SELECT menu_item_inventory.id, menu_item_inventory.inventory_id, menu_item_inventory.quantity, menu_item_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
+       FROM menu_item_inventory
+       JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id
+       WHERE menu_item_inventory.menu_id = $1`,
       [item.id]
     );
 
@@ -232,10 +232,10 @@ export const updateMenuItem = async (req, res, next) => {
     await client.query("COMMIT");
 
     const { rows: invComp } = await pool.query(
-      `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
-       FROM menu_item_inventory mii
-       JOIN inventory_items ii ON ii.id = mii.inventory_id
-       WHERE mii.menu_id = $1`,
+      `SELECT menu_item_inventory.id, menu_item_inventory.inventory_id, menu_item_inventory.quantity, menu_item_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
+       FROM menu_item_inventory
+       JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id
+       WHERE menu_item_inventory.menu_id = $1`,
       [req.params.id]
     );
 
@@ -297,19 +297,19 @@ export const listAddons = async (req, res, next) => {
       addons.map(async (addon) => {
         // Linked inventory items
         const { rows: invComp } = await pool.query(
-          `SELECT ai.id, ai.inventory_id, ai.quantity, ai.unit, ii.name AS inventory_name, ii.stock_quantity
-           FROM addon_inventory ai
-           JOIN inventory_items ii ON ii.id = ai.inventory_id
-           WHERE ai.addon_id = $1`,
+          `SELECT addon_inventory.id, addon_inventory.inventory_id, addon_inventory.quantity, addon_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
+           FROM addon_inventory
+           JOIN inventory_items ON inventory_items.id = addon_inventory.inventory_id
+           WHERE addon_inventory.addon_id = $1`,
           [addon.id]
         );
 
         // Applicable products
         const { rows: prodList } = await pool.query(
-          `SELECT ap.menu_id, mi.name AS product_name
-           FROM addon_products ap
-           JOIN menu_items mi ON mi.id = ap.menu_id
-           WHERE ap.addon_id = $1`,
+          `SELECT addon_products.menu_id, menu_items.name AS product_name
+           FROM addon_products
+           JOIN menu_items ON menu_items.id = addon_products.menu_id
+           WHERE addon_products.addon_id = $1`,
           [addon.id]
         );
 
@@ -474,10 +474,10 @@ export const listBundles = async (req, res, next) => {
       bundles.map(async (bundle) => {
         // Linked products
         const { rows: prods } = await pool.query(
-          `SELECT bp.id, bp.menu_id, bp.quantity, mi.name AS product_name, mi.price, mi.status AS product_status, mi.stock_quantity
-           FROM bundle_products bp
-           JOIN menu_items mi ON mi.id = bp.menu_id
-           WHERE bp.bundle_id = $1`,
+          `SELECT bundle_products.id, bundle_products.menu_id, bundle_products.quantity, menu_items.name AS product_name, menu_items.price, menu_items.status AS product_status, menu_items.stock_quantity
+           FROM bundle_products
+           JOIN menu_items ON menu_items.id = bundle_products.menu_id
+           WHERE bundle_products.bundle_id = $1`,
           [bundle.id]
         );
 

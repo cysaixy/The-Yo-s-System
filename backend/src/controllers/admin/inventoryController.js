@@ -137,11 +137,11 @@ export async function deleteItem(req, res, next) {
 
     // Check if linked to any products or add-ons
     const linkedProducts = await pool.query(
-      `SELECT m.name FROM menu_items m JOIN menu_item_inventory mii ON mii.menu_id = m.id WHERE mii.inventory_id = $1`,
+      `SELECT menu_items.name FROM menu_items JOIN menu_item_inventory ON menu_item_inventory.menu_id = menu_items.id WHERE menu_item_inventory.inventory_id = $1`,
       [id]
     );
     const linkedAddons = await pool.query(
-      `SELECT a.name FROM add_ons a JOIN addon_inventory ai ON ai.addon_id = a.id WHERE ai.inventory_id = $1`,
+      `SELECT add_ons.name FROM add_ons JOIN addon_inventory ON addon_inventory.addon_id = add_ons.id WHERE addon_inventory.inventory_id = $1`,
       [id]
     );
 
@@ -260,15 +260,15 @@ export async function log(req, res, next) {
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
     const { rows } = await pool.query(
-      `SELECT il.id, COALESCE(ii.name, mi.name, 'Inventory Item') AS item_name,
-              s.name AS staff_name, il.transaction_type,
-              il.quantity_change, il.log_date, il.remarks
-       FROM inventory_log il
-       LEFT JOIN menu_items mi ON mi.id = il.menu_id
-       LEFT JOIN inventory_items ii ON ii.id = il.menu_id
-       LEFT JOIN staff s ON s.id = il.staff_id
+      `SELECT inventory_log.id, COALESCE(inventory_items.name, menu_items.name, 'Inventory Item') AS item_name,
+              staff.name AS staff_name, inventory_log.transaction_type,
+              inventory_log.quantity_change, inventory_log.log_date, inventory_log.remarks
+       FROM inventory_log
+       LEFT JOIN menu_items ON menu_items.id = inventory_log.menu_id
+       LEFT JOIN inventory_items ON inventory_items.id = inventory_log.menu_id
+       LEFT JOIN staff ON staff.id = inventory_log.staff_id
        ${where}
-       ORDER BY il.log_date DESC`,
+       ORDER BY inventory_log.log_date DESC`,
       params
     );
 

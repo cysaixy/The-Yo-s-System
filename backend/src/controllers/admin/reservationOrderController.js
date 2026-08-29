@@ -10,10 +10,10 @@ export async function getReservationOrder(req, res, next) {
     const { id } = req.params;
 
     const resv = await pool.query(
-      `SELECT r.*, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone
-       FROM reservations r
-       JOIN customers c ON c.id = r.customer_id
-       WHERE r.id = $1`,
+      `SELECT reservations.*, customers.name AS customer_name, customers.email AS customer_email, customers.phone AS customer_phone
+       FROM reservations
+       JOIN customers ON customers.id = reservations.customer_id
+       WHERE reservations.id = $1`,
       [id]
     );
 
@@ -34,10 +34,10 @@ export async function getReservationOrder(req, res, next) {
 
     if (order) {
       const itemsRes = await pool.query(
-        `SELECT oi.*, mi.name, mi.category_id
-         FROM order_items oi
-         JOIN menu_items mi ON mi.id = oi.menu_id
-         WHERE oi.order_id = $1`,
+        `SELECT order_items.*, menu_items.name, menu_items.category_id
+         FROM order_items
+         JOIN menu_items ON menu_items.id = order_items.menu_id
+         WHERE order_items.order_id = $1`,
         [order.id]
       );
       orderItems = itemsRes.rows;
@@ -95,11 +95,11 @@ export async function getReservationOrder(req, res, next) {
 // Get available menu items for order creation
 async function getAvailableMenuItems() {
   const { rows } = await pool.query(
-    `SELECT mi.id, mi.name, mi.price, mi.description, mi.category_id, mi.image_url, c.name AS category_name
-     FROM menu_items mi
-     JOIN categories c ON c.id = mi.category_id
-     WHERE mi.status = 'available'
-     ORDER BY c.name, mi.name`
+    `SELECT menu_items.id, menu_items.name, menu_items.price, menu_items.description, menu_items.category_id, menu_items.image_url, categories.name AS category_name
+     FROM menu_items
+     JOIN categories ON categories.id = menu_items.category_id
+     WHERE menu_items.status = 'available'
+     ORDER BY categories.name, menu_items.name`
   );
   return rows;
 }
@@ -283,10 +283,10 @@ export async function upsertReservationOrder(req, res, next) {
       );
 
       const itemsRes = await pool.query(
-        `SELECT oi.*, mi.name, mi.category_id
-         FROM order_items oi
-         JOIN menu_items mi ON mi.id = oi.menu_id
-         WHERE oi.order_id = $1`,
+        `SELECT order_items.*, menu_items.name, menu_items.category_id
+         FROM order_items
+         JOIN menu_items ON menu_items.id = order_items.menu_id
+         WHERE order_items.order_id = $1`,
         [order.id]
       );
 
@@ -387,8 +387,8 @@ export async function adminConfirmReservation(req, res, next) {
     const { table_no } = req.body;
 
     const resv = await pool.query(
-      `SELECT r.*, c.name AS customer_name FROM reservations r
-       JOIN customers c ON c.id = r.customer_id WHERE r.id = $1`,
+      `SELECT reservations.*, customers.name AS customer_name FROM reservations
+       JOIN customers ON customers.id = reservations.customer_id WHERE reservations.id = $1`,
       [id]
     );
 
@@ -440,13 +440,13 @@ export async function adminConfirmReservation(req, res, next) {
     // Check conflicts
     const CONFLICT_WINDOW_MINUTES = 120;
     const conflict = await pool.query(
-      `SELECT r.id, r.table_no, r.reservation_time, r.guests
-       FROM reservations r
-       WHERE r.table_no = $1
-         AND r.reservation_date = $2
-         AND r.status = 'confirmed'
-         AND r.id <> $3
-         AND ABS(EXTRACT(EPOCH FROM (r.reservation_time - $4::time))) / 60 < $5`,
+      `SELECT reservations.id, reservations.table_no, reservations.reservation_time, reservations.guests
+       FROM reservations
+       WHERE reservations.table_no = $1
+         AND reservations.reservation_date = $2
+         AND reservations.status = 'confirmed'
+         AND reservations.id <> $3
+         AND ABS(EXTRACT(EPOCH FROM (reservations.reservation_time - $4::time))) / 60 < $5`,
       [table.table_no, reservation.reservation_date, reservation.id, reservation.reservation_time, CONFLICT_WINDOW_MINUTES]
     );
     if (conflict.rows[0]) {

@@ -127,14 +127,14 @@ export async function getAvailability(req, res, next) {
     }
 
     const { rows } = await pool.query(
-      `SELECT TO_CHAR(r.reservation_date, 'YYYY-MM-DD') AS date_str,
-              SUM(r.guests)::int AS seats_taken
-       FROM reservations r
-       WHERE r.status NOT IN ('cancelled')
-         AND (r.reservation_status IS NULL OR r.reservation_status NOT IN ('cancelled'))
-         AND r.reservation_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 90
-       GROUP BY r.reservation_date
-       HAVING SUM(r.guests) >= $1`,
+      `SELECT TO_CHAR(reservations.reservation_date, 'YYYY-MM-DD') AS date_str,
+              SUM(reservations.guests)::int AS seats_taken
+       FROM reservations
+       WHERE reservations.status NOT IN ('cancelled')
+         AND (reservations.reservation_status IS NULL OR reservations.reservation_status NOT IN ('cancelled'))
+         AND reservations.reservation_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 90
+       GROUP BY reservations.reservation_date
+       HAVING SUM(reservations.guests) >= $1`,
       [maxCapacity * 6]
     );
 

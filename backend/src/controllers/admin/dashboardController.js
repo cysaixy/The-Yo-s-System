@@ -48,12 +48,12 @@ export async function summary(req, res, next) {
       // Today's best sellers — top 10 menu items by quantity sold for the
       // Home page. Scoped to CURRENT_DATE so "as of today" stays true.
       pool.query(
-        `SELECT mi.name, SUM(oi.quantity)::int AS qty_sold, SUM(oi.subtotal) AS sales_amount
-         FROM order_items oi
-         JOIN menu_items mi ON mi.id = oi.menu_id
-         JOIN orders o ON o.id = oi.order_id
-         WHERE o.datetime_ordered::date = CURRENT_DATE AND o.status <> 'cancelled'
-         GROUP BY mi.name
+        `SELECT menu_items.name, SUM(order_items.quantity)::int AS qty_sold, SUM(order_items.subtotal) AS sales_amount
+         FROM order_items
+         JOIN menu_items ON menu_items.id = order_items.menu_id
+         JOIN orders ON orders.id = order_items.order_id
+         WHERE orders.datetime_ordered::date = CURRENT_DATE AND orders.status <> 'cancelled'
+         GROUP BY menu_items.name
          ORDER BY qty_sold DESC
          LIMIT 10`
       ),
@@ -115,13 +115,13 @@ export async function salesBreakdown(req, res, next) {
                        THEN 'delivery' ELSE order_type END`
       ),
       pool.query(
-        `SELECT c.name AS category_name, COALESCE(SUM(oi.subtotal), 0)::numeric AS total_sales
-         FROM order_items oi
-         JOIN menu_items mi ON mi.id = oi.menu_id
-         JOIN categories c ON c.id = mi.category_id
-         JOIN orders o ON o.id = oi.order_id
-         WHERE o.datetime_ordered::date = CURRENT_DATE AND o.status <> 'cancelled'
-         GROUP BY c.id, c.name
+        `SELECT categories.name AS category_name, COALESCE(SUM(order_items.subtotal), 0)::numeric AS total_sales
+         FROM order_items
+         JOIN menu_items ON menu_items.id = order_items.menu_id
+         JOIN categories ON categories.id = menu_items.category_id
+         JOIN orders ON orders.id = order_items.order_id
+         WHERE orders.datetime_ordered::date = CURRENT_DATE AND orders.status <> 'cancelled'
+         GROUP BY categories.id, categories.name
          ORDER BY total_sales DESC`
       ),
     ]);
@@ -212,23 +212,23 @@ export async function bestSellers(req, res, next) {
   try {
     const [rowsRes, totalRes] = await Promise.all([
       pool.query(
-        `SELECT mi.id, mi.name, c.name AS category_name,
-                SUM(oi.quantity)::int AS qty_sold,
-                SUM(oi.subtotal) AS sales_amount
-         FROM order_items oi
-         JOIN menu_items mi ON mi.id = oi.menu_id
-         LEFT JOIN categories c ON c.id = mi.category_id
-         JOIN orders o ON o.id = oi.order_id
-         WHERE o.datetime_ordered::date = CURRENT_DATE AND o.status <> 'cancelled'
-         GROUP BY mi.id, mi.name, c.name
+        `SELECT menu_items.id, menu_items.name, categories.name AS category_name,
+                SUM(order_items.quantity)::int AS qty_sold,
+                SUM(order_items.subtotal) AS sales_amount
+         FROM order_items
+         JOIN menu_items ON menu_items.id = order_items.menu_id
+         LEFT JOIN categories ON categories.id = menu_items.category_id
+         JOIN orders ON orders.id = order_items.order_id
+         WHERE orders.datetime_ordered::date = CURRENT_DATE AND orders.status <> 'cancelled'
+         GROUP BY menu_items.id, menu_items.name, categories.name
          ORDER BY qty_sold DESC, sales_amount DESC
          LIMIT 10`
       ),
       pool.query(
-        `SELECT COALESCE(SUM(oi.subtotal), 0) AS total
-         FROM order_items oi
-         JOIN orders o ON o.id = oi.order_id
-         WHERE o.datetime_ordered::date = CURRENT_DATE AND o.status <> 'cancelled'`
+        `SELECT COALESCE(SUM(order_items.subtotal), 0) AS total
+         FROM order_items
+         JOIN orders ON orders.id = order_items.order_id
+         WHERE orders.datetime_ordered::date = CURRENT_DATE AND orders.status <> 'cancelled'`
       ),
     ]);
 
@@ -258,13 +258,13 @@ export async function salesTrend(req, res, next) {
       `WITH days AS (
          SELECT generate_series(CURRENT_DATE - 14, CURRENT_DATE, '1 day')::date AS day
        )
-       SELECT to_char(d.day, 'YYYY-MM-DD') AS date,
-              COALESCE(SUM(o.total_amount), 0) AS sales,
-              COUNT(o.id)::int AS orders
-       FROM days d
-       LEFT JOIN orders o ON o.datetime_ordered::date = d.day AND o.status <> 'cancelled'
-       GROUP BY d.day
-       ORDER BY d.day`
+       SELECT to_char(days.day, 'YYYY-MM-DD') AS date,
+              COALESCE(SUM(orders.total_amount), 0) AS sales,
+              COUNT(orders.id)::int AS orders
+       FROM days
+       LEFT JOIN orders ON orders.datetime_ordered::date = days.day AND orders.status <> 'cancelled'
+       GROUP BY days.day
+       ORDER BY days.day`
     );
 
     res.json({
@@ -299,12 +299,12 @@ export async function cashOverview(req, res, next) {
          WHERE transaction_date::date = CURRENT_DATE`
       ),
       pool.query(
-        `SELECT COALESCE(SUM(p.amount), 0) AS cash_sales,
+        `SELECT COALESCE(SUM(payments.amount), 0) AS cash_sales,
                 COUNT(*)::int AS cash_sale_count
-         FROM payments p
-         JOIN orders o ON o.id = p.order_id
-         WHERE p.payment_method = 'cash' AND p.status = 'paid'
-           AND o.datetime_ordered::date = CURRENT_DATE`
+         FROM payments
+         JOIN orders ON orders.id = payments.order_id
+         WHERE payments.payment_method = 'cash' AND payments.status = 'paid'
+           AND orders.datetime_ordered::date = CURRENT_DATE`
       ),
     ]);
 
@@ -353,21 +353,21 @@ export async function cashTrend(req, res, next) {
          FROM cash_transactions WHERE transaction_type = 'out' GROUP BY 1
        ),
        cash_sales AS (
-         SELECT o.datetime_ordered::date AS day, SUM(p.amount) AS amt
-         FROM payments p
-         JOIN orders o ON o.id = p.order_id
-         WHERE p.payment_method = 'cash' AND p.status = 'paid'
+         SELECT orders.datetime_ordered::date AS day, SUM(payments.amount) AS amt
+         FROM payments
+         JOIN orders ON orders.id = payments.order_id
+         WHERE payments.payment_method = 'cash' AND payments.status = 'paid'
          GROUP BY 1
        )
-       SELECT to_char(d.day, 'YYYY-MM-DD') AS date,
-              COALESCE(i.amt, 0) AS cash_in,
-              COALESCE(o.amt, 0) AS cash_out,
-              COALESCE(s.amt, 0) AS cash_sales
-       FROM days d
-       LEFT JOIN ins i ON i.day = d.day
-       LEFT JOIN outs o ON o.day = d.day
-       LEFT JOIN cash_sales s ON s.day = d.day
-       ORDER BY d.day`
+       SELECT to_char(days.day, 'YYYY-MM-DD') AS date,
+              COALESCE(ins.amt, 0) AS cash_in,
+              COALESCE(outs.amt, 0) AS cash_out,
+              COALESCE(cash_sales.amt, 0) AS cash_sales
+       FROM days
+       LEFT JOIN ins ON ins.day = days.day
+       LEFT JOIN outs ON outs.day = days.day
+       LEFT JOIN cash_sales ON cash_sales.day = days.day
+       ORDER BY days.day`
     );
 
     res.json({
@@ -421,27 +421,27 @@ export async function inventoryUsage(req, res, next) {
   try {
     const [productsRes, ingredientsRes] = await Promise.all([
       pool.query(
-        `SELECT mi.name AS description, 'pcs' AS unit,
-                mi.stock_quantity AS closing_stock,
-                SUM(oi.quantity)::numeric AS used_qty
-         FROM order_items oi
-         JOIN orders o ON o.id = oi.order_id
-         JOIN menu_items mi ON mi.id = oi.menu_id
-         WHERE o.datetime_ordered::date = CURRENT_DATE AND o.status <> 'cancelled'
-         GROUP BY mi.id, mi.name, mi.stock_quantity
+        `SELECT menu_items.name AS description, 'pcs' AS unit,
+                menu_items.stock_quantity AS closing_stock,
+                SUM(order_items.quantity)::numeric AS used_qty
+         FROM order_items
+         JOIN orders ON orders.id = order_items.order_id
+         JOIN menu_items ON menu_items.id = order_items.menu_id
+         WHERE orders.datetime_ordered::date = CURRENT_DATE AND orders.status <> 'cancelled'
+         GROUP BY menu_items.id, menu_items.name, menu_items.stock_quantity
          ORDER BY used_qty DESC`
       ),
       pool.query(
-        `SELECT ii.name AS description, ii.unit AS unit,
-                ii.stock_quantity AS closing_stock,
-                SUM(oia.quantity * ai.quantity)::numeric AS used_qty
-         FROM order_item_add_ons oia
-         JOIN order_items oi ON oi.id = oia.order_item_id
-         JOIN orders o ON o.id = oi.order_id
-         JOIN addon_inventory ai ON ai.addon_id = oia.addon_id
-         JOIN inventory_items ii ON ii.id = ai.inventory_id
-         WHERE o.datetime_ordered::date = CURRENT_DATE AND o.status <> 'cancelled'
-         GROUP BY ii.id, ii.name, ii.unit, ii.stock_quantity
+        `SELECT inventory_items.name AS description, inventory_items.unit AS unit,
+                inventory_items.stock_quantity AS closing_stock,
+                SUM(order_item_add_ons.quantity * addon_inventory.quantity)::numeric AS used_qty
+         FROM order_item_add_ons
+         JOIN order_items ON order_items.id = order_item_add_ons.order_item_id
+         JOIN orders ON orders.id = order_items.order_id
+         JOIN addon_inventory ON addon_inventory.addon_id = order_item_add_ons.addon_id
+         JOIN inventory_items ON inventory_items.id = addon_inventory.inventory_id
+         WHERE orders.datetime_ordered::date = CURRENT_DATE AND orders.status <> 'cancelled'
+         GROUP BY inventory_items.id, inventory_items.name, inventory_items.unit, inventory_items.stock_quantity
          ORDER BY used_qty DESC`
       ),
     ]);

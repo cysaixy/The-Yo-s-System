@@ -8,10 +8,10 @@ export async function login(req, res, next) {
     const { email, password } = req.body;
 
     const { rows } = await pool.query(
-      `SELECT s.*, p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
-       FROM staff s
-       LEFT JOIN staff_permissions p ON p.staff_id = s.id
-       WHERE s.email = $1`,
+      `SELECT staff.*, staff_permissions.can_access_inventory, staff_permissions.can_access_stock_in, staff_permissions.can_access_reports
+       FROM staff
+       LEFT JOIN staff_permissions ON staff_permissions.staff_id = staff.id
+       WHERE staff.email = $1`,
       [email]
     );
     const staff = rows[0];
@@ -45,11 +45,11 @@ export async function me(req, res, next) {
 export async function listStaff(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT s.id, s.name, s.email, s.role, s.status, s.created_at,
-              p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
-       FROM staff s
-       LEFT JOIN staff_permissions p ON p.staff_id = s.id
-       ORDER BY s.created_at DESC`
+      `SELECT staff.id, staff.name, staff.email, staff.role, staff.status, staff.created_at,
+              staff_permissions.can_access_inventory, staff_permissions.can_access_stock_in, staff_permissions.can_access_reports
+       FROM staff
+       LEFT JOIN staff_permissions ON staff_permissions.staff_id = staff.id
+       ORDER BY staff.created_at DESC`
     );
     res.json({ staff: rows });
   } catch (err) {
@@ -60,11 +60,11 @@ export async function listStaff(req, res, next) {
 export async function getStaffById(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT s.id, s.name, s.email, s.role, s.status, s.created_at,
-              p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
-       FROM staff s
-       LEFT JOIN staff_permissions p ON p.staff_id = s.id
-       WHERE s.id = $1`,
+      `SELECT staff.id, staff.name, staff.email, staff.role, staff.status, staff.created_at,
+              staff_permissions.can_access_inventory, staff_permissions.can_access_stock_in, staff_permissions.can_access_reports
+       FROM staff
+       LEFT JOIN staff_permissions ON staff_permissions.staff_id = staff.id
+       WHERE staff.id = $1`,
       [req.params.id]
     );
 

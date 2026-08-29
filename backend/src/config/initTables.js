@@ -92,9 +92,6 @@ export async function initTables() {
 
     // 7. Safe column additions for older databases.
     await pool.query(
-      `ALTER TABLE inventory_log ALTER COLUMN quantity_change TYPE NUMERIC(10,2)`
-    );
-    await pool.query(
       `ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS cost NUMERIC(10,2) NOT NULL DEFAULT 0`
     );
     await pool.query(

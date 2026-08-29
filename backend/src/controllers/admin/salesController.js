@@ -87,10 +87,10 @@ export async function createPosOrder(req, res, next) {
 
       // Check linked raw ingredients for this menu item
       const { rows: itemComps } = await client.query(
-        `SELECT mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
-         FROM menu_item_inventory mii
-         JOIN inventory_items ii ON ii.id = mii.inventory_id
-         WHERE mii.menu_id = $1`,
+        `SELECT menu_item_inventory.inventory_id, menu_item_inventory.quantity, menu_item_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
+         FROM menu_item_inventory
+         JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id
+         WHERE menu_item_inventory.menu_id = $1`,
         [menuItem.id]
       );
       for (const comp of itemComps) {
@@ -137,10 +137,10 @@ export async function createPosOrder(req, res, next) {
 
           // Check linked raw ingredients have enough stock for the add-on qty.
           const { rows: comps } = await client.query(
-            `SELECT ai.inventory_id, ai.quantity, ai.unit, ii.name AS inventory_name, ii.stock_quantity
-             FROM addon_inventory ai
-             JOIN inventory_items ii ON ii.id = ai.inventory_id
-             WHERE ai.addon_id = $1`,
+            `SELECT addon_inventory.inventory_id, addon_inventory.quantity, addon_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
+             FROM addon_inventory
+             JOIN inventory_items ON inventory_items.id = addon_inventory.inventory_id
+             WHERE addon_inventory.addon_id = $1`,
             [addon.id]
           );
           for (const comp of comps) {
@@ -290,17 +290,17 @@ export async function listOrders(req, res, next) {
     const rowLimit = Math.min(Number(limit) || 500, 2000);
 
     const { rows } = await pool.query(
-      `SELECT o.id, c.name AS customer_name, s.name AS staff_name, o.order_type,
-              o.status, o.total_amount, o.delivery_fee, o.datetime_ordered,
-              o.reservation_id,
-              CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
-              (SELECT p.payment_method FROM payments p WHERE p.order_id = o.id ORDER BY p.id DESC LIMIT 1) AS payment_method,
-              (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count
-       FROM orders o
-       JOIN customers c ON c.id = o.customer_id
-       LEFT JOIN staff s ON s.id = o.staff_id
+      `SELECT orders.id, customers.name AS customer_name, staff.name AS staff_name, orders.order_type,
+              orders.status, orders.total_amount, orders.delivery_fee, orders.datetime_ordered,
+              orders.reservation_id,
+              CASE WHEN orders.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
+              (SELECT payments.payment_method FROM payments WHERE payments.order_id = orders.id ORDER BY payments.id DESC LIMIT 1) AS payment_method,
+              (SELECT COUNT(*) FROM order_items WHERE order_items.order_id = orders.id) AS item_count
+       FROM orders
+       JOIN customers ON customers.id = orders.customer_id
+       LEFT JOIN staff ON staff.id = orders.staff_id
        ${where}
-       ORDER BY o.datetime_ordered DESC
+       ORDER BY orders.datetime_ordered DESC
        LIMIT ${rowLimit}`,
       params
     );
@@ -316,36 +316,36 @@ export async function listOrders(req, res, next) {
 export async function getOrder(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT o.*, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
-              s.name AS staff_name,
-              r.reservation_date, r.reservation_time,
-              CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source
-       FROM orders o
-       JOIN customers c ON c.id = o.customer_id
-       LEFT JOIN staff s ON s.id = o.staff_id
-       LEFT JOIN reservations r ON r.id = o.reservation_id
-       WHERE o.id = $1`,
+      `SELECT orders.*, customers.name AS customer_name, customers.email AS customer_email, customers.phone AS customer_phone,
+              staff.name AS staff_name,
+              reservations.reservation_date, reservations.reservation_time,
+              CASE WHEN orders.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source
+       FROM orders
+       JOIN customers ON customers.id = orders.customer_id
+       LEFT JOIN staff ON staff.id = orders.staff_id
+       LEFT JOIN reservations ON reservations.id = orders.reservation_id
+       WHERE orders.id = $1`,
       [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: "Order not found." });
     const order = rows[0];
 
     const { rows: items } = await pool.query(
-      `SELECT oi.id, oi.menu_id, mi.name AS product_name, mi.price AS current_price,
-              oi.quantity, oi.price, oi.cost, oi.subtotal, oi.notes
-       FROM order_items oi
-       LEFT JOIN menu_items mi ON mi.id = oi.menu_id
-       WHERE oi.order_id = $1
-       ORDER BY oi.id`,
+      `SELECT order_items.id, order_items.menu_id, menu_items.name AS product_name, menu_items.price AS current_price,
+              order_items.quantity, order_items.price, order_items.cost, order_items.subtotal, order_items.notes
+       FROM order_items
+       LEFT JOIN menu_items ON menu_items.id = order_items.menu_id
+       WHERE order_items.order_id = $1
+       ORDER BY order_items.id`,
       [order.id]
     );
 
     const itemsWithAddons = await Promise.all(items.map(async (item) => {
       const { rows: addons } = await pool.query(
-        `SELECT oia.id, oia.addon_id, oia.name, oia.quantity, oia.price, oia.cost, oia.subtotal
-         FROM order_item_add_ons oia
-         WHERE oia.order_item_id = $1
-         ORDER BY oia.id`,
+        `SELECT order_item_add_ons.id, order_item_add_ons.addon_id, order_item_add_ons.name, order_item_add_ons.quantity, order_item_add_ons.price, order_item_add_ons.cost, order_item_add_ons.subtotal
+         FROM order_item_add_ons
+         WHERE order_item_add_ons.order_item_id = $1
+         ORDER BY order_item_add_ons.id`,
         [item.id]
       );
       const cogs = Number(item.cost || 0) * Number(item.quantity) +
@@ -489,12 +489,12 @@ export async function salesSummary(req, res, next) {
     );
 
     const { rows: addonRows } = await pool.query(
-      `SELECT COALESCE(SUM(oia.quantity), 0)::int AS addon_units,
-              COALESCE(SUM(oia.subtotal), 0) AS addon_revenue,
-              COUNT(DISTINCT o.id)::int AS addon_order_count
-       FROM order_item_add_ons oia
-       JOIN order_items oi ON oi.id = oia.order_item_id
-       JOIN orders o ON o.id = oi.order_id
+      `SELECT COALESCE(SUM(order_item_add_ons.quantity), 0)::int AS addon_units,
+              COALESCE(SUM(order_item_add_ons.subtotal), 0) AS addon_revenue,
+              COUNT(DISTINCT orders.id)::int AS addon_order_count
+       FROM order_item_add_ons
+       JOIN order_items ON order_items.id = order_item_add_ons.order_item_id
+       JOIN orders ON orders.id = order_items.order_id
        ${where}`,
       params
     );
@@ -581,16 +581,16 @@ export async function topAddonsReport(req, res, next) {
     const { where, params } = periodWhere({ from: req.query.from, to: req.query.to });
 
     const { rows } = await pool.query(
-      `SELECT oia.addon_id, oia.name,
-              SUM(oia.quantity)::int AS quantity_sold,
-              SUM(oia.subtotal) AS revenue,
-              SUM(oia.cost * oia.quantity) AS cogs,
-              COUNT(DISTINCT o.id)::int AS order_count
-       FROM order_item_add_ons oia
-       JOIN order_items oi ON oi.id = oia.order_item_id
-       JOIN orders o ON o.id = oi.order_id
+      `SELECT order_item_add_ons.addon_id, order_item_add_ons.name,
+              SUM(order_item_add_ons.quantity)::int AS quantity_sold,
+              SUM(order_item_add_ons.subtotal) AS revenue,
+              SUM(order_item_add_ons.cost * order_item_add_ons.quantity) AS cogs,
+              COUNT(DISTINCT orders.id)::int AS order_count
+       FROM order_item_add_ons
+       JOIN order_items ON order_items.id = order_item_add_ons.order_item_id
+       JOIN orders ON orders.id = order_items.order_id
        ${where}
-       GROUP BY oia.addon_id, oia.name
+       GROUP BY order_item_add_ons.addon_id, order_item_add_ons.name
        ORDER BY revenue DESC
        LIMIT 20`,
       params
@@ -625,16 +625,16 @@ export async function productSalesReport(req, res, next) {
 
     const { rows } = await pool.query(
       `WITH per_item AS (
-         SELECT oi.menu_id, mi.name AS product_name, c.name AS category_name,
-                oi.quantity, oi.price, oi.cost,
-                (SELECT COALESCE(SUM(oia.price * oia.quantity), 0)
-                 FROM order_item_add_ons oia WHERE oia.order_item_id = oi.id) AS addon_revenue,
-                (SELECT COALESCE(SUM(oia.cost * oia.quantity), 0)
-                 FROM order_item_add_ons oia WHERE oia.order_item_id = oi.id) AS addon_cogs
-         FROM order_items oi
-         JOIN orders o ON o.id = oi.order_id
-         LEFT JOIN menu_items mi ON mi.id = oi.menu_id
-         LEFT JOIN categories c ON c.id = mi.category_id
+         SELECT order_items.menu_id, menu_items.name AS product_name, categories.name AS category_name,
+                order_items.quantity, order_items.price, order_items.cost,
+                (SELECT COALESCE(SUM(order_item_add_ons.price * order_item_add_ons.quantity), 0)
+                 FROM order_item_add_ons WHERE order_item_add_ons.order_item_id = order_items.id) AS addon_revenue,
+                (SELECT COALESCE(SUM(order_item_add_ons.cost * order_item_add_ons.quantity), 0)
+                 FROM order_item_add_ons WHERE order_item_add_ons.order_item_id = order_items.id) AS addon_cogs
+         FROM order_items
+         JOIN orders ON orders.id = order_items.order_id
+         LEFT JOIN menu_items ON menu_items.id = order_items.menu_id
+         LEFT JOIN categories ON categories.id = menu_items.category_id
          ${where}
        )
        SELECT menu_id, product_name, category_name,
@@ -685,14 +685,14 @@ export async function categorySalesReport(req, res, next) {
 
     const { rows } = await pool.query(
       `WITH per_item AS (
-         SELECT oi.menu_id, mi.category_id, c.name AS category_name,
-                oi.quantity, oi.price, oi.cost,
-                (SELECT COALESCE(SUM(oia.cost * oia.quantity), 0)
-                 FROM order_item_add_ons oia WHERE oia.order_item_id = oi.id) AS addon_cogs
-         FROM order_items oi
-         JOIN orders o ON o.id = oi.order_id
-         LEFT JOIN menu_items mi ON mi.id = oi.menu_id
-         LEFT JOIN categories c ON c.id = mi.category_id
+         SELECT order_items.menu_id, menu_items.category_id, categories.name AS category_name,
+                order_items.quantity, order_items.price, order_items.cost,
+                (SELECT COALESCE(SUM(order_item_add_ons.cost * order_item_add_ons.quantity), 0)
+                 FROM order_item_add_ons WHERE order_item_add_ons.order_item_id = order_items.id) AS addon_cogs
+         FROM order_items
+         JOIN orders ON orders.id = order_items.order_id
+         LEFT JOIN menu_items ON menu_items.id = order_items.menu_id
+         LEFT JOIN categories ON categories.id = menu_items.category_id
          ${where}
        )
        SELECT category_id, category_name,
@@ -735,11 +735,11 @@ export async function salesReport(req, res, next) {
     const whereStr = `${where} AND p.status = 'paid'`;
 
     const { rows } = await pool.query(
-      `SELECT p.payment_method, COUNT(*)::int AS transaction_count, SUM(p.amount) AS total_amount
-       FROM payments p
-       JOIN orders o ON o.id = p.order_id
+      `SELECT payments.payment_method, COUNT(*)::int AS transaction_count, SUM(payments.amount) AS total_amount
+       FROM payments
+       JOIN orders ON orders.id = payments.order_id
        ${whereStr}
-       GROUP BY p.payment_method
+       GROUP BY payments.payment_method
        ORDER BY total_amount DESC`,
       params
     );
@@ -756,9 +756,9 @@ export async function orderTypesReport(req, res, next) {
     const { where, params } = periodWhere({ from: req.query.from, to: req.query.to });
 
     const { rows } = await pool.query(
-      `SELECT o.order_type, COUNT(*)::int AS order_count, SUM(o.total_amount) AS total_amount
-       FROM orders o ${where}
-       GROUP BY o.order_type
+      `SELECT orders.order_type, COUNT(*)::int AS order_count, SUM(orders.total_amount) AS total_amount
+       FROM orders ${where}
+       GROUP BY orders.order_type
        ORDER BY total_amount DESC`,
       params
     );
