@@ -4,25 +4,242 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Home — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=4">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=5">
 <style>
-  .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
-  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  /* ============================================================
+     HOME DASHBOARD LAYOUT & COMPONENTS
+     ============================================================ */
+  .home-layout { display: flex; flex-direction: column; gap: 24px; }
+  .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 1080px) { .two-col { grid-template-columns: 1fr; } }
 
-  .section-gap { margin-top: 20px; }
   .panel-sub {
-    font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase;
-    letter-spacing: 0.05em; opacity: 0.5;
+    font-family: 'Space Mono', monospace; font-size: 0.66rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted);
   }
   .panel-body-flush { padding: 0; }
 
-  /* ---------- Inventory overview ---------- */
+  /* ============================================================
+     LIVE ORDER RAIL
+     ============================================================ */
+  .order-rail-panel {
+    background: var(--component-bg); border: 1px solid var(--line);
+    border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+  .order-rail-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; background: var(--bone);
+  }
+  .order-rail-title-wrap { display: flex; align-items: center; gap: 10px; }
+  .order-rail-title-wrap h3 {
+    font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.15rem;
+    letter-spacing: -0.01em; margin: 0; text-transform: uppercase;
+  }
+  .live-pulse {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Space Mono', monospace; font-size: 0.65rem; font-weight: 700;
+    text-transform: uppercase; color: var(--success); letter-spacing: 0.06em;
+    background: rgba(46, 125, 79, 0.1); padding: 3px 8px; border-radius: 20px;
+  }
+  .live-pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--success);
+    box-shadow: 0 0 0 0 rgba(46, 125, 79, 0.7);
+    animation: livePulseAnim 1.8s infinite;
+  }
+  @keyframes livePulseAnim {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 79, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(46, 125, 79, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 79, 0); }
+  }
+
+  .order-rail-filters {
+    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  }
+  .rail-filter-btn {
+    padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--stone); font-family: 'Space Mono', monospace;
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    color: var(--ink-muted); cursor: pointer; transition: all .15s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .rail-filter-btn:hover { border-color: var(--brass); color: var(--brass-dark); }
+  .rail-filter-btn.active {
+    background: var(--brass-dark); color: #fff; border-color: var(--brass-dark);
+  }
+  .rail-filter-count {
+    background: rgba(0,0,0,0.12); padding: 1px 5px; border-radius: 10px;
+    font-size: 0.62rem;
+  }
+  .rail-filter-btn.active .rail-filter-count {
+    background: rgba(255,255,255,0.25); color: #fff;
+  }
+  .rail-refresh-btn {
+    padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--component-bg); font-family: 'Space Mono', monospace;
+    font-size: 0.70rem; font-weight: 700; color: var(--ink); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px; transition: all .15s ease;
+  }
+  .rail-refresh-btn:hover { border-color: var(--brass); color: var(--brass-dark); }
+
+  /* Track & Cards */
+  .order-rail-track-wrap {
+    padding: 16px 20px; overflow-x: auto;
+  }
+  .order-rail-track {
+    display: flex; gap: 16px; min-height: 160px;
+  }
+  .order-rail-empty {
+    width: 100%; padding: 40px 20px; text-align: center;
+    color: var(--ink-muted); font-family: 'Space Mono', monospace; font-size: 0.78rem;
+  }
+
+  .rail-card {
+    flex: 0 0 280px; background: var(--bone); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column;
+    justify-content: space-between; gap: 12px; position: relative;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: transform .15s, border-color .15s;
+  }
+  .rail-card:hover { transform: translateY(-2px); border-color: var(--brass); }
+  .rail-card-head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  }
+  .rail-card-id {
+    font-family: 'Space Mono', monospace; font-weight: 700; font-size: 0.92rem;
+    color: var(--ink);
+  }
+  .rail-badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  .rail-badge {
+    padding: 2px 7px; border-radius: 4px; font-family: 'Space Mono', monospace;
+    font-size: 0.60rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .badge-pos { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
+  .badge-online { background: rgba(44,95,176,0.15); color: #2c5fb0; }
+  .badge-type { background: var(--stone); color: var(--ink); border: 1px solid var(--line); }
+
+  .rail-card-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .rail-customer {
+    font-size: 0.85rem; font-weight: 700; color: var(--ink);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .rail-time {
+    font-family: 'Space Mono', monospace; font-size: 0.65rem; font-weight: 700;
+    color: var(--ink-muted);
+  }
+  .rail-time.urgent { color: var(--danger); font-weight: 700; }
+  .rail-items-preview {
+    font-size: 0.76rem; color: var(--ink-muted); line-height: 1.35;
+    max-height: 52px; overflow: hidden; text-overflow: ellipsis;
+    background: var(--component-bg); padding: 6px 8px; border-radius: 6px;
+    border: 1px solid var(--line);
+  }
+  .rail-items-preview span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .rail-card-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    border-top: 1px dashed var(--line); padding-top: 10px;
+  }
+  .rail-amount {
+    font-family: 'Space Mono', monospace; font-weight: 700; font-size: 0.95rem;
+    color: var(--brass-dark);
+  }
+  .rail-action-btn {
+    padding: 6px 12px; border-radius: 6px; border: none; font-family: 'Space Mono', monospace;
+    font-size: 0.66rem; font-weight: 700; text-transform: uppercase; cursor: pointer;
+    transition: all .15s ease; white-space: nowrap;
+  }
+  .btn-accept { background: var(--brass); color: #fff; }
+  .btn-accept:hover { background: var(--brass-dark); }
+  .btn-prepare { background: #b8860b; color: #fff; }
+  .btn-prepare:hover { background: #966d09; }
+  .btn-ready { background: var(--success); color: #fff; }
+  .btn-ready:hover { background: #23633e; }
+  .btn-complete { background: var(--ink); color: #fff; }
+  .btn-complete:hover { background: #000; }
+  .btn-done { background: var(--stone); color: var(--ink-muted); cursor: default; }
+
+  /* ============================================================
+     RECENT STAFF ACTIVITY
+     ============================================================ */
+  .staff-activity-panel {
+    background: var(--component-bg); border: 1px solid var(--line);
+    border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .staff-activity-head {
+    padding: 16px 20px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .staff-activity-head h3 {
+    font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.05rem;
+    letter-spacing: -0.01em; margin: 0; text-transform: uppercase;
+  }
+  .activity-filters { display: flex; gap: 4px; }
+  .activity-filter-btn {
+    padding: 4px 10px; border-radius: 5px; border: 1px solid var(--line);
+    background: var(--stone); font-family: 'Space Mono', monospace; font-size: 0.64rem;
+    font-weight: 700; text-transform: uppercase; color: var(--ink-muted); cursor: pointer;
+  }
+  .activity-filter-btn.active {
+    background: var(--brass-dark); color: #fff; border-color: var(--brass-dark);
+  }
+
+  .activity-timeline {
+    padding: 14px 20px; display: flex; flex-direction: column; gap: 12px;
+    max-height: 420px; overflow-y: auto;
+  }
+  .activity-item {
+    display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px;
+    border-radius: 8px; background: var(--stone); border: 1px solid var(--line);
+    transition: background .15s;
+  }
+  .activity-item:hover { background: var(--bone); }
+  .activity-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--brass);
+    color: #fff; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 0.78rem;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .activity-content { flex: 1; min-width: 0; }
+  .activity-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    margin-bottom: 3px;
+  }
+  .activity-staff {
+    font-size: 0.82rem; font-weight: 700; color: var(--ink); display: flex;
+    align-items: center; gap: 6px;
+  }
+  .activity-role {
+    font-family: 'Space Mono', monospace; font-size: 0.58rem; font-weight: 700;
+    text-transform: uppercase; padding: 1px 5px; border-radius: 3px;
+    background: var(--component-bg); color: var(--ink-muted); border: 1px solid var(--line);
+  }
+  .activity-time {
+    font-family: 'Space Mono', monospace; font-size: 0.64rem; font-weight: 700;
+    color: var(--ink-muted); white-space: nowrap;
+  }
+  .activity-desc {
+    font-size: 0.78rem; color: var(--ink); line-height: 1.35;
+    word-break: break-word;
+  }
+  .activity-domain-tag {
+    font-family: 'Space Mono', monospace; font-size: 0.60rem; font-weight: 700;
+    text-transform: uppercase; margin-right: 4px; padding: 1px 4px; border-radius: 3px;
+  }
+  .tag-order { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
+  .tag-inventory { background: rgba(46,125,79,0.15); color: var(--success); }
+  .tag-cash { background: rgba(44,95,176,0.15); color: #2c5fb0; }
+
+  /* ============================================================
+     EXISTING INVENTORY & BEST SELLERS SECTIONS
+     ============================================================ */
+  .section-gap { margin-top: 0; }
   .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
   .mini-card { background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; }
   .mini-card .label {
-    font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
-    letter-spacing: 0.05em; opacity: 0.55;
+    font-family: 'Space Mono', monospace; font-size: 0.62rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted);
   }
   .mini-card .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.7rem; margin-top: 4px; }
   .mini-card .value.danger { color: var(--danger); }
@@ -36,7 +253,7 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
   .legend-count { margin-left: auto; font-family: 'Space Mono', monospace; font-weight: 700; }
 
-  /* ---------- Tables ---------- */
+  /* Tables */
   .admin-table-wrap { overflow-x: auto; }
   .admin-table td.r, .admin-table th.r { text-align: right; }
   .admin-table td.rank { color: var(--brass); font-weight: 800; width: 40px; }
@@ -48,7 +265,7 @@
   .admin-table td.muted { opacity: 0.6; }
   .admin-table td .sub-line { display: block; font-size: 0.72rem; opacity: 0.55; font-family: 'Space Mono', monospace; }
 
-  /* ---------- Stock alert sub-heading ---------- */
+  /* Stock alert sub-heading */
   .alert-head {
     display: flex; align-items: center; gap: 8px;
     font-family: 'Archivo', sans-serif; font-weight: 700; text-transform: uppercase;
@@ -62,6 +279,7 @@
   @media (max-width: 420px) {
     .mini-grid { grid-template-columns: 1fr; }
     .stock-legend { grid-template-columns: 1fr; }
+    .rail-card { flex: 0 0 240px; }
   }
 </style>
 </head>
@@ -70,7 +288,7 @@
 <div id="adminShell"></div>
 
 <script type="module">
-  import { renderAdminShell } from "./admin-shell.js";
+  import { renderAdminShell, showAlert } from "./admin-shell.js";
   import { adminFetch, peso, escapeHtml } from "./admin-api.js";
 
   const session = renderAdminShell({ active: 'home', title: 'Home' });
@@ -89,6 +307,16 @@
     out_of_stock: 'Item requires immediate replenishment.',
   };
 
+  const TYPE_NAMES = {
+    dine_in: 'Dine-in', pickup: 'Pickup', delivery: 'Delivery',
+    takeout: 'Takeout', online: 'Online',
+  };
+
+  let rawRailOrders = [];
+  let currentRailFilter = 'all';
+  let rawStaffActivities = [];
+  let currentActivityFilter = 'all';
+
   const lockBox = (msg) => `<div class="panel-empty">🔒 ${escapeHtml(msg)}</div>`;
 
   async function getJSON(path) {
@@ -98,44 +326,344 @@
     return data;
   }
 
+  function relativeTime(isoStr) {
+    if (!isoStr) return '';
+    const now = new Date();
+    const then = new Date(isoStr);
+    const diffSec = Math.floor((now - then) / 1000);
+    if (diffSec < 45) return 'Just now';
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+    return `${Math.floor(diffSec / 86400)}d ago`;
+  }
+
+  function isUrgent(isoStr, status) {
+    if (['completed', 'cancelled'].includes(status)) return false;
+    if (!isoStr) return false;
+    const diffMins = Math.floor((new Date() - new Date(isoStr)) / 60000);
+    return diffMins >= 20;
+  }
+
+  function getInitials(name) {
+    if (!name) return 'TY';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
   function init() {
     const today = new Date().toLocaleDateString('en-PH', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
     const content = document.getElementById('adminContent');
     content.innerHTML = `
-      <div class="two-col">
-        <div class="admin-panel">
-          <div class="admin-panel-head"><h3>Top 10 Best Sellers as of Today</h3><span class="panel-sub">${today}</span></div>
-          <div class="admin-panel-body panel-body-flush" id="sec-best-sellers"><div class="admin-loading">Loading…</div></div>
+      <div class="home-layout">
+        <!-- 1. LIVE ORDER RAIL (TOP FULL-WIDTH) -->
+        <div class="order-rail-panel">
+          <div class="order-rail-header">
+            <div class="order-rail-title-wrap">
+              <h3>Live Order Rail</h3>
+              <span class="live-pulse"><i class="live-pulse-dot"></i> Live</span>
+            </div>
+            <div class="order-rail-filters" id="railFilters">
+              <button class="rail-filter-btn active" data-filter="all">All <span class="rail-filter-count" id="count-all">0</span></button>
+              <button class="rail-filter-btn" data-filter="pending">Pending <span class="rail-filter-count" id="count-pending">0</span></button>
+              <button class="rail-filter-btn" data-filter="confirmed">Confirmed <span class="rail-filter-count" id="count-confirmed">0</span></button>
+              <button class="rail-filter-btn" data-filter="preparing">Preparing <span class="rail-filter-count" id="count-preparing">0</span></button>
+              <button class="rail-filter-btn" data-filter="ready">Ready <span class="rail-filter-count" id="count-ready">0</span></button>
+              <button class="rail-filter-btn" data-filter="completed">Completed <span class="rail-filter-count" id="count-completed">0</span></button>
+              <button class="rail-refresh-btn" id="btnRailRefresh" title="Refresh Order Rail">↻ Sync</button>
+            </div>
+          </div>
+          <div class="order-rail-track-wrap">
+            <div class="order-rail-track" id="orderRailTrack">
+              <div class="order-rail-empty">Loading live orders…</div>
+            </div>
+          </div>
         </div>
 
-        <div class="admin-panel">
-          <div class="admin-panel-head"><h3>Inventory Overview</h3><span class="panel-sub">${today}</span></div>
-          <div class="admin-panel-body" id="sec-inventory-overview"><div class="admin-loading">Loading…</div></div>
+        <!-- 2. TWO-COLUMN MAIN GRID -->
+        <div class="two-col">
+          <!-- LEFT COLUMN: Sales & Inventory Tables -->
+          <div style="display:flex; flex-direction:column; gap:24px;">
+            <div class="admin-panel">
+              <div class="admin-panel-head"><h3>Top 10 Best Sellers as of Today</h3><span class="panel-sub">${today}</span></div>
+              <div class="admin-panel-body panel-body-flush" id="sec-best-sellers"><div class="admin-loading">Loading…</div></div>
+            </div>
+
+            <div class="admin-panel">
+              <div class="admin-panel-head"><h3>Inventory Usage as of Today</h3><span class="panel-sub">${today}</span></div>
+              <div class="admin-panel-body panel-body-flush" id="sec-inventory-usage"><div class="admin-loading">Loading…</div></div>
+            </div>
+
+            <div class="admin-panel">
+              <div class="admin-panel-head"><h3>Inventory Status</h3><span class="panel-sub">${today}</span></div>
+              <div class="admin-panel-body" id="sec-inventory-status"><div class="admin-loading">Loading…</div></div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: Overview & Staff Activity -->
+          <div style="display:flex; flex-direction:column; gap:24px;">
+            <div class="admin-panel">
+              <div class="admin-panel-head"><h3>Inventory Overview</h3><span class="panel-sub">${today}</span></div>
+              <div class="admin-panel-body" id="sec-inventory-overview"><div class="admin-loading">Loading…</div></div>
+            </div>
+
+            <!-- RECENT STAFF ACTIVITY -->
+            <div class="staff-activity-panel">
+              <div class="staff-activity-head">
+                <h3>Recent Staff Activity</h3>
+                <div class="activity-filters" id="activityFilters">
+                  <button class="activity-filter-btn active" data-filter="all">All</button>
+                  <button class="activity-filter-btn" data-filter="order">Orders</button>
+                  <button class="activity-filter-btn" data-filter="inventory">Stock</button>
+                  <button class="activity-filter-btn" data-filter="cash">Cash</button>
+                </div>
+              </div>
+              <div class="activity-timeline" id="sec-staff-activity">
+                <div class="admin-loading">Loading activity…</div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div class="admin-panel section-gap">
-        <div class="admin-panel-head"><h3>Inventory Usage as of Today</h3><span class="panel-sub">${today}</span></div>
-        <div class="admin-panel-body panel-body-flush" id="sec-inventory-usage"><div class="admin-loading">Loading…</div></div>
-      </div>
-
-      <div class="admin-panel section-gap">
-        <div class="admin-panel-head"><h3>Inventory Status</h3><span class="panel-sub">${today}</span></div>
-        <div class="admin-panel-body" id="sec-inventory-status"><div class="admin-loading">Loading…</div></div>
       </div>
     `;
 
-    // Each section loads independently so one slow/failed section never
-    // blanks the rest of the Home page.
+    bindRailEvents();
+    bindActivityEvents();
+
+    // Initial data load
+    loadOrderRail();
+    loadStaffActivity();
     loadBestSellers();
     loadInventoryOverview();
     loadInventoryUsage();
     loadInventoryStatus();
+
+    // 20-second background polling for live order rail
+    setInterval(() => {
+      loadOrderRail(true);
+    }, 20000);
   }
 
-  /* ========== 1. Top 10 best sellers as of today ========== */
+  /* ================================================================
+     LIVE ORDER RAIL HANDLERS
+     ================================================================ */
+  function bindRailEvents() {
+    const filters = document.getElementById('railFilters');
+    if (filters) {
+      filters.querySelectorAll('.rail-filter-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          filters.querySelectorAll('.rail-filter-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentRailFilter = btn.dataset.filter;
+          renderRailCards();
+        });
+      });
+    }
+
+    const refreshBtn = document.getElementById('btnRailRefresh');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => loadOrderRail(false));
+    }
+  }
+
+  async function loadOrderRail(isBackground = false) {
+    const track = document.getElementById('orderRailTrack');
+    if (!isBackground && track && !rawRailOrders.length) {
+      track.innerHTML = `<div class="order-rail-empty">Loading live orders…</div>`;
+    }
+    try {
+      const data = await getJSON('/api/admin/dashboard/order-rail');
+      rawRailOrders = data.orders || [];
+      updateRailCounts();
+      renderRailCards();
+    } catch (err) {
+      if (!isBackground && track) {
+        track.innerHTML = `<div class="order-rail-empty">${escapeHtml(err.message)}</div>`;
+      }
+    }
+  }
+
+  function updateRailCounts() {
+    const counts = { all: rawRailOrders.length, pending: 0, confirmed: 0, preparing: 0, ready: 0, completed: 0 };
+    rawRailOrders.forEach((o) => {
+      if (counts[o.status] !== undefined) counts[o.status]++;
+    });
+    Object.keys(counts).forEach((k) => {
+      const el = document.getElementById(`count-${k}`);
+      if (el) el.textContent = counts[k];
+    });
+  }
+
+  function renderRailCards() {
+    const track = document.getElementById('orderRailTrack');
+    if (!track) return;
+
+    let filtered = rawRailOrders;
+    if (currentRailFilter !== 'all') {
+      filtered = rawRailOrders.filter((o) => o.status === currentRailFilter);
+    }
+
+    if (!filtered.length) {
+      track.innerHTML = `<div class="order-rail-empty">No ${currentRailFilter === 'all' ? 'live' : currentRailFilter} orders at the moment.</div>`;
+      return;
+    }
+
+    track.innerHTML = filtered.map((o) => {
+      const isPos = o.source === 'pos';
+      const itemsList = Array.isArray(o.items) ? o.items : [];
+      const urgent = isUrgent(o.datetime_ordered, o.status);
+      const timeStr = relativeTime(o.datetime_ordered);
+      const typeLabel = TYPE_NAMES[o.order_type] || o.order_type;
+
+      let actionBtn = '';
+      if (o.status === 'pending') {
+        actionBtn = `<button class="rail-action-btn btn-accept" data-order-id="${o.id}" data-next-status="confirmed">Accept</button>`;
+      } else if (o.status === 'confirmed') {
+        actionBtn = `<button class="rail-action-btn btn-prepare" data-order-id="${o.id}" data-next-status="preparing">Prepare</button>`;
+      } else if (o.status === 'preparing') {
+        actionBtn = `<button class="rail-action-btn btn-ready" data-order-id="${o.id}" data-next-status="ready">Mark Ready</button>`;
+      } else if (o.status === 'ready') {
+        actionBtn = `<button class="rail-action-btn btn-complete" data-order-id="${o.id}" data-next-status="completed">Complete</button>`;
+      } else {
+        actionBtn = `<span class="rail-action-btn btn-done">✓ Completed</span>`;
+      }
+
+      return `
+        <div class="rail-card" id="rail-order-${o.id}">
+          <div class="rail-card-head">
+            <span class="rail-card-id">#${o.id}</span>
+            <div class="rail-badges">
+              <span class="rail-badge ${isPos ? 'badge-pos' : 'badge-online'}">${isPos ? 'POS' : 'Online'}</span>
+              <span class="rail-badge badge-type">${escapeHtml(typeLabel)}</span>
+            </div>
+          </div>
+
+          <div class="rail-card-body">
+            <div class="rail-customer">
+              <span>${escapeHtml(o.customer_name || 'Walk-in Customer')}</span>
+              <span class="rail-time ${urgent ? 'urgent' : ''}" title="${o.datetime_ordered}">${timeStr}</span>
+            </div>
+
+            <div class="rail-items-preview">
+              ${itemsList.length
+                ? itemsList.map((it) => `<span><strong>${it.quantity}×</strong> ${escapeHtml(it.item_name)}${it.add_ons && it.add_ons.length ? ` <small>(+${it.add_ons.map(a => escapeHtml(a.name)).join(', ')})</small>` : ''}</span>`).join('')
+                : `<span>1 order</span>`}
+            </div>
+          </div>
+
+          <div class="rail-card-foot">
+            <div class="rail-amount">${peso(o.total_amount)}</div>
+            ${actionBtn}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach click listeners for instant status advancement
+    track.querySelectorAll('button[data-next-status]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const orderId = btn.dataset.orderId;
+        const nextStatus = btn.dataset.nextStatus;
+        btn.disabled = true;
+        btn.textContent = 'Updating…';
+
+        try {
+          const res = await adminFetch(`/api/admin/sales/pos/orders/${orderId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: nextStatus }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed to update order status.');
+          
+          // Optimistically update local state
+          const target = rawRailOrders.find((o) => String(o.id) === String(orderId));
+          if (target) target.status = nextStatus;
+          updateRailCounts();
+          renderRailCards();
+        } catch (err) {
+          showAlert(err.message, 'error');
+          btn.disabled = false;
+          renderRailCards();
+        }
+      });
+    });
+  }
+
+  /* ================================================================
+     RECENT STAFF ACTIVITY HANDLERS
+     ================================================================ */
+  function bindActivityEvents() {
+    const filters = document.getElementById('activityFilters');
+    if (filters) {
+      filters.querySelectorAll('.activity-filter-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          filters.querySelectorAll('.activity-filter-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentActivityFilter = btn.dataset.filter;
+          renderStaffActivity();
+        });
+      });
+    }
+  }
+
+  async function loadStaffActivity() {
+    const el = document.getElementById('sec-staff-activity');
+    try {
+      const data = await getJSON('/api/admin/dashboard/staff-activity');
+      rawStaffActivities = data.activities || [];
+      renderStaffActivity();
+    } catch (err) {
+      el.innerHTML = lockBox(err.message);
+    }
+  }
+
+  function renderStaffActivity() {
+    const el = document.getElementById('sec-staff-activity');
+    if (!el) return;
+
+    let filtered = rawStaffActivities;
+    if (currentActivityFilter !== 'all') {
+      filtered = rawStaffActivities.filter((a) => a.activity_type === currentActivityFilter);
+    }
+
+    if (!filtered.length) {
+      el.innerHTML = `<div class="panel-empty">No recent activity recorded.</div>`;
+      return;
+    }
+
+    el.innerHTML = filtered.map((act) => {
+      const initials = getInitials(act.staff_name);
+      const timeStr = relativeTime(act.activity_time);
+      const tagClass = act.activity_type === 'order' ? 'tag-order' : (act.activity_type === 'inventory' ? 'tag-inventory' : 'tag-cash');
+      const tagLabel = act.activity_type === 'order' ? 'Order' : (act.activity_type === 'inventory' ? 'Stock' : 'Cash');
+
+      return `
+        <div class="activity-item">
+          <div class="activity-avatar" title="${escapeHtml(act.staff_name)}">${initials}</div>
+          <div class="activity-content">
+            <div class="activity-top">
+              <span class="activity-staff">
+                ${escapeHtml(act.staff_name)}
+                <span class="activity-role">${escapeHtml(act.staff_role || 'Staff')}</span>
+              </span>
+              <span class="activity-time" title="${act.activity_time}">${timeStr}</span>
+            </div>
+            <div class="activity-desc">
+              <span class="activity-domain-tag ${tagClass}">${tagLabel}</span>
+              ${escapeHtml(act.description)}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* ================================================================
+     EXISTING SECTIONS
+     ================================================================ */
   async function loadBestSellers() {
     const el = document.getElementById('sec-best-sellers');
     try {
@@ -162,7 +690,6 @@
     }
   }
 
-  /* ========== 2. Inventory overview ========== */
   async function loadInventoryOverview() {
     const el = document.getElementById('sec-inventory-overview');
     try {
@@ -184,7 +711,6 @@
     }
   }
 
-  /* ========== 3. Inventory usage as of today ========== */
   async function loadInventoryUsage() {
     const el = document.getElementById('sec-inventory-usage');
     try {
@@ -212,7 +738,6 @@
     }
   }
 
-  /* ========== 4. Inventory status ========== */
   async function loadInventoryStatus() {
     const el = document.getElementById('sec-inventory-status');
     try {

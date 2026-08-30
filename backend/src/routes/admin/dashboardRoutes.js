@@ -11,6 +11,8 @@ import {
   inventoryOverview,
   inventoryUsage,
   inventoryStatus,
+  orderRail,
+  staffActivity,
 } from "../../controllers/admin/dashboardController.js";
 import { requireStaffAuth } from "../../middlewares/auth.middleware.js";
 import { globalLimiter } from "../../middlewares/rateLimit.middleware.js";
@@ -27,6 +29,10 @@ dashboardRouter.get("/", summary);
 // dashboard.html calls /api/admin/dashboard/summary specifically - added
 // as an explicit alias so that request stops 404ing.
 dashboardRouter.get("/summary", summary);
+
+// --- Live Order Rail and Recent Staff Activity (Home screen default view) ---
+dashboardRouter.get("/order-rail", orderRail);
+dashboardRouter.get("/staff-activity", staffActivity);
 
 // --- Sales sections (behind can_access_reports) ---
 dashboardRouter.get("/sales-breakdown", requirePermission("can_access_reports"), salesBreakdown);

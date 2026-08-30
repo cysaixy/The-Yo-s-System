@@ -510,3 +510,134 @@ export async function inventoryStatus(req, res, next) {
     next(err);
   }
 }
+
+/* ================================================================
+   SECTION 11 — Live Order Rail (Home screen active orders feed)
+   ================================================================ */
+export async function orderRail(req, res, next) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT orders.id, orders.order_type, orders.status, orders.total_amount, orders.delivery_fee,
+              orders.datetime_ordered, orders.notes,
+              customers.name AS customer_name,
+              customers.phone AS customer_phone,
+              staff.name AS staff_name,
+              CASE WHEN orders.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
+              COALESCE(
+                (SELECT json_agg(json_build_object(
+                  'item_name', menu_items.name,
+                  'quantity', order_items.quantity,
+                  'price', order_items.price,
+                  'notes', order_items.notes,
+                  'add_ons', (
+                    SELECT COALESCE(json_agg(json_build_object('name', order_item_add_ons.name, 'quantity', order_item_add_ons.quantity)), '[]')
+                    FROM order_item_add_ons
+                    WHERE order_item_add_ons.order_item_id = order_items.id
+                  )
+                ))
+                FROM order_items
+                JOIN menu_items ON menu_items.id = order_items.menu_id
+                WHERE order_items.order_id = orders.id
+                ), '[]'
+              ) AS items
+       FROM orders
+       JOIN customers ON customers.id = orders.customer_id
+       LEFT JOIN staff ON staff.id = orders.staff_id
+       WHERE orders.datetime_ordered::date >= CURRENT_DATE - INTERVAL '1 day'
+         AND orders.status <> 'cancelled'
+       ORDER BY 
+         CASE orders.status
+           WHEN 'pending' THEN 1
+           WHEN 'confirmed' THEN 2
+           WHEN 'preparing' THEN 3
+           WHEN 'ready' THEN 4
+           WHEN 'completed' THEN 5
+           ELSE 6
+         END,
+         orders.datetime_ordered DESC
+       LIMIT 40`
+    );
+
+    res.json({ orders: rows });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ================================================================
+   SECTION 12 — Recent Staff Activity Feed
+   ================================================================ */
+export async function staffActivity(req, res, next) {
+  try {
+    const { rows } = await pool.query(
+      `WITH combined_activity AS (
+         SELECT 
+           orders.datetime_ordered AS activity_time,
+           'order' AS activity_type,
+           staff.name AS staff_name,
+           staff.role AS staff_role,
+           CONCAT('Processed POS order #', orders.id, ' (', UPPER(REPLACE(orders.order_type, '_', ' ')), ') - ₱', ROUND(orders.total_amount::numeric, 2)) AS description,
+           orders.id::text AS reference_id,
+           orders.status AS status_badge
+         FROM orders
+         JOIN staff ON staff.id = orders.staff_id
+         WHERE orders.staff_id IS NOT NULL
+
+         UNION ALL
+
+         SELECT 
+           inventory_log.log_date AS activity_time,
+           'inventory' AS activity_type,
+           staff.name AS staff_name,
+           staff.role AS staff_role,
+           CONCAT(
+             CASE inventory_log.transaction_type
+               WHEN 'stock_in' THEN 'Stock In: +'
+               WHEN 'waste' THEN 'Recorded Waste: '
+               WHEN 'manual_adjustment' THEN 'Inventory Adjustment: '
+               ELSE 'Inventory Log: '
+             END,
+             inventory_log.quantity_change, ' units of ',
+             COALESCE(inventory_items.name, menu_items.name, 'Item'),
+             CASE WHEN inventory_log.remarks IS NOT NULL AND inventory_log.remarks <> '' THEN CONCAT(' (', inventory_log.remarks, ')') ELSE '' END
+           ) AS description,
+           inventory_log.id::text AS reference_id,
+           inventory_log.transaction_type AS status_badge
+         FROM inventory_log
+         JOIN staff ON staff.id = inventory_log.staff_id
+         LEFT JOIN menu_items ON menu_items.id = inventory_log.menu_id
+         LEFT JOIN inventory_items ON inventory_items.id = inventory_log.menu_id
+         WHERE inventory_log.staff_id IS NOT NULL
+
+         UNION ALL
+
+         SELECT 
+           cash_transactions.transaction_date AS activity_time,
+           'cash' AS activity_type,
+           staff.name AS staff_name,
+           staff.role AS staff_role,
+           CONCAT(
+             CASE cash_transactions.transaction_type WHEN 'in' THEN 'Cash In (+₱' ELSE 'Cash Out (-₱' END,
+             ROUND(cash_transactions.amount::numeric, 2), ') for ',
+             COALESCE(cash_transactions.category, 'General'), ' - ',
+             cash_accounts.name,
+             CASE WHEN cash_transactions.description IS NOT NULL AND cash_transactions.description <> '' THEN CONCAT(' (', cash_transactions.description, ')') ELSE '' END
+           ) AS description,
+           cash_transactions.id::text AS reference_id,
+           cash_transactions.transaction_type AS status_badge
+         FROM cash_transactions
+         JOIN staff ON staff.id = cash_transactions.staff_id
+         JOIN cash_accounts ON cash_accounts.id = cash_transactions.cash_account_id
+         WHERE cash_transactions.staff_id IS NOT NULL
+       )
+       SELECT activity_time, activity_type, staff_name, staff_role, description, reference_id, status_badge
+       FROM combined_activity
+       ORDER BY activity_time DESC
+       LIMIT 25`
+    );
+
+    res.json({ activities: rows });
+  } catch (err) {
+    next(err);
+  }
+}
