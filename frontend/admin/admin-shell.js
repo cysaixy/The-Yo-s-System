@@ -28,24 +28,52 @@ function iconSvg(name) {
   return `<svg viewBox="0 0 24 24">${ICONS[name] || ''}</svg>`;
 }
 
-const NAV_MAIN = [
-  { key: 'home', label: 'Home', href: 'home.html', icon: 'home' },
-  { key: 'inventory', label: 'Inventory', href: 'inventory.html', icon: 'inventory', perm: 'can_access_inventory' },
-  { key: 'products', label: 'Products', href: 'products.html', icon: 'products' },
-  { key: 'pos', label: 'Point of Sale', href: 'pos.html', icon: 'pos' },
-  { key: 'sales', label: 'Sales Transactions', href: 'sales.html', icon: 'sales' },
-  { key: 'reservations', label: 'Reservations', href: 'reservations.html', icon: 'reservations' },
-  { key: 'cash-transactions', label: 'Cash Transactions', href: 'cash-transactions.html', icon: 'cashtx', perm: 'can_access_reports' },
-  { key: 'cash-accounts', label: 'Cash Accounts', href: 'cash-accounts.html', icon: 'cashacc', perm: 'can_access_reports' },
-  { key: 'budget', label: 'Budget Planner', href: 'budget-planner.html', icon: 'budget', perm: 'can_access_reports' },
-  { key: 'purchases', label: 'Purchases', href: 'purchases.html', icon: 'purchases', perm: 'can_access_stock_in' },
+// All navigation items organised into labelled sections.
+// The old separate "Home" and "Dashboard" entries are merged into a single
+// "Dashboard" entry (key: 'dashboard', href: home.html) — home.html IS the
+// operational overview, so there is no reason to split landing vs. stats.
+const NAV_SECTIONS = [
+  {
+    label: 'Overview',
+    items: [
+      { key: 'dashboard', label: 'Dashboard', href: 'home.html', icon: 'home' },
+    ],
+  },
+  {
+    label: 'Sales & Service',
+    items: [
+      { key: 'pos',          label: 'Point of Sale',      href: 'pos.html',          icon: 'pos' },
+      { key: 'sales',        label: 'Sales Transactions', href: 'sales.html',        icon: 'sales' },
+      { key: 'reservations', label: 'Reservations',       href: 'reservations.html', icon: 'reservations' },
+    ],
+  },
+  {
+    label: 'Inventory',
+    items: [
+      { key: 'inventory', label: 'Inventory', href: 'inventory.html', icon: 'inventory', perm: 'can_access_inventory' },
+      { key: 'products',  label: 'Products',  href: 'products.html',  icon: 'products' },
+      { key: 'purchases', label: 'Purchases', href: 'purchases.html', icon: 'purchases', perm: 'can_access_stock_in' },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { key: 'cash-transactions', label: 'Cash Transactions', href: 'cash-transactions.html', icon: 'cashtx',  perm: 'can_access_reports' },
+      { key: 'cash-accounts',     label: 'Cash Accounts',     href: 'cash-accounts.html',     icon: 'cashacc', perm: 'can_access_reports' },
+      { key: 'budget',            label: 'Budget Planner',    href: 'budget-planner.html',    icon: 'budget',  perm: 'can_access_reports' },
+    ],
+  },
+  {
+    label: 'Admin',
+    items: [
+      { key: 'staff',    label: 'Staff',    href: 'staff.html',    icon: 'staff',    adminOnly: true },
+      { key: 'settings', label: 'Settings', href: 'settings.html', icon: 'settings' },
+    ],
+  },
 ];
 
-const NAV_ADMIN = [
-  { key: 'dashboard', label: 'Dashboard', href: 'dashboard.html', icon: 'dashboard' },
-  { key: 'staff', label: 'Staff', href: 'staff.html', icon: 'staff', adminOnly: true },
-  { key: 'settings', label: 'Settings', href: 'settings.html', icon: 'settings' },
-];
+// Flat list of all items — used for permission checks and active-item lookup.
+const NAV_ALL_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
 
 // Whether this staff member can open this nav item at all. Admins bypass
 // every check. Everyone else (Cashier, Kitchen, Manager - your backend
@@ -72,6 +100,15 @@ function navLinkHTML(item, active, staff) {
   return `<a class="admin-nav-link${item.key === active ? ' active' : ''}" href="${item.href}" title="${item.label}">
     <span class="icon">${iconSvg(item.icon)}</span><span class="nav-text">${item.label}</span>
   </a>`;
+}
+
+// Renders all nav sections into an HTML string for the sidebar <nav>.
+function renderNavSections(active, staff) {
+  return NAV_SECTIONS.map((section, idx) => {
+    const links = section.items.map(item => navLinkHTML(item, active, staff)).join('');
+    const divider = idx > 0 ? '<div class="nav-section-divider"></div>' : '';
+    return `${divider}<div class="nav-group-label">${section.label}</div>${links}`;
+  }).join('');
 }
 
 // Decodes a JWT's payload without verifying the signature (verification
@@ -377,10 +414,7 @@ export function renderAdminShell({ active, title }) {
           </button>
         </div>
         <nav class="sidebar-nav">
-          <div class="nav-group-label">Main Menu</div>
-          ${NAV_MAIN.map(item => navLinkHTML(item, active, staff)).join('')}
-          <div class="nav-group-label">Admin</div>
-          ${NAV_ADMIN.map(item => navLinkHTML(item, active, staff)).join('')}
+          ${renderNavSections(active, staff)}
         </nav>
         <div class="sidebar-user-section">
           <div class="sidebar-user-avatar">${initial}</div>
@@ -476,7 +510,7 @@ export function renderAdminShell({ active, title }) {
   // A signed-in staff member who isn't allowed on this page (e.g. they
   // bookmarked it before permissions changed) gets bounced to Home rather
   // than seeing a broken/empty page.
-  const activeItem = [...NAV_MAIN, ...NAV_ADMIN].find(i => i.key === active);
+  const activeItem = NAV_ALL_ITEMS.find(i => i.key === active);
   if (activeItem && !hasAccess(activeItem, staff)) {
     alert("You don't have permission to access this page. Ask an Admin to grant it.");
     window.location.href = 'home.html';
