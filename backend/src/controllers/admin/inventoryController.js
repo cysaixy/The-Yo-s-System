@@ -251,11 +251,11 @@ export async function log(req, res, next) {
     const conditions = [];
     const params = [];
 
-    if (menu_id) { params.push(menu_id); conditions.push(`il.menu_id = $${params.length}`); }
-    if (staff_id) { params.push(staff_id); conditions.push(`il.staff_id = $${params.length}`); }
-    if (transaction_type) { params.push(transaction_type); conditions.push(`il.transaction_type = $${params.length}`); }
-    if (from) { params.push(from); conditions.push(`il.log_date::date >= $${params.length}`); }
-    if (to) { params.push(to); conditions.push(`il.log_date::date <= $${params.length}`); }
+    if (menu_id) { params.push(menu_id); conditions.push(`inventory_log.menu_id = $${params.length}`); }
+    if (staff_id) { params.push(staff_id); conditions.push(`inventory_log.staff_id = $${params.length}`); }
+    if (transaction_type) { params.push(transaction_type); conditions.push(`inventory_log.transaction_type = $${params.length}`); }
+    if (from) { params.push(from); conditions.push(`inventory_log.log_date::date >= $${params.length}`); }
+    if (to) { params.push(to); conditions.push(`inventory_log.log_date::date <= $${params.length}`); }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 

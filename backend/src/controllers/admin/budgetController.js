@@ -19,7 +19,7 @@ export async function list(req, res, next) {
       const normalized = normalizeMonth(month);
       if (!normalized) return res.status(400).json({ error: "Invalid month value." });
       params.push(normalized);
-      conditions.push(`b.budget_month = $${params.length}`);
+      conditions.push(`budgets.budget_month = $${params.length}`);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
