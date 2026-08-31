@@ -724,7 +724,7 @@
       const itemsList = Array.isArray(o.items) ? o.items : [];
       const urgent = isUrgent(o.datetime_ordered, o.status);
       const timeStr = relativeTime(o.datetime_ordered);
-      const typeLabel = TYPE_NAMES[o.order_type] || o.order_type;
+      const typeLabel = TYPE_LABELS[o.order_type] || o.order_type;
 
       let actionBtn = '';
       if (o.status === 'pending') {
