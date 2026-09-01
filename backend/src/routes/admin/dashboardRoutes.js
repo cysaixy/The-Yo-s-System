@@ -34,17 +34,17 @@ dashboardRouter.get("/summary", summary);
 dashboardRouter.get("/order-rail", orderRail);
 dashboardRouter.get("/staff-activity", staffActivity);
 
-// --- Sales sections (behind can_access_reports) ---
-dashboardRouter.get("/sales-breakdown", requirePermission("can_access_reports"), salesBreakdown);
-dashboardRouter.get("/best-sellers", requirePermission("can_access_reports"), bestSellers);
-dashboardRouter.get("/sales-trend", requirePermission("can_access_reports"), salesTrend);
-dashboardRouter.get("/monthly-target", requirePermission("can_access_reports"), monthlyTarget);
+// --- Sales sections (operational dashboard - default access for any staff) ---
+dashboardRouter.get("/sales-breakdown", salesBreakdown);
+dashboardRouter.get("/best-sellers", bestSellers);
+dashboardRouter.get("/sales-trend", salesTrend);
+dashboardRouter.get("/monthly-target", monthlyTarget);
 // Changing the target is a business-setting change - Admin only.
 dashboardRouter.put("/monthly-target", requireAdmin, setMonthlyTarget);
 
-// --- Cash sections (behind can_access_reports) ---
-dashboardRouter.get("/cash-overview", requirePermission("can_access_reports"), cashOverview);
-dashboardRouter.get("/cash-trend", requirePermission("can_access_reports"), cashTrend);
+// --- Cash sections (operational dashboard - default access for any staff) ---
+dashboardRouter.get("/cash-overview", cashOverview);
+dashboardRouter.get("/cash-trend", cashTrend);
 
 // --- Inventory sections ---
 // Counts are part of the default dashboard view (mirrors the old

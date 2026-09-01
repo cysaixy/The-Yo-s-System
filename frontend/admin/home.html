@@ -395,6 +395,7 @@
   let currentRailFilter = 'all';
   let rawStaffActivities = [];
   let currentActivityFilter = 'all';
+  let railLoadingInProgress = false; // Track if a rail load is in progress
 
   const lockBox = (msg) => `<div class="panel-empty">🔒 ${escapeHtml(msg)}</div>`;
 
@@ -673,24 +674,44 @@
 
     const refreshBtn = document.getElementById('btnRailRefresh');
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => loadOrderRail(false));
+      refreshBtn.addEventListener('click', async () => {
+        if (railLoadingInProgress) return; // Prevent duplicate requests
+        railLoadingInProgress = true;
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = '↻ Syncing…';
+        try {
+          await loadOrderRail(false);
+        } catch (err) {
+          // Error already handled by loadOrderRail
+        } finally {
+          railLoadingInProgress = false;
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = '↻ Sync';
+        }
+      });
     }
   }
 
   async function loadOrderRail(isBackground = false) {
     const track = document.getElementById('orderRailTrack');
-    if (!isBackground && track && !rawRailOrders.length) {
+    
+    // Show loading state only on manual refresh, not background polling
+    if (!isBackground && track && rawRailOrders.length === 0) {
       track.innerHTML = `<div class="order-rail-empty">Loading live orders…</div>`;
     }
+    
     try {
       const data = await getJSON('/api/admin/dashboard/order-rail');
       rawRailOrders = data.orders || [];
       updateRailCounts();
       renderRailCards();
     } catch (err) {
+      // Only show error in UI on manual refresh, not background polling
       if (!isBackground && track) {
-        track.innerHTML = `<div class="order-rail-empty">${escapeHtml(err.message)}</div>`;
+        track.innerHTML = `<div class="order-rail-empty">Unable to load orders.<br/>${escapeHtml(err.message)}<br/><small>Please try again.</small></div>`;
       }
+      // Don't re-throw on background polling to avoid console errors
+      if (!isBackground) throw err;
     }
   }
 
@@ -825,7 +846,7 @@
       rawStaffActivities = data.activities || [];
       renderStaffActivity();
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load activity.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
   }
 
@@ -885,7 +906,7 @@
         <div class="stat-card"><div class="label">Order Types</div><div class="value">${d.orderTypesCount}</div><div class="stat-note">of 5 tracked today</div></div>
       `;
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load sales overview.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
   }
 
@@ -900,6 +921,12 @@
       const total = types.reduce((s, t) => s + num(t.total_sales), 0);
       const maxType = Math.max(...types.map((t) => num(t.total_sales)), 0);
       const active = types.filter((t) => num(t.total_sales) > 0);
+      
+      if (total === 0) {
+        el.innerHTML = `<div class="panel-empty">No sales recorded today.</div>`;
+        return;
+      }
+      
       const donut = total > 0
         ? donutChart(active, total)
         : `<svg viewBox="0 0 170 170" width="170" height="170"><circle cx="85" cy="85" r="62" fill="none" stroke="#efe9dd" stroke-width="24"/></svg>`;
@@ -924,7 +951,7 @@
           <div>${legend}</div>
         </div>`;
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load sales breakdown.<br/>${escapeHtml(err.message)}</div>`;
     }
   }
 
@@ -964,7 +991,7 @@
         document.getElementById('setTargetBtn').addEventListener('click', () => openTargetModal(d));
       }
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load monthly target.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
   }
 
@@ -1032,7 +1059,7 @@
           })
         : `<div class="panel-empty">No sales recorded in the last 15 days.</div>`;
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load sales trend.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
   }
 
@@ -1054,7 +1081,7 @@
         <div class="stat-card"><div class="label">Variance</div><div class="value ${varClass}">${peso(d.variance)}</div></div>
       `;
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load cash overview.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
   }
 
@@ -1078,7 +1105,7 @@
           })
         : `<div class="panel-empty">No cash activity in the last 15 days.</div>`;
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load cash trend.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
   }
 
@@ -1109,7 +1136,7 @@
         </div>`
       : `<div class="panel-empty">No products sold today yet.</div>`;
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load best sellers.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
   }
 
@@ -1130,7 +1157,7 @@
           <span><i class="dot" style="background:var(--danger);"></i>Out of Stock<span class="legend-count">${d.out_of_stock}</span></span>
         </div>`;
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load inventory overview.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
   }
 
@@ -1157,7 +1184,7 @@
         </div>`
       : `<div class="panel-empty">No items available.</div>`;
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load inventory usage.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
   }
 
@@ -1193,7 +1220,7 @@
           </table>
         </div>`;
     } catch (err) {
-      el.innerHTML = lockBox(err.message);
+      el.innerHTML = `<div class="panel-empty">Unable to load inventory status.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
   }
 </script>
