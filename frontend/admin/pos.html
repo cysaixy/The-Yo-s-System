@@ -646,6 +646,112 @@
 .pay-receipt-table .change-row td:last-child { color: var(--success); }
 
 /* ================================================================
+   DELIVERY INFORMATION SECTION
+   ================================================================ */
+.pos-delivery-info {
+  flex-shrink: 0;
+  border-top: 1px solid var(--line);
+  background: var(--component-bg);
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.delivery-info-header {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: var(--stone);
+  border-bottom: 1px solid var(--line);
+}
+.delivery-info-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+.delivery-form {
+  padding: 12px 16px;
+}
+.delivery-form .form-field {
+  margin-bottom: 10px;
+}
+.delivery-form .form-field:last-child {
+  margin-bottom: 0;
+}
+.delivery-form label {
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.delivery-form .required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+.delivery-form input[type="text"],
+.delivery-form input[type="number"],
+.delivery-form textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  background: var(--bone);
+  color: var(--ink);
+  transition: border-color 0.14s, background 0.14s;
+  box-sizing: border-box;
+}
+.delivery-form input[type="text"]:focus,
+.delivery-form input[type="number"]:focus,
+.delivery-form textarea:focus {
+  outline: none;
+  border-color: var(--brass);
+  background: #fff;
+}
+.delivery-form input[type="number"] {
+  font-family: 'Space Mono', monospace;
+  text-align: right;
+}
+.delivery-form .validation-msg {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--danger);
+  margin-top: 3px;
+  font-weight: 500;
+}
+.delivery-fee-field {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+/* Order type switching states */
+.pos-order-type-delivery #deliveryInfoSection { display: block; }
+.pos-order-type-delivery #deliveryFeeRow { display: flex !important; }
+.pos-order-type-dine_in #deliveryInfoSection,
+.pos-order-type-pickup #deliveryInfoSection { display: none; }
+.pos-order-type-dine_in #deliveryFeeRow,
+.pos-order-type-pickup #deliveryFeeRow { display: none !important; }
+
+/* Error state for delivery inputs */
+.delivery-form input.error,
+.delivery-form textarea.error {
+  border-color: var(--danger);
+  background: rgba(192,57,43,0.05);
+}
+.delivery-form input.error:focus,
+.delivery-form textarea.error:focus {
+  border-color: var(--danger);
+  background: rgba(192,57,43,0.08);
+}
+
+/* ================================================================
    RESPONSIVE
    ================================================================ */
 @media (max-width: 900px) {
@@ -732,6 +838,7 @@
             <select id="posOrderType">
               <option value="dine_in">Dine In</option>
               <option value="pickup">Takeout</option>
+              <option value="delivery">Delivery</option>
             </select>
           </div>
 
@@ -753,11 +860,48 @@
             <div id="cartRowsWrap"></div>
           </div>
 
+          <!-- DELIVERY INFORMATION SECTION -->
+          <div class="pos-delivery-info" id="deliveryInfoSection" style="display: none;">
+            <div class="delivery-info-header">
+              <span class="delivery-info-title">DELIVERY INFORMATION</span>
+            </div>
+            <div class="delivery-form">
+              <div class="form-field">
+                <label for="deliveryCustomerName">Customer Name <span class="required">*</span></label>
+                <input type="text" id="deliveryCustomerName" placeholder="Customer name" autocomplete="off">
+                <span class="validation-msg" id="deliveryCustomerNameError" style="display: none;">Please enter the customer's name.</span>
+              </div>
+              <div class="form-field">
+                <label for="deliveryContactNumber">Contact Number <span class="required">*</span></label>
+                <input type="text" id="deliveryContactNumber" placeholder="Philippine phone number (e.g., 09171234567)" autocomplete="off">
+                <span class="validation-msg" id="deliveryContactNumberError" style="display: none;">Please enter a valid Philippine phone number.</span>
+              </div>
+              <div class="form-field">
+                <label for="deliveryAddress">Delivery Address <span class="required">*</span></label>
+                <textarea id="deliveryAddress" placeholder="House/Building, Street, Barangay, Municipality" rows="2" style="resize: vertical;"></textarea>
+                <span class="validation-msg" id="deliveryAddressError" style="display: none;">Please enter the delivery address.</span>
+              </div>
+              <div class="form-field">
+                <label for="deliveryLandmark">Landmark / Location Details</label>
+                <input type="text" id="deliveryLandmark" placeholder="e.g., Near Cagayan State University" autocomplete="off">
+              </div>
+              <div class="form-field">
+                <label for="deliveryNotes">Delivery Notes</label>
+                <input type="text" id="deliveryNotes" placeholder="e.g., Please call when you arrive" autocomplete="off">
+              </div>
+              <div class="form-field delivery-fee-field">
+                <label for="deliveryFeeInput">Delivery Fee (₱)</label>
+                <input type="number" id="deliveryFeeInput" value="0" min="20" max="150" step="0.01" placeholder="₱0.00">
+                <span class="validation-msg" id="deliveryFeeError" style="display: none;">Delivery fee must be between ₱20 and ₱150.</span>
+              </div>
+            </div>
+          </div>
+
           <div class="pos-summary">
             <div class="sum-row"><span>Total Amount</span><span id="sumTotal">₱0.00</span></div>
-            <div class="sum-row">
+            <div class="sum-row" id="deliveryFeeRow" style="display: none;">
               <span>Delivery Fee</span>
-              <input type="number" id="deliveryFeeInput" value="0" min="0" step="0.01">
+              <span id="sumDeliveryFee">₱0.00</span>
             </div>
             <div class="sum-grand">
               <span>Grand Total</span>
@@ -955,7 +1099,12 @@
 
     // POS event listeners
     document.getElementById('posSearch').addEventListener('input', (e) => { searchTerm = e.target.value.toLowerCase(); renderList(); });
+    document.getElementById('posOrderType').addEventListener('change', onOrderTypeChange);
     document.getElementById('deliveryFeeInput').addEventListener('input', renderCart);
+    document.getElementById('deliveryCustomerName').addEventListener('input', () => clearFieldError('deliveryCustomerName'));
+    document.getElementById('deliveryContactNumber').addEventListener('input', () => clearFieldError('deliveryContactNumber'));
+    document.getElementById('deliveryAddress').addEventListener('input', () => clearFieldError('deliveryAddress'));
+    document.getElementById('deliveryFeeInput').addEventListener('input', () => clearFieldError('deliveryFeeInput'));
     document.getElementById('clearOrderBtn').addEventListener('click', clearOrder);
     document.getElementById('submitOrderBtn').addEventListener('click', openPaymentScreen);
     document.getElementById('customizeCancelBtn').addEventListener('click', () => { resetCustomize(); toggleModal(false); });
