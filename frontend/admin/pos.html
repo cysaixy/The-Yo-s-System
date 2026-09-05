@@ -782,7 +782,9 @@
   import { renderAdminShell, showAlert } from "./admin-shell.js";
   import { adminFetch, peso, escapeHtml } from "./admin-api.js";
 
+  console.log('[POS] Script loaded, calling renderAdminShell');
   const session = renderAdminShell({ active: 'pos', title: 'Point of Sale' });
+  console.log('[POS] renderAdminShell returned:', session ? 'session object' : 'null');
   if (session) init();
 
   let menuItems = [];
@@ -812,6 +814,7 @@
      INIT
      ================================================================ */
   function init() {
+    console.log('[POS] init() called');
     const content = document.getElementById('adminContent');
     content.innerHTML = `
       <div class="pos-workspace">
@@ -1157,8 +1160,11 @@
 
   async function loadCategories() {
     try {
+      console.log('[POS] Loading categories from /api/admin/products/categories');
       const res = await adminFetch('/api/admin/products/categories');
+      console.log('[POS] Categories response status:', res.status, res.statusText);
       const data = await res.json();
+      console.log('[POS] Categories response data:', data);
       if (!res.ok) return;
       categories = data.data || [];
       const pillsWrap = document.getElementById('catPillsWrap');
@@ -1173,29 +1179,46 @@
           renderList();
         });
       });
-    } catch { /* non-fatal */ }
+    } catch (err) {
+      console.error('[POS] Failed to load categories:', err);
+    }
   }
 
   async function loadMenu() {
     try {
+      console.log('[POS] Loading menu from /api/admin/products/menuitems');
       const res = await adminFetch('/api/admin/products/menuitems');
+      console.log('[POS] Response status:', res.status, res.statusText);
       const data = await res.json();
+      console.log('[POS] Response data:', data);
       if (!res.ok) throw new Error(data.error || 'Could not load menu.');
       menuItems = (data.items || []).filter(i => i.status === 'available');
+      console.log('[POS] Filtered menu items:', menuItems.length);
       renderList();
     } catch (err) {
-      document.getElementById('posListWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
+      console.error('[POS] Failed to load menu:', err);
+      document.getElementById('posListWrap').innerHTML = `
+        <div class="admin-error">
+          ⚠ ${err.message}
+          <button class="btn btn-outline" id="retryLoadMenuBtn" style="margin-top: 10px;">Retry</button>
+        </div>`;
+      document.getElementById('retryLoadMenuBtn')?.addEventListener('click', loadMenu);
     }
   }
 
   async function loadAddons() {
     try {
+      console.log('[POS] Loading addons from /api/admin/products/addons');
       const res = await adminFetch('/api/admin/products/addons');
+      console.log('[POS] Addons response status:', res.status, res.statusText);
       const data = await res.json();
+      console.log('[POS] Addons response data:', data);
       if (!res.ok) return;
       addons = data.addons || [];
       renderList();
-    } catch { /* non-fatal */ }
+    } catch (err) {
+      console.error('[POS] Failed to load addons:', err);
+    }
   }
 
   function getAddonsForProduct(menuId) {
