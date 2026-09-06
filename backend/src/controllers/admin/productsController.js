@@ -77,13 +77,21 @@ export const listAllMenuItems = async (req, res, next) => {
     // item (an N+1 pattern), which on a small/serverless Postgres pool is
     // slow and can exhaust connections — the request then never returns and
     // the POS "Loading menu…" spinner hangs forever.
-    const { rows: comps } = await pool.query(
-      `SELECT menu_item_inventory.menu_id, menu_item_inventory.id, menu_item_inventory.inventory_id,
-              menu_item_inventory.quantity, menu_item_inventory.unit,
-              inventory_items.name AS inventory_name, inventory_items.stock_quantity
-       FROM menu_item_inventory
-       JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id`
-    );
+    let comps = [];
+    try {
+      const result = await pool.query(
+        `SELECT menu_item_inventory.menu_id, menu_item_inventory.id, menu_item_inventory.inventory_id,
+                menu_item_inventory.quantity, menu_item_inventory.unit,
+                inventory_items.name AS inventory_name, inventory_items.stock_quantity
+         FROM menu_item_inventory
+         JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id`
+      );
+      comps = result.rows;
+    } catch (err) {
+      // Older databases may not have the optional ingredient-link table yet.
+      // The POS can still sell menu items without ingredient metadata.
+      if (err.code !== "42P01") throw err;
+    }
 
     const compsByMenu = new Map();
     for (const { menu_id, ...comp } of comps) {
