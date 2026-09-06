@@ -772,6 +772,71 @@
   .pay-received-display { font-size: 1.6rem; }
 }
 
+/* ================================================================
+   INCOMING ONLINE ORDERS — live popup (auto-shows, no refresh)
+   ================================================================ */
+.incoming-fab {
+  position: fixed; left: 22px; bottom: 22px; z-index: 190;
+  display: none; align-items: center; gap: 10px;
+  padding: 12px 18px; border: none; border-radius: 40px; cursor: pointer;
+  background: linear-gradient(135deg, #2e7d4f, #1e5933); color: #fff;
+  font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 0.85rem;
+  box-shadow: 0 8px 24px rgba(46,125,79,0.35); transition: transform 0.14s;
+}
+.incoming-fab:hover { transform: translateY(-2px); }
+.incoming-fab.visible { display: flex; }
+.incoming-fab.pulse { animation: incomingPulse 1.4s ease-in-out infinite; }
+@keyframes incomingPulse {
+  0%, 100% { box-shadow: 0 8px 24px rgba(46,125,79,0.35); }
+  50% { box-shadow: 0 8px 30px rgba(46,125,79,0.75); }
+}
+.incoming-fab svg { width: 20px; height: 20px; }
+.incoming-fab .incoming-count {
+  background: #fff; color: #1e5933; border-radius: 20px; min-width: 22px;
+  padding: 1px 7px; font-family: 'Space Mono', monospace; font-size: 0.78rem; text-align: center;
+}
+
+.incoming-screen {
+  display: none; position: fixed; inset: 0; z-index: 210;
+  background: rgba(21,23,26,0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; padding: 20px; overflow-y: auto;
+}
+.incoming-screen.active { display: flex; animation: payScreenIn 0.2s cubic-bezier(0.16,1,0.3,1) both; }
+.incoming-card {
+  background: var(--component-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  width: 100%; max-width: 480px; overflow: hidden; display: flex; flex-direction: column;
+  max-height: calc(100vh - 40px);
+}
+.incoming-card-header {
+  background: linear-gradient(135deg, #2e7d4f, #1e5933); color: #fff;
+  padding: 16px 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.incoming-card-header .ic-title { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.incoming-card-header .ic-badge {
+  background: rgba(255,255,255,0.2); border-radius: 20px; padding: 3px 10px;
+  font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700;
+}
+.incoming-card-body { overflow-y: auto; flex: 1; overscroll-behavior: contain; padding: 18px 22px; }
+.incoming-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 14px; }
+.incoming-meta .im-item { font-size: 0.82rem; }
+.incoming-meta .im-label { font-family: 'Space Mono', monospace; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); display: block; }
+.incoming-meta .im-value { font-weight: 600; }
+.incoming-type-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-family: 'Space Mono', monospace; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; background: rgba(163,132,74,0.14); color: var(--brass-dark); }
+.incoming-address { background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; margin-bottom: 14px; }
+.incoming-address .im-label { font-family: 'Space Mono', monospace; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); display: block; margin-bottom: 3px; }
+.incoming-items { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.incoming-item-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.incoming-item-row:last-child { border-bottom: none; }
+.incoming-item-row .ii-qty { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--brass-dark); }
+.incoming-item-row .ii-name { font-size: 0.85rem; font-weight: 600; }
+.incoming-item-row .ii-addons { font-size: 0.72rem; color: var(--brass-dark); margin-top: 2px; }
+.incoming-item-row .ii-notes { font-size: 0.72rem; color: var(--ink-muted); font-style: italic; margin-top: 2px; }
+.incoming-item-row .ii-price { font-family: 'Space Mono', monospace; font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
+.incoming-total-row { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 2px solid var(--ink); font-weight: 700; font-size: 1.05rem; }
+.incoming-card-footer { flex-shrink: 0; padding: 16px 22px; border-top: 1px solid var(--line); background: #fff; display: flex; gap: 12px; }
+.incoming-card-footer .btn { flex: 1; padding: 13px; font-size: 0.9rem; }
+.incoming-loading { padding: 30px; text-align: center; color: var(--ink-muted); }
+
 </style>
 </head>
 <body>
@@ -1151,6 +1216,7 @@
     loadCategories();
     loadMenu();
     loadAddons();
+    initIncomingOrders();
   }
 
   /* ================================================================
@@ -1158,13 +1224,23 @@
      ================================================================ */
   function toggleModal(show) { document.getElementById('customizeModal').classList.toggle('active', show); }
 
+  // adminFetch has no timeout, so a slow/hanging backend leaves the POS
+  // spinning on "Loading menu…" forever. Wrap requests in an AbortController
+  // so they fail fast with a retryable error instead of never settling.
+  async function fetchWithTimeout(path, ms = 20000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      return await adminFetch(path, { signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function loadCategories() {
     try {
-      console.log('[POS] Loading categories from /api/admin/products/categories');
-      const res = await adminFetch('/api/admin/products/categories');
-      console.log('[POS] Categories response status:', res.status, res.statusText);
+      const res = await fetchWithTimeout('/api/admin/products/categories');
       const data = await res.json();
-      console.log('[POS] Categories response data:', data);
       if (!res.ok) return;
       categories = data.data || [];
       const pillsWrap = document.getElementById('catPillsWrap');
@@ -1185,21 +1261,21 @@
   }
 
   async function loadMenu() {
+    const wrap = document.getElementById('posListWrap');
+    wrap.innerHTML = `<div class="admin-loading">Loading menu…</div>`;
     try {
-      console.log('[POS] Loading menu from /api/admin/products/menuitems');
-      const res = await adminFetch('/api/admin/products/menuitems');
-      console.log('[POS] Response status:', res.status, res.statusText);
+      const res = await fetchWithTimeout('/api/admin/products/menuitems');
       const data = await res.json();
-      console.log('[POS] Response data:', data);
       if (!res.ok) throw new Error(data.error || 'Could not load menu.');
       menuItems = (data.items || []).filter(i => i.status === 'available');
-      console.log('[POS] Filtered menu items:', menuItems.length);
       renderList();
     } catch (err) {
-      console.error('[POS] Failed to load menu:', err);
-      document.getElementById('posListWrap').innerHTML = `
+      const msg = err.name === 'AbortError'
+        ? 'The menu is taking too long to load. Check your connection, then try again.'
+        : (err.message || 'Could not load menu.');
+      wrap.innerHTML = `
         <div class="admin-error">
-          ⚠ ${err.message}
+          ⚠ ${escapeHtml(msg)}
           <button class="btn btn-outline" id="retryLoadMenuBtn" style="margin-top: 10px;">Retry</button>
         </div>`;
       document.getElementById('retryLoadMenuBtn')?.addEventListener('click', loadMenu);
@@ -1208,17 +1284,240 @@
 
   async function loadAddons() {
     try {
-      console.log('[POS] Loading addons from /api/admin/products/addons');
-      const res = await adminFetch('/api/admin/products/addons');
-      console.log('[POS] Addons response status:', res.status, res.statusText);
+      const res = await fetchWithTimeout('/api/admin/products/addons');
       const data = await res.json();
-      console.log('[POS] Addons response data:', data);
       if (!res.ok) return;
       addons = data.addons || [];
       renderList();
     } catch (err) {
+      // Add-ons are non-critical — the menu still works without them, so a
+      // failure here should not block or disrupt the product grid.
       console.error('[POS] Failed to load addons:', err);
     }
+  }
+
+  /* ================================================================
+     INCOMING ONLINE ORDERS — live popup (auto-shows, no refresh)
+     Polls pending online orders; when a brand-new one arrives it pops the
+     order up on screen so counter staff never have to refresh. A floating
+     button keeps any backlog one click away.
+     ================================================================ */
+  const INCOMING_POLL_MS = 10000;
+  let incomingSeen = null;    // Set of order ids already handled (baseline set on first poll)
+  let incomingQueue = [];     // ids of new orders waiting to auto-show
+  let incomingShowing = false;
+  let incomingPending = [];   // latest snapshot of pending online orders (for the count/list)
+
+  function initIncomingOrders() {
+    if (document.getElementById('incomingOrderScreen')) return;
+
+    const fab = document.createElement('button');
+    fab.className = 'incoming-fab';
+    fab.id = 'incomingOrdersFab';
+    fab.type = 'button';
+    fab.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+      <span>Incoming Orders</span>
+      <span class="incoming-count" id="incomingFabCount">0</span>`;
+    document.body.appendChild(fab);
+    fab.addEventListener('click', showIncomingList);
+
+    const screen = document.createElement('div');
+    screen.className = 'incoming-screen';
+    screen.id = 'incomingOrderScreen';
+    screen.innerHTML = `
+      <div class="incoming-card">
+        <div class="incoming-card-header">
+          <span class="ic-title" id="incomingTitle">New Online Order</span>
+          <span class="ic-badge" id="incomingBadge" style="display:none;"></span>
+        </div>
+        <div class="incoming-card-body" id="incomingBody"></div>
+        <div class="incoming-card-footer" id="incomingFooter"></div>
+      </div>`;
+    document.body.appendChild(screen);
+    screen.addEventListener('click', (e) => { if (e.target === screen) closeIncoming(); });
+
+    pollIncoming();
+    setInterval(pollIncoming, INCOMING_POLL_MS);
+    // Browsers pause timers in background tabs — catch up the moment the
+    // POS tab is focused again so nothing sits unseen.
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) pollIncoming(); });
+  }
+
+  async function pollIncoming() {
+    let orders;
+    try {
+      const res = await fetchWithTimeout('/api/admin/sales/orders?status=pending&limit=50', 12000);
+      if (!res.ok) return;
+      const data = await res.json();
+      orders = (data.orders || []).filter(o => o.source === 'online');
+    } catch { return; }
+
+    incomingPending = orders;
+    updateIncomingFab();
+
+    const currentIds = orders.map(o => String(o.id));
+    if (incomingSeen === null) {
+      // First poll after page load: treat everything already pending as a
+      // baseline so we don't fire a wall of popups for pre-existing orders.
+      // The floating button still surfaces that backlog.
+      incomingSeen = new Set(currentIds);
+      return;
+    }
+
+    const fresh = orders.filter(o => !incomingSeen.has(String(o.id)));
+    fresh.forEach(o => { incomingSeen.add(String(o.id)); incomingQueue.push(o.id); });
+    if (fresh.length) {
+      playIncomingChime();
+      processIncomingQueue();
+    }
+  }
+
+  function updateIncomingFab() {
+    const fab = document.getElementById('incomingOrdersFab');
+    const count = document.getElementById('incomingFabCount');
+    if (!fab || !count) return;
+    const n = incomingPending.length;
+    count.textContent = n;
+    fab.classList.toggle('visible', n > 0);
+    fab.classList.toggle('pulse', n > 0);
+  }
+
+  function processIncomingQueue() {
+    if (incomingShowing) return;      // one popup at a time; the rest wait in the queue
+    const nextId = incomingQueue.shift();
+    if (nextId === undefined) return;
+    incomingShowing = true;
+    openIncomingOrder(nextId, true);
+  }
+
+  function showIncomingList() {
+    if (!incomingPending.length) return;
+    incomingShowing = true;
+    openIncomingOrder(incomingPending[0].id, false);
+  }
+
+  async function openIncomingOrder(orderId, autoQueued) {
+    const screen = document.getElementById('incomingOrderScreen');
+    const body = document.getElementById('incomingBody');
+    const footer = document.getElementById('incomingFooter');
+    const badge = document.getElementById('incomingBadge');
+    const title = document.getElementById('incomingTitle');
+
+    title.textContent = `New Online Order #${orderId}`;
+    if (autoQueued && incomingQueue.length > 0) { badge.style.display = 'inline-block'; badge.textContent = `+${incomingQueue.length} more`; }
+    else badge.style.display = 'none';
+    body.innerHTML = `<div class="incoming-loading">Loading order…</div>`;
+    footer.innerHTML = '';
+    screen.classList.add('active');
+
+    try {
+      const res = await fetchWithTimeout(`/api/admin/sales/orders/${orderId}`, 12000);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load order.');
+      renderIncomingOrder(data.order);
+    } catch (err) {
+      body.innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message || 'Could not load order.')}</div>`;
+      footer.innerHTML = `<button class="btn btn-outline" id="incomingCloseBtn">Close</button>`;
+      document.getElementById('incomingCloseBtn').addEventListener('click', closeIncoming);
+    }
+  }
+
+  function renderIncomingOrder(order) {
+    const body = document.getElementById('incomingBody');
+    const footer = document.getElementById('incomingFooter');
+    const items = order.items || [];
+    const typeLabel = { online: 'Online', delivery: 'Delivery', pickup: 'Takeout', dine_in: 'Dine In' }[order.order_type] || order.order_type || 'Online';
+    const when = order.datetime_ordered
+      ? new Date(order.datetime_ordered).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
+      : '';
+
+    const itemsHtml = items.map(it => {
+      const addons = (it.add_ons || []).map(a => `+ ${escapeHtml(a.name)}${Number(a.quantity) > 1 ? ` ×${Number(a.quantity)}` : ''}`).join(', ');
+      return `
+        <div class="incoming-item-row">
+          <span class="ii-qty">${Number(it.quantity)}×</span>
+          <div>
+            <div class="ii-name">${escapeHtml(it.product_name || 'Item')}</div>
+            ${addons ? `<div class="ii-addons">${addons}</div>` : ''}
+            ${it.notes ? `<div class="ii-notes">“${escapeHtml(it.notes)}”</div>` : ''}
+          </div>
+          <span class="ii-price">${peso(it.subtotal)}</span>
+        </div>`;
+    }).join('');
+
+    body.innerHTML = `
+      <div class="incoming-meta">
+        <div class="im-item"><span class="im-label">Customer</span><span class="im-value">${escapeHtml(order.customer_name || 'Customer')}</span></div>
+        ${order.customer_phone ? `<div class="im-item"><span class="im-label">Contact</span><span class="im-value">${escapeHtml(order.customer_phone)}</span></div>` : ''}
+        <div class="im-item"><span class="im-label">Type</span><span class="incoming-type-pill">${escapeHtml(typeLabel)}</span></div>
+        ${when ? `<div class="im-item"><span class="im-label">Placed</span><span class="im-value">${escapeHtml(when)}</span></div>` : ''}
+      </div>
+      ${order.delivery_address ? `<div class="incoming-address"><span class="im-label">Delivery Address</span>${escapeHtml(order.delivery_address)}</div>` : ''}
+      <div class="incoming-items">${itemsHtml || '<div class="incoming-loading">No items.</div>'}</div>
+      ${Number(order.delivery_fee) > 0 ? `<div class="incoming-total-row" style="border-top:none; font-weight:400; font-size:0.86rem; margin-top:10px; padding-top:0;"><span style="color:var(--ink-muted);">Delivery Fee</span><span>${peso(order.delivery_fee)}</span></div>` : ''}
+      <div class="incoming-total-row"><span>Grand Total</span><span>${peso(order.total_amount)}</span></div>`;
+
+    footer.innerHTML = `
+      <button class="btn btn-outline" id="incomingLaterBtn">Later</button>
+      <button class="btn" id="incomingConfirmBtn">Confirm Order</button>`;
+    document.getElementById('incomingLaterBtn').addEventListener('click', nextIncomingOrDismiss);
+    document.getElementById('incomingConfirmBtn').addEventListener('click', () => confirmIncomingOrder(order.id));
+  }
+
+  async function confirmIncomingOrder(orderId) {
+    const btn = document.getElementById('incomingConfirmBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Confirming…'; }
+    try {
+      const res = await adminFetch(`/api/admin/sales/pos/orders/${orderId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'confirmed' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not confirm order.');
+      // Drop it from the local snapshot right away so the count is responsive.
+      incomingPending = incomingPending.filter(o => String(o.id) !== String(orderId));
+      updateIncomingFab();
+      nextIncomingOrDismiss();
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Confirm Order'; }
+      showAlert(err.message || 'Could not confirm order.', { title: 'Error' });
+    }
+  }
+
+  function nextIncomingOrDismiss() {
+    if (incomingQueue.length) {
+      const nextId = incomingQueue.shift();
+      openIncomingOrder(nextId, true);
+    } else {
+      closeIncoming();
+    }
+  }
+
+  function closeIncoming() {
+    document.getElementById('incomingOrderScreen')?.classList.remove('active');
+    incomingShowing = false;
+  }
+
+  function playIncomingChime() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.42);
+      osc.onended = () => ctx.close();
+    } catch { /* audio is best-effort; browsers may block until first interaction */ }
   }
 
   function getAddonsForProduct(menuId) {

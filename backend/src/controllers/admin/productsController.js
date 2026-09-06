@@ -72,21 +72,29 @@ export const listAllMenuItems = async (req, res, next) => {
        ORDER BY menu_items.name`
     );
 
-    const itemsWithInv = await Promise.all(
-      items.map(async (item) => {
-        const { rows: invComp } = await pool.query(
-          `SELECT menu_item_inventory.id, menu_item_inventory.inventory_id, menu_item_inventory.quantity, menu_item_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
-           FROM menu_item_inventory
-           JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id
-           WHERE menu_item_inventory.menu_id = $1`,
-          [item.id]
-        );
-        return {
-          ...item,
-          inventory_components: invComp,
-        };
-      })
+    // Fetch every menu item's inventory components in a SINGLE query and
+    // group them in memory. The previous version fired one query per menu
+    // item (an N+1 pattern), which on a small/serverless Postgres pool is
+    // slow and can exhaust connections — the request then never returns and
+    // the POS "Loading menu…" spinner hangs forever.
+    const { rows: comps } = await pool.query(
+      `SELECT menu_item_inventory.menu_id, menu_item_inventory.id, menu_item_inventory.inventory_id,
+              menu_item_inventory.quantity, menu_item_inventory.unit,
+              inventory_items.name AS inventory_name, inventory_items.stock_quantity
+       FROM menu_item_inventory
+       JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id`
     );
+
+    const compsByMenu = new Map();
+    for (const { menu_id, ...comp } of comps) {
+      if (!compsByMenu.has(menu_id)) compsByMenu.set(menu_id, []);
+      compsByMenu.get(menu_id).push(comp);
+    }
+
+    const itemsWithInv = items.map((item) => ({
+      ...item,
+      inventory_components: compsByMenu.get(item.id) || [],
+    }));
 
     res.json({ items: itemsWithInv });
   } catch (err) {

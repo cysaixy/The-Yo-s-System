@@ -276,12 +276,17 @@ function initOnlineOrderNotifications(token) {
 
   let initialized = false;
   const poll = async () => {
+    // Abort a stalled poll so slow/hanging requests can't pile up across
+    // ticks and so the next interval always starts from a clean slate.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
     try {
       const res = await fetch(`${ADMIN_API_BASE_URL}/api/admin/sales/orders?status=pending&limit=50`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store', // some browsers/proxies will otherwise serve a
                             // stale cached response for this identical GET
                             // URL instead of re-hitting the server every poll
+        signal: controller.signal,
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -303,10 +308,14 @@ function initOnlineOrderNotifications(token) {
       }
     } catch {
       // Notifications should never interrupt staff work when the server is unavailable.
+    } finally {
+      clearTimeout(timer);
     }
   };
   poll();
-  window.setInterval(poll, 15000);
+  // Poll every 10s so new online orders surface automatically without the
+  // staff having to refresh the page.
+  window.setInterval(poll, 10000);
 
   // Browsers throttle or fully pause setInterval on background tabs, so a
   // staff member who tabs away and back can be sitting on a stale bell for
