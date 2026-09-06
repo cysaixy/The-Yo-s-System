@@ -1719,6 +1719,36 @@
     renderCart();
   }
 
+  // Switches the order type (Dine In / Takeout / Delivery). Toggling the
+  // pos-order-type-* class on the workspace is what shows or hides the
+  // delivery information form and the delivery-fee row (see the CSS rules).
+  function onOrderTypeChange() {
+    const type = document.getElementById('posOrderType').value;
+    const workspace = document.querySelector('.pos-workspace');
+    if (workspace) {
+      workspace.classList.remove('pos-order-type-dine_in', 'pos-order-type-pickup', 'pos-order-type-delivery');
+      workspace.classList.add(`pos-order-type-${type}`);
+    }
+    // Delivery fee only applies to delivery orders — reset it otherwise so it
+    // can't silently carry into a dine-in/takeout total.
+    if (type !== 'delivery') {
+      const dfi = document.getElementById('deliveryFeeInput');
+      if (dfi) dfi.value = '0';
+    }
+    renderCart();
+  }
+
+  // Clears the inline validation state for a delivery form field.
+  function clearFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (field) field.classList.remove('error');
+    // Message spans are <field>Error, except the delivery fee whose input is
+    // deliveryFeeInput but whose message span is deliveryFeeError.
+    const errId = fieldId === 'deliveryFeeInput' ? 'deliveryFeeError' : `${fieldId}Error`;
+    const err = document.getElementById(errId);
+    if (err) err.style.display = 'none';
+  }
+
   function renderCart() {
     const rowsWrap = document.getElementById('cartRowsWrap');
     const emptyState = document.getElementById('cartEmptyState');
@@ -1765,6 +1795,8 @@
     const totalAmount = cart.reduce((sum, c) => sum + lineTotal(c), 0);
     const deliveryFee = Number(document.getElementById('deliveryFeeInput').value) || 0;
     document.getElementById('sumTotal').textContent = peso(totalAmount);
+    const sdf = document.getElementById('sumDeliveryFee');
+    if (sdf) sdf.textContent = peso(deliveryFee);
     document.getElementById('sumGrand').textContent = peso(totalAmount + deliveryFee);
   }
 
