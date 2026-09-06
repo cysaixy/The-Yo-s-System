@@ -847,11 +847,6 @@
   import { renderAdminShell, showAlert } from "./admin-shell.js";
   import { adminFetch, peso, escapeHtml } from "./admin-api.js";
 
-  console.log('[POS] Script loaded, calling renderAdminShell');
-  const session = renderAdminShell({ active: 'pos', title: 'Point of Sale' });
-  console.log('[POS] renderAdminShell returned:', session ? 'session object' : 'null');
-  if (session) init();
-
   let menuItems = [];
   let addons = [];
   let categories = [];
@@ -874,6 +869,11 @@
 
   // ---- Cached order params for final submit ----
   let pendingOrderParams = null;
+
+  console.log('[POS] Script loaded, calling renderAdminShell');
+  const session = renderAdminShell({ active: 'pos', title: 'Point of Sale' });
+  console.log('[POS] renderAdminShell returned:', session ? 'session object' : 'null');
+  if (session) init();
 
   /* ================================================================
      INIT
