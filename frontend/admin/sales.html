@@ -275,6 +275,12 @@
 
   const PAYMENT_LABELS = { cash: 'Cash', card: 'Card', gcash: 'GCash', bank_transfer: 'Bank Transfer', other: 'Other' };
 
+  // autoRefreshTimer must be declared before init() is invoked below —
+  // init() -> startAutoRefresh() reads it synchronously on script load,
+  // and a `let` declared further down the file would still be in the
+  // temporal dead zone at that point.
+  let autoRefreshTimer = null;
+
   if (session) init();
 
   function orderTypeLabel(v, order = null) {
@@ -591,8 +597,6 @@
      own - without yanking focus away from someone mid-search or resetting
      the order detail modal while they're reading it.
      ================================================================ */
-  let autoRefreshTimer = null;
-
   function startAutoRefresh() {
     if (autoRefreshTimer) return;
     autoRefreshTimer = window.setInterval(() => {
