@@ -870,6 +870,16 @@
   // ---- Cached order params for final submit ----
   let pendingOrderParams = null;
 
+  // ---- Incoming online orders state (declared here, before init() runs
+  // below, so these aren't in the temporal dead zone when init() -> 
+  // initIncomingOrders() -> pollIncoming() reference them synchronously
+  // on script load) ----
+  const INCOMING_POLL_MS = 10000;
+  let incomingSeen = null;    // Set of order ids already handled (baseline set on first poll)
+  let incomingQueue = [];     // ids of new orders waiting to auto-show
+  let incomingShowing = false;
+  let incomingPending = [];   // latest snapshot of pending online orders (for the count/list)
+
   console.log('[POS] Script loaded, calling renderAdminShell');
   const session = renderAdminShell({ active: 'pos', title: 'Point of Sale' });
   console.log('[POS] renderAdminShell returned:', session ? 'session object' : 'null');
@@ -1302,12 +1312,6 @@
      order up on screen so counter staff never have to refresh. A floating
      button keeps any backlog one click away.
      ================================================================ */
-  const INCOMING_POLL_MS = 10000;
-  let incomingSeen = null;    // Set of order ids already handled (baseline set on first poll)
-  let incomingQueue = [];     // ids of new orders waiting to auto-show
-  let incomingShowing = false;
-  let incomingPending = [];   // latest snapshot of pending online orders (for the count/list)
-
   function initIncomingOrders() {
     if (document.getElementById('incomingOrderScreen')) return;
 
