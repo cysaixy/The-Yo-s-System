@@ -15,7 +15,6 @@ const ICONS = {
   reservations: '<rect x="3.5" y="5" width="17" height="16" rx="1.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
   cashtx: '<path d="M5 8h11l-3-3M19 16H8l3 3"/>',
   cashacc: '<path d="M3 9 12 4l9 5"/><path d="M4 9h16v2H4z"/><path d="M5 11v7M9 11v7M15 11v7M19 11v7"/><path d="M3 21h18"/>',
-  budget: '<path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15V3.5Z"/>',
   purchases: '<circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/><path d="M3 4h2l2.4 11.4a1.5 1.5 0 0 0 1.5 1.6h8.2a1.5 1.5 0 0 0 1.5-1.2L20 8H6"/>',
   dashboard: '<path d="M4 20V11M10 20V4M16 20v-6"/><path d="M2 20h20"/>',
   staff: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="8.3" r="2.3"/><path d="M15 14.2c2.6.5 4.6 2.7 4.6 5.3"/>',
@@ -60,7 +59,6 @@ const NAV_SECTIONS = [
     items: [
       { key: 'cash-transactions', label: 'Cash Transactions', href: 'cash-transactions.html', icon: 'cashtx',  perm: 'can_access_reports' },
       { key: 'cash-accounts',     label: 'Cash Accounts',     href: 'cash-accounts.html',     icon: 'cashacc', perm: 'can_access_reports' },
-      { key: 'budget',            label: 'Budget Planner',    href: 'budget-planner.html',    icon: 'budget',  perm: 'can_access_reports' },
     ],
   },
   {
