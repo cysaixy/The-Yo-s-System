@@ -967,7 +967,6 @@
       const d = await getJSON('/api/admin/dashboard/monthly-target');
       const pct = d.target ? Math.min(100, num(d.progress_percent)) : 0;
       const remaining = d.target ? Math.max(0, num(d.target) - num(d.month_sales)) : null;
-      const canSet = session.staff && session.staff.role === 'Admin';
       el.innerHTML = `
         <div class="target-top">
           <div class="target-main">
@@ -980,7 +979,6 @@
             <div class="target-cell"><div class="label">Days left</div>
               <div class="target-value">${d.days_remaining} <span class="muted">of ${d.days_in_month}</span></div></div>
           </div>
-          ${canSet ? `<button class="btn btn-outline small" id="setTargetBtn">Set Target</button>` : ''}
         </div>
         <div class="target-progress">
           <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -990,56 +988,9 @@
           </div>
         </div>
       `;
-      if (canSet) {
-        document.getElementById('setTargetBtn').addEventListener('click', () => openTargetModal(d));
-      }
     } catch (err) {
       el.innerHTML = `<div class="panel-empty">Unable to load monthly target.<br/><small>${escapeHtml(err.message)}</small></div>`;
     }
-  }
-
-  function openTargetModal(current) {
-    const existing = document.querySelector('.modal-backdrop');
-    if (existing) existing.remove();
-    const back = document.createElement('div');
-    back.className = 'modal-backdrop active';
-    back.innerHTML = `
-      <div class="modal-box">
-        <h3>Set Monthly Sales Target</h3>
-        <div class="form-field">
-          <label>Monthly target (₱) for ${current.month}</label>
-          <input type="number" id="targetInput" min="0" step="0.01" value="${current.target != null ? current.target : ''}" placeholder="e.g. 100000">
-        </div>
-        <div class="form-field" style="margin-top:12px;">
-          <label>Sales so far this month</label>
-          <div style="font-size:0.9rem; color:var(--ink-muted);">${peso(current.month_sales)}</div>
-        </div>
-        <div class="modal-close-row">
-          <button class="btn btn-outline" id="targetCancel">Cancel</button>
-          <button class="btn" id="targetSave">Save Target</button>
-        </div>
-      </div>`;
-    document.body.appendChild(back);
-    const close = () => back.remove();
-    back.querySelector('#targetCancel').addEventListener('click', close);
-    back.addEventListener('click', (e) => { if (e.target === back) close(); });
-    back.querySelector('#targetSave').addEventListener('click', async () => {
-      const target = parseFloat(back.querySelector('#targetInput').value);
-      if (!Number.isFinite(target) || target < 0) { showAlert('Enter a valid non-negative amount.', { title: 'Invalid target' }); return; }
-      const saveBtn = back.querySelector('#targetSave');
-      saveBtn.disabled = true;
-      try {
-        const res = await adminFetch('/api/admin/dashboard/monthly-target', { method: 'PUT', body: JSON.stringify({ target }) });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || 'Could not save target.');
-        close();
-        loadMonthlyTarget();
-      } catch (err) {
-        showAlert(err.message, { title: 'Save failed' });
-        saveBtn.disabled = false;
-      }
-    });
-    back.querySelector('#targetInput').focus();
   }
 
   /* ================================================================

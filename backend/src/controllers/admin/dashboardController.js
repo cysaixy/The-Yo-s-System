@@ -163,19 +163,18 @@ export async function monthlyTarget(req, res, next) {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const [salesAgg, targetSetting] = await Promise.all([
-      prisma.order.aggregate({
-        where: {
-          datetimeOrdered: { gte: startOfMonth },
-          status: { not: "cancelled" },
-        },
-        _sum: { totalAmount: true },
-        _count: true,
-      }),
-      prisma.$queryRaw`SELECT value FROM "app_settings" WHERE key = 'monthly_sales_target'`,
-    ]);
+    const salesAgg = await prisma.order.aggregate({
+      where: {
+        datetimeOrdered: { gte: startOfMonth },
+        status: { not: "cancelled" },
+      },
+      _sum: { totalAmount: true },
+      _count: true,
+    });
 
-    const target = targetSetting[0] ? num(targetSetting[0].value) : null;
+    const configuredTarget = process.env.MONTHLY_SALES_TARGET;
+    const parsedTarget = configuredTarget?.trim() ? Number(configuredTarget) : NaN;
+    const target = Number.isFinite(parsedTarget) && parsedTarget >= 0 ? parsedTarget : null;
     const monthSales = round2(salesAgg._sum.totalAmount || 0);
     const meta = {
       month: startOfMonth.toISOString().slice(0, 7),
@@ -197,22 +196,10 @@ export async function monthlyTarget(req, res, next) {
   }
 }
 
-export async function setMonthlyTarget(req, res, next) {
-  try {
-    const target = Number(req.body?.target);
-    if (!Number.isFinite(target) || target < 0) {
-      return res.status(400).json({ error: "Target must be a non-negative number." });
-    }
-
-    await prisma.$executeRaw`
-      INSERT INTO "app_settings" (key, value, "updatedAt")
-      VALUES ('monthly_sales_target', ${String(target)}, NOW())
-      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, "updatedAt" = NOW()
-    `;
-    res.json({ target });
-  } catch (err) {
-    next(err);
-  }
+export async function setMonthlyTarget(req, res) {
+  res.status(501).json({
+    error: "Monthly sales target is configured through MONTHLY_SALES_TARGET.",
+  });
 }
 
 /* ================================================================
@@ -442,14 +429,12 @@ export async function inventoryUsage(req, res, next) {
       prisma.$queryRaw`
         SELECT i.name AS description, i.unit AS unit,
                i."stock_quantity" AS closing_stock,
-               SUM(oi.quantity * ai.quantity)::numeric AS used_qty
-        FROM "order_items" oi
-        JOIN "orders" o ON o.id = oi."order_id"
-        JOIN "order_items" addon ON addon."parent_order_item_id" = oi.id
-        JOIN "inventory" i ON i.id = (
-          SELECT id FROM "inventory" WHERE "product_id" = addon."product_id" AND "item_type" = 'raw_material' LIMIT 1
-        )
-        WHERE o."datetime_ordered"::date = CURRENT_DATE AND o.status <> 'cancelled'
+               SUM(ABS(it."quantity_change"))::numeric AS used_qty
+        FROM "inventory_transactions" it
+        JOIN "inventory" i ON i.id = it."inventory_id"
+        WHERE it."transaction_date"::date = CURRENT_DATE
+          AND it."transaction_type" = 'sale'
+          AND it."quantity_change" < 0
         GROUP BY i.id, i.name, i.unit, i."stock_quantity"
         ORDER BY used_qty DESC
       `,
@@ -588,7 +573,6 @@ export async function staffActivity(req, res, next) {
         take: 25,
       }),
       prisma.inventoryTransaction.findMany({
-        where: { staffId: { not: null } },
         include: { staff: true, inventory: true },
         orderBy: { transactionDate: "desc" },
         take: 25,
