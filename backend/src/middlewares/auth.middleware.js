@@ -1,9 +1,7 @@
 // src/middlewares/auth.middleware.js
 import { auth } from "../config/firebase.js";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../lib/prisma.js";
 
 // Firebase Token Middleware for Customers
 export async function verifyFirebaseToken(req, res, next) {

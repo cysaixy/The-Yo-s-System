@@ -1,7 +1,5 @@
 // src/controllers/admin/inventoryController.js
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../../lib/prisma.js";
 
 // Helper to calculate stock status
 function getStockStatus(stockQuantity, reorderLevel) {

@@ -1,9 +1,7 @@
 // src/controllers/admin/staff.controller.js
 import bcrypt from "bcrypt";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../../lib/prisma.js";
 import { generateStaffToken } from "../../utils/generateToken.js";
-
-const prisma = new PrismaClient();
 
 export async function login(req, res, next) {
   try {

@@ -1,6 +1,4 @@
-import { PrismaClient, Prisma } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../../lib/prisma.js";
 
 const ALL_ORDER_TYPES = ["dine_in", "pickup", "delivery", "takeout", "online"];
 
