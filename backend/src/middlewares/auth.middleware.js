@@ -1,7 +1,9 @@
 // src/middlewares/auth.middleware.js
 import { auth } from "../config/firebase.js";
 import jwt from "jsonwebtoken";
-import pool from "../config/db.js";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 // Firebase Token Middleware for Customers
 export async function verifyFirebaseToken(req, res, next) {
@@ -13,19 +15,23 @@ export async function verifyFirebaseToken(req, res, next) {
 
   const token = authHeader.split(" ")[1];
 
+  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+    return res.status(503).json({ error: "Customer authentication is not configured on this server." });
+  }
+
   try {
     const decodedToken = await auth.verifyIdToken(token);
     const { uid, email } = decodedToken;
 
-    const { rows } = await pool.query(
-      "SELECT id, name, email, phone, address FROM customers WHERE firebase_uid = $1",
-      [uid]
-    );
+    const customer = await prisma.customer.findUnique({
+      where: { firebaseUid: uid },
+      select: { id: true, name: true, email: true, phone: true },
+    });
 
     req.user = {
       firebaseUid: uid,
       email,
-      customer: rows[0] || null,
+      customer: customer || null,
     };
 
     next();
@@ -36,9 +42,9 @@ export async function verifyFirebaseToken(req, res, next) {
 }
 
 // Staff/Admin Auth Middleware — verifies the JWT issued by
-// generateStaffToken({ staffId }), loads the staff row + permissions, and
-// attaches it as req.staff for requireAdmin/requirePermission and every
-// controller that reads req.staff.id.
+// generateStaffToken({ staffId }), loads the staff row (permissions now
+// direct boolean columns), and attaches it as req.staff for requireAdmin/
+// requirePermission and every controller that reads req.staff.id.
 export async function requireStaffAuth(req, res, next) {
   const authHeader = req.headers.authorization;
 
@@ -51,15 +57,19 @@ export async function requireStaffAuth(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const { rows } = await pool.query(
-      `SELECT s.id, s.name, s.email, s.role, s.status,
-              p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
-       FROM staff s
-       LEFT JOIN staff_permissions p ON p.staff_id = s.id
-       WHERE s.id = $1`,
-      [decoded.staffId]
-    );
-    const staff = rows[0];
+    const staff = await prisma.staff.findUnique({
+      where: { id: decoded.staffId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        canAccessInventory: true,
+        canAccessStockIn: true,
+        canAccessReports: true,
+      },
+    });
 
     if (!staff || staff.status !== "active") {
       return res.status(401).json({ error: "Unauthorized. Staff account not found or inactive." });

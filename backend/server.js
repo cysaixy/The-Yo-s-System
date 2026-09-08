@@ -95,12 +95,18 @@ const startServer = async () => {
     await pool.query("SELECT NOW()");
     console.log("Connected to database");
     await initTables();
+    console.log("initTables completed");
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+    });
+
+    server.on('error', (err) => {
+      console.error('Server error:', err);
     });
   } catch (error) {
     console.error("Failed to connect to the database:", error.message);
+    console.error(error.stack);
     process.exit(1);
   }
 };

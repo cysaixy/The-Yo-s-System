@@ -1,47 +1,63 @@
-// src/controllers/customer/menu.controller.js
-import pool from "../../config/db.js";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export async function getMenu(req, res, next) {
   try {
-    const [categoriesRes, itemsRes, addonsRes, linksRes] = await Promise.all([
-      pool.query("SELECT * FROM categories ORDER BY name ASC"),
-      // Only expose items the kitchen has marked available - customers
-      // shouldn't see (or be able to order) 86'd items, and this also means
-      // the frontend doesn't have to re-filter what it was never sent.
-      pool.query("SELECT * FROM menu_items WHERE status = 'available' ORDER BY name ASC"),
-      pool.query(
-        "SELECT id, name, description, price, category FROM add_ons WHERE status = 'available' ORDER BY name ASC"
-      ),
-      pool.query("SELECT addon_id, menu_id FROM addon_products"),
+    const [categories, menuItems, addons] = await Promise.all([
+      prisma.product.findMany({
+        where: { productType: "menu_item", status: "available" },
+        select: { category: true },
+        distinct: ["category"],
+        orderBy: { category: "asc" },
+      }),
+      prisma.product.findMany({
+        where: { productType: "menu_item", status: "available" },
+        orderBy: { name: "asc" },
+      }),
+      prisma.product.findMany({
+        where: { productType: "add_on", status: "available" },
+        orderBy: { name: "asc" },
+      }),
     ]);
 
-    // Add-ons are sold on every menu item unless a product link restricts
-    // them. Same rule the POS uses: an add-on with NO addon_products rows is
-    // global; otherwise it's only offered on the linked items.
-    const linked = new Map(); // menu_id -> Set(addon_id)
-    linksRes.rows.forEach((l) => {
-      if (!linked.has(l.menu_id)) linked.set(l.menu_id, new Set());
-      linked.get(l.menu_id).add(l.addon_id);
-    });
-    const linkedAddonIds = new Set(linksRes.rows.map((l) => l.addon_id));
+    const categoryNames = categories.map((c) => c.category).filter(Boolean);
 
-    const items = itemsRes.rows.map((item) => ({
-      ...item,
-      add_ons: addonsRes.rows
-        .filter(
-          (a) => !linkedAddonIds.has(a.id) || linked.get(item.id)?.has(a.id)
-        )
+    const addonMap = new Map(addons.map((a) => [a.id, a]));
+
+    const items = menuItems.map((item) => {
+      const linkedAddonIds = item.components
+        ? item.components
+            .filter((c) => c.productType === "add_on")
+            .map((c) => c.productId)
+        : [];
+
+      const availableAddons = addons
+        .filter((a) => !linkedAddonIds.length || linkedAddonIds.includes(a.id))
         .map((a) => ({
           id: a.id,
           name: a.name,
           description: a.description,
           price: Number(a.price),
           category: a.category,
-        })),
-    }));
+        }));
+
+      return {
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        price: Number(item.price),
+        cost: Number(item.cost || 0),
+        imageUrl: item.imageUrl,
+        stockQuantity: item.stockQuantity,
+        discountPercent: item.discountPercent ? Number(item.discountPercent) : null,
+        category: item.category,
+        add_ons: availableAddons,
+      };
+    });
 
     res.json({
-      categories: categoriesRes.rows,
+      categories: categoryNames,
       items,
     });
   } catch (err) {

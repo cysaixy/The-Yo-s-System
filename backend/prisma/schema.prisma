@@ -1,3 +1,9 @@
+// ============================================================
+// The-Yo's Restaurant Management System - Prisma Schema
+// Compressed design: 23 original tables -> 12 tables
+// Target: PostgreSQL (pgAdmin)
+// ============================================================
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,16 +13,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================================
-//  Lean 12-table restaurant schema.
-//  Ingredient tracking is preserved: a product's raw-material recipe lives in
-//  Product.ingredients (jsonb), e.g.
-//    [{ "inventoryId": 4, "quantity": 18, "unit": "g" }, ...]
-//  pointing at raw-material rows in Inventory (itemType = 'raw_material').
-//  This replaces the old menu_item_inventory + addon_inventory tables while
-//  keeping the model at 12 tables. (No budgets table — feature removed.)
-// ============================================================================
-
+// ------------------------------------------------------------
+// 1. CUSTOMERS
+// ------------------------------------------------------------
 model Customer {
   id          Int      @id @default(autoincrement())
   name        String   @db.VarChar(150)
@@ -32,52 +31,58 @@ model Customer {
   @@map("customers")
 }
 
+// ------------------------------------------------------------
+// 2. STAFF (merged staff_permissions)
+// ------------------------------------------------------------
 model Staff {
-  id                 Int      @id @default(autoincrement())
-  name               String   @db.VarChar(150)
-  email              String   @unique @db.VarChar(150)
-  password           String   @db.VarChar(255)
-  role               String   @db.VarChar(50)
-  status             String   @db.VarChar(30)
-  canAccessInventory Boolean  @default(false) @map("can_access_inventory")
-  canAccessStockIn   Boolean  @default(false) @map("can_access_stock_in")
-  canAccessReports   Boolean  @default(false) @map("can_access_reports")
-  createdAt          DateTime @default(now()) @map("created_at")
+  id                  Int      @id @default(autoincrement())
+  name                String   @db.VarChar(150)
+  email               String   @unique @db.VarChar(150)
+  password            String   @db.VarChar(255)
+  role                String   @db.VarChar(50)
+  status              String   @db.VarChar(30)
+  canAccessInventory  Boolean  @default(false) @map("can_access_inventory")
+  canAccessStockIn    Boolean  @default(false) @map("can_access_stock_in")
+  canAccessReports    Boolean  @default(false) @map("can_access_reports")
+  createdAt           DateTime @default(now()) @map("created_at")
 
-  orders                Order[]
+  orders               Order[]
   inventoryTransactions InventoryTransaction[]
-  cashTransactions      CashTransaction[]
+  cashTransactions     CashTransaction[]
 
   @@map("staff")
 }
 
+// ------------------------------------------------------------
+// 3. TABLES (restaurant tables)
+// ------------------------------------------------------------
 model RestaurantTable {
-  id        Int       @id @default(autoincrement())
-  tableNo   String    @unique @map("table_no") @db.VarChar(20)
+  id        Int      @id @default(autoincrement())
+  tableNo   String   @map("table_no") @db.VarChar(20)
   capacity  Int
-  status    String    @db.VarChar(30)
+  status    String   @db.VarChar(30)
   createdAt DateTime? @default(now()) @map("created_at")
-
-  reservations Reservation[]
 
   @@map("tables")
 }
 
+// ------------------------------------------------------------
+// 4. PRODUCTS (merged menu_items + add_ons + bundles)
+// ------------------------------------------------------------
 model Product {
-  id              Int       @id @default(autoincrement())
-  productType     String    @map("product_type") @db.VarChar(20)
-  category        String?   @db.VarChar(100)
-  name            String    @db.VarChar(150)
-  description     String?
-  price           Decimal   @db.Decimal(10, 2)
-  cost            Decimal?  @db.Decimal(10, 2)
-  imageUrl        String?   @map("image_url") @db.VarChar(255)
-  stockQuantity   Int?      @map("stock_quantity")
-  discountPercent Decimal?  @map("discount_percent") @db.Decimal(5, 2)
-  components      Json?     @db.JsonB
-  ingredients     Json?     @db.JsonB
-  status          String?   @db.VarChar(30)
-  createdAt       DateTime? @default(now()) @map("created_at")
+  id               Int      @id @default(autoincrement())
+  productType      String   @map("product_type") @db.VarChar(20) // 'menu_item' | 'add_on' | 'bundle'
+  category         String?  @db.VarChar(100)
+  name             String   @db.VarChar(150)
+  description      String?
+  price            Decimal  @db.Decimal(10, 2)
+  cost             Decimal? @db.Decimal(10, 2)
+  imageUrl         String?  @map("image_url") @db.VarChar(255)
+  stockQuantity    Int?     @map("stock_quantity")
+  discountPercent  Decimal? @map("discount_percent") @db.Decimal(5, 2)
+  components       Json?    @db.JsonB // bundle contents: [{ product_id, quantity }]
+  status           String?  @db.VarChar(30)
+  createdAt        DateTime? @default(now()) @map("created_at")
 
   orderItems     OrderItem[]
   inventoryLinks Inventory[]
@@ -85,21 +90,24 @@ model Product {
   @@map("products")
 }
 
+// ------------------------------------------------------------
+// 5. INVENTORY (merged inventory_items + addon_inventory)
+// ------------------------------------------------------------
 model Inventory {
-  id            Int       @id @default(autoincrement())
-  itemType      String    @map("item_type") @db.VarChar(20)
-  productId     Int?      @map("product_id")
-  name          String    @db.VarChar(150)
-  category      String?   @db.VarChar(100)
-  sku           String?   @db.VarChar(50)
-  unit          String?   @db.VarChar(30)
-  stockQuantity Decimal   @map("stock_quantity") @db.Decimal(10, 2)
-  unitCost      Decimal   @map("unit_cost") @db.Decimal(10, 2)
-  reorderLevel  Decimal?  @map("reorder_level") @db.Decimal(10, 2)
-  supplier      String?   @db.VarChar(150)
-  status        String?   @db.VarChar(30)
-  notes         String?
-  createdAt     DateTime? @default(now()) @map("created_at")
+  id             Int      @id @default(autoincrement())
+  itemType       String   @map("item_type") @db.VarChar(20) // 'product' | 'raw_material'
+  productId      Int?     @map("product_id")
+  name           String   @db.VarChar(150)
+  category       String?  @db.VarChar(100)
+  sku            String?  @db.VarChar(50)
+  unit           String?  @db.VarChar(30)
+  stockQuantity  Decimal  @map("stock_quantity") @db.Decimal(10, 2)
+  unitCost       Decimal  @map("unit_cost") @db.Decimal(10, 2)
+  reorderLevel   Decimal? @map("reorder_level") @db.Decimal(10, 2)
+  supplier       String?  @db.VarChar(150)
+  status         String?  @db.VarChar(30)
+  notes          String?
+  createdAt      DateTime? @default(now()) @map("created_at")
 
   product      Product?               @relation(fields: [productId], references: [id])
   transactions InventoryTransaction[]
@@ -107,15 +115,18 @@ model Inventory {
   @@map("inventory")
 }
 
+// ------------------------------------------------------------
+// 6. INVENTORY_TRANSACTIONS (merged stock_in + inventory_log)
+// ------------------------------------------------------------
 model InventoryTransaction {
-  id              Int       @id @default(autoincrement())
-  inventoryId     Int       @map("inventory_id")
-  staffId         Int       @map("staff_id")
-  transactionType String    @map("transaction_type") @db.VarChar(30)
-  quantityChange  Int       @map("quantity_change")
+  id              Int      @id @default(autoincrement())
+  inventoryId     Int      @map("inventory_id")
+  staffId         Int      @map("staff_id")
+  transactionType String   @map("transaction_type") @db.VarChar(30) // 'stock_in' | 'sale' | 'adjustment' | 'waste'
+  quantityChange  Int      @map("quantity_change")
   expirationDate  DateTime? @map("expiration_date") @db.Date
-  referenceId     Int?      @map("reference_id")
-  transactionDate DateTime  @default(now()) @map("transaction_date")
+  referenceId     Int?     @map("reference_id") // e.g. order_id when type = 'sale'
+  transactionDate DateTime @default(now()) @map("transaction_date")
   remarks         String?
 
   inventory Inventory @relation(fields: [inventoryId], references: [id])
@@ -124,39 +135,47 @@ model InventoryTransaction {
   @@map("inventory_transactions")
 }
 
+// ------------------------------------------------------------
+// 7. ORDERS (collapsed delivery/dine-in columns into JSON)
+// ------------------------------------------------------------
 model Order {
-  id                 Int      @id @default(autoincrement())
-  customerId         Int      @map("customer_id")
-  staffId            Int?     @map("staff_id")
-  reservationId      Int?     @map("reservation_id")
-  orderType          String   @map("order_type") @db.VarChar(30)
-  status             String   @db.VarChar(30)
-  totalAmount        Decimal  @map("total_amount") @db.Decimal(10, 2)
-  datetimeOrdered    DateTime @default(now()) @map("datetime_ordered")
-  notes              String?
-  deliveryFee        Decimal  @default(0) @map("delivery_fee") @db.Decimal(10, 2)
-  paymentMethod      String?  @map("payment_method") @db.VarChar(30)
-  fulfillmentDetails Json?    @map("fulfillment_details") @db.JsonB
+  id                  Int      @id @default(autoincrement())
+  customerId          Int      @map("customer_id")
+  staffId             Int?     @map("staff_id")
+  reservationId       Int?     @map("reservation_id")
+  orderType           String   @map("order_type") @db.VarChar(30)
+  status              String   @db.VarChar(30)
+  totalAmount         Decimal  @map("total_amount") @db.Decimal(10, 2)
+  datetimeOrdered     DateTime @default(now()) @map("datetime_ordered")
+  notes               String?
+  deliveryFee         Decimal  @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  paymentMethod       String?  @map("payment_method") @db.VarChar(30)
+  fulfillmentDetails  Json?    @map("fulfillment_details") @db.JsonB
+  // dine-in example:  {"name": "...", "phone": "...", "table_time": "..."}
+  // delivery example: {"address": "...", "barangay": "...", "city": "...", "landmark": "..."}
 
-  customer    Customer     @relation(fields: [customerId], references: [id])
-  staff       Staff?       @relation(fields: [staffId], references: [id])
-  reservation Reservation? @relation(fields: [reservationId], references: [id])
-  orderItems  OrderItem[]
-  payments    Payment[]
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  staff        Staff?        @relation(fields: [staffId], references: [id])
+  reservation  Reservation?  @relation(fields: [reservationId], references: [id])
+  orderItems   OrderItem[]
+  payments     Payment[]
 
   @@map("orders")
 }
 
+// ------------------------------------------------------------
+// 8. ORDER_ITEMS (merged order_item_add_ons via self-relation)
+// ------------------------------------------------------------
 model OrderItem {
-  id                Int      @id @default(autoincrement())
-  orderId           Int      @map("order_id")
-  productId         Int      @map("product_id")
-  quantity          Int
-  price             Decimal  @db.Decimal(10, 2)
-  cost              Decimal  @db.Decimal(10, 2)
-  subtotal          Decimal  @db.Decimal(10, 2)
-  parentOrderItemId Int?     @map("parent_order_item_id")
-  notes             String?
+  id                 Int      @id @default(autoincrement())
+  orderId            Int      @map("order_id")
+  productId          Int      @map("product_id")
+  quantity           Int
+  price              Decimal  @db.Decimal(10, 2)
+  cost               Decimal  @db.Decimal(10, 2)
+  subtotal           Decimal  @db.Decimal(10, 2)
+  parentOrderItemId  Int?     @map("parent_order_item_id") // set only if this row is an add-on
+  notes              String?
 
   order           Order       @relation(fields: [orderId], references: [id])
   product         Product     @relation(fields: [productId], references: [id])
@@ -166,26 +185,32 @@ model OrderItem {
   @@map("order_items")
 }
 
+// ------------------------------------------------------------
+// 9. RESERVATIONS (collapsed status columns into status + jsonb log)
+// ------------------------------------------------------------
 model Reservation {
-  id                   Int       @id @default(autoincrement())
-  customerId           Int       @map("customer_id")
-  tableNo              String?   @map("table_no") @db.VarChar(20)
-  reservationDate      DateTime  @map("reservation_date") @db.Date
-  reservationTime      DateTime  @map("reservation_time") @db.Time
-  guests               Int
-  status               String    @db.VarChar(30)
-  orderEditingDeadline DateTime? @map("order_editing_deadline") @db.Date
-  notes                String?
-  datetimeReserved     DateTime  @default(now()) @map("datetime_reserved")
-  statusHistory        Json?     @map("status_history") @db.JsonB
+  id                    Int      @id @default(autoincrement())
+  customerId            Int      @map("customer_id")
+  tableNo               String?  @map("table_no") @db.VarChar(20)
+  reservationDate       DateTime @map("reservation_date") @db.Date
+  reservationTime       DateTime @map("reservation_time") @db.Time
+  guests                Int
+  status                String   @db.VarChar(30)
+  orderEditingDeadline  DateTime? @map("order_editing_deadline") @db.Date
+  notes                 String?
+  datetimeReserved      DateTime @default(now()) @map("datetime_reserved")
+  statusHistory         Json?    @map("status_history") @db.JsonB
+  // e.g. [{"status": "confirmed", "changed_at": "...", "changed_by": 3}]
 
-  customer Customer         @relation(fields: [customerId], references: [id])
-  table    RestaurantTable? @relation(fields: [tableNo], references: [tableNo])
+  customer Customer @relation(fields: [customerId], references: [id])
   orders   Order[]
 
   @@map("reservations")
 }
 
+// ------------------------------------------------------------
+// 10. PAYMENTS
+// ------------------------------------------------------------
 model Payment {
   id              Int       @id @default(autoincrement())
   orderId         Int       @map("order_id")
@@ -200,6 +225,9 @@ model Payment {
   @@map("payments")
 }
 
+// ------------------------------------------------------------
+// 11. CASH_ACCOUNTS
+// ------------------------------------------------------------
 model CashAccount {
   id          Int      @id @default(autoincrement())
   name        String   @db.VarChar(100)
@@ -213,6 +241,9 @@ model CashAccount {
   @@map("cash_accounts")
 }
 
+// ------------------------------------------------------------
+// 12. CASH_TRANSACTIONS
+// ------------------------------------------------------------
 model CashTransaction {
   id              Int      @id @default(autoincrement())
   cashAccountId   Int      @map("cash_account_id")
@@ -227,4 +258,15 @@ model CashTransaction {
   staff       Staff?      @relation(fields: [staffId], references: [id])
 
   @@map("cash_transactions")
+}
+
+// ------------------------------------------------------------
+// 13. APP_SETTINGS (key-value store for app configuration)
+// ------------------------------------------------------------
+model AppSetting {
+  key       String   @id @db.VarChar(100)
+  value     String   @db.Text
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@map("app_settings")
 }
