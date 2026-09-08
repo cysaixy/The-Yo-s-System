@@ -6,14 +6,16 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "postinstall": "npm run prisma:generate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "6.19.3",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -27,11 +29,11 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
-    "prisma": "^5.22.0"
+    "prisma": "6.19.3"
   },
   "allowScripts": {
-    "@prisma/engines@5.22.0": true,
-    "prisma@5.22.0": true,
-    "@prisma/client@5.22.0": true
+    "@prisma/engines@6.19.3": true,
+    "prisma@6.19.3": true,
+    "@prisma/client@6.19.3": true
   }
 }
