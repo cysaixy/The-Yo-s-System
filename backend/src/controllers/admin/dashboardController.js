@@ -40,9 +40,9 @@ export async function summary(req, res, next) {
       prisma.$queryRaw`
         SELECT p.name, SUM(oi.quantity)::int AS qty_sold, SUM(oi.subtotal) AS sales_amount
         FROM "order_items" oi
-        JOIN "products" p ON p.id = oi."productId"
-        JOIN "orders" o ON o.id = oi."orderId"
-        WHERE o."datetimeOrdered"::date = CURRENT_DATE AND o.status <> 'cancelled'
+        JOIN "products" p ON p.id = oi."product_id"
+        JOIN "orders" o ON o.id = oi."order_id"
+        WHERE o."datetime_ordered"::date = CURRENT_DATE AND o.status <> 'cancelled'
         GROUP BY p.name
         ORDER BY qty_sold DESC
         LIMIT 10
@@ -117,21 +117,21 @@ export async function salesBreakdown(req, res, next) {
     const [byOrderTypeRaw, byCategoryRaw] = await Promise.all([
       prisma.$queryRaw`
         SELECT 
-          CASE WHEN "orderType" = 'online' AND "fulfillmentDetails"->>'address' IS NOT NULL
-               THEN 'delivery' ELSE "orderType" END AS order_type,
+          CASE WHEN "order_type" = 'online' AND "fulfillment_details"->>'address' IS NOT NULL
+               THEN 'delivery' ELSE "order_type" END AS order_type,
           COUNT(*)::int AS order_count,
-          COALESCE(SUM("totalAmount"), 0)::numeric AS total_sales
+          COALESCE(SUM("total_amount"), 0)::numeric AS total_sales
         FROM "orders"
-        WHERE "datetimeOrdered"::date = CURRENT_DATE AND status <> 'cancelled'
-        GROUP BY CASE WHEN "orderType" = 'online' AND "fulfillmentDetails"->>'address' IS NOT NULL
-                      THEN 'delivery' ELSE "orderType" END
+        WHERE "datetime_ordered"::date = CURRENT_DATE AND status <> 'cancelled'
+        GROUP BY CASE WHEN "order_type" = 'online' AND "fulfillment_details"->>'address' IS NOT NULL
+                      THEN 'delivery' ELSE "order_type" END
       `,
       prisma.$queryRaw`
         SELECT p.category AS category_name, COALESCE(SUM(oi.subtotal), 0)::numeric AS total_sales
         FROM "order_items" oi
-        JOIN "products" p ON p.id = oi."productId"
-        JOIN "orders" o ON o.id = oi."orderId"
-        WHERE o."datetimeOrdered"::date = CURRENT_DATE AND o.status <> 'cancelled'
+        JOIN "products" p ON p.id = oi."product_id"
+        JOIN "orders" o ON o.id = oi."order_id"
+        WHERE o."datetime_ordered"::date = CURRENT_DATE AND o.status <> 'cancelled'
         GROUP BY p.category
         ORDER BY total_sales DESC
       `,
@@ -228,9 +228,9 @@ export async function bestSellers(req, res, next) {
                SUM(oi.quantity)::int AS qty_sold,
                SUM(oi.subtotal) AS sales_amount
         FROM "order_items" oi
-        JOIN "products" p ON p.id = oi."productId"
-        JOIN "orders" o ON o.id = oi."orderId"
-        WHERE o."datetimeOrdered"::date = CURRENT_DATE AND o.status <> 'cancelled'
+        JOIN "products" p ON p.id = oi."product_id"
+        JOIN "orders" o ON o.id = oi."order_id"
+        WHERE o."datetime_ordered"::date = CURRENT_DATE AND o.status <> 'cancelled'
         GROUP BY p.id, p.name, p.category
         ORDER BY qty_sold DESC, sales_amount DESC
         LIMIT 10
@@ -238,8 +238,8 @@ export async function bestSellers(req, res, next) {
       prisma.$queryRaw`
         SELECT COALESCE(SUM(oi.subtotal), 0) AS total
         FROM "order_items" oi
-        JOIN "orders" o ON o.id = oi."orderId"
-        WHERE o."datetimeOrdered"::date = CURRENT_DATE AND o.status <> 'cancelled'
+        JOIN "orders" o ON o.id = oi."order_id"
+        WHERE o."datetime_ordered"::date = CURRENT_DATE AND o.status <> 'cancelled'
       `,
     ]);
 
@@ -270,10 +270,10 @@ export async function salesTrend(req, res, next) {
         SELECT generate_series(CURRENT_DATE - 14, CURRENT_DATE, '1 day')::date AS day
       )
       SELECT to_char(days.day, 'YYYY-MM-DD') AS date,
-             COALESCE(SUM(o."totalAmount"), 0) AS sales,
+             COALESCE(SUM(o."total_amount"), 0) AS sales,
              COUNT(o.id)::int AS orders
       FROM days
-      LEFT JOIN "orders" o ON o."datetimeOrdered"::date = days.day AND o.status <> 'cancelled'
+      LEFT JOIN "orders" o ON o."datetime_ordered"::date = days.day AND o.status <> 'cancelled'
       GROUP BY days.day
       ORDER BY days.day
     `;
@@ -353,18 +353,18 @@ export async function cashTrend(req, res, next) {
         SELECT generate_series(CURRENT_DATE - 14, CURRENT_DATE, '1 day')::date AS day
       ),
       ins AS (
-        SELECT "transactionDate"::date AS day, SUM(amount) AS amt
-        FROM "cash_transactions" WHERE "transactionType" = 'in' GROUP BY 1
+        SELECT "transaction_date"::date AS day, SUM(amount) AS amt
+        FROM "cash_transactions" WHERE "transaction_type" = 'in' GROUP BY 1
       ),
       outs AS (
-        SELECT "transactionDate"::date AS day, SUM(amount) AS amt
-        FROM "cash_transactions" WHERE "transactionType" = 'out' GROUP BY 1
+        SELECT "transaction_date"::date AS day, SUM(amount) AS amt
+        FROM "cash_transactions" WHERE "transaction_type" = 'out' GROUP BY 1
       ),
       cash_sales AS (
-        SELECT o."datetimeOrdered"::date AS day, SUM(p.amount) AS amt
+        SELECT o."datetime_ordered"::date AS day, SUM(p.amount) AS amt
         FROM "payments" p
-        JOIN "orders" o ON o.id = p."orderId"
-        WHERE p."paymentMethod" = 'cash' AND p.status = 'paid'
+        JOIN "orders" o ON o.id = p."order_id"
+        WHERE p."payment_method" = 'cash' AND p.status = 'paid'
         GROUP BY 1
       )
       SELECT to_char(days.day, 'YYYY-MM-DD') AS date,
@@ -432,27 +432,27 @@ export async function inventoryUsage(req, res, next) {
     const [productsRaw, ingredientsRaw] = await Promise.all([
       prisma.$queryRaw`
         SELECT p.name AS description, 'pcs' AS unit,
-               p."stockQuantity" AS closing_stock,
+               p."stock_quantity" AS closing_stock,
                SUM(oi.quantity)::numeric AS used_qty
         FROM "order_items" oi
-        JOIN "orders" o ON o.id = oi."orderId"
-        JOIN "products" p ON p.id = oi."productId"
-        WHERE o."datetimeOrdered"::date = CURRENT_DATE AND o.status <> 'cancelled'
-        GROUP BY p.id, p.name, p."stockQuantity"
+        JOIN "orders" o ON o.id = oi."order_id"
+        JOIN "products" p ON p.id = oi."product_id"
+        WHERE o."datetime_ordered"::date = CURRENT_DATE AND o.status <> 'cancelled'
+        GROUP BY p.id, p.name, p."stock_quantity"
         ORDER BY used_qty DESC
       `,
       prisma.$queryRaw`
         SELECT i.name AS description, i.unit AS unit,
-               i."stockQuantity" AS closing_stock,
+               i."stock_quantity" AS closing_stock,
                SUM(oi.quantity * ai.quantity)::numeric AS used_qty
         FROM "order_items" oi
-        JOIN "orders" o ON o.id = oi."orderId"
-        JOIN "order_items" addon ON addon."parentOrderItemId" = oi.id
+        JOIN "orders" o ON o.id = oi."order_id"
+        JOIN "order_items" addon ON addon."parent_order_item_id" = oi.id
         JOIN "inventory" i ON i.id = (
-          SELECT id FROM "inventory" WHERE "productId" = addon."productId" AND "itemType" = 'raw_material' LIMIT 1
+          SELECT id FROM "inventory" WHERE "product_id" = addon."product_id" AND "item_type" = 'raw_material' LIMIT 1
         )
-        WHERE o."datetimeOrdered"::date = CURRENT_DATE AND o.status <> 'cancelled'
-        GROUP BY i.id, i.name, i.unit, i."stockQuantity"
+        WHERE o."datetime_ordered"::date = CURRENT_DATE AND o.status <> 'cancelled'
+        GROUP BY i.id, i.name, i.unit, i."stock_quantity"
         ORDER BY used_qty DESC
       `,
     ]);
