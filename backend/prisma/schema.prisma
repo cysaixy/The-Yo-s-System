@@ -70,19 +70,21 @@ model RestaurantTable {
 // 4. PRODUCTS (merged menu_items + add_ons + bundles)
 // ------------------------------------------------------------
 model Product {
-  id              Int       @id @default(autoincrement())
-  productType     String    @map("product_type") @db.VarChar(20) // 'menu_item' | 'add_on' | 'bundle'
-  category        String?   @db.VarChar(100)
-  name            String    @db.VarChar(150)
-  description     String?
-  price           Decimal   @db.Decimal(10, 2)
-  cost            Decimal?  @db.Decimal(10, 2)
-  imageUrl        String?   @map("image_url") @db.VarChar(255)
-  stockQuantity   Int?      @map("stock_quantity")
-  discountPercent Decimal?  @map("discount_percent") @db.Decimal(5, 2)
-  components      Json?     @db.JsonB // bundle contents: [{ product_id, quantity }]
-  status          String?   @db.VarChar(30)
-  createdAt       DateTime? @default(now()) @map("created_at")
+  id                   Int       @id @default(autoincrement())
+  productType          String    @map("product_type") @db.VarChar(20) // 'menu_item' | 'add_on' | 'bundle'
+  category             String?   @db.VarChar(100)
+  name                 String    @db.VarChar(150)
+  description          String?
+  price                Decimal   @db.Decimal(10, 2)
+  cost                 Decimal?  @db.Decimal(10, 2)
+  imageUrl             String?   @map("image_url") @db.VarChar(255)
+  stockQuantity        Int?      @map("stock_quantity")
+  discountPercent      Decimal?  @map("discount_percent") @db.Decimal(5, 2)
+  ingredients          Json      @default("[]") @db.JsonB
+  applicableProductIds Json      @default("[]") @map("applicable_product_ids") @db.JsonB
+  components           Json?     @db.JsonB // bundle contents: [{ product_id, quantity }]
+  status               String?   @db.VarChar(30)
+  createdAt            DateTime? @default(now()) @map("created_at")
 
   orderItems     OrderItem[]
   inventoryLinks Inventory[]

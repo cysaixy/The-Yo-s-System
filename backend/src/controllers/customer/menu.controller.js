@@ -1,43 +1,53 @@
 import prisma from "../../lib/prisma.js";
+import { getProductJsonFields } from "../../lib/productJsonFields.js";
 
 export async function getMenu(req, res, next) {
   try {
-    const [categories, menuItems, addons] = await Promise.all([
+    const [menuItems, addons] = await Promise.all([
       prisma.product.findMany({
         where: { productType: "menu_item", status: "available" },
-        select: { category: true },
-        distinct: ["category"],
-        orderBy: { category: "asc" },
-      }),
-      prisma.product.findMany({
-        where: { productType: "menu_item", status: "available" },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          cost: true,
+          imageUrl: true,
+          stockQuantity: true,
+          discountPercent: true,
+          category: true,
+        },
         orderBy: { name: "asc" },
       }),
       prisma.product.findMany({
         where: { productType: "add_on", status: "available" },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          category: true,
+        },
         orderBy: { name: "asc" },
       }),
     ]);
-
-    const categoryNames = categories.map((c) => c.category).filter(Boolean);
-
-    const addonMap = new Map(addons.map((a) => [a.id, a]));
+    const addonFieldsById = await getProductJsonFields(addons.map(({ id }) => id));
+    const categoryNames = [...new Set(
+      menuItems.map(({ category }) => category).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
 
     const items = menuItems.map((item) => {
-      const linkedAddonIds = item.components
-        ? item.components
-            .filter((c) => c.productType === "add_on")
-            .map((c) => c.productId)
-        : [];
-
       const availableAddons = addons
-        .filter((a) => !linkedAddonIds.length || linkedAddonIds.includes(a.id))
-        .map((a) => ({
-          id: a.id,
-          name: a.name,
-          description: a.description,
-          price: Number(a.price),
-          category: a.category,
+        .filter((addon) => {
+          const applicableIds = addonFieldsById.get(addon.id)?.applicableProductIds || [];
+          return !applicableIds.length || applicableIds.includes(item.id);
+        })
+        .map((addon) => ({
+          id: addon.id,
+          name: addon.name,
+          description: addon.description,
+          price: Number(addon.price),
+          category: addon.category,
         }));
 
       return {

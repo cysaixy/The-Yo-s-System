@@ -1,17 +1,31 @@
 // src/controllers/admin/productsController.js
 import pool from "../../config/db.js";
+import prisma from "../../lib/prisma.js";
+import {
+  getProductJsonFields,
+  getRecipeInventory,
+  toInventoryComponents,
+} from "../../lib/productJsonFields.js";
 
 // --- Categories ---
 
 export const listCategories = async (req, res, next) => {
   try {
-    const { rows } = await pool.query(
-      "SELECT id, name FROM categories ORDER BY name ASC"
-    );
+    const products = await prisma.product.findMany({
+      where: { productType: "menu_item" },
+      select: { category: true },
+    });
+    const categories = [...new Set(
+      products
+        .map(({ category }) => category?.trim())
+        .filter(Boolean)
+    )]
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ id: name, name }));
 
     return res.status(200).json({
       success: true,
-      data: rows,
+      data: categories,
     });
   } catch (err) {
     next(err);
@@ -64,44 +78,39 @@ export const deleteCategory = async (req, res, next) => {
 
 export const listAllMenuItems = async (req, res, next) => {
   try {
-    const { rows: items } = await pool.query(
-      `SELECT menu_items.id, menu_items.category_id, menu_items.name, menu_items.description, menu_items.price, menu_items.cost,
-              menu_items.image_url, menu_items.stock_quantity, menu_items.status, categories.name AS category_name
-       FROM menu_items
-       LEFT JOIN categories ON categories.id = menu_items.category_id
-       ORDER BY menu_items.name`
-    );
-
-    // Fetch every menu item's inventory components in a SINGLE query and
-    // group them in memory. The previous version fired one query per menu
-    // item (an N+1 pattern), which on a small/serverless Postgres pool is
-    // slow and can exhaust connections — the request then never returns and
-    // the POS "Loading menu…" spinner hangs forever.
-    let comps = [];
-    try {
-      const result = await pool.query(
-        `SELECT menu_item_inventory.menu_id, menu_item_inventory.id, menu_item_inventory.inventory_id,
-                menu_item_inventory.quantity, menu_item_inventory.unit,
-                inventory_items.name AS inventory_name, inventory_items.stock_quantity
-         FROM menu_item_inventory
-         JOIN inventory_items ON inventory_items.id = menu_item_inventory.inventory_id`
-      );
-      comps = result.rows;
-    } catch (err) {
-      // Older databases may not have the optional ingredient-link table yet.
-      // The POS can still sell menu items without ingredient metadata.
-      if (err.code !== "42P01") throw err;
-    }
-
-    const compsByMenu = new Map();
-    for (const { menu_id, ...comp } of comps) {
-      if (!compsByMenu.has(menu_id)) compsByMenu.set(menu_id, []);
-      compsByMenu.get(menu_id).push(comp);
-    }
+    const items = await prisma.product.findMany({
+      where: { productType: "menu_item" },
+      select: {
+        id: true,
+        category: true,
+        name: true,
+        description: true,
+        price: true,
+        cost: true,
+        imageUrl: true,
+        stockQuantity: true,
+        status: true,
+      },
+      orderBy: { name: "asc" },
+    });
+    const fieldsByProductId = await getProductJsonFields(items.map(({ id }) => id));
+    const inventoryById = await getRecipeInventory(fieldsByProductId);
 
     const itemsWithInv = items.map((item) => ({
-      ...item,
-      inventory_components: compsByMenu.get(item.id) || [],
+      id: item.id,
+      category_id: item.category,
+      category_name: item.category,
+      name: item.name,
+      description: item.description,
+      price: Number(item.price),
+      cost: Number(item.cost ?? 0),
+      image_url: item.imageUrl,
+      stock_quantity: item.stockQuantity,
+      status: item.status || "available",
+      inventory_components: toInventoryComponents(
+        fieldsByProductId.get(item.id)?.ingredients || [],
+        inventoryById
+      ),
     }));
 
     res.json({ items: itemsWithInv });
@@ -281,75 +290,66 @@ export const deleteMenuItem = async (req, res, next) => {
 
 export const listAddons = async (req, res, next) => {
   try {
-    let { rows: addons } = await pool.query(
-      `SELECT id, name, description, price, cost, category, status, created_at FROM add_ons ORDER BY name ASC`
-    );
+    const addons = await prisma.product.findMany({
+      where: { productType: "add_on" },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        cost: true,
+        category: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { name: "asc" },
+    });
+    const fieldsByProductId = await getProductJsonFields(addons.map(({ id }) => id));
+    const inventoryById = await getRecipeInventory(fieldsByProductId);
+    const applicableIds = [...new Set(
+      [...fieldsByProductId.values()].flatMap(({ applicableProductIds }) => applicableProductIds)
+    )];
+    const menuProducts = applicableIds.length
+      ? await prisma.product.findMany({
+          where: {
+            productType: "menu_item",
+            id: { in: applicableIds },
+          },
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        })
+      : [];
 
-    if (addons.length === 0) {
-      // Seed sample Add-Ons
-      const a1 = await pool.query(`INSERT INTO add_ons (name, description, price, cost, category, status) VALUES ('Extra Shot', 'Additional espresso shot', 30.00, 12.00, 'Coffee Add-On', 'available') RETURNING id`);
-      const a2 = await pool.query(`INSERT INTO add_ons (name, description, price, cost, category, status) VALUES ('Oat Milk', 'Substitute with barista oat milk', 30.00, 20.00, 'Dairy Alternative', 'available') RETURNING id`);
-      const a3 = await pool.query(`INSERT INTO add_ons (name, description, price, cost, category, status) VALUES ('Caramel Drizzle', 'Extra caramel drizzle topping', 20.00, 5.00, 'Toppings', 'available') RETURNING id`);
-
-      // Link to first available inventory items if exist
-      const { rows: invs } = await pool.query(`SELECT id, name FROM inventory_items LIMIT 5`);
-      if (invs.length > 0) {
-        const espresso = invs.find(i => i.name.includes('Espresso')) || invs[0];
-        const oat      = invs.find(i => i.name.includes('Oat')) || invs[0];
-        const caramel  = invs.find(i => i.name.includes('Caramel')) || invs[0];
-
-        if (a1.rows[0] && espresso) await pool.query(`INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 18, 'g')`, [a1.rows[0].id, espresso.id]);
-        if (a2.rows[0] && oat)      await pool.query(`INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 150, 'ml')`, [a2.rows[0].id, oat.id]);
-        if (a3.rows[0] && caramel)  await pool.query(`INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 15, 'ml')`, [a3.rows[0].id, caramel.id]);
-      }
-
-      const refetched = await pool.query(
-        `SELECT id, name, description, price, cost, category, status, created_at FROM add_ons ORDER BY name ASC`
+    const result = addons.map((addon) => {
+      const fields = fieldsByProductId.get(addon.id) || {
+        ingredients: [],
+        applicableProductIds: [],
+      };
+      const inventoryComponents = toInventoryComponents(fields.ingredients, inventoryById);
+      const isStockAvailable = inventoryComponents.every(
+        (component) => component.stock_quantity >= component.quantity
       );
-      addons = refetched.rows;
-    }
+      const applicableIdSet = new Set(fields.applicableProductIds);
+      const products = menuProducts
+        .filter((product) => !applicableIdSet.size || applicableIdSet.has(product.id))
+        .map((product) => ({ menu_id: product.id, product_name: product.name }));
 
-    const result = await Promise.all(
-      addons.map(async (addon) => {
-        // Linked inventory items
-        const { rows: invComp } = await pool.query(
-          `SELECT addon_inventory.id, addon_inventory.inventory_id, addon_inventory.quantity, addon_inventory.unit, inventory_items.name AS inventory_name, inventory_items.stock_quantity
-           FROM addon_inventory
-           JOIN inventory_items ON inventory_items.id = addon_inventory.inventory_id
-           WHERE addon_inventory.addon_id = $1`,
-          [addon.id]
-        );
-
-        // Applicable products
-        const { rows: prodList } = await pool.query(
-          `SELECT addon_products.menu_id, menu_items.name AS product_name
-           FROM addon_products
-           JOIN menu_items ON menu_items.id = addon_products.menu_id
-           WHERE addon_products.addon_id = $1`,
-          [addon.id]
-        );
-
-        // Check stock availability based on linked inventory
-        let isStockAvailable = true;
-        invComp.forEach(comp => {
-          if (Number(comp.stock_quantity) < Number(comp.quantity)) {
-            isStockAvailable = false;
-          }
-        });
-
-        const computedStatus = (addon.status === 'unavailable' || !isStockAvailable)
-          ? 'unavailable'
-          : 'available';
-
-        return {
-          ...addon,
-          status: computedStatus,
-          is_stock_available: isStockAvailable,
-          inventory_components: invComp,
-          products: prodList,
-        };
-      })
-    );
+      return {
+        id: addon.id,
+        name: addon.name,
+        description: addon.description,
+        price: Number(addon.price),
+        cost: Number(addon.cost ?? 0),
+        category: addon.category,
+        status: addon.status === "unavailable" || !isStockAvailable
+          ? "unavailable"
+          : "available",
+        created_at: addon.createdAt,
+        is_stock_available: isStockAvailable,
+        inventory_components: inventoryComponents,
+        products,
+      };
+    });
 
     res.json({ addons: result });
   } catch (err) {
