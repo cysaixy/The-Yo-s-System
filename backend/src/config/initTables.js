@@ -3,23 +3,6 @@ import pool from "./db.js";
 
 export async function initTables() {
   try {
-    const prismaTableCheck = await pool.query(`
-      SELECT
-        to_regclass('public.staff') AS staff_exists,
-        to_regclass('public.customers') AS customers_exists,
-        to_regclass('public.orders') AS orders_exists;
-    `);
-
-    const hasPrismaSchema =
-      !!prismaTableCheck.rows[0].staff_exists &&
-      !!prismaTableCheck.rows[0].customers_exists &&
-      !!prismaTableCheck.rows[0].orders_exists;
-
-    if (hasPrismaSchema) {
-      console.log("Prisma schema detected; skipping legacy table bootstrap.");
-      return;
-    }
-
     // 1. inventory_items
     await pool.query(`
       CREATE TABLE IF NOT EXISTS inventory_items (
@@ -108,6 +91,9 @@ export async function initTables() {
     `);
 
     // 7. Safe column additions for older databases.
+    await pool.query(
+      `ALTER TABLE inventory_log ALTER COLUMN quantity_change TYPE NUMERIC(10,2)`
+    );
     await pool.query(
       `ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS cost NUMERIC(10,2) NOT NULL DEFAULT 0`
     );

@@ -19,11 +19,18 @@ function normalizePrivateKey(raw) {
   return key.replace(/\\n/g, "\n");
 }
 
-const projectId = process.env.FIREBASE_PROJECT_ID;
-const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
+if (!getApps().length) {
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
 
-if (!getApps().length && projectId && clientEmail && privateKey) {
+  if (!projectId || !clientEmail || !privateKey) {
+    console.error(
+      "[firebase.js] Missing Firebase Admin credentials:",
+      { hasProjectId: !!projectId, hasClientEmail: !!clientEmail, hasPrivateKey: !!privateKey }
+    );
+  }
+
   initializeApp({
     credential: cert({
       projectId,
@@ -33,17 +40,4 @@ if (!getApps().length && projectId && clientEmail && privateKey) {
   });
 }
 
-export const auth =
-  getApps().length > 0
-    ? getAuth()
-    : {
-        async verifyIdToken() {
-          throw new Error("Firebase Admin is not configured. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.");
-        },
-      };
-
-if (!projectId || !clientEmail || !privateKey) {
-  console.warn(
-    "[firebase.js] Firebase Admin credentials missing; customer auth is disabled until env vars are configured."
-  );
-}
+export const auth = getAuth();

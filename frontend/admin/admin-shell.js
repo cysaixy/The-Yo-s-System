@@ -15,6 +15,7 @@ const ICONS = {
   reservations: '<rect x="3.5" y="5" width="17" height="16" rx="1.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
   cashtx: '<path d="M5 8h11l-3-3M19 16H8l3 3"/>',
   cashacc: '<path d="M3 9 12 4l9 5"/><path d="M4 9h16v2H4z"/><path d="M5 11v7M9 11v7M15 11v7M19 11v7"/><path d="M3 21h18"/>',
+  budget: '<path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15V3.5Z"/>',
   purchases: '<circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/><path d="M3 4h2l2.4 11.4a1.5 1.5 0 0 0 1.5 1.6h8.2a1.5 1.5 0 0 0 1.5-1.2L20 8H6"/>',
   dashboard: '<path d="M4 20V11M10 20V4M16 20v-6"/><path d="M2 20h20"/>',
   staff: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="8.3" r="2.3"/><path d="M15 14.2c2.6.5 4.6 2.7 4.6 5.3"/>',
@@ -27,51 +28,24 @@ function iconSvg(name) {
   return `<svg viewBox="0 0 24 24">${ICONS[name] || ''}</svg>`;
 }
 
-// All navigation items organised into labelled sections.
-// The old separate "Home" and "Dashboard" entries are merged into a single
-// "Dashboard" entry (key: 'dashboard', href: home.html) — home.html IS the
-// operational overview, so there is no reason to split landing vs. stats.
-const NAV_SECTIONS = [
-  {
-    label: 'Overview',
-    items: [
-      { key: 'dashboard', label: 'Dashboard', href: 'home.html', icon: 'home' },
-    ],
-  },
-  {
-    label: 'Sales & Service',
-    items: [
-      { key: 'pos',          label: 'Point of Sale',      href: 'pos.html',          icon: 'pos' },
-      { key: 'sales',        label: 'Sales Transactions', href: 'sales.html',        icon: 'sales' },
-      { key: 'reservations', label: 'Reservations',       href: 'reservations.html', icon: 'reservations' },
-    ],
-  },
-  {
-    label: 'Inventory',
-    items: [
-      { key: 'inventory', label: 'Inventory', href: 'inventory.html', icon: 'inventory', perm: 'can_access_inventory' },
-      { key: 'products',  label: 'Products',  href: 'products.html',  icon: 'products' },
-      { key: 'purchases', label: 'Purchases', href: 'purchases.html', icon: 'purchases', perm: 'can_access_stock_in' },
-    ],
-  },
-  {
-    label: 'Finance',
-    items: [
-      { key: 'cash-transactions', label: 'Cash Transactions', href: 'cash-transactions.html', icon: 'cashtx',  perm: 'can_access_reports' },
-      { key: 'cash-accounts',     label: 'Cash Accounts',     href: 'cash-accounts.html',     icon: 'cashacc', perm: 'can_access_reports' },
-    ],
-  },
-  {
-    label: 'Admin',
-    items: [
-      { key: 'staff',    label: 'Staff',    href: 'staff.html',    icon: 'staff',    adminOnly: true },
-      { key: 'settings', label: 'Settings', href: 'settings.html', icon: 'settings' },
-    ],
-  },
+const NAV_MAIN = [
+  { key: 'home', label: 'Home', href: 'home.html', icon: 'home' },
+  { key: 'inventory', label: 'Inventory', href: 'inventory.html', icon: 'inventory', perm: 'can_access_inventory' },
+  { key: 'products', label: 'Products', href: 'products.html', icon: 'products' },
+  { key: 'pos', label: 'Point of Sale', href: 'pos.html', icon: 'pos' },
+  { key: 'sales', label: 'Sales Transactions', href: 'sales.html', icon: 'sales' },
+  { key: 'reservations', label: 'Reservations', href: 'reservations.html', icon: 'reservations' },
+  { key: 'cash-transactions', label: 'Cash Transactions', href: 'cash-transactions.html', icon: 'cashtx', perm: 'can_access_reports' },
+  { key: 'cash-accounts', label: 'Cash Accounts', href: 'cash-accounts.html', icon: 'cashacc', perm: 'can_access_reports' },
+  { key: 'budget', label: 'Budget Planner', href: 'budget-planner.html', icon: 'budget', perm: 'can_access_reports' },
+  { key: 'purchases', label: 'Purchases', href: 'purchases.html', icon: 'purchases', perm: 'can_access_stock_in' },
 ];
 
-// Flat list of all items — used for permission checks and active-item lookup.
-const NAV_ALL_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
+const NAV_ADMIN = [
+  { key: 'dashboard', label: 'Dashboard', href: 'dashboard.html', icon: 'dashboard' },
+  { key: 'staff', label: 'Staff', href: 'staff.html', icon: 'staff', adminOnly: true },
+  { key: 'settings', label: 'Settings', href: 'settings.html', icon: 'settings' },
+];
 
 // Whether this staff member can open this nav item at all. Admins bypass
 // every check. Everyone else (Cashier, Kitchen, Manager - your backend
@@ -98,15 +72,6 @@ function navLinkHTML(item, active, staff) {
   return `<a class="admin-nav-link${item.key === active ? ' active' : ''}" href="${item.href}" title="${item.label}">
     <span class="icon">${iconSvg(item.icon)}</span><span class="nav-text">${item.label}</span>
   </a>`;
-}
-
-// Renders all nav sections into an HTML string for the sidebar <nav>.
-function renderNavSections(active, staff) {
-  return NAV_SECTIONS.map((section, idx) => {
-    const links = section.items.map(item => navLinkHTML(item, active, staff)).join('');
-    const divider = idx > 0 ? '<div class="nav-section-divider"></div>' : '';
-    return `${divider}<div class="nav-group-label">${section.label}</div>${links}`;
-  }).join('');
 }
 
 // Decodes a JWT's payload without verifying the signature (verification
@@ -274,17 +239,12 @@ function initOnlineOrderNotifications(token) {
 
   let initialized = false;
   const poll = async () => {
-    // Abort a stalled poll so slow/hanging requests can't pile up across
-    // ticks and so the next interval always starts from a clean slate.
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
     try {
       const res = await fetch(`${ADMIN_API_BASE_URL}/api/admin/sales/orders?status=pending&limit=50`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store', // some browsers/proxies will otherwise serve a
                             // stale cached response for this identical GET
                             // URL instead of re-hitting the server every poll
-        signal: controller.signal,
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -306,14 +266,10 @@ function initOnlineOrderNotifications(token) {
       }
     } catch {
       // Notifications should never interrupt staff work when the server is unavailable.
-    } finally {
-      clearTimeout(timer);
     }
   };
   poll();
-  // Poll every 10s so new online orders surface automatically without the
-  // staff having to refresh the page.
-  window.setInterval(poll, 10000);
+  window.setInterval(poll, 15000);
 
   // Browsers throttle or fully pause setInterval on background tabs, so a
   // staff member who tabs away and back can be sitting on a stale bell for
@@ -412,8 +368,6 @@ export function renderAdminShell({ active, title }) {
         <div class="admin-logo">
           <span class="mark">TY</span>
           <span class="brand-label">THE~YO'S</span>
-        </div>
-        <div class="sidebar-toggle-row">
           <button class="sidebar-toggle" id="adminSidebarToggle" type="button" aria-label="Minimize sidebar" title="Minimize sidebar">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <path d="M4 6h16M4 12h16M4 18h16"/>
@@ -421,7 +375,10 @@ export function renderAdminShell({ active, title }) {
           </button>
         </div>
         <nav class="sidebar-nav">
-          ${renderNavSections(active, staff)}
+          <div class="nav-group-label">Main Menu</div>
+          ${NAV_MAIN.map(item => navLinkHTML(item, active, staff)).join('')}
+          <div class="nav-group-label">Admin</div>
+          ${NAV_ADMIN.map(item => navLinkHTML(item, active, staff)).join('')}
         </nav>
         <div class="sidebar-user-section">
           <div class="sidebar-user-avatar">${initial}</div>
@@ -517,7 +474,7 @@ export function renderAdminShell({ active, title }) {
   // A signed-in staff member who isn't allowed on this page (e.g. they
   // bookmarked it before permissions changed) gets bounced to Home rather
   // than seeing a broken/empty page.
-  const activeItem = NAV_ALL_ITEMS.find(i => i.key === active);
+  const activeItem = [...NAV_MAIN, ...NAV_ADMIN].find(i => i.key === active);
   if (activeItem && !hasAccess(activeItem, staff)) {
     alert("You don't have permission to access this page. Ask an Admin to grant it.");
     window.location.href = 'home.html';

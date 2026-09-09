@@ -21,6 +21,7 @@ import adminPurchasesRoutes from "./routes/admin/purchasesRoutes.js";
 import adminSalesRoutes from "./routes/admin/salesRoutes.js";
 import adminReservationsRoutes from "./routes/admin/reservationsRoutes.js";
 import adminDashboardRoutes from "./routes/admin/dashboardRoutes.js";
+import adminBudgetRoutes from "./routes/admin/budgetRoutes.js";
 import adminCashAccountsRoutes from "./routes/admin/cashAccountsRoutes.js";
 import adminCashTransactionsRoutes from "./routes/admin/cashTransactionsRoutes.js";
 import adminReportsRoutes from "./routes/admin/reportsRoutes.js";
@@ -56,6 +57,11 @@ app.use("/api/admin/purchases", adminPurchasesRoutes);
 app.use("/api/admin/sales", adminSalesRoutes);
 app.use("/api/admin/reservations", adminReservationsRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
+// budgetRouter is mounted at both /budget and /budgets — server.js did the
+// same (plural is what budget-planner.html actually calls; singular kept
+// as an alias in case anything else still hits it).
+app.use("/api/admin/budget", adminBudgetRoutes);
+app.use("/api/admin/budgets", adminBudgetRoutes);
 app.use("/api/admin/cash-accounts", adminCashAccountsRoutes);
 app.use("/api/admin/cash-transactions", adminCashTransactionsRoutes);
 app.use("/api/admin/reports", adminReportsRoutes);

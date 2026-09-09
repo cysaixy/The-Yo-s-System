@@ -1,0 +1,370 @@
+// ============================================================
+// The-Yo's Restaurant Management System - Prisma Schema
+// ORIGINAL 23-table design (reverted from consolidated version)
+// Target: PostgreSQL (Neon)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AddOn {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(150)
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  cost        Decimal? @db.Decimal(10, 2)
+  category    String?  @db.VarChar(100)
+  status      String?  @db.VarChar(30)
+  createdAt   DateTime? @default(now()) @map("created_at")
+
+  addonInventory    AddonInventory[]
+  addonProducts     AddonProduct[]
+  orderItemAddOns   OrderItemAddOn[]
+
+  @@map("add_ons")
+}
+
+model AddonInventory {
+  id          Int      @id @default(autoincrement())
+  addonId     Int?     @map("addon_id")
+  inventoryId Int?     @map("inventory_id")
+  quantity    Decimal  @db.Decimal(10, 2)
+  unit        String?  @db.VarChar(30)
+
+  addOn         AddOn?         @relation(fields: [addonId], references: [id])
+  inventoryItem InventoryItem? @relation(fields: [inventoryId], references: [id])
+
+  @@map("addon_inventory")
+}
+
+model AddonProduct {
+  id      Int  @id @default(autoincrement())
+  addonId Int? @map("addon_id")
+  menuId  Int? @map("menu_id")
+
+  addOn    AddOn?    @relation(fields: [addonId], references: [id])
+  menuItem MenuItem? @relation(fields: [menuId], references: [id])
+
+  @@map("addon_products")
+}
+
+model AppSetting {
+  key       String   @id @db.Text
+  value     String   @db.Text
+  updatedAt DateTime? @default(now()) @map("updated_at")
+
+  @@map("app_settings")
+}
+
+model Budget {
+  id             Int      @id @default(autoincrement())
+  category       String   @db.VarChar(100)
+  budgetMonth    DateTime @map("budget_month") @db.Date
+  plannedAmount  Decimal  @map("planned_amount") @db.Decimal(10, 2)
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("budgets")
+}
+
+model BundleProduct {
+  id       Int  @id @default(autoincrement())
+  bundleId Int? @map("bundle_id")
+  menuId   Int? @map("menu_id")
+  quantity Int
+
+  bundle   Bundle?   @relation(fields: [bundleId], references: [id])
+  menuItem MenuItem? @relation(fields: [menuId], references: [id])
+
+  @@map("bundle_products")
+}
+
+model Bundle {
+  id               Int      @id @default(autoincrement())
+  name             String   @db.VarChar(150)
+  description      String?
+  bundlePrice      Decimal  @map("bundle_price") @db.Decimal(10, 2)
+  discountPercent  Decimal? @map("discount_percent") @db.Decimal(5, 2)
+  imageUrl         String?  @map("image_url")
+  status           String?  @db.VarChar(30)
+  createdAt        DateTime? @default(now()) @map("created_at")
+
+  bundleProducts BundleProduct[]
+
+  @@map("bundles")
+}
+
+model CashAccount {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  accountType String   @map("account_type") @db.VarChar(50)
+  balance     Decimal  @db.Decimal(10, 2)
+  status      String   @db.VarChar(30)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  cashTransactions CashTransaction[]
+
+  @@map("cash_accounts")
+}
+
+model CashTransaction {
+  id              Int      @id @default(autoincrement())
+  cashAccountId   Int      @map("cash_account_id")
+  staffId         Int?     @map("staff_id")
+  transactionType String   @map("transaction_type") @db.VarChar(30)
+  category        String?  @db.VarChar(100)
+  amount          Decimal  @db.Decimal(10, 2)
+  description     String?
+  transactionDate DateTime @default(now()) @map("transaction_date")
+
+  cashAccount CashAccount @relation(fields: [cashAccountId], references: [id])
+  staff       Staff?      @relation(fields: [staffId], references: [id])
+
+  @@map("cash_transactions")
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(100)
+
+  menuItems MenuItem[]
+
+  @@map("categories")
+}
+
+model Customer {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(150)
+  email       String   @unique @db.VarChar(150)
+  phone       String?  @db.VarChar(30)
+  password    String?  @db.VarChar(255)
+  address     String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+  firebaseUid String?  @map("firebase_uid") @db.VarChar(150)
+
+  orders       Order[]
+  reservations Reservation[]
+
+  @@map("customers")
+}
+
+model InventoryItem {
+  id            Int      @id @default(autoincrement())
+  name          String   @db.VarChar(150)
+  category      String   @db.VarChar(100)
+  sku           String?  @db.VarChar(50)
+  stockQuantity Decimal  @map("stock_quantity") @db.Decimal(10, 2)
+  unit          String?  @db.VarChar(30)
+  unitCost      Decimal  @map("unit_cost") @db.Decimal(10, 2)
+  reorderLevel  Decimal? @map("reorder_level") @db.Decimal(10, 2)
+  supplier      String?  @db.VarChar(150)
+  status        String?  @db.VarChar(30)
+  notes         String?
+  createdAt     DateTime? @default(now()) @map("created_at")
+
+  addonInventory AddonInventory[]
+
+  @@map("inventory_items")
+}
+
+model InventoryLog {
+  id              Int      @id @default(autoincrement())
+  menuId          Int      @map("menu_id")
+  staffId         Int      @map("staff_id")
+  stockInId       Int?     @map("stock_in_id")
+  transactionType String   @map("transaction_type") @db.VarChar(30)
+  quantityChange  Int      @map("quantity_change")
+  logDate         DateTime @default(now()) @map("log_date")
+  remarks         String?
+
+  menuItem MenuItem @relation(fields: [menuId], references: [id])
+  staff    Staff    @relation(fields: [staffId], references: [id])
+  stockIn  StockIn? @relation(fields: [stockInId], references: [id])
+
+  @@map("inventory_log")
+}
+
+model MenuItem {
+  id            Int     @id @default(autoincrement())
+  categoryId    Int     @map("category_id")
+  name          String  @db.VarChar(150)
+  description   String?
+  price         Decimal @db.Decimal(10, 2)
+  imageUrl      String? @map("image_url") @db.VarChar(255)
+  stockQuantity Int     @map("stock_quantity")
+  status        String  @db.VarChar(30)
+  cost          Decimal @db.Decimal(10, 2)
+
+  category       Category        @relation(fields: [categoryId], references: [id])
+  addonProducts  AddonProduct[]
+  bundleProducts BundleProduct[]
+  orderItems     OrderItem[]
+  inventoryLogs  InventoryLog[]
+  stockIns       StockIn[]
+
+  @@map("menu_items")
+}
+
+model OrderItemAddOn {
+  id          Int     @id @default(autoincrement())
+  orderItemId Int?    @map("order_item_id")
+  addonId     Int?    @map("addon_id")
+  name        String  @db.VarChar(150)
+  quantity    Int
+  price       Decimal @db.Decimal(10, 2)
+  cost        Decimal @db.Decimal(10, 2)
+  subtotal    Decimal @db.Decimal(10, 2)
+
+  orderItem OrderItem? @relation(fields: [orderItemId], references: [id])
+  addOn     AddOn?     @relation(fields: [addonId], references: [id])
+
+  @@map("order_item_add_ons")
+}
+
+model OrderItem {
+  id       Int     @id @default(autoincrement())
+  orderId  Int     @map("order_id")
+  menuId   Int     @map("menu_id")
+  quantity Int
+  price    Decimal @db.Decimal(10, 2)
+  subtotal Decimal @db.Decimal(10, 2)
+  notes    String?
+  cost     Decimal @db.Decimal(10, 2)
+
+  order         Order            @relation(fields: [orderId], references: [id])
+  menuItem      MenuItem         @relation(fields: [menuId], references: [id])
+  orderItemAddOns OrderItemAddOn[]
+
+  @@map("order_items")
+}
+
+model Order {
+  id                     Int       @id @default(autoincrement())
+  customerId             Int       @map("customer_id")
+  staffId                Int?      @map("staff_id")
+  reservationId          Int?      @map("reservation_id")
+  orderType              String    @map("order_type") @db.VarChar(30)
+  status                 String    @db.VarChar(30)
+  totalAmount            Decimal   @map("total_amount") @db.Decimal(10, 2)
+  datetimeOrdered        DateTime  @default(now()) @map("datetime_ordered")
+  notes                  String?
+  deliveryFee            Decimal   @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  deliveryAddress        String?   @map("delivery_address")
+  customerName           String?   @map("customer_name")
+  customerPhone          String?   @map("customer_phone")
+  tableTime              String?   @map("table_time")
+  paymentMethod          String?   @map("payment_method") @db.VarChar(30)
+  deliveryFeeStatus       String?   @map("delivery_fee_status") @db.VarChar(30)
+  deliveryFeeAssignedBy   Int?      @map("delivery_fee_assigned_by")
+  deliveryFeeAssignedAt   DateTime? @map("delivery_fee_assigned_at")
+  deliveryBarangay        String?   @map("delivery_barangay")
+  deliveryCity             String?   @map("delivery_city")
+  deliveryLandmark         String?   @map("delivery_landmark")
+
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  staff       Staff?       @relation(fields: [staffId], references: [id])
+  reservation Reservation? @relation(fields: [reservationId], references: [id])
+  orderItems  OrderItem[]
+  payments    Payment[]
+
+  @@map("orders")
+}
+
+model Payment {
+  id              Int       @id @default(autoincrement())
+  orderId         Int       @map("order_id")
+  paymentMethod   String    @map("payment_method") @db.VarChar(30)
+  amount          Decimal   @db.Decimal(10, 2)
+  datetimePaid    DateTime? @map("datetime_paid")
+  referenceNumber String?   @map("reference_number") @db.VarChar(100)
+  status          String    @db.VarChar(30)
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+model Reservation {
+  id                   Int       @id @default(autoincrement())
+  customerId           Int       @map("customer_id")
+  tableNo              String?   @map("table_no") @db.VarChar(20)
+  reservationDate      DateTime  @map("reservation_date") @db.Date
+  reservationTime      DateTime  @map("reservation_time") @db.Time
+  guests               Int
+  status               String    @db.VarChar(30)
+  notes                String?
+  datetimeReserved     DateTime  @default(now()) @map("datetime_reserved")
+  orderStatus          String?   @map("order_status") @db.VarChar(30)
+  orderEditingDeadline DateTime? @map("order_editing_deadline") @db.Date
+  reservationStatus    String?   @map("reservation_status") @db.VarChar(30)
+  contactAttemptedAt   DateTime? @map("contact_attempted_at")
+  orderFinalizedAt     DateTime? @map("order_finalized_at")
+  confirmedAt          DateTime? @map("confirmed_at")
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  orders   Order[]
+
+  @@map("reservations")
+}
+
+model Staff {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(150)
+  email     String   @unique @db.VarChar(150)
+  password  String   @db.VarChar(255)
+  role      String   @db.VarChar(50)
+  status    String   @db.VarChar(30)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  staffPermissions      StaffPermission?
+  orders                Order[]
+  inventoryLogs         InventoryLog[]
+  stockIns              StockIn[]
+  cashTransactions      CashTransaction[]
+
+  @@map("staff")
+}
+
+model StaffPermission {
+  staffId              Int      @id @map("staff_id")
+  canAccessInventory   Boolean  @map("can_access_inventory")
+  canAccessStockIn     Boolean  @map("can_access_stock_in")
+  canAccessReports     Boolean  @map("can_access_reports")
+  updatedAt            DateTime @default(now()) @map("updated_at")
+
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@map("staff_permissions")
+}
+
+model StockIn {
+  id             Int       @id @default(autoincrement())
+  menuId         Int       @map("menu_id")
+  staffId        Int       @map("staff_id")
+  quantity       Int
+  expirationDate DateTime? @map("expiration_date") @db.Date
+  stockinDate    DateTime  @default(now()) @map("stockin_date")
+  remarks        String?
+
+  menuItem      MenuItem       @relation(fields: [menuId], references: [id])
+  staff         Staff          @relation(fields: [staffId], references: [id])
+  inventoryLogs InventoryLog[]
+
+  @@map("stock_in")
+}
+
+model RestaurantTable {
+  id        Int       @id @default(autoincrement())
+  tableNo   String    @map("table_no") @db.VarChar(20)
+  capacity  Int
+  status    String    @db.VarChar(30)
+  createdAt DateTime? @default(now()) @map("created_at")
+
+  @@map("tables")
+}
