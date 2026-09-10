@@ -115,7 +115,7 @@ export async function createPosOrder(req, res, next) {
       if (!menuItem) {
         return res.status(400).json({ error: `Menu item ${line.menu_id} not found.` });
       }
-      if (Number(menuItem.stock_quantity) < menuQty) {
+      if (menuItem.stock_quantity !== null && Number(menuItem.stock_quantity) < menuQty) {
         return res.status(409).json({ error: `${menuItem.name} is out of stock.` });
       }
 

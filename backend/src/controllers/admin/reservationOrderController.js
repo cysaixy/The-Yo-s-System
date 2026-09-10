@@ -188,7 +188,43 @@ export async function upsertReservationOrder(req, res, next) {
         );
         order = updateRes.rows[0];
 
-        // Delete existing order items and add-ons (we'll recreate)
+      // ── Inventory: restore old stock if we're re-saving a finalized order ──
+      // (items are about to be deleted and re-inserted; without this step the
+      //  same ingredients would be deducted twice.)
+      if (orderRes.rows[0] && currentOrderStatus === 'finalized' && newOrderStatus === 'finalized') {
+        // Restore menu-item ingredients
+        const { rows: oldItemComps } = await client.query(
+          `SELECT mii.inventory_id, mii.quantity AS ing_qty, oi.quantity AS item_qty
+           FROM order_items oi
+           JOIN menu_item_inventory mii ON mii.menu_id = oi.menu_id
+           WHERE oi.order_id = $1`,
+          [order.id]
+        );
+        for (const c of oldItemComps) {
+          await client.query(
+            `UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
+            [Number(c.ing_qty) * Number(c.item_qty), c.inventory_id]
+          );
+        }
+
+        // Restore add-on ingredients
+        const { rows: oldAddonComps } = await client.query(
+          `SELECT ai.inventory_id, ai.quantity AS ing_qty, oia.quantity AS addon_qty
+           FROM order_items oi
+           JOIN order_item_add_ons oia ON oia.order_item_id = oi.id
+           JOIN addon_inventory ai ON ai.addon_id = oia.addon_id
+           WHERE oi.order_id = $1`,
+          [order.id]
+        );
+        for (const c of oldAddonComps) {
+          await client.query(
+            `UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
+            [Number(c.ing_qty) * Number(c.addon_qty), c.inventory_id]
+          );
+        }
+      }
+
+      // Delete existing order items and add-ons (we'll recreate)
         await client.query(
           `DELETE FROM order_item_add_ons WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1)`,
           [order.id]
@@ -255,11 +291,73 @@ export async function upsertReservationOrder(req, res, next) {
         }
       }
 
+      // ── Inventory: deduct ingredients when order is finalized ──
+      if (newOrderStatus === 'finalized') {
+        // Fetch the freshly-inserted items with their ingredient links
+        const { rows: newItems } = await client.query(
+          `SELECT oi.id AS order_item_id, oi.menu_id, oi.quantity AS item_qty
+           FROM order_items oi WHERE oi.order_id = $1`,
+          [order.id]
+        );
+
+        for (const oi of newItems) {
+          // Deduct menu-item ingredients
+          const { rows: itemComps } = await client.query(
+            `SELECT mii.inventory_id, mii.quantity AS ing_qty, ii.name AS inventory_name
+             FROM menu_item_inventory mii
+             JOIN inventory_items ii ON ii.id = mii.inventory_id
+             WHERE mii.menu_id = $1`,
+            [oi.menu_id]
+          );
+          for (const comp of itemComps) {
+            const consumed = Number(comp.ing_qty) * Number(oi.item_qty);
+            await client.query(
+              `UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2`,
+              [consumed, comp.inventory_id]
+            );
+            await client.query(
+              `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
+               VALUES ($1, $2, 'sale', $3, $4)`,
+              [oi.menu_id, staff_id, -consumed, `Reservation Order #${order.id} (${comp.inventory_name})`]
+            );
+          }
+
+          // Deduct add-on ingredients
+          const { rows: addons } = await client.query(
+            `SELECT oia.addon_id, oia.quantity AS addon_qty, oia.name AS addon_name
+             FROM order_item_add_ons oia WHERE oia.order_item_id = $1`,
+            [oi.order_item_id]
+          );
+          for (const addon of addons) {
+            const { rows: addonComps } = await client.query(
+              `SELECT ai.inventory_id, ai.quantity AS ing_qty, ii.name AS inventory_name
+               FROM addon_inventory ai
+               JOIN inventory_items ii ON ii.id = ai.inventory_id
+               WHERE ai.addon_id = $1`,
+              [addon.addon_id]
+            );
+            for (const comp of addonComps) {
+              const consumed = Number(comp.ing_qty) * Number(addon.addon_qty);
+              await client.query(
+                `UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2`,
+                [consumed, comp.inventory_id]
+              );
+              await client.query(
+                `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
+                 VALUES ($1, $2, 'sale', $3, $4)`,
+                [oi.menu_id, staff_id, -consumed, `Reservation Order #${order.id} · ${addon.addon_name} (${comp.inventory_name})`]
+              );
+            }
+          }
+        }
+      }
+
       // Update order total
       await client.query(
         `UPDATE orders SET total_amount = $1 WHERE id = $2`,
         [totalAmount, order.id]
       );
+
 
       // Update reservation order_status and reservation_status
       let newReservationStatus = reservation.reservation_status;
