@@ -424,7 +424,7 @@ export async function cancelOrder(req, res, next) {
 
     const { rows } = await pool.query(
       `UPDATE orders
-       SET status = 'cancelled'
+       SET status = 'cancelled', status_updated_at = NOW()
        WHERE id = $1 AND customer_id = $2 AND status = 'pending'
        RETURNING id, customer_id, reservation_id, order_type, status, total_amount, delivery_fee,
                  delivery_address, notes, customer_name, customer_phone, table_time, payment_method, datetime_ordered`,

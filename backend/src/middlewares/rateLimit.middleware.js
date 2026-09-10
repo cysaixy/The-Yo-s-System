@@ -4,6 +4,10 @@ import rateLimit from "express-rate-limit";
 export const globalLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   max: 100, // Limit each IP to 100 requests per window
+  // The authenticated live-state stream has its own per-staff limiter below;
+  // excluding it prevents several staff behind one restaurant IP from
+  // exhausting the shared bucket simply by keeping the dashboard open.
+  skip: req => req.originalUrl.startsWith('/api/admin/sales/live-state'),
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
@@ -50,6 +54,22 @@ export const posLimiter = rateLimit({
   handler: (req, res) => {
     return res.status(429).json({
       error: "Order rate limit reached. Please wait a moment before trying again.",
+    });
+  },
+});
+
+// Live dashboard polling is authenticated before this limiter runs and is
+// keyed per staff account instead of per public IP. The allowance supports
+// several open admin tabs while still bounding authenticated polling traffic.
+export const liveStateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 240,
+  keyGenerator: req => `staff:${req.staff.id}`,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    return res.status(429).json({
+      error: "Live updates are temporarily rate limited. They will resume automatically.",
     });
   },
 });

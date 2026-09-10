@@ -3,6 +3,14 @@ import pool from "../../config/db.js";
 
 const VALID_ORDER_TYPES = ["dine_in", "pickup"];
 const VALID_PAYMENT_METHODS = ["cash", "card", "gcash", "bank_transfer", "other"];
+const VALID_ORDER_STATUSES = ["pending", "confirmed", "preparing", "ready", "completed", "cancelled"];
+const ALLOWED_PREVIOUS_STATUSES = {
+  confirmed: ["pending"],
+  preparing: ["confirmed"],
+  ready: ["preparing"],
+  completed: ["ready"],
+  cancelled: ["pending", "confirmed", "preparing", "ready", "completed"],
+};
 
 // orders.customer_id is NOT NULL in the schema, so walk-in POS sales (no
 // account, no lookup) can't just omit it. Instead we reuse a single shared
@@ -311,6 +319,42 @@ export async function listOrders(req, res, next) {
 }
 
 /* ================================================================
+   LIVE ORDER STATE — all actionable orders plus recent terminal changes
+   ================================================================ */
+export async function liveOrderState(req, res, next) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT o.id, c.name AS customer_name, s.name AS staff_name,
+              handler.name AS handler_name, o.order_type, o.status,
+              o.total_amount, o.datetime_ordered, o.status_updated_at,
+              CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
+              (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
+              COALESCE((
+                SELECT json_agg(
+                  json_build_object(
+                    'name', COALESCE(mi.name, 'Menu item'),
+                    'quantity', oi.quantity
+                  ) ORDER BY oi.id
+                )
+                FROM order_items oi
+                LEFT JOIN menu_items mi ON mi.id = oi.menu_id
+                WHERE oi.order_id = o.id
+              ), '[]'::json) AS items
+       FROM orders o
+       JOIN customers c ON c.id = o.customer_id
+       LEFT JOIN staff s ON s.id = o.staff_id
+       LEFT JOIN staff handler ON handler.id = o.handled_by_staff_id
+       WHERE o.status IN ('pending', 'confirmed', 'preparing', 'ready')
+          OR (o.status IN ('completed', 'cancelled') AND o.status_updated_at >= NOW() - INTERVAL '24 hours')
+       ORDER BY o.datetime_ordered ASC`
+    );
+    res.json({ orders: rows });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ================================================================
    GET ONE ORDER — items, add-ons, payment, COGS & profit
    ================================================================ */
 export async function getOrder(req, res, next) {
@@ -382,12 +426,34 @@ export async function getOrder(req, res, next) {
 
 export async function updateOrderStatus(req, res, next) {
   try {
-    const { status } = req.body;
+    const status = String(req.body.status || '').toLowerCase();
+    if (!VALID_ORDER_STATUSES.includes(status) || status === 'pending') {
+      return res.status(400).json({ error: `status must be one of: ${VALID_ORDER_STATUSES.filter(value => value !== 'pending').join(", ")}` });
+    }
+
+    const allowedPrevious = ALLOWED_PREVIOUS_STATUSES[status] || [];
+    const assignsHandler = ["confirmed", "preparing", "ready", "completed"].includes(status);
     const { rows } = await pool.query(
-      `UPDATE orders SET status = $1 WHERE id = $2 RETURNING id, status`,
-      [status, req.params.id]
+      `UPDATE orders
+       SET status = $1,
+           status_updated_at = NOW(),
+           handled_by_staff_id = CASE
+             WHEN $3::boolean THEN COALESCE(handled_by_staff_id, $2)
+             ELSE handled_by_staff_id
+           END
+       WHERE id = $4
+         AND status = ANY($5::varchar[])
+       RETURNING id, status, handled_by_staff_id`,
+      [status, req.staff.id, assignsHandler, req.params.id, allowedPrevious]
     );
-    if (!rows[0]) return res.status(404).json({ error: "Order not found." });
+    if (!rows[0]) {
+      const current = await pool.query("SELECT status FROM orders WHERE id = $1", [req.params.id]);
+      if (!current.rows[0]) return res.status(404).json({ error: "Order not found." });
+      return res.status(409).json({
+        error: `Order is already ${current.rows[0].status}. Refresh before applying another action.`,
+        current_status: current.rows[0].status,
+      });
+    }
     res.json({ order: rows[0] });
   } catch (err) {
     next(err);

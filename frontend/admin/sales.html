@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Transactions — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=4">
+<link rel="stylesheet" href="admin-shell.css?v=5">
 <style>
   /* ============================================================
      SALES TRANSACTIONS — scoped design system (gold/brown theme)
@@ -171,6 +171,7 @@
   .status-pending { background: rgba(184,134,11,0.14); color: var(--warning); }
   .status-confirmed { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
   .status-preparing { background: rgba(52,109,196,0.14); color: #2c5fb0; }
+  .status-ready { background: rgba(46,125,79,0.14); color: #23633e; }
   .status-completed { background: rgba(46,125,79,0.14); color: var(--success); }
   .status-cancelled { background: rgba(192,57,43,0.14); color: var(--danger); }
   .needs-action td:first-child { border-left: 3px solid var(--warning); }
@@ -384,6 +385,7 @@
                   <option value="pending">Pending</option>
                   <option value="confirmed">Confirmed</option>
                   <option value="preparing">Preparing</option>
+                  <option value="ready">Ready</option>
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
@@ -936,6 +938,8 @@
       case 'confirmed':
         return `${view}<button class="primary" data-action="preparing" data-id="${id}">Prepare</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
       case 'preparing':
+        return `${view}<button class="primary" data-action="ready" data-id="${id}">Mark Ready</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
+      case 'ready':
         return `${view}<button class="primary" data-action="completed" data-id="${id}">Complete</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
       case 'completed':
         return `${view}<button class="danger" data-action="cancelled" data-id="${id}">Void</button>`;
@@ -1183,6 +1187,8 @@
       case 'confirmed':
         return `<button class="primary" data-action="preparing" data-id="${id}">Start Preparing</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
       case 'preparing':
+        return `<button class="primary" data-action="ready" data-id="${id}">Mark Ready</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
+      case 'ready':
         return `<button class="primary" data-action="completed" data-id="${id}">Mark Completed</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
       case 'completed':
         return `<button class="danger" data-action="cancelled" data-id="${id}">Void Order</button>`;

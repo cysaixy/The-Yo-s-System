@@ -467,8 +467,12 @@ export async function adminConfirmReservation(req, res, next) {
 
     // Also update order status to confirmed
     await pool.query(
-      `UPDATE orders SET status = 'confirmed' WHERE reservation_id = $1`,
-      [id]
+      `UPDATE orders
+       SET status = 'confirmed',
+           status_updated_at = NOW(),
+           handled_by_staff_id = COALESCE(handled_by_staff_id, $2)
+       WHERE reservation_id = $1`,
+      [id, req.staff.id]
     );
 
     res.json({ reservation: rows[0] });

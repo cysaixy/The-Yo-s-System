@@ -297,7 +297,7 @@
       localStorage.setItem('staffToken', data.token);
       localStorage.setItem('staffInfo', JSON.stringify(data.staff));
 
-      const redirect = params.get('redirect') || 'home.html';
+      const redirect = params.get('redirect') || 'dashboard.html';
       window.location.href = redirect;
     } catch (err) {
       statusEl.textContent = 'Connection error. Please try again.';

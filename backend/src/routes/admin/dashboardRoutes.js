@@ -13,13 +13,11 @@ import {
   inventoryStatus,
 } from "../../controllers/admin/dashboardController.js";
 import { requireStaffAuth } from "../../middlewares/auth.middleware.js";
-import { globalLimiter } from "../../middlewares/rateLimit.middleware.js";
 import { requirePermission, requireAdmin } from "../../middlewares/role.middleware.js";
 
 const dashboardRouter = express.Router();
 
-// Protect all dashboard endpoints with rate limiting and staff auth
-dashboardRouter.use(globalLimiter);
+// All /api routes already pass through globalLimiter in app.js.
 dashboardRouter.use(requireStaffAuth);
 
 // Home page summary — default access for any staff (Cashier's default view)

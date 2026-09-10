@@ -28,24 +28,47 @@ function iconSvg(name) {
   return `<svg viewBox="0 0 24 24">${ICONS[name] || ''}</svg>`;
 }
 
-const NAV_MAIN = [
-  { key: 'home', label: 'Home', href: 'home.html', icon: 'home' },
-  { key: 'inventory', label: 'Inventory', href: 'inventory.html', icon: 'inventory', perm: 'can_access_inventory' },
-  { key: 'products', label: 'Products', href: 'products.html', icon: 'products' },
-  { key: 'pos', label: 'Point of Sale', href: 'pos.html', icon: 'pos' },
-  { key: 'sales', label: 'Sales Transactions', href: 'sales.html', icon: 'sales' },
-  { key: 'reservations', label: 'Reservations', href: 'reservations.html', icon: 'reservations' },
-  { key: 'cash-transactions', label: 'Cash Transactions', href: 'cash-transactions.html', icon: 'cashtx', perm: 'can_access_reports' },
-  { key: 'cash-accounts', label: 'Cash Accounts', href: 'cash-accounts.html', icon: 'cashacc', perm: 'can_access_reports' },
-  { key: 'budget', label: 'Budget Planner', href: 'budget-planner.html', icon: 'budget', perm: 'can_access_reports' },
-  { key: 'purchases', label: 'Purchases', href: 'purchases.html', icon: 'purchases', perm: 'can_access_stock_in' },
+const NAV_SECTIONS = [
+  {
+    label: 'Overview',
+    items: [
+      { key: 'dashboard', label: 'Dashboard', href: 'dashboard.html', icon: 'dashboard' },
+    ],
+  },
+  {
+    label: 'Sales & Service',
+    items: [
+      { key: 'pos', label: 'Point of Sale', href: 'pos.html', icon: 'pos' },
+      { key: 'sales', label: 'Sales Transactions', href: 'sales.html', icon: 'sales', badge: 'orders' },
+      { key: 'reservations', label: 'Reservations', href: 'reservations.html', icon: 'reservations' },
+    ],
+  },
+  {
+    label: 'Inventory',
+    items: [
+      { key: 'inventory', label: 'Inventory', href: 'inventory.html', icon: 'inventory', perm: 'can_access_inventory', badge: 'inventory' },
+      { key: 'products', label: 'Products', href: 'products.html', icon: 'products' },
+      { key: 'purchases', label: 'Purchases', href: 'purchases.html', icon: 'purchases', perm: 'can_access_stock_in' },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { key: 'cash-transactions', label: 'Cash Transactions', href: 'cash-transactions.html', icon: 'cashtx', perm: 'can_access_reports' },
+      { key: 'cash-accounts', label: 'Cash Accounts', href: 'cash-accounts.html', icon: 'cashacc', perm: 'can_access_reports' },
+      { key: 'budget', label: 'Budget Planner', href: 'budget-planner.html', icon: 'budget', perm: 'can_access_reports' },
+    ],
+  },
+  {
+    label: 'Admin',
+    items: [
+      { key: 'staff', label: 'Staff', href: 'staff.html', icon: 'staff', adminOnly: true },
+      { key: 'settings', label: 'Settings', href: 'settings.html', icon: 'settings' },
+    ],
+  },
 ];
 
-const NAV_ADMIN = [
-  { key: 'dashboard', label: 'Dashboard', href: 'dashboard.html', icon: 'dashboard' },
-  { key: 'staff', label: 'Staff', href: 'staff.html', icon: 'staff', adminOnly: true },
-  { key: 'settings', label: 'Settings', href: 'settings.html', icon: 'settings' },
-];
+const NAV_ITEMS = NAV_SECTIONS.flatMap(section => section.items);
 
 // Whether this staff member can open this nav item at all. Admins bypass
 // every check. Everyone else (Cashier, Kitchen, Manager - your backend
@@ -63,14 +86,17 @@ function hasAccess(item, staff) {
 
 function navLinkHTML(item, active, staff) {
   const allowed = hasAccess(item, staff);
+  const badge = item.badge
+    ? `<span class="admin-nav-badge" id="navBadge-${item.badge}" aria-label="0 alerts"></span>`
+    : '';
   if (!allowed) {
     return `<span class="admin-nav-link disabled" title="Ask an Admin to grant you access">
       <span class="icon">${iconSvg(item.icon)}</span><span class="nav-text">${item.label}</span>
-      <span class="lock-icon">${iconSvg('lock')}</span>
+      ${badge}<span class="lock-icon">${iconSvg('lock')}</span>
     </span>`;
   }
   return `<a class="admin-nav-link${item.key === active ? ' active' : ''}" href="${item.href}" title="${item.label}">
-    <span class="icon">${iconSvg(item.icon)}</span><span class="nav-text">${item.label}</span>
+    <span class="icon">${iconSvg(item.icon)}</span><span class="nav-text">${item.label}</span>${badge}
   </a>`;
 }
 
@@ -94,7 +120,7 @@ function getTokenExpiryMs(token) {
 function clearStaffSessionAndRedirect(reason) {
   localStorage.removeItem('staffToken');
   localStorage.removeItem('staffInfo');
-  const redirect = encodeURIComponent(window.location.pathname.split('/').pop() || 'home.html');
+  const redirect = encodeURIComponent(window.location.pathname.split('/').pop() || 'dashboard.html');
   window.location.href = `login.html?expired=1&redirect=${redirect}`;
 }
 
@@ -103,20 +129,15 @@ function clearStaffSessionAndRedirect(reason) {
 // so this only ever fires for someone who's had a page open ~24h - it's
 // a courtesy heads-up, not a sign anything is broken.
 const SESSION_WARNING_MS = 5 * 60 * 1000;
-const ONLINE_ORDER_SEEN_KEY = 'yo-admin-online-order-seen';
+const NOTIFICATION_HISTORY_KEY = 'yo-admin-notification-history';
+const ORDER_SNAPSHOT_KEY = 'yo-admin-order-snapshot';
+const INVENTORY_SNAPSHOT_KEY = 'yo-admin-inventory-alert-count';
 const ADMIN_API_BASE_URL = '';
+const LIVE_ORDER_STATUSES = new Set(['pending', 'confirmed', 'preparing', 'ready']);
+let notificationStorageScope = 'anonymous';
 
-function readSeenOnlineOrderIds() {
-  try {
-    const ids = JSON.parse(localStorage.getItem(ONLINE_ORDER_SEEN_KEY));
-    return Array.isArray(ids) ? ids.map(String).slice(-100) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeSeenOnlineOrderIds(ids) {
-  localStorage.setItem(ONLINE_ORDER_SEEN_KEY, JSON.stringify([...new Set(ids.map(String))].slice(-100)));
+function scopedStorageKey(key) {
+  return `${key}:${notificationStorageScope}`;
 }
 
 function escapeNotificationHtml(value) {
@@ -194,87 +215,214 @@ export function showAlert(message, { title = 'Notice' } = {}) {
   });
 }
 
-function showOnlineOrderToast(order) {
+function readNotificationHistory() {
+  try {
+    const history = JSON.parse(localStorage.getItem(scopedStorageKey(NOTIFICATION_HISTORY_KEY)));
+    return Array.isArray(history) ? history.slice(0, 50) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeNotificationHistory(history) {
+  localStorage.setItem(scopedStorageKey(NOTIFICATION_HISTORY_KEY), JSON.stringify(history.slice(0, 50)));
+}
+
+function addNotification(notification) {
+  const history = readNotificationHistory();
+  if (history.some(item => item.id === notification.id)) return false;
+  history.unshift({ ...notification, createdAt: notification.createdAt || new Date().toISOString() });
+  writeNotificationHistory(history);
+  return true;
+}
+
+function readJsonStorage(key, fallback) {
+  try {
+    const value = JSON.parse(localStorage.getItem(scopedStorageKey(key)));
+    return value ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function showAdminToast(notification) {
+  let stack = document.querySelector('.admin-toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.className = 'admin-toast-stack';
+    stack.setAttribute('aria-live', 'polite');
+    document.body.appendChild(stack);
+  }
   const toast = document.createElement('div');
-  toast.className = 'online-order-toast';
+  toast.className = `online-order-toast toast-${notification.type || 'order'}`;
   toast.innerHTML = `
     <span class="toast-icon">
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
         <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
       </svg>
     </span>
     <div>
-      <strong>New online order</strong>
-      <span>Order #${escapeNotificationHtml(order.id)} · ${escapeNotificationHtml(order.customer_name || 'Customer')} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}</span>
+      <strong>${escapeNotificationHtml(notification.title)}</strong>
+      <span>${escapeNotificationHtml(notification.message)}</span>
     </div>
     <button type="button" aria-label="Dismiss notification">×</button>
   `;
-  document.body.appendChild(toast);
-  toast.querySelector('button').addEventListener('click', () => toast.remove());
-  window.setTimeout(() => toast.remove(), 8000);
+  stack.appendChild(toast);
+  const dismiss = () => {
+    toast.remove();
+    if (!stack.children.length) stack.remove();
+  };
+  toast.querySelector('button').addEventListener('click', dismiss);
+  window.setTimeout(dismiss, 8000);
 }
 
-function initOnlineOrderNotifications(token) {
+function setNavBadge(name, value) {
+  const badge = document.getElementById(`navBadge-${name}`);
+  if (!badge) return;
+  const count = Math.max(0, Number(value) || 0);
+  badge.textContent = count > 99 ? '99+' : String(count);
+  badge.classList.toggle('visible', count > 0);
+  badge.setAttribute('aria-label', `${count} ${count === 1 ? 'alert' : 'alerts'}`);
+}
+
+function notificationTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function initOnlineOrderNotifications(token, staff) {
+  notificationStorageScope = String(staff?.id || staff?.email || 'anonymous');
   const count = document.getElementById('onlineOrderCount');
   const button = document.getElementById('adminOnlineOrdersBtn');
   const panel = document.getElementById('onlineOrderPanel');
   if (!count || !button || !panel) return;
-  button.addEventListener('click', (event) => {
+
+  let activeAlertCount = 0;
+  const renderPanel = () => {
+    const history = readNotificationHistory();
+    panel.innerHTML = `
+      <div class="online-order-panel-head"><div><strong>Notifications</strong><span>${activeAlertCount} active ${activeAlertCount === 1 ? 'alert' : 'alerts'}</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">×</button></div>
+      <div class="online-order-panel-list">${history.length ? history.map(item => `
+        <a href="${escapeNotificationHtml(item.href || 'dashboard.html')}" class="online-order-panel-item">
+          <span class="online-order-dot notification-${escapeNotificationHtml(item.type || 'order')}"></span>
+          <div><strong>${escapeNotificationHtml(item.title)}</strong><span>${escapeNotificationHtml(item.message)}</span><time>${escapeNotificationHtml(notificationTime(item.createdAt))}</time></div>
+        </a>`).join('') : '<div class="online-order-panel-empty">No notifications yet.</div>'}</div>
+      <a class="online-order-panel-action" href="dashboard.html">Open dashboard →</a>`;
+    panel.querySelector('#closeOnlineOrderPanel')?.addEventListener('click', () => panel.classList.remove('open'));
+  };
+
+  button.addEventListener('click', event => {
     event.stopPropagation();
+    renderPanel();
     panel.classList.toggle('open');
   });
   document.addEventListener('click', event => {
     if (!panel.contains(event.target) && !button.contains(event.target)) panel.classList.remove('open');
   });
 
-  const renderPanel = orders => {
-    panel.innerHTML = `
-      <div class="online-order-panel-head"><div><strong>Online Orders</strong><span>${orders.length} pending</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">×</button></div>
-      <div class="online-order-panel-list">${orders.length ? orders.slice(0, 5).map(order => `
-        <a href="sales.html" class="online-order-panel-item"><span class="online-order-dot"></span><div><strong>Order #${escapeNotificationHtml(order.id)}</strong><span>${escapeNotificationHtml(order.customer_name || 'Customer')} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}</span></div></a>`).join('') : '<div class="online-order-panel-empty">No pending online orders.</div>'}</div>
-      <a class="online-order-panel-action" href="sales.html">View sales transactions →</a>`;
-    panel.querySelector('#closeOnlineOrderPanel')?.addEventListener('click', () => panel.classList.remove('open'));
-  };
-
-  let initialized = false;
+  const headers = { Authorization: `Bearer ${token}` };
+  let pollInFlight = false;
+  let lastInventoryPollAt = 0;
   const poll = async () => {
+    if (document.hidden || pollInFlight) return;
+    pollInFlight = true;
     try {
-      const res = await fetch(`${ADMIN_API_BASE_URL}/api/admin/sales/orders?status=pending&limit=50`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store', // some browsers/proxies will otherwise serve a
-                            // stale cached response for this identical GET
-                            // URL instead of re-hitting the server every poll
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      const onlineOrders = (data.orders || []).filter(order => order.source === 'online');
-      count.textContent = onlineOrders.length;
-      count.style.display = onlineOrders.length ? 'flex' : 'none';
-      renderPanel(onlineOrders);
+      const shouldFetchInventory = Date.now() - lastInventoryPollAt >= 60000;
+      const [ordersRes, inventoryRes] = await Promise.all([
+        fetch(`${ADMIN_API_BASE_URL}/api/admin/sales/live-state`, { headers, cache: 'no-store' }),
+        shouldFetchInventory
+          ? fetch(`${ADMIN_API_BASE_URL}/api/admin/dashboard/inventory-overview`, { headers, cache: 'no-store' })
+          : Promise.resolve(null),
+      ]);
+      if (!ordersRes.ok) return;
 
-      const seen = readSeenOnlineOrderIds();
-      if (!initialized) {
-        writeSeenOnlineOrderIds([...seen, ...onlineOrders.map(order => order.id)]);
-        initialized = true;
-        return;
+      const ordersData = await ordersRes.json();
+      const orders = ordersData.orders || [];
+      const previousSnapshot = readJsonStorage(ORDER_SNAPSHOT_KEY, {});
+      const orderSnapshotKey = scopedStorageKey(ORDER_SNAPSHOT_KEY);
+      const hadOrderSnapshot = localStorage.getItem(orderSnapshotKey) !== null;
+      const nextSnapshot = Object.fromEntries(orders.map(order => [String(order.id), order.status]));
+      const changedIds = [];
+      const notifications = [];
+
+      // Compare every returned state before filtering the rail so completed
+      // and cancelled transitions remain visible in notification history.
+      orders.forEach(order => {
+        const previousStatus = previousSnapshot[String(order.id)];
+        if (!previousStatus && LIVE_ORDER_STATUSES.has(order.status)) {
+          const notification = {
+            id: `order-${order.id}-${order.status}`,
+            type: 'order',
+            title: order.source === 'online' ? 'New online order' : 'New order',
+            message: `Order #${order.id} · ${order.customer_name || 'Customer'} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}`,
+            href: 'sales.html',
+          };
+          if (addNotification(notification) && hadOrderSnapshot) notifications.push(notification);
+          if (hadOrderSnapshot) changedIds.push(String(order.id));
+        } else if (previousStatus && previousStatus !== order.status) {
+          const notification = {
+            id: `order-${order.id}-${order.status}`,
+            type: 'status',
+            title: `Order #${order.id} updated`,
+            message: `Status changed to ${String(order.status).replace(/_/g, ' ')}${order.handler_name ? ` · ${order.handler_name}` : ''}`,
+            href: 'sales.html',
+          };
+          if (addNotification(notification)) notifications.push(notification);
+          changedIds.push(String(order.id));
+        }
+      });
+      localStorage.setItem(orderSnapshotKey, JSON.stringify(nextSnapshot));
+
+      const activeOrders = orders.filter(order => LIVE_ORDER_STATUSES.has(order.status));
+      const pendingApprovals = activeOrders.filter(order => order.status === 'pending').length;
+      const inventorySnapshotKey = scopedStorageKey(INVENTORY_SNAPSHOT_KEY);
+      let inventoryAlerts = Number(localStorage.getItem(inventorySnapshotKey)) || 0;
+      if (inventoryRes) {
+        lastInventoryPollAt = Date.now();
+        if (inventoryRes.ok) {
+          const inventory = await inventoryRes.json();
+          inventoryAlerts = Number(inventory.below_reorder || 0) + Number(inventory.low_stock || 0) + Number(inventory.out_of_stock || 0);
+          const previousRaw = localStorage.getItem(inventorySnapshotKey);
+          const previousInventoryAlerts = Number(previousRaw) || 0;
+          if (previousRaw !== null && inventoryAlerts > previousInventoryAlerts) {
+            const notification = {
+              id: `inventory-${Date.now()}-${inventoryAlerts}`,
+              type: 'inventory',
+              title: 'Inventory needs attention',
+              message: `${inventoryAlerts} ${inventoryAlerts === 1 ? 'item is' : 'items are'} at or below the alert threshold`,
+              href: 'inventory.html',
+            };
+            if (addNotification(notification)) notifications.push(notification);
+          }
+          localStorage.setItem(inventorySnapshotKey, String(inventoryAlerts));
+        }
       }
-      const newOrders = onlineOrders.filter(order => !seen.includes(String(order.id)));
-      if (newOrders.length) {
-        newOrders.slice(0, 3).forEach(showOnlineOrderToast);
-        writeSeenOnlineOrderIds([...seen, ...newOrders.map(order => order.id)]);
-      }
+
+      setNavBadge('orders', pendingApprovals);
+      setNavBadge('inventory', inventoryAlerts);
+      activeAlertCount = pendingApprovals + inventoryAlerts;
+      count.textContent = activeAlertCount > 99 ? '99+' : String(activeAlertCount);
+      count.style.display = activeAlertCount ? 'flex' : 'none';
+      button.title = `${activeAlertCount} active notifications`;
+      button.setAttribute('aria-label', `${activeAlertCount} active notifications`);
+      renderPanel();
+
+      window.__adminLiveOrders = activeOrders;
+      document.dispatchEvent(new CustomEvent('admin:orders-updated', {
+        detail: { orders: activeOrders, changedIds },
+      }));
+      notifications.slice(0, 3).forEach(showAdminToast);
     } catch {
-      // Notifications should never interrupt staff work when the server is unavailable.
+      // Live notifications should never interrupt staff work when the server is unavailable.
+    } finally {
+      pollInFlight = false;
     }
   };
-  poll();
-  window.setInterval(poll, 15000);
 
-  // Browsers throttle or fully pause setInterval on background tabs, so a
-  // staff member who tabs away and back can be sitting on a stale bell for
-  // a while. Force an immediate poll the moment the tab becomes visible
-  // again instead of waiting for the next scheduled tick.
+  poll();
+  window.setInterval(poll, 8000);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) poll();
   });
@@ -289,7 +437,7 @@ function injectSessionWarningStyles() {
       display: flex; align-items: center; gap: 10px;
       background: rgba(184,134,11,0.12); color: var(--warning, #b8860b);
       border-bottom: 1px solid rgba(184,134,11,0.3);
-      padding: 10px 20px; font-family: 'Inter', sans-serif; font-size: 0.84rem; font-weight: 600;
+      padding: 10px 20px; font-family: 'Poppins', sans-serif; font-size: 0.84rem; font-weight: 600;
     }
     .session-warning-banner .msg { flex: 1; }
     .session-warning-banner button {
@@ -375,10 +523,11 @@ export function renderAdminShell({ active, title }) {
           </button>
         </div>
         <nav class="sidebar-nav">
-          <div class="nav-group-label">Main Menu</div>
-          ${NAV_MAIN.map(item => navLinkHTML(item, active, staff)).join('')}
-          <div class="nav-group-label">Admin</div>
-          ${NAV_ADMIN.map(item => navLinkHTML(item, active, staff)).join('')}
+          ${NAV_SECTIONS.map(section => `
+            <div class="nav-group">
+              <div class="nav-group-label">${section.label}</div>
+              ${section.items.map(item => navLinkHTML(item, active, staff)).join('')}
+            </div>`).join('')}
         </nav>
         <div class="sidebar-user-section">
           <div class="sidebar-user-avatar">${initial}</div>
@@ -398,7 +547,7 @@ export function renderAdminShell({ active, title }) {
           </div>
           <div class="admin-user">
             <div class="admin-notification-wrap">
-              <button class="admin-notification-btn" id="adminOnlineOrdersBtn" title="Pending online orders" aria-label="Pending online orders">
+              <button class="admin-notification-btn" id="adminOnlineOrdersBtn" title="Notifications" aria-label="Notifications">
                 <svg viewBox="0 0 24 24" class="bell-icon"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                 <span class="admin-notification-count" id="onlineOrderCount">0</span>
               </button>
@@ -469,15 +618,15 @@ export function renderAdminShell({ active, title }) {
     if (e.target.closest('.admin-nav-link')) closeMobileNav();
   });
 
-  initOnlineOrderNotifications(token);
+  initOnlineOrderNotifications(token, staff);
 
   // A signed-in staff member who isn't allowed on this page (e.g. they
   // bookmarked it before permissions changed) gets bounced to Home rather
   // than seeing a broken/empty page.
-  const activeItem = [...NAV_MAIN, ...NAV_ADMIN].find(i => i.key === active);
+  const activeItem = NAV_ITEMS.find(i => i.key === active);
   if (activeItem && !hasAccess(activeItem, staff)) {
     alert("You don't have permission to access this page. Ask an Admin to grant it.");
-    window.location.href = 'home.html';
+    window.location.href = 'dashboard.html';
     return null;
   }
 

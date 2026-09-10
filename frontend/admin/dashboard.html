@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=4">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Poppins:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=5">
 <style>
   /* ---------- Section headers ---------- */
   .dash-section { margin-bottom: 30px; }
@@ -88,6 +88,74 @@
     font-family: 'Space Mono', monospace; font-size: 0.7rem; text-transform: uppercase; opacity: 0.7;
   }
   .chart-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* ---------- Live order rail ---------- */
+  .live-orders-section {
+    margin-bottom: 30px; padding: 18px;
+    border: 1px solid #ece3d4; border-radius: 14px;
+    background: rgba(255,255,255,0.78); box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .live-orders-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; margin-bottom: 14px;
+  }
+  .live-orders-title { display: flex; align-items: center; gap: 10px; }
+  .live-orders-title h2 { margin: 0; font: 700 1rem 'Poppins', sans-serif; color: #39435c; }
+  .live-orders-title p { margin: 2px 0 0; font-size: .72rem; color: #858b99; }
+  .live-indicator {
+    width: 9px; height: 9px; border-radius: 50%; background: #2e7d4f;
+    box-shadow: 0 0 0 4px rgba(46,125,79,.13); animation: livePulse 2s ease-in-out infinite;
+  }
+  .live-orders-count {
+    flex-shrink: 0; padding: 5px 9px; border-radius: 999px;
+    background: #f4ecdd; color: #a9752b; font-size: .7rem; font-weight: 600;
+  }
+  .live-orders-viewport { overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth; }
+  .live-orders-viewport::-webkit-scrollbar { display: none; }
+  .live-orders-rail { display: flex; gap: 14px; width: max-content; min-width: 100%; padding: 2px; }
+  .order-ticket {
+    width: 292px; min-height: 212px; flex: 0 0 292px;
+    display: flex; flex-direction: column; padding: 15px;
+    border: 1px solid #ece3d4; border-top: 3px solid #a9752b;
+    border-radius: 11px; background: #fff; color: #39435c;
+    text-decoration: none; box-shadow: 0 3px 12px rgba(57,67,92,.07);
+    scroll-snap-align: start; transition: transform .16s ease, box-shadow .16s ease;
+  }
+  .order-ticket:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(57,67,92,.11); }
+  .order-ticket.status-preparing { border-top-color: #2c5fb0; }
+  .order-ticket.status-ready { border-top-color: #2e7d4f; }
+  .order-ticket.status-confirmed { border-top-color: #a3844a; }
+  .order-ticket.live-updated { animation: ticketFlash 1.25s ease both; }
+  .ticket-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .ticket-number { font-size: .88rem; font-weight: 700; color: #29334c; }
+  .ticket-status {
+    padding: 4px 8px; border-radius: 999px; background: #f8f1e4;
+    color: #94651f; font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .status-preparing .ticket-status { color: #2c5fb0; background: rgba(44,95,176,.1); }
+  .status-ready .ticket-status { color: #23633e; background: rgba(46,125,79,.12); }
+  .ticket-items { flex: 1; margin: 14px 0 13px; padding: 0; list-style: none; }
+  .ticket-items li { display: flex; gap: 8px; margin-top: 6px; font-size: .76rem; line-height: 1.35; }
+  .ticket-items li:first-child { margin-top: 0; }
+  .ticket-items .qty { min-width: 22px; color: #a9752b; font-weight: 700; }
+  .ticket-more { color: #858b99; font-style: italic; }
+  .ticket-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 11px; border-top: 1px solid #f0e9de; }
+  .ticket-owner { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .ticket-avatar {
+    width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%;
+    display: grid; place-items: center; background: #f4ecdd; color: #a9752b;
+    font-size: .68rem; font-weight: 700;
+  }
+  .ticket-owner-copy { min-width: 0; }
+  .ticket-owner-copy span { display: block; color: #9a9fac; font-size: .58rem; text-transform: uppercase; letter-spacing: .07em; }
+  .ticket-owner-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .7rem; font-weight: 600; }
+  .ticket-elapsed { color: #858b99; font-size: .68rem; font-weight: 600; white-space: nowrap; }
+  .live-orders-empty { width: 100%; padding: 38px 20px; text-align: center; color: #858b99; font-size: .82rem; }
+  @keyframes ticketFlash { 0% { background: #fff5d9; box-shadow: 0 0 0 3px rgba(169,117,43,.22); } 100% { background: #fff; box-shadow: 0 3px 12px rgba(57,67,92,.07); } }
+  @keyframes livePulse { 50% { opacity: .45; transform: scale(.82); } }
+  @media (prefers-reduced-motion: reduce) { .live-indicator, .order-ticket.live-updated { animation: none; } .live-orders-viewport { scroll-behavior: auto; } }
+  @media (max-width: 600px) { .live-orders-section { padding: 14px; } .order-ticket { width: 260px; flex-basis: 260px; } }
 </style>
 </head>
 <body>
@@ -99,6 +167,8 @@
   import { adminFetch, peso, escapeHtml } from "./admin-api.js";
 
   const session = renderAdminShell({ active: 'dashboard', title: 'Dashboard' });
+  let liveRailScrollTimer = null;
+  let liveElapsedTimer = null;
   if (session) init();
 
   /* ================================================================
@@ -215,6 +285,19 @@
     });
     const content = document.getElementById('adminContent');
     content.innerHTML = `
+      <section class="live-orders-section" aria-labelledby="liveOrdersHeading">
+        <div class="live-orders-head">
+          <div class="live-orders-title">
+            <span class="live-indicator" aria-hidden="true"></span>
+            <div><h2 id="liveOrdersHeading">Live Orders</h2><p>Pending, preparing, and ready now · updates automatically</p></div>
+          </div>
+          <span class="live-orders-count" id="liveOrdersCount">Connecting…</span>
+        </div>
+        <div class="live-orders-viewport" id="liveOrdersViewport" tabindex="0" aria-label="Orders currently in progress">
+          <div class="live-orders-rail" id="liveOrdersRail"><div class="live-orders-empty">Connecting to live orders…</div></div>
+        </div>
+      </section>
+
       <div class="dash-section">
         <div class="dash-section-head"><h3>Sales Overview</h3><span class="dash-sub">as of today · ${today}</span></div>
         <div class="stat-grid" id="sec-overview"><div class="admin-loading">Loading…</div></div>
@@ -266,6 +349,8 @@
       </div>
     `;
 
+    setupLiveOrderRail();
+
     // Each section loads independently so one slow/failed section never
     // blanks the rest of the dashboard.
     loadSalesOverview();
@@ -278,6 +363,97 @@
     loadInventoryOverview();
     loadInventoryUsage();
     loadInventoryStatus();
+  }
+
+  function elapsedLabel(value) {
+    const started = new Date(value).getTime();
+    if (!Number.isFinite(started)) return 'Just now';
+    const minutes = Math.max(0, Math.floor((Date.now() - started) / 60000));
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m`;
+  }
+
+  function liveStatusLabel(status) {
+    return ({ pending: 'Pending', confirmed: 'Accepted', preparing: 'Preparing', ready: 'Ready' })[status] || status;
+  }
+
+  function updateElapsedLabels() {
+    document.querySelectorAll('.ticket-elapsed[data-ordered-at]').forEach(el => {
+      el.textContent = elapsedLabel(el.dataset.orderedAt);
+    });
+  }
+
+  function startRailAutoScroll() {
+    window.clearInterval(liveRailScrollTimer);
+    const viewport = document.getElementById('liveOrdersViewport');
+    const rail = document.getElementById('liveOrdersRail');
+    if (!viewport || !rail || rail.children.length < 2) return;
+    liveRailScrollTimer = window.setInterval(() => {
+      if (viewport.matches(':hover') || viewport.contains(document.activeElement)) return;
+      const firstCard = rail.querySelector('.order-ticket');
+      if (!firstCard || viewport.scrollWidth <= viewport.clientWidth) return;
+      const atEnd = viewport.scrollLeft + viewport.clientWidth >= viewport.scrollWidth - 24;
+      viewport.scrollTo({ left: atEnd ? 0 : viewport.scrollLeft + firstCard.offsetWidth + 14, behavior: 'smooth' });
+    }, 4200);
+  }
+
+  function renderLiveOrderRail(orders, changedIds = []) {
+    const rail = document.getElementById('liveOrdersRail');
+    const count = document.getElementById('liveOrdersCount');
+    if (!rail || !count) return;
+
+    const priority = { ready: 0, preparing: 1, confirmed: 2, pending: 3 };
+    const active = [...(orders || [])].sort((a, b) =>
+      (priority[a.status] ?? 9) - (priority[b.status] ?? 9) ||
+      new Date(a.datetime_ordered) - new Date(b.datetime_ordered)
+    );
+    count.textContent = `${active.length} active`;
+
+    if (!active.length) {
+      rail.innerHTML = '<div class="live-orders-empty">No orders are in progress right now.</div>';
+      window.clearInterval(liveRailScrollTimer);
+      return;
+    }
+
+    const changed = new Set((changedIds || []).map(String));
+    rail.innerHTML = active.map(order => {
+      const items = Array.isArray(order.items) ? order.items : [];
+      const visibleItems = items.slice(0, 3);
+      const owner = order.handler_name || 'Unassigned';
+      const initials = owner === 'Unassigned'
+        ? '—'
+        : owner.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+      return `
+        <a class="order-ticket status-${escapeHtml(order.status)}${changed.has(String(order.id)) ? ' live-updated' : ''}" href="sales.html" aria-label="Open order ${escapeHtml(order.id)}">
+          <div class="ticket-top">
+            <span class="ticket-number">Order #${escapeHtml(order.id)}</span>
+            <span class="ticket-status">${escapeHtml(liveStatusLabel(order.status))}</span>
+          </div>
+          <ul class="ticket-items">
+            ${visibleItems.length ? visibleItems.map(item => `<li><span class="qty">×${Number(item.quantity) || 1}</span><span>${escapeHtml(item.name || 'Menu item')}</span></li>`).join('') : `<li><span class="qty">×${Number(order.item_count) || 0}</span><span>Order items</span></li>`}
+            ${items.length > visibleItems.length ? `<li class="ticket-more">+${items.length - visibleItems.length} more item${items.length - visibleItems.length === 1 ? '' : 's'}</li>` : ''}
+          </ul>
+          <div class="ticket-bottom">
+            <div class="ticket-owner">
+              <span class="ticket-avatar" aria-hidden="true">${escapeHtml(initials)}</span>
+              <span class="ticket-owner-copy"><span>Handled by</span><strong>${escapeHtml(owner)}</strong></span>
+            </div>
+            <span class="ticket-elapsed" data-ordered-at="${escapeHtml(order.datetime_ordered)}">${escapeHtml(elapsedLabel(order.datetime_ordered))}</span>
+          </div>
+        </a>`;
+    }).join('');
+    window.setTimeout(startRailAutoScroll, 0);
+  }
+
+  function setupLiveOrderRail() {
+    document.addEventListener('admin:orders-updated', event => {
+      renderLiveOrderRail(event.detail?.orders || [], event.detail?.changedIds || []);
+    });
+    if (Array.isArray(window.__adminLiveOrders)) renderLiveOrderRail(window.__adminLiveOrders);
+    window.clearInterval(liveElapsedTimer);
+    liveElapsedTimer = window.setInterval(updateElapsedLabels, 30000);
   }
 
   /* ========== 1. Sales overview ========== */

@@ -248,9 +248,11 @@ model Order {
   id                     Int       @id @default(autoincrement())
   customerId             Int       @map("customer_id")
   staffId                Int?      @map("staff_id")
+  handledByStaffId       Int?      @map("handled_by_staff_id")
   reservationId          Int?      @map("reservation_id")
   orderType              String    @map("order_type") @db.VarChar(30)
   status                 String    @db.VarChar(30)
+  statusUpdatedAt        DateTime  @default(now()) @map("status_updated_at")
   totalAmount            Decimal   @map("total_amount") @db.Decimal(10, 2)
   datetimeOrdered        DateTime  @default(now()) @map("datetime_ordered")
   notes                  String?
@@ -267,12 +269,14 @@ model Order {
   deliveryCity             String?   @map("delivery_city")
   deliveryLandmark         String?   @map("delivery_landmark")
 
-  customer    Customer     @relation(fields: [customerId], references: [id])
-  staff       Staff?       @relation(fields: [staffId], references: [id])
-  reservation Reservation? @relation(fields: [reservationId], references: [id])
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  staff          Staff?       @relation("OrderCreator", fields: [staffId], references: [id])
+  handledByStaff Staff?       @relation("OrderHandler", fields: [handledByStaffId], references: [id])
+  reservation    Reservation? @relation(fields: [reservationId], references: [id])
   orderItems  OrderItem[]
   payments    Payment[]
 
+  @@index([handledByStaffId], map: "orders_handled_by_staff_id_idx")
   @@map("orders")
 }
 
@@ -323,7 +327,8 @@ model Staff {
   createdAt DateTime @default(now()) @map("created_at")
 
   staffPermissions      StaffPermission?
-  orders                Order[]
+  ordersCreated         Order[]           @relation("OrderCreator")
+  ordersHandled         Order[]           @relation("OrderHandler")
   inventoryLogs         InventoryLog[]
   stockIns              StockIn[]
   cashTransactions      CashTransaction[]

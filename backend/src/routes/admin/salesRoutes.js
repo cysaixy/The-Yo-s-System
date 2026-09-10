@@ -6,6 +6,7 @@ import {
   updateOrderStatus,
   updateDeliveryFee,
   listOrders,
+  liveOrderState,
   listPayments,
   updatePaymentStatus,
   salesReport,
@@ -17,6 +18,7 @@ import {
   orderTypesReport,
 } from "../../controllers/admin/salesController.js";
 import { requireStaffAuth } from "../../middlewares/auth.middleware.js";
+import { liveStateLimiter } from "../../middlewares/rateLimit.middleware.js";
 import { requirePermission } from "../../middlewares/role.middleware.js";
 
 salesRouter.use(requireStaffAuth);
@@ -30,6 +32,7 @@ salesRouter.patch("/pos/orders/:id/status", updateOrderStatus);
 // default Cashier access per the ERD legend ("Online Orders" is listed
 // alongside Dashboard/POS/Reservations, not behind a report permission).
 salesRouter.get("/orders", listOrders);
+salesRouter.get("/live-state", liveStateLimiter, liveOrderState);
 salesRouter.get("/orders/:id", getOrder);
 // Assigning/editing the delivery fee is order management, same default
 // Cashier access as viewing and confirming orders above — not gated
