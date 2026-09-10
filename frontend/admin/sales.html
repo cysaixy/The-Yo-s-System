@@ -272,6 +272,7 @@
   let currentPeriod = { from: null, to: null };
   let sortState = { key: 'datetime', dir: 'desc' };
   let showCancelled = true;
+  let autoRefreshTimer = null;
 
   const PAYMENT_LABELS = { cash: 'Cash', card: 'Card', gcash: 'GCash', bank_transfer: 'Bank Transfer', other: 'Other' };
 
@@ -591,7 +592,6 @@
      own - without yanking focus away from someone mid-search or resetting
      the order detail modal while they're reading it.
      ================================================================ */
-  let autoRefreshTimer = null;
 
   function startAutoRefresh() {
     if (autoRefreshTimer) return;
