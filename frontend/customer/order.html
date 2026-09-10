@@ -472,7 +472,13 @@
           </div>
           <div class="order-type-dynamic">
             <div id="deliveryField" style="display:none;">
-              <label for="deliveryAddress">Delivery Address</label>
+              <label for="deliveryAddress" style="display:inline-flex; align-items:center; gap:6px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brass, #d4af37); flex-shrink:0;">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span>Delivery Address</span>
+              </label>
               <input id="deliveryAddress" type="text" placeholder="House No., Street, Barangay, Landmarks">
             </div>
           </div>
@@ -490,7 +496,7 @@
         <h3 class="checkout-step-title">Payment Method</h3>
 
         <div class="bogus-protection-alert" id="downpaymentNotice">
-          <p><strong>⚠️ Downpayment Required:</strong> Total balance exceeds ₱300. A 50% downpayment via GCash is mandatory to begin your order preparation.</p>
+          <p style="display:flex; align-items:flex-start; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span><strong>Downpayment Required:</strong> Total balance exceeds ₱300. A 50% downpayment via GCash is mandatory to begin your order preparation.</span></p>
         </div>
 
         <div class="payments-badge-wrapper" style="margin-top:6px;">
@@ -582,9 +588,10 @@
           <div><label for="feedbackText">Comments / Messages</label><textarea id="feedbackText" required placeholder="Write review or message..."></textarea></div>
           
           <div style="margin: 16px 0; background: rgba(21,23,26,0.04); padding: 12px; border-radius: 4px; border-left: 3px solid var(--brass);">
-            <label style="display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 700; cursor: pointer; color: var(--dark);">
+            <label style="display: flex; align-items: center; gap: 8px; font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: 700; cursor: pointer; color: var(--dark);">
               <input type="checkbox" id="privateToggle" style="width:16px; height:16px; cursor:pointer;">
-              🔒 SEND PRIVATELY TO MANAGEMENT
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>SEND PRIVATELY TO MANAGEMENT</span>
             </label>
           </div>
 
@@ -1054,7 +1061,7 @@
             <span style="color:var(--brass); margin-left:6px; font-family:'Space Mono'; font-weight:700;">x${entry.quantity}</span>
             ${modsHTML}
             ${addonsHTML}
-            <span style="display:block; font-size:0.7rem; color:var(--ink); opacity:0.4; margin-top:2px;">✏️ Tap to edit details</span>
+            <span style="display:inline-flex; align-items:center; gap:4px; font-size:0.7rem; color:var(--ink); opacity:0.4; margin-top:2px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>Tap to edit details</span>
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:12px;">
@@ -1261,7 +1268,7 @@
         </div>
         ${isDelivery ? `
           <p class="delivery-fee-note" style="margin-top:14px; padding:12px 14px; border-radius:6px; background:rgba(163,132,74,0.1); border:1px solid rgba(163,132,74,0.3); font-size:0.85rem; text-align:left;">
-            🛵 <strong>About your delivery fee:</strong> our staff will confirm the delivery fee for your address shortly. Your order total will update automatically once it's set — you can check the latest total anytime on the <a href="my-orders.html" style="color:var(--brass); font-weight:700;">My Orders</a> page.
+            <span style="display:inline-flex; align-items:center; gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; vertical-align:-2px;"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><strong>About your delivery fee:</strong></span> our staff will confirm the delivery fee for your address shortly. Your order total will update automatically once it's set — you can check the latest total anytime on the <a href="my-orders.html" style="color:var(--brass); font-weight:700;">My Orders</a> page.
           </p>` : ''}
         <div class="confirmation-actions">
           <button type="button" class="btn btn-outline" onclick="continueShopping()">Continue Shopping</button>
