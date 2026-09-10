@@ -261,10 +261,10 @@
 }
 
 .pay-card {
-  background: #f8faf9;
-  border: 1px solid rgba(20, 95, 91, 0.18);
+  background: var(--bone);
+  border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 24px 70px rgba(8, 35, 37, 0.3);
+  box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 520px;
   overflow: hidden;
@@ -275,7 +275,7 @@
 
 /* Payment header */
 .pay-card-header {
-  background: #116f6b;
+  background: linear-gradient(135deg, var(--brass) 0%, var(--brass-dark) 100%);
   color: #fff;
   padding: 15px 22px;
   display: flex;
@@ -316,7 +316,7 @@
 .pay-total-label {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.68rem;
-  color: #697678;
+  color: var(--ink-muted);
   font-weight: 600;
   margin-bottom: 7px;
 }
@@ -324,7 +324,7 @@
   font-family: 'Archivo', sans-serif;
   font-weight: 800;
   font-size: 2.15rem;
-  color: #16292b;
+  color: var(--ink);
   letter-spacing: -0.025em;
   line-height: 1;
 }
@@ -362,10 +362,10 @@
   text-align: center;
   transition: all 0.14s;
 }
-.pay-method-pill:hover { border-color: #42a09a; color: #116f6b; background: #edf8f7; }
+.pay-method-pill:hover { border-color: var(--brass); color: var(--brass-dark); background: rgba(163,132,74,0.08); }
 .pay-method-pill.active {
-  background: #116f6b; border-color: #116f6b; color: #fff;
-  box-shadow: 0 4px 12px rgba(17,111,107,0.22);
+  background: var(--brass-dark); border-color: var(--brass-dark); color: #fff;
+  box-shadow: 0 4px 12px rgba(138,109,58,0.28);
 }
 .pay-method-icon {
   width: 18px;
@@ -376,7 +376,7 @@
 /* Amount received box */
 .pay-received-section {
   margin: 15px 22px 0;
-  border: 1px solid #d7dfdd;
+  border: 1px solid var(--line);
   border-radius: 9px;
   overflow: hidden;
   background: #fff;
@@ -386,12 +386,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 15px;
-  border-bottom: 1px solid #e1e7e5;
+  border-bottom: 1px solid var(--line);
 }
 .pay-received-header span {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.72rem;
-  color: #5f6f71;
+  color: var(--ink-muted);
   font-weight: 600;
 }
 .pay-split-btn {
@@ -399,17 +399,17 @@
   align-items: center;
   gap: 6px;
   padding: 6px 11px;
-  border: 1px solid #8ab8b4;
+  border: 1px solid var(--line-strong);
   border-radius: 6px;
   background: #fff;
-  color: #116f6b;
+  color: var(--brass-dark);
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.73rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.14s;
 }
-.pay-split-btn:hover { border-color: #116f6b; background: #edf8f7; }
+.pay-split-btn:hover { border-color: var(--brass); background: rgba(163,132,74,0.08); }
 .pay-split-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
 .pay-received-display {
@@ -417,7 +417,7 @@
   font-family: 'Archivo', sans-serif;
   font-weight: 800;
   font-size: 2rem;
-  color: #16292b;
+  color: var(--ink);
   letter-spacing: -0.02em;
   min-height: 58px;
   display: flex;
@@ -430,17 +430,17 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  border-top: 1px solid #e1e7e5;
+  border-top: 1px solid var(--line);
   padding: 10px;
-  background: #f5f7f6;
+  background: var(--stone);
 }
 .pay-key {
   min-height: 50px;
   padding: 10px;
-  border: 1px solid #d4dcda;
+  border: 1px solid var(--line);
   border-radius: 7px;
   background: #fff;
-  color: #1a2b2d;
+  color: var(--ink);
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
   font-size: 1rem;
@@ -450,9 +450,9 @@
   user-select: none;
   -webkit-user-select: none;
 }
-.pay-key:hover { background: #edf8f7; border-color: #42a09a; color: #116f6b; }
-.pay-key:active { transform: scale(0.96); background: #dff2f0; }
-.pay-key.backspace { color: #5d6c6e; font-size: 1.1rem; }
+.pay-key:hover { background: rgba(163,132,74,0.08); border-color: var(--brass); color: var(--brass-dark); }
+.pay-key:active { transform: scale(0.96); background: rgba(163,132,74,0.16); }
+.pay-key.backspace { color: var(--ink-muted); font-size: 1.1rem; }
 .pay-key.backspace:hover { border-color: var(--danger); background: rgba(192,57,43,0.06); color: var(--danger); }
 
 .pay-key-actions {
@@ -460,21 +460,22 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   padding: 0 10px 10px;
-  background: #f5f7f6;
+  background: var(--stone);
 }
 .pay-key-action {
   min-height: 40px;
-  border: 1px solid #cbd7d5;
+  border: 1px solid var(--line-strong);
   border-radius: 7px;
   background: #fff;
-  color: #116f6b;
+  color: var(--brass-dark);
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
+  transition: all 0.14s;
 }
-.pay-key-action:hover { background: #edf8f7; border-color: #42a09a; }
-.pay-key-action.clear { color: #6d7778; }
+.pay-key-action:hover { background: rgba(163,132,74,0.08); border-color: var(--brass); }
+.pay-key-action.clear { color: var(--ink-muted); }
 
 /* Change display */
 .pay-change-row {
@@ -571,15 +572,13 @@
 .pay-card-footer {
   flex-shrink: 0;
   padding: 14px 22px;
-  border-top: 1px solid #dbe3e1;
+  border-top: 1px solid var(--line);
   background: #fff;
   display: flex;
   gap: 10px;
   margin-top: 0;
 }
 .pay-card-footer .btn { flex: 1; min-height: 44px; padding: 12px; font-size: 0.86rem; border-radius: 7px; }
-.pay-card-footer .btn:not(.btn-outline) { background: #116f6b; border-color: #116f6b; }
-.pay-card-footer .btn:not(.btn-outline):hover { background: #0b5d59; border-color: #0b5d59; }
 
 /* Success screen */
 .pay-success {
