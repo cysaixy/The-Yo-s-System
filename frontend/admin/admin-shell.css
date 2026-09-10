@@ -510,44 +510,81 @@ body {
   gap: 16px; margin-bottom: 24px;
 }
 .stat-card {
-  flex: 1 1 200px;
-  min-width: 200px;
+  --accent: var(--brass);
+  --accent-dark: var(--brass-dark);
+  flex: 1 1 210px;
+  min-width: 210px;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 20px 22px;
+  border-radius: 14px;
+  padding: 20px 22px 20px 24px;
   box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
   transition: box-shadow var(--transition-base), transform var(--transition-fast), border-color var(--transition-base);
 }
+.stat-card:has(.value.success) { --accent: var(--success); --accent-dark: #1e5933; }
+.stat-card:has(.value.danger) { --accent: var(--danger); --accent-dark: #8f2a1e; }
+.stat-card:has(.value.warning) { --accent: var(--warning); --accent-dark: #8a640a; }
+/* left accent rail */
 .stat-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--brass-light), var(--brass-dark));
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  transition: height var(--transition-fast);
+  top: 0; left: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%);
+  transition: width var(--transition-fast);
+}
+/* soft corner glow */
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: -34px; right: -34px;
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.07;
+  pointer-events: none;
+  transition: opacity var(--transition-base), transform var(--transition-base);
 }
 .stat-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-3px);
   border-color: var(--line-strong);
 }
-.stat-card:hover::before { height: 4px; }
+.stat-card:hover::before { width: 6px; }
+.stat-card:hover::after { opacity: 0.13; transform: scale(1.12); }
 .stat-card .label {
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem;
-  text-transform: uppercase; letter-spacing: 0.07em;
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 7px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--ink-muted);
 }
+.stat-card .label::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent);
+}
 .stat-card .value {
+  position: relative; z-index: 1;
   font-family: 'Archivo', sans-serif; font-weight: 900;
-  font-size: 1.65rem; margin-top: 7px; letter-spacing: -0.02em;
+  font-size: 1.85rem; margin-top: 10px; letter-spacing: -0.03em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 .stat-card .value.brass { color: var(--brass-dark); }
 .stat-card .value.danger { color: var(--danger); }
 .stat-card .value.success { color: var(--success); }
+.stat-card .value.warning { color: var(--warning); }
+.stat-card .stat-note {
+  position: relative; z-index: 1;
+  margin-top: 7px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem;
+  color: var(--ink-muted);
+}
 
 /* ========================================================
    BUTTONS
@@ -860,7 +897,7 @@ body {
   .admin-notification-btn { width: 34px; height: 34px; }
   .admin-user button.logout-btn { font-size: 0.60rem; padding: 7px 9px; }
   .stat-grid { gap: 10px; }
-  .stat-card { flex-basis: calc(50% - 5px); min-width: 0; padding: 15px 14px; }
+  .stat-card { flex-basis: calc(50% - 5px); min-width: 0; padding: 15px 14px 15px 16px; }
   .stat-card .value { font-size: 1.2rem; overflow-wrap: anywhere; }
   .admin-panel-head { padding: 13px 16px; }
   .admin-body { padding: 13px 10px; }
