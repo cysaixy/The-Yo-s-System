@@ -135,7 +135,34 @@
   }
   .status-preparing .ticket-status { color: #2c5fb0; background: rgba(44,95,176,.1); }
   .status-ready .ticket-status { color: #23633e; background: rgba(46,125,79,.12); }
-  .ticket-items { flex: 1; margin: 14px 0 13px; padding: 0; list-style: none; }
+  .ticket-trail {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 13px 0 10px; padding: 0; list-style: none;
+  }
+  .ticket-trail-step { position: relative; min-width: 0; text-align: center; }
+  .ticket-trail-step:not(:last-child)::after {
+    content: ''; position: absolute; z-index: 0;
+    top: 7px; left: calc(50% + 8px); right: calc(-50% + 8px);
+    height: 2px; background: #e6dfd4;
+  }
+  .ticket-trail-step.done:not(:last-child)::after { background: #a9752b; }
+  .ticket-trail-dot {
+    position: relative; z-index: 1; width: 16px; height: 16px;
+    display: grid; place-items: center; margin: 0 auto 5px;
+    border: 2px solid #d8d1c6; border-radius: 50%;
+    background: #fff; color: transparent; font-size: 9px; font-weight: 700;
+  }
+  .ticket-trail-step.done .ticket-trail-dot { border-color: #a9752b; background: #a9752b; color: #fff; }
+  .ticket-trail-step.current .ticket-trail-dot { border-color: #a9752b; box-shadow: 0 0 0 3px rgba(169,117,43,.14); }
+  .ticket-trail-step.current .ticket-trail-dot::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #a9752b; }
+  .ticket-trail-label {
+    display: block; overflow: hidden; text-overflow: ellipsis;
+    color: #a2a6b0; font-size: .53rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .025em; white-space: nowrap;
+  }
+  .ticket-trail-step.done .ticket-trail-label,
+  .ticket-trail-step.current .ticket-trail-label { color: #94651f; }
+  .ticket-items { flex: 1; margin: 8px 0 13px; padding: 0; list-style: none; }
   .ticket-items li { display: flex; gap: 8px; margin-top: 6px; font-size: .76rem; line-height: 1.35; }
   .ticket-items li:first-child { margin-top: 0; }
   .ticket-items .qty { min-width: 22px; color: #a9752b; font-weight: 700; }
@@ -379,6 +406,26 @@
     return ({ pending: 'Pending', confirmed: 'Accepted', preparing: 'Preparing', ready: 'Ready' })[status] || status;
   }
 
+  function orderStatusTrail(status) {
+    const stages = [
+      { key: 'pending', label: 'Pending' },
+      { key: 'confirmed', label: 'Confirm' },
+      { key: 'preparing', label: 'Preparing' },
+      { key: 'completed', label: 'Completed' },
+    ];
+    const currentIndex = ({ pending: 0, confirmed: 1, preparing: 2, ready: 2, completed: 3 })[status] ?? 0;
+    return `<ol class="ticket-trail" aria-label="Order progress">
+      ${stages.map((stage, index) => {
+        const state = index < currentIndex ? 'done' : (index === currentIndex ? 'current' : 'upcoming');
+        const current = index === currentIndex ? ' aria-current="step"' : '';
+        return `<li class="ticket-trail-step ${state}"${current}>
+          <span class="ticket-trail-dot" aria-hidden="true">${state === 'done' ? '✓' : ''}</span>
+          <span class="ticket-trail-label">${stage.label}</span>
+        </li>`;
+      }).join('')}
+    </ol>`;
+  }
+
   function updateElapsedLabels() {
     document.querySelectorAll('.ticket-elapsed[data-ordered-at]').forEach(el => {
       el.textContent = elapsedLabel(el.dataset.orderedAt);
@@ -431,6 +478,7 @@
             <span class="ticket-number">Order #${escapeHtml(order.id)}</span>
             <span class="ticket-status">${escapeHtml(liveStatusLabel(order.status))}</span>
           </div>
+          ${orderStatusTrail(order.status)}
           <ul class="ticket-items">
             ${visibleItems.length ? visibleItems.map(item => `<li><span class="qty">×${Number(item.quantity) || 1}</span><span>${escapeHtml(item.name || 'Menu item')}</span></li>`).join('') : `<li><span class="qty">×${Number(order.item_count) || 0}</span><span>Order items</span></li>`}
             ${items.length > visibleItems.length ? `<li class="ticket-more">+${items.length - visibleItems.length} more item${items.length - visibleItems.length === 1 ? '' : 's'}</li>` : ''}
