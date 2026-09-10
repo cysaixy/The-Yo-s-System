@@ -20,8 +20,9 @@ export const listCategories = async (req, res, next) => {
 
 export const createCategory = async (req, res, next) => {
   try {
-    const { name } = req.body;
+    const name = String(req.body?.name || "").trim();
     if (!name) return res.status(400).json({ error: "Name is required." });
+    if (name.length > 100) return res.status(400).json({ error: "Category name must be 100 characters or fewer." });
 
     const { rows } = await pool.query(
       `INSERT INTO categories (name) VALUES ($1) RETURNING id, name`,
@@ -35,7 +36,9 @@ export const createCategory = async (req, res, next) => {
 
 export const updateCategory = async (req, res, next) => {
   try {
-    const { name } = req.body;
+    const name = String(req.body?.name || "").trim();
+    if (!name) return res.status(400).json({ error: "Name is required." });
+    if (name.length > 100) return res.status(400).json({ error: "Category name must be 100 characters or fewer." });
     const { rows } = await pool.query(
       `UPDATE categories SET name = $1 WHERE id = $2 RETURNING id, name`,
       [name, req.params.id]

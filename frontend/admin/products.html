@@ -292,6 +292,7 @@
   display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px;
 }
 .prd-modal-backdrop.open { display: flex; }
+.prd-modal-backdrop.nested { z-index: 220; }
 .prd-modal {
   background: #fff; border-radius: 12px; padding: 28px;
   width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
@@ -379,6 +380,8 @@ let addons       = [];   // [{ id, name, price, cost, category, status, inventor
 let bundles      = [];   // [{ id, name, bundle_price, savings, status, products }]
 
 let deletingTarget = null; // { type, id, name }
+let categoryPickerActive = false;
+let previousProductCategory = '';
 
 /* ================================================================
    INIT
@@ -772,7 +775,7 @@ function buildPageHTML() {
     <input type="hidden" id="catId">
     <div class="prd-form-field">
       <label>Category Name *</label>
-      <input type="text" id="catName" placeholder="e.g. Espresso & Coffee">
+      <input type="text" id="catName" maxlength="100" placeholder="e.g. Espresso & Coffee">
     </div>
     <div class="prd-error-msg" id="catError"></div>
     <div class="prd-modal-footer">
@@ -830,6 +833,7 @@ function bindAll() {
   // Item modal
   document.getElementById('itemModalCloseBtn').addEventListener('click', () => closeModal('itemModal'));
   document.getElementById('itemCancelBtn').addEventListener('click',     () => closeModal('itemModal'));
+  document.getElementById('itemCategory').addEventListener('change', handleProductCategoryChange);
   document.getElementById('addItemInvRowBtn').addEventListener('click', () => addItemInvRow());
   document.getElementById('itemSaveBtn').addEventListener('click', saveItem);
 
@@ -848,8 +852,8 @@ function bindAll() {
   document.getElementById('bundleSaveBtn').addEventListener('click', saveBundle);
 
   // Category modal
-  document.getElementById('catCloseBtn').addEventListener('click',   () => closeModal('catModal'));
-  document.getElementById('catCancelBtn').addEventListener('click',  () => closeModal('catModal'));
+  document.getElementById('catCloseBtn').addEventListener('click', closeCategoryModal);
+  document.getElementById('catCancelBtn').addEventListener('click', closeCategoryModal);
   document.getElementById('catSaveBtn').addEventListener('click', saveCategory);
 
   // Delete modal
@@ -1098,6 +1102,38 @@ function closeDropdowns() {
 /* ================================================================
    MODAL — PRODUCT (MENU ITEM)
    ================================================================ */
+function renderItemCategoryOptions(selectedId = '') {
+  const select = document.getElementById('itemCategory');
+  const categoryOptions = categories.map((category) =>
+    `<option value="${category.id}">${escapeHtml(category.name)}</option>`
+  ).join('');
+  select.innerHTML = `<option value="" disabled>Select category…</option>${categoryOptions}<option value="__add_category__">＋ Add new category…</option>`;
+
+  const requestedId = String(selectedId || '');
+  if (requestedId && categories.some((category) => String(category.id) === requestedId)) {
+    select.value = requestedId;
+  } else if (categories.length) {
+    select.value = String(categories[0].id);
+  } else {
+    select.value = '';
+  }
+  previousProductCategory = select.value;
+}
+
+function handleProductCategoryChange(event) {
+  const select = event.currentTarget;
+  if (select.value !== '__add_category__') {
+    previousProductCategory = select.value;
+    return;
+  }
+
+  categoryPickerActive = true;
+  select.value = previousProductCategory || '';
+  document.getElementById('catModal').classList.add('nested');
+  openCatModal();
+  window.setTimeout(() => document.getElementById('catName').focus(), 0);
+}
+
 function openItemModal(item = null) {
   document.getElementById('itemModalTitle').textContent = item ? `Edit — ${item.name}` : 'Add Product';
   document.getElementById('itemId').value     = item ? item.id : '';
@@ -1111,9 +1147,7 @@ function openItemModal(item = null) {
   document.getElementById('itemImageUrl').value = item ? (item.image_url || '') : '';
   document.getElementById('itemImageStatus').textContent = item?.image_url ? 'Current image will be kept unless you choose a replacement.' : 'No image selected.';
 
-  const catSel = document.getElementById('itemCategory');
-  catSel.innerHTML = categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-  if (item?.category_id) catSel.value = item.category_id;
+  renderItemCategoryOptions(item?.category_id || '');
 
   // Render inventory components builder
   const box = document.getElementById('itemInvBox');
@@ -1168,7 +1202,7 @@ async function saveItem() {
   let imageUrl = document.getElementById('itemImageUrl').value;
   const errEl = document.getElementById('itemError');
 
-  if (!name || !cat || isNaN(price)) {
+  if (!name || !cat || cat === '__add_category__' || isNaN(price)) {
     errEl.textContent = 'Name, category, and valid price are required.';
     errEl.classList.add('show');
     return;
@@ -1522,11 +1556,34 @@ async function saveBundle() {
    MODAL — CATEGORY
    ================================================================ */
 function openCatModal(id = '', name = '') {
+  if (id) {
+    categoryPickerActive = false;
+    document.getElementById('catModal').classList.remove('nested');
+  }
   document.getElementById('catModalTitle').textContent = id ? 'Edit Category' : 'Add Category';
   document.getElementById('catId').value   = id;
   document.getElementById('catName').value = name;
   document.getElementById('catError').classList.remove('show');
   openModal('catModal');
+}
+
+function closeCategoryModal() {
+  closeModal('catModal');
+  document.getElementById('catModal').classList.remove('nested');
+  const select = document.getElementById('itemCategory');
+  if (categoryPickerActive && select.value === '__add_category__') {
+    select.value = previousProductCategory || '';
+  }
+  categoryPickerActive = false;
+}
+
+async function refreshCategories() {
+  const response = await adminFetch('/api/admin/products/categories');
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Could not refresh categories.');
+  categories = data.data || [];
+  document.getElementById('statCategories').textContent = categories.length;
+  renderCategories();
 }
 
 async function saveCategory() {
@@ -1551,8 +1608,14 @@ async function saveCategory() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not save category.');
 
-    closeModal('catModal');
-    await loadAll();
+    if (categoryPickerActive && !id) {
+      await refreshCategories();
+      renderItemCategoryOptions(data.category.id);
+      closeCategoryModal();
+    } else {
+      closeCategoryModal();
+      await loadAll();
+    }
   } catch (err) {
     errEl.textContent = err.message;
     errEl.classList.add('show');
