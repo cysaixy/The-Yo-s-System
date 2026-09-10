@@ -83,7 +83,6 @@ app.use("/api/admin/budget", budgetRouter);
 app.use("/api/admin/cash-transactions", cashTransactionsRouter);
 app.use("/api/admin/reports", reportsRouter);
 app.use("/api/admin/cash-accounts", cashAccountsRouter);
-app.use("/api/admin/cash-transactions", cashTransactionsRouter);
 app.use("/api/admin/budgets", budgetRouter);
 app.use("/api/admin/customers", customersRouter);
 // 404 handler for unmatched routes
