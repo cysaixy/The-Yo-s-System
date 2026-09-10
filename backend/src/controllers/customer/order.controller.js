@@ -15,12 +15,8 @@ export async function createOrder(req, res, next) {
       cart,
       notes,
       delivery_address,
-      delivery_barangay,
-      delivery_city,
-      delivery_landmark,
       customer_name,
       customer_phone,
-      table_time,
       payment_method,
     } = req.body;
     const customer_id = req.user?.customer?.id;
@@ -186,9 +182,9 @@ export async function createOrder(req, res, next) {
     await client.query("BEGIN");
 
     const orderResult = await client.query(
-      `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, delivery_fee, delivery_address, notes, customer_name, customer_phone, table_time, payment_method, datetime_ordered)
-       VALUES ($1, NULL, $2, $3, 'pending', $4, $5, $6, $7, $8, $9, $10, $11, NOW())
-       RETURNING id, customer_id, reservation_id, order_type, status, total_amount, delivery_fee, delivery_address, notes, customer_name, customer_phone, table_time, payment_method, datetime_ordered`,
+      `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, delivery_fee, delivery_address, notes, customer_name, customer_phone, payment_method, datetime_ordered)
+       VALUES ($1, NULL, $2, $3, 'pending', $4, $5, $6, $7, $8, $9, $10, NOW())
+       RETURNING id, customer_id, reservation_id, order_type, status, total_amount, delivery_fee, delivery_address, notes, customer_name, customer_phone, payment_method, datetime_ordered`,
       [
         customer_id,
         reservation_id || null,
@@ -199,7 +195,6 @@ export async function createOrder(req, res, next) {
         notes || null,
         customer_name || null,
         customer_phone || null,
-        table_time || null,
         payment_method || null,
       ]
     );
@@ -364,7 +359,7 @@ export async function updateOrder(req, res, next) {
       });
     }
 
-    const { order_type, customer_name, customer_phone, table_time, delivery_address, payment_method, notes } = req.body;
+    const { order_type, customer_name, customer_phone, delivery_address, payment_method, notes } = req.body;
 
     if (order_type !== undefined && !VALID_ORDER_TYPES.includes(order_type)) {
       return res.status(400).json({
@@ -377,7 +372,7 @@ export async function updateOrder(req, res, next) {
       });
     }
 
-    const fields = { order_type, customer_name, customer_phone, table_time, delivery_address, payment_method, notes };
+    const fields = { order_type, customer_name, customer_phone, delivery_address, payment_method, notes };
     const cols = [];
     const vals = [];
     for (const [col, val] of Object.entries(fields)) {
@@ -396,7 +391,7 @@ export async function updateOrder(req, res, next) {
        SET ${setClause}
        WHERE id = $${cols.length + 1} AND customer_id = $${cols.length + 2} AND status = 'pending'
        RETURNING id, customer_id, reservation_id, order_type, status, total_amount, delivery_fee,
-                 delivery_address, notes, customer_name, customer_phone, table_time, payment_method, datetime_ordered`,
+                 delivery_address, notes, customer_name, customer_phone, payment_method, datetime_ordered`,
       [...vals, id, customer_id]
     );
 
@@ -436,7 +431,7 @@ export async function cancelOrder(req, res, next) {
        SET status = 'cancelled', status_updated_at = NOW()
        WHERE id = $1 AND customer_id = $2 AND status = 'pending'
        RETURNING id, customer_id, reservation_id, order_type, status, total_amount, delivery_fee,
-                 delivery_address, notes, customer_name, customer_phone, table_time, payment_method, datetime_ordered`,
+                 delivery_address, notes, customer_name, customer_phone, payment_method, datetime_ordered`,
       [id, customer_id]
     );
 

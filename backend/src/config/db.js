@@ -21,10 +21,14 @@ console.log(
   process.env.POSTGRES_URL ? "POSTGRES_URL" : "NONE"
 );
 
+const isLocal =
+  connectionString &&
+  (connectionString.includes("localhost") || connectionString.includes("127.0.0.1"));
+
 const pool = connectionString
   ? new Pool({
       connectionString,
-      ssl: { rejectUnauthorized: false },
+      ssl: isLocal ? false : { rejectUnauthorized: false },
       max: 20,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 5_000,

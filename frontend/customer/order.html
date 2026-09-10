@@ -1339,7 +1339,6 @@
     }
     const serviceType = document.getElementById('orderType').value;
     const paymentChoice = document.querySelector('input[name="paymentChoice"]:checked')?.value || 'Cash';
-    const tableNoInput = document.getElementById('tableNoInput')?.value?.trim() || '';
     const timeInput = document.getElementById('timeInput').value;
     const notesInput = document.getElementById('notes').value.trim();
 
@@ -1376,26 +1375,18 @@
       addrEl.value = sessionStorage.getItem('yo-customer-address') || '';
     }
 
-    // The backend's `table_time` column is a single free-text field, so the
-    // two boxes are joined with a delimiter here — my-orders.html splits
-    // this same delimiter back apart when it re-displays/edits the order.
-    // table_no / requested_time are also sent alongside it in case the
-    // backend has (or gains) dedicated columns for them.
-    const combinedTableTime = [tableNoInput, timeInput.trim()].filter(Boolean).join(' · ');
+    const timeFormatted = timeInput.trim() ? `Preferred Time: ${timeInput.trim()}` : '';
+    const combinedNotes = [timeFormatted, notesInput].filter(Boolean).join(' · ');
 
     const orderPayload = {
       order_type,
       cart: cartLines,
-      serviceType: serviceType,       // kept for any display/logging use
-      tableOrTime: combinedTableTime,
+      serviceType: serviceType,
       paymentChoice: paymentChoice,
-      notes: notesInput || null,
+      notes: combinedNotes || null,
       delivery_address: (addrEl && addrEl.value.trim()) || null,
       customer_name: document.getElementById('name').value.trim() || null,
       customer_phone: document.getElementById('phone').value.trim() || null,
-      table_time: combinedTableTime || null,
-      table_no: tableNoInput || null,
-      requested_time: timeInput.trim() || null,
       payment_method: (paymentChoice || '').toLowerCase() || null
     };
 

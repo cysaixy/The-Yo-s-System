@@ -220,9 +220,6 @@
             <option value="online">Delivery</option>
           </select>
         </div>
-        <div><label for="detailTableNo">Table # <span style="opacity:.55; font-weight:400;">(dine-in only)</span></label><input id="detailTableNo" type="text"></div>
-      </div>
-      <div class="form-row">
         <div><label for="detailTime">Preferred Time</label><input id="detailTime" type="text"></div>
       </div>
       <div class="form-row">
@@ -302,19 +299,6 @@
     return `<div class="delivery-note">🛵 <span>This is a delivery order — our staff will confirm your delivery fee shortly, and the total above will update automatically once it's set.</span></div>`;
   }
 
-  const TABLE_TIME_DELIM = ' · ';
-  function splitTableTime(order) {
-    if (order.table_no != null || order.requested_time != null) {
-      return { tableNo: order.table_no || '', time: order.requested_time || '' };
-    }
-    const raw = order.table_time || '';
-    if (raw.includes(TABLE_TIME_DELIM)) {
-      const [tableNo, ...rest] = raw.split(TABLE_TIME_DELIM);
-      return { tableNo: tableNo.trim(), time: rest.join(TABLE_TIME_DELIM).trim() };
-    }
-    return { tableNo: '', time: raw };
-  }
-
   let currentUser = null;
   let ordersById = new Map();
   let currentDetailOrder = null;
@@ -359,15 +343,13 @@
 
     setVal('detailName', order.customer_name);
     setVal('detailPhone', order.customer_phone);
-    const { tableNo, time } = splitTableTime(order);
-    setVal('detailTableNo', tableNo);
-    setVal('detailTime', time);
+    setVal('detailTime', order.requested_time || '');
     setVal('detailAddress', order.delivery_address);
     setVal('detailNotes', order.notes);
     setSelect('detailService', order.order_type);
     setSelect('detailPayment', order.payment_method);
 
-    ['detailName', 'detailPhone', 'detailService', 'detailTableNo', 'detailTime', 'detailAddress', 'detailPayment', 'detailNotes'].forEach(sel => {
+    ['detailName', 'detailPhone', 'detailService', 'detailTime', 'detailAddress', 'detailPayment', 'detailNotes'].forEach(sel => {
       const el = document.getElementById(sel);
       if (el) el.disabled = !editable;
     });
@@ -433,18 +415,14 @@
     btn.disabled = true;
     btn.textContent = 'Saving…';
 
-    const tableNoVal = document.getElementById('detailTableNo').value.trim();
     const timeVal = document.getElementById('detailTime').value.trim();
     const payload = {
       customer_name: document.getElementById('detailName').value.trim(),
       customer_phone: document.getElementById('detailPhone').value.trim(),
       order_type: document.getElementById('detailService').value,
-      table_time: [tableNoVal, timeVal].filter(Boolean).join(TABLE_TIME_DELIM),
-      table_no: tableNoVal || null,
-      requested_time: timeVal || null,
       delivery_address: document.getElementById('detailAddress').value.trim(),
       payment_method: document.getElementById('detailPayment').value,
-      notes: document.getElementById('detailNotes').value.trim(),
+      notes: [timeVal ? `Preferred Time: ${timeVal}` : '', document.getElementById('detailNotes').value.trim()].filter(Boolean).join(' · '),
     };
 
     try {

@@ -119,35 +119,21 @@ export async function initTables() {
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone TEXT`
     );
     await pool.query(
-      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS table_time TEXT`
-    );
-    await pool.query(
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)`
     );
 
-    // Delivery-fee tracking columns. delivery_fee_status is NULL for
-    // non-delivery orders, 'pending' while the Admin still has to assign a
-    // fee, and 'confirmed' once a fee has been set. delivery_fee itself stays
-    // 0 until an Admin assigns it — the frontend must never treat that 0 as
-    // "free delivery" and instead render the delivery_fee_status.
+    // Delivery-fee status column: 'pending' while Admin assigns fee, 'confirmed' once fee is set.
     await pool.query(
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee_status VARCHAR(20)`
     );
-    await pool.query(
-      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee_assigned_by INTEGER REFERENCES staff(id)`
-    );
-    await pool.query(
-      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee_assigned_at TIMESTAMP`
-    );
-    await pool.query(
-      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_barangay TEXT`
-    );
-    await pool.query(
-      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_city TEXT`
-    );
-    await pool.query(
-      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_landmark TEXT`
-    );
+
+    // Clean up dropped/redundant columns
+    await pool.query(`ALTER TABLE orders DROP COLUMN IF EXISTS table_time`);
+    await pool.query(`ALTER TABLE orders DROP COLUMN IF EXISTS delivery_fee_assigned_by`);
+    await pool.query(`ALTER TABLE orders DROP COLUMN IF EXISTS delivery_fee_assigned_at`);
+    await pool.query(`ALTER TABLE orders DROP COLUMN IF EXISTS delivery_barangay`);
+    await pool.query(`ALTER TABLE orders DROP COLUMN IF EXISTS delivery_city`);
+    await pool.query(`ALTER TABLE orders DROP COLUMN IF EXISTS delivery_landmark`);
 
     // Backend/database-layer validation for the ₱20.00 – ₱150.00 range.
     // 0 is allowed (no fee on dine-in/pickup, or a delivery order whose fee

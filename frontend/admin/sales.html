@@ -1346,7 +1346,7 @@
         </div>
         <div class="om-meta">
           <div class="row"><span>Mobile Number</span><b>${escapeHtml(o.customer_mobile || o.mobile_number || '—')}</b></div>
-          <div class="row"><span>Requested Time</span><b>${escapeHtml(o.requested_time || o.table_time || '—')}</b></div>
+          <div class="row"><span>Requested Time</span><b>${escapeHtml(o.requested_time || '—')}</b></div>
           <div class="row" style="grid-column:1/-1;"><span>Delivery Address</span><b>${escapeHtml(o.delivery_address || '—')}</b></div>
           ${o.special_instructions ? `<div class="row" style="grid-column:1/-1;"><span>Special Prep Instructions</span><b>${escapeHtml(o.special_instructions)}</b></div>` : ''}
         </div>
