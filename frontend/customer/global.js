@@ -35,11 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- THEME ENGINE DISABLED FOR NOW ---
   // initThemeEngine();
-
-  // --- ORDER INITIALIZATION ---
-  // Catalog/cart rendering lives in the order page's own module script.
-  // Only the Delivery-address toggle needs wiring here (no-ops elsewhere).
-  initServiceTypeListener();
 });
 
 function initThemeEngine() {
@@ -79,41 +74,4 @@ function initThemeEngine() {
     if (isMenuPage) body.classList.add('light-theme');
     else body.classList.remove('dark-theme');
   }
-}
-
-// --- DELIVERY EXPANSION LOGIC ---
-// Shows/hides the Delivery Address field on the order page based on the
-// selected service type. The saved profile address is prefilled if present.
-function initServiceTypeListener() {
-  const orderTypeSelect = document.getElementById('orderType');
-  if (!orderTypeSelect) return;
-
-  const applyDeliveryState = () => {
-    const locationRow = document.getElementById('deliveryLocationWrapper');
-    if (orderTypeSelect.value === 'Delivery') {
-      if (!locationRow) {
-        const currentFormRow = orderTypeSelect.closest('.form-row');
-        const newRow = document.createElement('div');
-        newRow.id = 'deliveryLocationWrapper';
-        newRow.className = 'form-row';
-        newRow.style.marginTop = '10px';
-        newRow.innerHTML = `
-          <div style="width: 100%;">
-            <label for="deliveryAddress" style="color: var(--brass); font-weight: 700;">📍 Delivery Address</label>
-            <input id="deliveryAddress" type="text" required placeholder="House No., Street, Barangay, Landmarks">
-          </div>
-        `;
-        const saved = sessionStorage.getItem('yo-customer-address');
-        if (saved) newRow.querySelector('#deliveryAddress').value = saved;
-        currentFormRow.parentNode.insertBefore(newRow, currentFormRow.nextSibling);
-      }
-    } else if (locationRow) {
-      locationRow.remove();
-    }
-  };
-
-  orderTypeSelect.addEventListener('change', applyDeliveryState);
-  // Reflect the currently selected value on first load too (e.g. if the
-  // user navigated back with the form state preserved).
-  applyDeliveryState();
 }
