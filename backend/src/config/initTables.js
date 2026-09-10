@@ -95,6 +95,12 @@ export async function initTables() {
       `ALTER TABLE inventory_log ALTER COLUMN quantity_change TYPE NUMERIC(10,2)`
     );
     await pool.query(
+      `ALTER TABLE inventory_log ADD COLUMN IF NOT EXISTS inventory_id INTEGER REFERENCES inventory_items(id) ON DELETE SET NULL`
+    );
+    await pool.query(
+      `ALTER TABLE inventory_log ALTER COLUMN menu_id DROP NOT NULL`
+    );
+    await pool.query(
       `ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS cost NUMERIC(10,2) NOT NULL DEFAULT 0`
     );
     await pool.query(

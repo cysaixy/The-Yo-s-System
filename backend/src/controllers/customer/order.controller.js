@@ -224,9 +224,9 @@ export async function createOrder(req, res, next) {
           [consumed, comp.inventory_id]
         );
         await client.query(
-          `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
-           VALUES ($1, NULL, 'sale', $2, $3)`,
-          [item.menu_id, -consumed, `Online Order #${order.id} · ${item.name} (${comp.inventory_name})`]
+          `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+           VALUES ($1, $2, NULL, 'sale', $3, $4)`,
+          [comp.inventory_id, item.menu_id, -consumed, `Online Order #${order.id} · ${item.name} (${comp.inventory_name})`]
         );
       }
 
@@ -245,20 +245,29 @@ export async function createOrder(req, res, next) {
             [consumed, comp.inventory_id]
           );
           await client.query(
-            `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
-             VALUES ($1, NULL, 'sale', $2, $3)`,
-            [item.menu_id, -consumed, `Online Order #${order.id} · ${a.name}`]
+            `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+             VALUES ($1, $2, NULL, 'sale', $3, $4)`,
+            [comp.inventory_id, item.menu_id, -consumed, `Online Order #${order.id} · ${a.name} (${comp.inventory_name})`]
           );
         }
       }
 
-      // Decrement stock if stock tracking applies
-      await client.query(
-        `UPDATE menu_items 
-         SET stock_quantity = stock_quantity - $1 
-         WHERE id = $2 AND stock_quantity IS NOT NULL AND stock_quantity >= $1`,
-        [item.quantity, item.menu_id]
-      );
+      // Decrement stock if stock tracking applies and item has no raw ingredients
+      if (!item.inventory_components || item.inventory_components.length === 0) {
+        const { rowCount } = await client.query(
+          `UPDATE menu_items 
+           SET stock_quantity = stock_quantity - $1 
+           WHERE id = $2 AND stock_quantity IS NOT NULL AND stock_quantity >= $1`,
+          [item.quantity, item.menu_id]
+        );
+        if (rowCount > 0) {
+          await client.query(
+            `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+             VALUES (NULL, $1, NULL, 'sale', $2, $3)`,
+            [item.menu_id, -item.quantity, `Online Order #${order.id} · ${item.name}`]
+          );
+        }
+      }
     }
 
     await client.query("COMMIT");

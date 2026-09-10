@@ -59,8 +59,8 @@ export async function create(req, res, next) {
     );
 
     await client.query(
-      `INSERT INTO inventory_log (menu_id, staff_id, stock_in_id, transaction_type, quantity_change, remarks)
-       VALUES ($1, $2, $3, 'stock_in', $4, $5)`,
+      `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, stock_in_id, transaction_type, quantity_change, remarks)
+       VALUES (NULL, $1, $2, $3, 'stock_in', $4, $5)`,
       [menu_id, staffId, stockIn.id, Number(quantity), remarks || null]
     );
 

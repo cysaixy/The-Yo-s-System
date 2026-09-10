@@ -316,9 +316,9 @@ export async function upsertReservationOrder(req, res, next) {
               [consumed, comp.inventory_id]
             );
             await client.query(
-              `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
-               VALUES ($1, $2, 'sale', $3, $4)`,
-              [oi.menu_id, staff_id, -consumed, `Reservation Order #${order.id} (${comp.inventory_name})`]
+              `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+               VALUES ($1, $2, $3, 'sale', $4, $5)`,
+              [comp.inventory_id, oi.menu_id, staff_id, -consumed, `Reservation Order #${order.id} (${comp.inventory_name})`]
             );
           }
 
@@ -343,9 +343,9 @@ export async function upsertReservationOrder(req, res, next) {
                 [consumed, comp.inventory_id]
               );
               await client.query(
-                `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
-                 VALUES ($1, $2, 'sale', $3, $4)`,
-                [oi.menu_id, staff_id, -consumed, `Reservation Order #${order.id} · ${addon.addon_name} (${comp.inventory_name})`]
+                `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+                 VALUES ($1, $2, $3, 'sale', $4, $5)`,
+                [comp.inventory_id, oi.menu_id, staff_id, -consumed, `Reservation Order #${order.id} · ${addon.addon_name} (${comp.inventory_name})`]
               );
             }
           }

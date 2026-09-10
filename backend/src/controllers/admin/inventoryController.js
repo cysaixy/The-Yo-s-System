@@ -231,11 +231,13 @@ export async function createAdjustment(req, res, next) {
     }
 
     // Insert log
+    const logInventoryId = invRows.length > 0 ? targetId : null;
+    const logMenuId = invRows.length > 0 ? null : targetId;
     const { rows: logRows } = await client.query(
-      `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
-       VALUES ($1, $2, 'adjustment', $3, $4)
+      `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+       VALUES ($1, $2, $3, 'adjustment', $4, $5)
        RETURNING id, transaction_type, quantity_change, log_date`,
-      [targetId, staffId, quantity_change, remarks || null]
+      [logInventoryId, logMenuId, staffId, quantity_change, remarks || null]
     );
 
     await client.query("COMMIT");
@@ -255,11 +257,12 @@ export async function createAdjustment(req, res, next) {
 // GET /api/admin/inventory/log
 export async function log(req, res, next) {
   try {
-    const { menu_id, staff_id, transaction_type, from, to } = req.query;
+    const { menu_id, inventory_id, staff_id, transaction_type, from, to } = req.query;
     const conditions = [];
     const params = [];
 
     if (menu_id) { params.push(menu_id); conditions.push(`il.menu_id = $${params.length}`); }
+    if (inventory_id) { params.push(inventory_id); conditions.push(`il.inventory_id = $${params.length}`); }
     if (staff_id) { params.push(staff_id); conditions.push(`il.staff_id = $${params.length}`); }
     if (transaction_type) { params.push(transaction_type); conditions.push(`il.transaction_type = $${params.length}`); }
     if (from) { params.push(from); conditions.push(`il.log_date::date >= $${params.length}`); }
@@ -272,8 +275,8 @@ export async function log(req, res, next) {
               s.name AS staff_name, il.transaction_type,
               il.quantity_change, il.log_date, il.remarks
        FROM inventory_log il
+       LEFT JOIN inventory_items ii ON ii.id = il.inventory_id
        LEFT JOIN menu_items mi ON mi.id = il.menu_id
-       LEFT JOIN inventory_items ii ON ii.id = il.menu_id
        LEFT JOIN staff s ON s.id = il.staff_id
        ${where}
        ORDER BY il.log_date DESC`,

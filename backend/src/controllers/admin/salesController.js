@@ -250,9 +250,9 @@ export async function createPosOrder(req, res, next) {
           [consumed, comp.inventory_id]
         );
         await client.query(
-          `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
-           VALUES ($1, $2, 'sale', $3, $4)`,
-          [item.menu_id, req.staff.id, -consumed, `POS Order #${order.id} · ${item.name} (${comp.inventory_name})`]
+          `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+           VALUES ($1, $2, $3, 'sale', $4, $5)`,
+          [comp.inventory_id, item.menu_id, req.staff.id, -consumed, `POS Order #${order.id} · ${item.name} (${comp.inventory_name})`]
         );
       }
 
@@ -271,22 +271,25 @@ export async function createPosOrder(req, res, next) {
             [consumed, comp.inventory_id]
           );
           await client.query(
-            `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
-             VALUES ($1, $2, 'sale', $3, $4)`,
-            [item.menu_id, req.staff.id, -consumed, `POS Order #${order.id} · ${a.name}`]
+            `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+             VALUES ($1, $2, $3, 'sale', $4, $5)`,
+            [comp.inventory_id, item.menu_id, req.staff.id, -consumed, `POS Order #${order.id} · ${a.name} (${comp.inventory_name})`]
           );
         }
       }
 
-      await client.query(
-        `UPDATE menu_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2`,
-        [item.quantity, item.menu_id]
-      );
-      await client.query(
-        `INSERT INTO inventory_log (menu_id, staff_id, transaction_type, quantity_change, remarks)
-         VALUES ($1, $2, 'sale', $3, $4)`,
-        [item.menu_id, req.staff.id, -item.quantity, `POS Order #${order.id}`]
-      );
+      // If the product has NO ingredients, track and deduct its direct stock on menu_items
+      if (!item.inventory_components || item.inventory_components.length === 0) {
+        await client.query(
+          `UPDATE menu_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2 AND stock_quantity IS NOT NULL`,
+          [item.quantity, item.menu_id]
+        );
+        await client.query(
+          `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+           VALUES (NULL, $1, $2, 'sale', $3, $4)`,
+          [item.menu_id, req.staff.id, -item.quantity, `POS Order #${order.id} · ${item.name}`]
+        );
+      }
     }
 
     const createdPayments = [];
