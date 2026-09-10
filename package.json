@@ -18,5 +18,10 @@
   },
   "overrides": {
     "jose": "4.15.9"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true,
+    "protobufjs@7.6.5": true,
+    "@firebase/util@1.15.2": true
   }
 }
