@@ -41,42 +41,74 @@
   margin-bottom: 20px;
 }
 .inv-stat-card {
-  background: #fff; border: 1px solid var(--line); border-radius: 10px;
-  padding: 20px 22px; display: flex; flex-direction: column; gap: 6px;
+  --accent: var(--brass);
+  --accent-dark: var(--brass-dark);
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  padding: 20px 22px 20px 24px; display: flex; flex-direction: column; gap: 6px;
+  position: relative; overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-base), transform var(--transition-fast), border-color var(--transition-base);
 }
+.inv-summary-row .inv-stat-card:nth-child(3) { --accent: var(--ink-muted); --accent-dark: var(--ink); }
+.inv-stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%);
+  transition: width var(--transition-fast);
+}
+.inv-stat-card::after {
+  content: '';
+  position: absolute; top: -34px; right: -34px; width: 110px; height: 110px;
+  border-radius: 50%; background: var(--accent); opacity: 0.07; pointer-events: none;
+  transition: opacity var(--transition-base), transform var(--transition-base);
+}
+.inv-stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); border-color: var(--line-strong); }
+.inv-stat-card:hover::before { width: 6px; }
+.inv-stat-card:hover::after { opacity: 0.13; transform: scale(1.12); }
 .inv-stat-card .isc-label {
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
-  letter-spacing: 0.08em; color: var(--ink); opacity: 0.5;
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 7px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.63rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--ink-muted);
+}
+.inv-stat-card .isc-label::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: var(--accent);
 }
 .inv-stat-card .isc-value {
+  position: relative; z-index: 1;
   font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 2rem;
-  line-height: 1; color: var(--ink);
+  line-height: 1; color: var(--ink); letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
 }
 .inv-stat-card .isc-value.gold { color: var(--brass-dark); }
-.inv-stat-card .isc-value.sm { font-size: 1.05rem; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; opacity: 0.75; }
-.inv-stat-card .isc-sub { font-size: 0.76rem; opacity: 0.5; margin-top: 2px; }
+.inv-stat-card .isc-value.sm { font-size: 1.08rem; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
+.inv-stat-card .isc-sub { position: relative; z-index: 1; font-size: 0.76rem; color: var(--ink-muted); margin-top: 2px; }
 
 /* ---- Status strip ---- */
 .inv-status-strip {
-  background: #fff; border: 1px solid var(--line); border-radius: 10px;
-  padding: 16px 22px; display: flex; gap: 28px; flex-wrap: wrap;
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 20px; display: flex; gap: 10px; flex-wrap: wrap;
   align-items: center; margin-bottom: 22px;
+  box-shadow: var(--shadow-sm);
 }
 .inv-status-strip .strip-label {
   font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
-  letter-spacing: 0.07em; opacity: 0.45; margin-right: 4px;
+  letter-spacing: 0.07em; color: var(--ink-muted); font-weight: 700; margin-right: 4px;
 }
 .inv-status-item {
   display: flex; align-items: center; gap: 8px;
   font-size: 0.82rem; font-weight: 600; color: var(--ink);
+  padding: 7px 14px 7px 12px; border-radius: 20px;
+  background: var(--stone); border: 1px solid var(--line);
+  transition: all var(--transition-fast); cursor: default;
 }
+.inv-status-item:hover { border-color: var(--line-strong); background: var(--stone-hover); transform: translateY(-1px); box-shadow: var(--shadow-xs); }
 .inv-status-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
 }
-.dot-green { background: #2e7d4f; }
-.dot-yellow { background: #c07d0b; }
+.dot-green { background: var(--success); }
+.dot-yellow { background: var(--warning); }
 .dot-blue { background: #2c5fb0; }
-.dot-red { background: #c0392b; }
+.dot-red { background: var(--danger); }
 .inv-status-item .count { font-family: 'Archivo', sans-serif; font-weight: 900; }
 
 /* ---- Sub-tabs (Stock / Cost / Activities / Bulk Add) ---- */

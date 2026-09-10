@@ -89,25 +89,33 @@
 
   /* ---------- Live order rail ---------- */
   .live-orders-section {
-    margin-bottom: 30px; padding: 18px;
-    border: 1px solid #ece3d4; border-radius: 14px;
-    background: rgba(255,255,255,0.78); box-shadow: var(--shadow-sm);
-    overflow: hidden;
+    position: relative; overflow: hidden;
+    margin-bottom: 30px; padding: 20px 22px;
+    border: 1px solid var(--line); border-radius: 16px;
+    background: #fff; box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition-base), border-color var(--transition-base);
   }
+  .live-orders-section::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--brass-light), var(--brass-dark));
+  }
+  .live-orders-section:hover { box-shadow: var(--shadow-md); border-color: var(--line-strong); }
   .live-orders-head {
     display: flex; align-items: center; justify-content: space-between;
-    gap: 14px; margin-bottom: 14px;
+    gap: 14px; margin-bottom: 16px;
   }
   .live-orders-title { display: flex; align-items: center; gap: 10px; }
-  .live-orders-title h2 { margin: 0; font: 700 1rem 'Plus Jakarta Sans', sans-serif; color: #39435c; }
-  .live-orders-title p { margin: 2px 0 0; font-size: .72rem; color: #858b99; }
+  .live-orders-title h2 { margin: 0; font: 700 1rem 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
+  .live-orders-title p { margin: 2px 0 0; font-size: .72rem; color: var(--ink-muted); }
   .live-indicator {
-    width: 9px; height: 9px; border-radius: 50%; background: #2e7d4f;
-    box-shadow: 0 0 0 4px rgba(46,125,79,.13); animation: livePulse 2s ease-in-out infinite;
+    width: 9px; height: 9px; border-radius: 50%; background: var(--success);
+    box-shadow: 0 0 0 4px rgba(46,125,79,.14); animation: livePulse 2s ease-in-out infinite;
   }
   .live-orders-count {
-    flex-shrink: 0; padding: 5px 9px; border-radius: 999px;
-    background: #f4ecdd; color: #a9752b; font-size: .7rem; font-weight: 600;
+    flex-shrink: 0; padding: 6px 12px; border-radius: 999px;
+    background: rgba(163,132,74,0.12); color: var(--brass-dark);
+    border: 1px solid rgba(163,132,74,0.25);
+    font-size: .72rem; font-weight: 700;
   }
   .live-orders-viewport { overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth; }
   .live-orders-viewport::-webkit-scrollbar { display: none; }
@@ -115,24 +123,24 @@
   .order-ticket {
     width: 292px; min-height: 212px; flex: 0 0 292px;
     display: flex; flex-direction: column; padding: 15px;
-    border: 1px solid #ece3d4; border-top: 3px solid #a9752b;
-    border-radius: 11px; background: #fff; color: #39435c;
-    text-decoration: none; box-shadow: 0 3px 12px rgba(57,67,92,.07);
-    scroll-snap-align: start; transition: transform .16s ease, box-shadow .16s ease;
+    border: 1px solid var(--line); border-top: 3px solid var(--brass-dark);
+    border-radius: 12px; background: #fff; color: var(--ink);
+    text-decoration: none; box-shadow: var(--shadow-xs);
+    scroll-snap-align: start; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
   }
-  .order-ticket:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(57,67,92,.11); }
+  .order-ticket:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
   .order-ticket.status-preparing { border-top-color: #2c5fb0; }
-  .order-ticket.status-ready { border-top-color: #2e7d4f; }
-  .order-ticket.status-confirmed { border-top-color: #a3844a; }
+  .order-ticket.status-ready { border-top-color: var(--success); }
+  .order-ticket.status-confirmed { border-top-color: var(--brass); }
   .order-ticket.live-updated { animation: ticketFlash 1.25s ease both; }
   .ticket-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .ticket-number { font-size: .88rem; font-weight: 700; color: #29334c; }
+  .ticket-number { font-size: .88rem; font-weight: 700; color: var(--ink); }
   .ticket-status {
-    padding: 4px 8px; border-radius: 999px; background: #f8f1e4;
-    color: #94651f; font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    padding: 4px 8px; border-radius: 999px; background: rgba(163,132,74,0.12);
+    color: var(--brass-dark); font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
   }
   .status-preparing .ticket-status { color: #2c5fb0; background: rgba(44,95,176,.1); }
-  .status-ready .ticket-status { color: #23633e; background: rgba(46,125,79,.12); }
+  .status-ready .ticket-status { color: var(--success); background: rgba(46,125,79,.12); }
   .ticket-trail {
     display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
     margin: 13px 0 10px; padding: 0; list-style: none;
@@ -141,46 +149,64 @@
   .ticket-trail-step:not(:last-child)::after {
     content: ''; position: absolute; z-index: 0;
     top: 7px; left: calc(50% + 8px); right: calc(-50% + 8px);
-    height: 2px; background: #e6dfd4;
+    height: 2px; background: var(--line);
   }
-  .ticket-trail-step.done:not(:last-child)::after { background: #a9752b; }
+  .ticket-trail-step.done:not(:last-child)::after { background: var(--brass-dark); }
   .ticket-trail-dot {
     position: relative; z-index: 1; width: 16px; height: 16px;
     display: grid; place-items: center; margin: 0 auto 5px;
-    border: 2px solid #d8d1c6; border-radius: 50%;
+    border: 2px solid var(--line-strong); border-radius: 50%;
     background: #fff; color: transparent; font-size: 9px; font-weight: 700;
   }
-  .ticket-trail-step.done .ticket-trail-dot { border-color: #a9752b; background: #a9752b; color: #fff; }
-  .ticket-trail-step.current .ticket-trail-dot { border-color: #a9752b; box-shadow: 0 0 0 3px rgba(169,117,43,.14); }
-  .ticket-trail-step.current .ticket-trail-dot::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #a9752b; }
+  .ticket-trail-step.done .ticket-trail-dot { border-color: var(--brass-dark); background: var(--brass-dark); color: #fff; }
+  .ticket-trail-step.current .ticket-trail-dot { border-color: var(--brass-dark); box-shadow: 0 0 0 3px rgba(163,132,74,.16); }
+  .ticket-trail-step.current .ticket-trail-dot::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--brass-dark); }
   .ticket-trail-label {
     display: block; overflow: hidden; text-overflow: ellipsis;
     color: #a2a6b0; font-size: .53rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: .025em; white-space: nowrap;
   }
   .ticket-trail-step.done .ticket-trail-label,
-  .ticket-trail-step.current .ticket-trail-label { color: #94651f; }
+  .ticket-trail-step.current .ticket-trail-label { color: var(--brass-dark); }
   .ticket-items { flex: 1; margin: 8px 0 13px; padding: 0; list-style: none; }
   .ticket-items li { display: flex; gap: 8px; margin-top: 6px; font-size: .76rem; line-height: 1.35; }
   .ticket-items li:first-child { margin-top: 0; }
-  .ticket-items .qty { min-width: 22px; color: #a9752b; font-weight: 700; }
-  .ticket-more { color: #858b99; font-style: italic; }
-  .ticket-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 11px; border-top: 1px solid #f0e9de; }
+  .ticket-items .qty { min-width: 22px; color: var(--brass-dark); font-weight: 700; }
+  .ticket-more { color: var(--ink-muted); font-style: italic; }
+  .ticket-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 11px; border-top: 1px solid var(--line); }
   .ticket-owner { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .ticket-avatar {
     width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%;
-    display: grid; place-items: center; background: #f4ecdd; color: #a9752b;
+    display: grid; place-items: center; background: rgba(163,132,74,0.14); color: var(--brass-dark);
     font-size: .68rem; font-weight: 700;
   }
   .ticket-owner-copy { min-width: 0; }
   .ticket-owner-copy span { display: block; color: #9a9fac; font-size: .58rem; text-transform: uppercase; letter-spacing: .07em; }
   .ticket-owner-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .7rem; font-weight: 600; }
-  .ticket-elapsed { color: #858b99; font-size: .68rem; font-weight: 600; white-space: nowrap; }
-  .live-orders-empty { width: 100%; padding: 38px 20px; text-align: center; color: #858b99; font-size: .82rem; }
-  @keyframes ticketFlash { 0% { background: #fff5d9; box-shadow: 0 0 0 3px rgba(169,117,43,.22); } 100% { background: #fff; box-shadow: 0 3px 12px rgba(57,67,92,.07); } }
+  .ticket-elapsed { color: var(--ink-muted); font-size: .68rem; font-weight: 600; white-space: nowrap; }
+
+  /* ---- Empty / connecting state ---- */
+  .live-orders-empty {
+    width: 100%; padding: 40px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    text-align: center;
+    border: 1.5px dashed var(--line-strong); border-radius: 12px;
+    background: var(--stone);
+  }
+  .loe-icon {
+    width: 46px; height: 46px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(163,132,74,0.14); color: var(--brass-dark);
+    margin-bottom: 12px;
+  }
+  .loe-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .live-orders-empty .loe-title { margin: 0; font: 700 0.86rem 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
+  .live-orders-empty .loe-sub { margin: 3px 0 0; font-size: 0.76rem; color: var(--ink-muted); max-width: 300px; }
+
+  @keyframes ticketFlash { 0% { background: #fff5d9; box-shadow: 0 0 0 3px rgba(163,132,74,.22); } 100% { background: #fff; box-shadow: var(--shadow-xs); } }
   @keyframes livePulse { 50% { opacity: .45; transform: scale(.82); } }
   @media (prefers-reduced-motion: reduce) { .live-indicator, .order-ticket.live-updated { animation: none; } .live-orders-viewport { scroll-behavior: auto; } }
-  @media (max-width: 600px) { .live-orders-section { padding: 14px; } .order-ticket { width: 260px; flex-basis: 260px; } }
+  @media (max-width: 600px) { .live-orders-section { padding: 16px; } .order-ticket { width: 260px; flex-basis: 260px; } }
 </style>
 </head>
 <body>
@@ -319,7 +345,13 @@
           <span class="live-orders-count" id="liveOrdersCount">Connecting…</span>
         </div>
         <div class="live-orders-viewport" id="liveOrdersViewport" tabindex="0" aria-label="Orders currently in progress">
-          <div class="live-orders-rail" id="liveOrdersRail"><div class="live-orders-empty">Connecting to live orders…</div></div>
+          <div class="live-orders-rail" id="liveOrdersRail">
+            <div class="live-orders-empty">
+              <div class="loe-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+              <p class="loe-title">Connecting to live orders…</p>
+              <p class="loe-sub">Hang tight, this updates automatically once connected.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -457,7 +489,12 @@
     count.textContent = `${active.length} active`;
 
     if (!active.length) {
-      rail.innerHTML = '<div class="live-orders-empty">No orders are in progress right now.</div>';
+      rail.innerHTML = `
+        <div class="live-orders-empty">
+          <div class="loe-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <p class="loe-title">No orders in progress</p>
+          <p class="loe-sub">New orders will appear here automatically as they come in.</p>
+        </div>`;
       window.clearInterval(liveRailScrollTimer);
       return;
     }
