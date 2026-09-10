@@ -63,9 +63,17 @@ export async function createItem(req, res, next) {
       return res.status(400).json({ error: "Item name and category are required." });
     }
 
-    const stock = Number(stock_quantity || 0);
-    const cost = Number(unit_cost || 0);
-    const reorder = Number(reorder_level || 5);
+    const toNumber = (value, fallback) => {
+      if (value === undefined || value === null || value === "") return fallback;
+      return Number(value);
+    };
+    const stock = toNumber(stock_quantity, 0);
+    const cost = toNumber(unit_cost, 0);
+    const reorder = toNumber(reorder_level, 5);
+
+    if (![stock, cost, reorder].every(Number.isFinite) || stock < 0 || cost < 0 || reorder < 0) {
+      return res.status(400).json({ error: "Stock quantity, unit cost, and reorder level must be non-negative numbers." });
+    }
 
     let status = 'in_stock';
     if (stock <= 0) status = 'out_of_stock';

@@ -36,7 +36,20 @@ export async function adminFetch(path, options = {}) {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  } catch (cause) {
+    if (cause?.name === 'AbortError') throw cause;
+
+    const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    const error = new Error(isOffline
+      ? 'You appear to be offline. Reconnect to the internet, then try again.'
+      : 'We could not reach The Yo\'s server. Check your internet connection or DNS, then try again.');
+    error.code = isOffline ? 'OFFLINE' : 'NETWORK_UNREACHABLE';
+    error.cause = cause;
+    throw error;
+  }
 
   if (res.status === 401) {
     // Session expired / not logged in - bounce back to login.

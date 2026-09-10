@@ -34,15 +34,25 @@ async function getOrCreateWalkInCustomerId(client) {
   return created.rows[0].id;
 }
 
-// Build a reusable "period + status" WHERE fragment. `paramStart` lets
-// callers chain multiple fragments together with positional params.
-function periodWhere({ from, to, status = "!cancelled" }, paramStart = 1) {
+function salesDateExpression({ dateType = "entry", storeHour = 0 } = {}) {
+  const hour = Math.min(23, Math.max(0, Math.trunc(Number(storeHour) || 0)));
+  const timestamp = dateType === "sale"
+    ? "COALESCE((SELECT MAX(pd.datetime_paid) FROM payments pd WHERE pd.order_id = o.id), o.datetime_ordered)"
+    : "o.datetime_ordered";
+  return `(${timestamp} - INTERVAL '${hour} hours')`;
+}
+
+// Build a reusable "period + status" WHERE fragment. The reporting date
+// can follow either order entry or payment time, with a configurable start
+// of business day (for example 05:00 through 04:59 the next calendar day).
+function periodWhere({ from, to, status = "!cancelled", dateType = "entry", storeHour = 0 }, paramStart = 1) {
   const conditions = [];
   const params = [];
+  const dateExpression = salesDateExpression({ dateType, storeHour });
   let n = paramStart;
 
-  if (from) { params.push(from); conditions.push(`o.datetime_ordered::date >= $${n}`); n++; }
-  if (to)   { params.push(to);   conditions.push(`o.datetime_ordered::date <= $${n}`); n++; }
+  if (from) { params.push(from); conditions.push(`${dateExpression}::date >= $${n}`); n++; }
+  if (to)   { params.push(to);   conditions.push(`${dateExpression}::date <= $${n}`); n++; }
   if (status === "!cancelled") conditions.push(`o.status <> 'cancelled'`);
   else if (status) { params.push(status); conditions.push(`o.status = $${n}`); n++; }
 
@@ -311,12 +321,13 @@ export async function createPosOrder(req, res, next) {
    ================================================================ */
 export async function listOrders(req, res, next) {
   try {
-    const { from, to, status, order_type, payment, search, limit } = req.query;
+    const { from, to, status, order_type, payment, search, limit, date_type, store_hour } = req.query;
     const conditions = [];
     const params = [];
+    const dateExpression = salesDateExpression({ dateType: date_type, storeHour: store_hour });
 
-    if (from) { params.push(from); conditions.push(`o.datetime_ordered::date >= $${params.length}`); }
-    if (to) { params.push(to); conditions.push(`o.datetime_ordered::date <= $${params.length}`); }
+    if (from) { params.push(from); conditions.push(`${dateExpression}::date >= $${params.length}`); }
+    if (to) { params.push(to); conditions.push(`${dateExpression}::date <= $${params.length}`); }
     if (status) { params.push(status); conditions.push(`o.status = $${params.length}`); }
     if (order_type) { params.push(order_type); conditions.push(`o.order_type = $${params.length}`); }
     if (payment) {
@@ -332,12 +343,17 @@ export async function listOrders(req, res, next) {
     const rowLimit = Math.min(Number(limit) || 500, 2000);
 
     const { rows } = await pool.query(
-      `SELECT o.id, c.name AS customer_name, s.name AS staff_name, o.order_type,
+      `SELECT o.id, c.name AS customer_name, c.phone AS contact_no,
+              COALESCE(o.delivery_address, c.address) AS address,
+              s.name AS staff_name, o.order_type,
               o.status, o.total_amount, o.delivery_fee, o.datetime_ordered,
               o.reservation_id,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
-              (SELECT p.payment_method FROM payments p WHERE p.order_id = o.id ORDER BY p.id DESC LIMIT 1) AS payment_method,
-              (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count
+              (SELECT MAX(p.datetime_paid) FROM payments p WHERE p.order_id = o.id) AS sale_date,
+              (SELECT CASE WHEN COUNT(*) > 1 THEN 'split' ELSE MAX(p.payment_method) END
+               FROM payments p WHERE p.order_id = o.id) AS payment_method,
+              (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
+              (SELECT COALESCE(SUM(oi.quantity), 0) FROM order_items oi WHERE oi.order_id = o.id) AS quantity_sold
        FROM orders o
        JOIN customers c ON c.id = o.customer_id
        LEFT JOIN staff s ON s.id = o.staff_id
@@ -568,7 +584,7 @@ export async function updatePaymentStatus(req, res, next) {
 // order count, average order value + add-on totals.
 export async function salesSummary(req, res, next) {
   try {
-    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to });
+    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to, dateType: req.query.date_type, storeHour: req.query.store_hour });
 
     const { rows } = await pool.query(
       `WITH agg AS (
@@ -628,11 +644,12 @@ export async function salesSummary(req, res, next) {
 // Daily breakdown across the period.
 export async function dailySales(req, res, next) {
   try {
-    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to });
+    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to, dateType: req.query.date_type, storeHour: req.query.store_hour });
+    const dateExpression = salesDateExpression({ dateType: req.query.date_type, storeHour: req.query.store_hour });
 
     const { rows } = await pool.query(
       `WITH per_order AS (
-         SELECT o.id, to_char(o.datetime_ordered::date, 'YYYY-MM-DD') AS date,
+         SELECT o.id, to_char(${dateExpression}::date, 'YYYY-MM-DD') AS date,
                 o.total_amount, o.delivery_fee,
                 (SELECT COALESCE(SUM(oi.cost * oi.quantity), 0)
                  FROM order_items oi WHERE oi.order_id = o.id) AS base_cogs,
@@ -678,7 +695,7 @@ export async function dailySales(req, res, next) {
 // Top-selling add-ons by revenue.
 export async function topAddonsReport(req, res, next) {
   try {
-    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to });
+    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to, dateType: req.query.date_type, storeHour: req.query.store_hour });
 
     const { rows } = await pool.query(
       `SELECT oia.addon_id, oia.name,
@@ -721,7 +738,7 @@ export async function topAddonsReport(req, res, next) {
 // Per-product sales (add-on revenue attributed to the product).
 export async function productSalesReport(req, res, next) {
   try {
-    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to });
+    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to, dateType: req.query.date_type, storeHour: req.query.store_hour });
 
     const { rows } = await pool.query(
       `WITH per_item AS (
@@ -781,7 +798,7 @@ export async function productSalesReport(req, res, next) {
 // Per-category sales.
 export async function categorySalesReport(req, res, next) {
   try {
-    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to });
+    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to, dateType: req.query.date_type, storeHour: req.query.store_hour });
 
     const { rows } = await pool.query(
       `WITH per_item AS (
@@ -829,7 +846,7 @@ export async function categorySalesReport(req, res, next) {
 // Payment method breakdown.
 export async function salesReport(req, res, next) {
   try {
-    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to });
+    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to, dateType: req.query.date_type, storeHour: req.query.store_hour });
     // periodWhere already emits "WHERE ..." including the non-cancelled
     // order guard; the payments aggregate just needs the paid guard chained.
     const whereStr = `${where} AND p.status = 'paid'`;
@@ -853,7 +870,7 @@ export async function salesReport(req, res, next) {
 // Order type breakdown.
 export async function orderTypesReport(req, res, next) {
   try {
-    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to });
+    const { where, params } = periodWhere({ from: req.query.from, to: req.query.to, dateType: req.query.date_type, storeHour: req.query.store_hour });
 
     const { rows } = await pool.query(
       `SELECT o.order_type, COUNT(*)::int AS order_count, SUM(o.total_amount) AS total_amount

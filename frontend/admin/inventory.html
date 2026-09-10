@@ -955,9 +955,18 @@ async function saveItem() {
     const url = id ? `/api/admin/inventory/items/${id}` : '/api/admin/inventory/items';
     const method = id ? 'PATCH' : 'POST';
 
-    const res  = await adminFetch(url, { method, body: JSON.stringify(payload) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not save inventory item.');
+    const res = await adminFetch(url, { method, body: JSON.stringify(payload) });
+    const contentType = res.headers.get('content-type') || '';
+    let data = {};
+    if (contentType.includes('application/json')) {
+      data = await res.json().catch(() => ({}));
+    } else {
+      const text = await res.text().catch(() => '');
+      if (text) data.error = text;
+    }
+    if (!res.ok) {
+      throw new Error(data.error || `The server could not save this item (HTTP ${res.status}).`);
+    }
 
     closeModal('itemModal');
     await loadStock();

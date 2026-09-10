@@ -324,7 +324,7 @@ function initOnlineOrderNotifications(token, staff) {
   let pollInFlight = false;
   let lastInventoryPollAt = 0;
   const poll = async () => {
-    if (document.hidden || pollInFlight) return;
+    if (document.hidden || pollInFlight || navigator.onLine === false) return;
     pollInFlight = true;
     try {
       const shouldFetchInventory = Date.now() - lastInventoryPollAt >= 60000;
@@ -421,6 +421,7 @@ function initOnlineOrderNotifications(token, staff) {
 
   poll();
   window.setInterval(poll, 8000);
+  window.addEventListener('online', poll);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) poll();
   });
