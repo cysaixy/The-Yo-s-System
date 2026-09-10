@@ -62,17 +62,6 @@ model AppSetting {
   @@map("app_settings")
 }
 
-model Budget {
-  id             Int      @id @default(autoincrement())
-  category       String   @db.VarChar(100)
-  budgetMonth    DateTime @map("budget_month") @db.Date
-  plannedAmount  Decimal  @map("planned_amount") @db.Decimal(10, 2)
-  notes          String?
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  @@map("budgets")
-}
-
 model BundleProduct {
   id       Int  @id @default(autoincrement())
   bundleId Int? @map("bundle_id")

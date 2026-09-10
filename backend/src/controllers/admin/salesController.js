@@ -57,14 +57,30 @@ function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 export async function createPosOrder(req, res, next) {
   const client = await pool.connect();
   try {
-    const { customer_id, order_type, cart, delivery_fee, payment_method } = req.body;
+    const { customer_id, order_type, cart, delivery_fee, payment_method, payments } = req.body;
     const deliveryFee = round2(delivery_fee);
     const payMethod = String(payment_method || "cash").toLowerCase();
+    const requestedPayments = Array.isArray(payments)
+      ? payments.map((payment) => ({
+          method: String(payment?.payment_method || payment?.method || "").toLowerCase(),
+          amount: round2(payment?.amount),
+        }))
+      : null;
 
     if (!VALID_ORDER_TYPES.includes(order_type)) {
       return res.status(400).json({ error: `order_type must be one of: ${VALID_ORDER_TYPES.join(", ")}` });
     }
-    if (!VALID_PAYMENT_METHODS.includes(payMethod)) {
+    if (requestedPayments) {
+      if (requestedPayments.length < 2) {
+        return res.status(400).json({ error: "Split payments require at least two payment entries." });
+      }
+      const invalidPayment = requestedPayments.find(
+        (payment) => !VALID_PAYMENT_METHODS.includes(payment.method) || payment.amount <= 0
+      );
+      if (invalidPayment) {
+        return res.status(400).json({ error: "Each split payment needs a valid payment method and positive amount." });
+      }
+    } else if (!VALID_PAYMENT_METHODS.includes(payMethod)) {
       return res.status(400).json({ error: `payment_method must be one of: ${VALID_PAYMENT_METHODS.join(", ")}` });
     }
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -184,6 +200,14 @@ export async function createPosOrder(req, res, next) {
 
     total_amount = round2(total_amount + deliveryFee);
 
+    const paymentAllocations = requestedPayments || [{ method: payMethod, amount: total_amount }];
+    const allocatedTotal = round2(paymentAllocations.reduce((sum, payment) => sum + payment.amount, 0));
+    if (allocatedTotal !== total_amount) {
+      return res.status(400).json({
+        error: `Split payment amounts must equal the order total of ${total_amount.toFixed(2)}.`,
+      });
+    }
+
     await client.query("BEGIN");
 
     const resolvedCustomerId = customer_id || await getOrCreateWalkInCustomerId(client);
@@ -255,15 +279,25 @@ export async function createPosOrder(req, res, next) {
       );
     }
 
-    const paymentResult = await client.query(
-      `INSERT INTO payments (order_id, payment_method, amount, status, datetime_paid)
-       VALUES ($1, $2, $3, 'paid', NOW())
-       RETURNING id, order_id, payment_method, amount, status, datetime_paid`,
-      [order.id, payMethod, total_amount]
-    );
+    const createdPayments = [];
+    for (const allocation of paymentAllocations) {
+      const paymentResult = await client.query(
+        `INSERT INTO payments (order_id, payment_method, amount, status, datetime_paid)
+         VALUES ($1, $2, $3, 'paid', NOW())
+         RETURNING id, order_id, payment_method, amount, status, datetime_paid`,
+        [order.id, allocation.method, allocation.amount]
+      );
+      createdPayments.push(paymentResult.rows[0]);
+    }
 
     await client.query("COMMIT");
-    res.status(201).json({ order: { ...order, payment: paymentResult.rows[0] } });
+    res.status(201).json({
+      order: {
+        ...order,
+        payment: createdPayments[0],
+        payments: createdPayments,
+      },
+    });
   } catch (err) {
     await client.query("ROLLBACK");
     next(err);

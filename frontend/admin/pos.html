@@ -245,59 +245,56 @@
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(21,23,26,0.55);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(10, 35, 37, 0.58);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 18px;
   overflow-y: auto;
 }
 .pay-screen.active { display: flex; animation: payScreenIn 0.2s cubic-bezier(0.16,1,0.3,1) both; }
 
 @keyframes payScreenIn {
-  from { opacity: 0; transform: scale(0.97); }
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
   to { opacity: 1; transform: none; }
 }
 
 .pay-card {
-  background: var(--component-bg);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  background: #f8faf9;
+  border: 1px solid rgba(20, 95, 91, 0.18);
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgba(8, 35, 37, 0.3);
   width: 100%;
-  max-width: 560px;
+  max-width: 520px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100vh - 36px);
 }
 
 /* Payment header */
 .pay-card-header {
-  background: #1b1d22;
+  background: #116f6b;
   color: #fff;
-  padding: 16px 22px;
+  padding: 15px 22px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   flex-shrink: 0;
 }
 .pay-card-header .breadcrumb {
-  font-family: 'Archivo', sans-serif;
-  font-weight: 700;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.55;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.82rem;
+  opacity: 0.72;
 }
-.pay-card-header .breadcrumb-sep { opacity: 0.35; margin: 0 4px; }
+.pay-card-header .breadcrumb-sep { opacity: 0.5; margin: 0 3px; }
 .pay-card-header .breadcrumb-current {
-  font-family: 'Archivo', sans-serif;
-  font-weight: 900;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--brass-light);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #fff;
 }
 
 /* Payment body scrollable */
@@ -305,31 +302,30 @@
   overflow-y: auto;
   flex: 1;
   overscroll-behavior: contain;
+  padding-bottom: 18px;
 }
 
 /* Total Amount Payable box */
 .pay-total-box {
-  margin: 20px 22px 0;
-  background: linear-gradient(135deg, rgba(163,132,74,0.10) 0%, rgba(163,132,74,0.04) 100%);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 18px 22px;
+  margin: 18px 22px 0;
+  background: #fff8e8;
+  border: 1px solid #e9dfc8;
+  border-radius: 9px;
+  padding: 16px 18px;
 }
 .pay-total-label {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--brass-dark);
-  font-weight: 700;
-  margin-bottom: 8px;
+  font-size: 0.68rem;
+  color: #697678;
+  font-weight: 600;
+  margin-bottom: 7px;
 }
 .pay-total-amount {
   font-family: 'Archivo', sans-serif;
-  font-weight: 900;
-  font-size: 2.2rem;
-  color: var(--ink);
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  font-size: 2.15rem;
+  color: #16292b;
+  letter-spacing: -0.025em;
   line-height: 1;
 }
 
@@ -366,10 +362,10 @@
   text-align: center;
   transition: all 0.14s;
 }
-.pay-method-pill:hover { border-color: var(--brass); color: var(--brass-dark); background: rgba(163,132,74,0.06); }
+.pay-method-pill:hover { border-color: #42a09a; color: #116f6b; background: #edf8f7; }
 .pay-method-pill.active {
-  background: var(--brass); border-color: var(--brass); color: #fff;
-  box-shadow: 0 4px 12px rgba(163,132,74,0.28);
+  background: #116f6b; border-color: #116f6b; color: #fff;
+  box-shadow: 0 4px 12px rgba(17,111,107,0.22);
 }
 .pay-method-icon {
   width: 18px;
@@ -379,9 +375,9 @@
 
 /* Amount received box */
 .pay-received-section {
-  margin: 16px 22px 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  margin: 15px 22px 0;
+  border: 1px solid #d7dfdd;
+  border-radius: 9px;
   overflow: hidden;
   background: #fff;
 }
@@ -389,44 +385,41 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px 8px;
-  border-bottom: 1px solid var(--line);
-  background: var(--stone);
+  padding: 12px 15px;
+  border-bottom: 1px solid #e1e7e5;
 }
 .pay-received-header span {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-muted);
-  font-weight: 700;
+  font-size: 0.72rem;
+  color: #5f6f71;
+  font-weight: 600;
 }
 .pay-split-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
-  border: 1px solid var(--line);
+  padding: 6px 11px;
+  border: 1px solid #8ab8b4;
   border-radius: 6px;
   background: #fff;
-  color: var(--ink-muted);
+  color: #116f6b;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.73rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.14s;
 }
-.pay-split-btn:hover { border-color: var(--brass); color: var(--brass-dark); }
+.pay-split-btn:hover { border-color: #116f6b; background: #edf8f7; }
 .pay-split-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
 .pay-received-display {
-  padding: 10px 16px 4px;
+  padding: 13px 16px 11px;
   font-family: 'Archivo', sans-serif;
-  font-weight: 900;
+  font-weight: 800;
   font-size: 2rem;
-  color: var(--ink);
+  color: #16292b;
   letter-spacing: -0.02em;
-  min-height: 54px;
+  min-height: 58px;
   display: flex;
   align-items: center;
 }
@@ -436,65 +429,52 @@
 .pay-keypad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  border-top: 1px solid var(--line);
-  padding: 4px;
-  background: var(--stone);
+  gap: 8px;
+  border-top: 1px solid #e1e7e5;
+  padding: 10px;
+  background: #f5f7f6;
 }
 .pay-key {
-  margin: 3px;
-  padding: 14px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  min-height: 50px;
+  padding: 10px;
+  border: 1px solid #d4dcda;
+  border-radius: 7px;
   background: #fff;
-  color: var(--ink);
-  font-family: 'Archivo', sans-serif;
-  font-weight: 700;
-  font-size: 1.05rem;
+  color: #1a2b2d;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.10s;
+  transition: all 0.1s;
   text-align: center;
   user-select: none;
   -webkit-user-select: none;
 }
-.pay-key:hover { background: var(--bone); border-color: var(--brass); color: var(--brass-dark); }
-.pay-key:active { transform: scale(0.95); background: rgba(163,132,74,0.12); }
-.pay-key.backspace {
-  color: var(--danger);
-  font-size: 1.1rem;
-}
+.pay-key:hover { background: #edf8f7; border-color: #42a09a; color: #116f6b; }
+.pay-key:active { transform: scale(0.96); background: #dff2f0; }
+.pay-key.backspace { color: #5d6c6e; font-size: 1.1rem; }
 .pay-key.backspace:hover { border-color: var(--danger); background: rgba(192,57,43,0.06); color: var(--danger); }
 
-/* Quick amounts (no-change shortcuts) */
-.pay-quick-amounts {
-  padding: 10px 22px 0;
+.pay-key-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 10px 10px;
+  background: #f5f7f6;
 }
-.pay-quick-label {
+.pay-key-action {
+  min-height: 40px;
+  border: 1px solid #cbd7d5;
+  border-radius: 7px;
+  background: #fff;
+  color: #116f6b;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.60rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-muted);
-  margin-bottom: 8px;
-}
-.pay-quick-pills {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.pay-quick-pill {
-  padding: 6px 12px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--bone);
-  color: var(--ink-muted);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.68rem;
+  font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.12s;
 }
-.pay-quick-pill:hover { border-color: var(--brass); color: var(--brass-dark); background: rgba(163,132,74,0.07); }
+.pay-key-action:hover { background: #edf8f7; border-color: #42a09a; }
+.pay-key-action.clear { color: #6d7778; }
 
 /* Change display */
 .pay-change-row {
@@ -590,14 +570,16 @@
 /* Card footer — actions */
 .pay-card-footer {
   flex-shrink: 0;
-  padding: 16px 22px;
-  border-top: 1px solid var(--line);
+  padding: 14px 22px;
+  border-top: 1px solid #dbe3e1;
   background: #fff;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-top: 0;
 }
-.pay-card-footer .btn { flex: 1; padding: 13px; font-size: 0.9rem; }
+.pay-card-footer .btn { flex: 1; min-height: 44px; padding: 12px; font-size: 0.86rem; border-radius: 7px; }
+.pay-card-footer .btn:not(.btn-outline) { background: #116f6b; border-color: #116f6b; }
+.pay-card-footer .btn:not(.btn-outline):hover { background: #0b5d59; border-color: #0b5d59; }
 
 /* Success screen */
 .pay-success {
@@ -888,14 +870,12 @@
                 <button class="pay-key" data-key="9">9</button>
                 <button class="pay-key" data-key=".">.</button>
                 <button class="pay-key" data-key="0">0</button>
-                <button class="pay-key backspace" data-key="back">⌫</button>
+                <button class="pay-key backspace" data-key="back" aria-label="Backspace">⌫</button>
               </div>
-            </div>
-
-            <!-- Quick Amount Buttons -->
-            <div class="pay-quick-amounts" id="payQuickAmounts">
-              <div class="pay-quick-label">Quick Amounts</div>
-              <div class="pay-quick-pills" id="payQuickPills"></div>
+              <div class="pay-key-actions">
+                <button class="pay-key-action" id="payExactBtn">Exact Amount</button>
+                <button class="pay-key-action clear" id="payClearBtn">Clear</button>
+              </div>
             </div>
 
             <!-- Split Payment Section -->
@@ -973,11 +953,19 @@
     document.getElementById('payCancelBtn').addEventListener('click', closePaymentScreen);
     document.getElementById('payConfirmBtn').addEventListener('click', confirmPayment);
 
-    // Keypad
+    // Keypad and cash shortcuts
     document.getElementById('payKeypad').addEventListener('click', (e) => {
       const key = e.target.closest('.pay-key');
       if (!key) return;
       handleKeypadInput(key.dataset.key);
+    });
+    document.getElementById('payExactBtn').addEventListener('click', () => {
+      paymentReceivedStr = paymentGrandTotal.toFixed(2);
+      updatePaymentUI();
+    });
+    document.getElementById('payClearBtn').addEventListener('click', () => {
+      paymentReceivedStr = '0';
+      updatePaymentUI();
     });
 
     // Payment method pills
@@ -986,6 +974,7 @@
         document.querySelectorAll('.pay-method-pill').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         paymentMethod = btn.dataset.method;
+        if (paymentMethod !== 'cash') paymentReceivedStr = paymentGrandTotal.toFixed(2);
         toggleKeypadVisibility();
         updatePaymentUI();
       });
@@ -1354,9 +1343,6 @@
     // Set total display
     document.getElementById('payTotalDisplay').textContent = peso(paymentGrandTotal);
 
-    // Generate quick-amount pills (exact, round up to nearest 50/100/200/500/1000)
-    generateQuickAmounts(paymentGrandTotal);
-
     toggleKeypadVisibility();
     updatePaymentUI();
 
@@ -1367,38 +1353,9 @@
     document.getElementById('payScreen').classList.remove('active');
   }
 
-  function generateQuickAmounts(total) {
-    const pillsEl = document.getElementById('payQuickPills');
-    const amounts = [];
-    // Always include exact amount
-    amounts.push(Math.ceil(total));
-    // Round up to neat amounts
-    [50, 100, 200, 500, 1000].forEach(step => {
-      const rounded = Math.ceil(total / step) * step;
-      if (!amounts.includes(rounded) && rounded <= total * 3) amounts.push(rounded);
-    });
-    amounts.sort((a, b) => a - b);
-
-    pillsEl.innerHTML = amounts.slice(0, 6).map(amt =>
-      `<button class="pay-quick-pill" data-amount="${amt}">${peso(amt)}</button>`
-    ).join('');
-
-    pillsEl.querySelectorAll('.pay-quick-pill').forEach(btn => {
-      btn.addEventListener('click', () => {
-        paymentReceivedStr = String(Number(btn.dataset.amount));
-        updatePaymentUI();
-      });
-    });
-  }
-
   function toggleKeypadVisibility() {
-    const keypadArea = document.getElementById('payReceivedSection');
-    const quickArea = document.getElementById('payQuickAmounts');
-    // Show keypad for cash; for digital, we still show it for amount confirmation
-    // but label changes
-    const isCash = paymentMethod === 'cash';
-    keypadArea.style.display = '';
-    quickArea.style.display = isCash ? '' : 'none';
+    const receivedSection = document.getElementById('payReceivedSection');
+    receivedSection.style.display = splitMode ? 'none' : '';
   }
 
   function handleKeypadInput(key) {
@@ -1426,32 +1383,42 @@
 
   function updatePaymentUI() {
     const received = getEffectiveReceived();
-    const change = received - paymentGrandTotal;
-    const isSufficient = received >= paymentGrandTotal - 0.001;
+    const difference = received - paymentGrandTotal;
+    const splitAmountsValid = !splitMode || (
+      splitRows.length >= 2 &&
+      splitRows.every((row) => Number(row.amount) > 0)
+    );
+    const isValid = splitMode
+      ? splitAmountsValid && Math.abs(difference) < 0.01
+      : received >= paymentGrandTotal - 0.001;
 
-    // Display
     const displayEl = document.getElementById('payReceivedDisplay');
     displayEl.textContent = splitMode
       ? peso(received)
       : (paymentReceivedStr.endsWith('.') ? `₱${paymentReceivedStr}` : peso(received || 0));
-    displayEl.classList.toggle('insufficient', !isSufficient && received > 0);
+    displayEl.classList.toggle('insufficient', !isValid && received > 0);
 
-    // Change row
     document.getElementById('payChangeReceived').textContent = peso(received);
     document.getElementById('payChangeDue').textContent = peso(paymentGrandTotal);
     const changeEl = document.getElementById('payChangeValue');
-    changeEl.textContent = change >= 0 ? peso(change) : `-${peso(Math.abs(change))}`;
-    changeEl.className = 'change-value' + (change < 0 ? ' negative' : '');
+    const shownChange = splitMode ? 0 : difference;
+    changeEl.textContent = shownChange >= 0 ? peso(shownChange) : `-${peso(Math.abs(shownChange))}`;
+    changeEl.className = 'change-value' + (shownChange < 0 ? ' negative' : '');
 
-    // Validation
     const validEl = document.getElementById('payValidationMsg');
-    validEl.classList.toggle('visible', received > 0 && !isSufficient);
+    if (splitMode && !isValid) {
+      validEl.textContent = !splitAmountsValid
+        ? '⚠ Add at least two positive payment amounts.'
+        : `⚠ Split total must equal ${peso(paymentGrandTotal)} (${difference > 0 ? 'over' : 'short'} by ${peso(Math.abs(difference))}).`;
+    } else {
+      validEl.textContent = '⚠ Amount received is insufficient.';
+    }
+    validEl.classList.toggle('visible', splitMode ? !isValid : (received > 0 && !isValid));
 
-    // Confirm button
     const confirmBtn = document.getElementById('payConfirmBtn');
     if (confirmBtn) {
-      confirmBtn.disabled = !isSufficient;
-      confirmBtn.style.opacity = isSufficient ? '1' : '0.5';
+      confirmBtn.disabled = !isValid;
+      confirmBtn.style.opacity = isValid ? '1' : '0.5';
     }
   }
 
@@ -1460,10 +1427,13 @@
      ================================================================ */
   function openSplitPayment() {
     splitMode = true;
+    const firstAmount = Math.floor((paymentGrandTotal * 100) / 2) / 100;
     splitRows = [
-      { method: paymentMethod, amount: paymentGrandTotal },
+      { method: paymentMethod, amount: firstAmount },
+      { method: paymentMethod === 'cash' ? 'gcash' : 'cash', amount: Number((paymentGrandTotal - firstAmount).toFixed(2)) },
     ];
     document.getElementById('paySplitSection').classList.add('open');
+    toggleKeypadVisibility();
     renderSplitRows();
     updatePaymentUI();
   }
@@ -1472,6 +1442,7 @@
     splitMode = false;
     splitRows = [];
     document.getElementById('paySplitSection').classList.remove('open');
+    toggleKeypadVisibility();
     updatePaymentUI();
   }
 
@@ -1481,33 +1452,48 @@
     updatePaymentUI();
   }
 
+  function updateSplitTotal() {
+    const splitTotal = splitRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+    const difference = splitTotal - paymentGrandTotal;
+    const totalEl = document.getElementById('paySplitTotalDisplay');
+    totalEl.textContent = peso(splitTotal);
+    totalEl.className = Math.abs(difference) < 0.01 ? 'split-overage' : 'split-shortage';
+  }
+
   function renderSplitRows() {
     const container = document.getElementById('paySplitRows');
     container.innerHTML = splitRows.map((row, idx) => `
       <div class="pay-split-row">
-        <select data-idx="${idx}" class="split-method-sel">
+        <select data-idx="${idx}" class="split-method-sel" aria-label="Payment method ${idx + 1}">
           <option value="cash" ${row.method === 'cash' ? 'selected' : ''}>Cash</option>
           <option value="gcash" ${row.method === 'gcash' ? 'selected' : ''}>GCash</option>
         </select>
-        <input type="number" class="split-amount-inp" data-idx="${idx}" value="${row.amount}" min="0" step="0.01" placeholder="Amount">
-        <button class="remove-line-btn" data-idx="${idx}" style="width:auto; padding:4px 8px;">${splitRows.length > 1 ? '✕' : ''}</button>
+        <input type="number" class="split-amount-inp" data-idx="${idx}" value="${Number(row.amount).toFixed(2)}" min="0.01" step="0.01" placeholder="Amount" aria-label="Payment amount ${idx + 1}">
+        <button class="remove-line-btn" data-idx="${idx}" style="width:auto; padding:4px 8px;" ${splitRows.length <= 2 ? 'disabled' : ''} aria-label="Remove payment">${splitRows.length > 2 ? '✕' : ''}</button>
       </div>`).join('');
 
-    const splitTotal = splitRows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
-    const diff = splitTotal - paymentGrandTotal;
-    const diffEl = document.getElementById('paySplitTotalDisplay');
-    diffEl.textContent = peso(splitTotal);
-    diffEl.className = diff >= 0 ? 'split-overage' : 'split-shortage';
+    updateSplitTotal();
 
     container.querySelectorAll('.split-method-sel').forEach(sel => {
-      sel.addEventListener('change', () => { splitRows[Number(sel.dataset.idx)].method = sel.value; renderSplitRows(); updatePaymentUI(); });
+      sel.addEventListener('change', () => {
+        splitRows[Number(sel.dataset.idx)].method = sel.value;
+        updatePaymentUI();
+      });
     });
     container.querySelectorAll('.split-amount-inp').forEach(inp => {
-      inp.addEventListener('input', () => { splitRows[Number(inp.dataset.idx)].amount = Number(inp.value) || 0; renderSplitRows(); updatePaymentUI(); });
+      inp.addEventListener('input', () => {
+        splitRows[Number(inp.dataset.idx)].amount = Number(inp.value) || 0;
+        updateSplitTotal();
+        updatePaymentUI();
+      });
     });
     container.querySelectorAll('.remove-line-btn[data-idx]').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (splitRows.length > 1) { splitRows.splice(Number(btn.dataset.idx), 1); renderSplitRows(); updatePaymentUI(); }
+        if (splitRows.length > 2) {
+          splitRows.splice(Number(btn.dataset.idx), 1);
+          renderSplitRows();
+          updatePaymentUI();
+        }
       });
     });
   }
@@ -1517,7 +1503,11 @@
      ================================================================ */
   async function confirmPayment() {
     const received = getEffectiveReceived();
-    if (received < paymentGrandTotal - 0.001) {
+    const splitIsValid = splitMode && splitRows.length >= 2 &&
+      splitRows.every((row) => Number(row.amount) > 0) &&
+      Math.abs(received - paymentGrandTotal) < 0.01;
+    if ((!splitMode && received < paymentGrandTotal - 0.001) || (splitMode && !splitIsValid)) {
+      updatePaymentUI();
       document.getElementById('payValidationMsg').classList.add('visible');
       return;
     }
@@ -1526,22 +1516,27 @@
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Processing…';
 
+    const completedPaymentMethod = splitMode ? 'split' : paymentMethod;
     try {
-      const finalPaymentMethod = splitMode ? 'split' : paymentMethod;
       const res = await adminFetch('/api/admin/sales/pos/orders', {
         method: 'POST',
         body: JSON.stringify({
           ...pendingOrderParams,
-          payment_method: finalPaymentMethod,
+          payment_method: paymentMethod,
+          payments: splitMode
+            ? splitRows.map((row) => ({
+                payment_method: row.method,
+                amount: Number(Number(row.amount).toFixed(2)),
+              }))
+            : undefined,
           amount_received: received,
-          change_given: parseFloat((received - paymentGrandTotal).toFixed(2)),
+          change_given: splitMode ? 0 : parseFloat((received - paymentGrandTotal).toFixed(2)),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not place order.');
 
-      // Show success screen
-      showSuccessScreen(data.order, received);
+      showSuccessScreen(data.order, received, completedPaymentMethod);
       clearOrder();
       loadMenu();
       loadAddons();
@@ -1555,20 +1550,21 @@
     }
   }
 
-  function showSuccessScreen(order, amountReceived) {
-    const change = amountReceived - paymentGrandTotal;
+  function showSuccessScreen(order, amountReceived, completedPaymentMethod) {
+    const change = completedPaymentMethod === 'split' ? 0 : amountReceived - paymentGrandTotal;
     const orderId = order ? order.id : '—';
-    const orderTotal = order ? order.total_amount : paymentGrandTotal;
+    const orderTotal = order ? Number(order.total_amount) : paymentGrandTotal;
+    const deliveryFee = Number(pendingOrderParams.delivery_fee) || 0;
     const methodLabel = { cash: 'Cash', gcash: 'GCash', split: 'Split Payment' };
 
     document.getElementById('paySuccessTxnId').textContent = `Transaction #${orderId}`;
     document.getElementById('payReceiptTable').innerHTML = `
-      <tr><td style="color:var(--ink-muted)">Subtotal</td><td>${peso(orderTotal)}</td></tr>
-      <tr><td style="color:var(--ink-muted)">Delivery Fee</td><td>${peso(pendingOrderParams.delivery_fee || 0)}</td></tr>
+      <tr><td style="color:var(--ink-muted)">Subtotal</td><td>${peso(orderTotal - deliveryFee)}</td></tr>
+      <tr><td style="color:var(--ink-muted)">Delivery Fee</td><td>${peso(deliveryFee)}</td></tr>
       <tr class="grand-row"><td>Grand Total</td><td>${peso(paymentGrandTotal)}</td></tr>
       <tr><td style="color:var(--ink-muted)">Amount Paid</td><td>${peso(amountReceived)}</td></tr>
       <tr class="change-row"><td style="color:var(--ink-muted)">Change</td><td>${peso(Math.max(0, change))}</td></tr>
-      <tr><td style="color:var(--ink-muted)">Payment Method</td><td>${methodLabel[paymentMethod] || paymentMethod}</td></tr>
+      <tr><td style="color:var(--ink-muted)">Payment Method</td><td>${methodLabel[completedPaymentMethod] || completedPaymentMethod}</td></tr>
     `;
 
     document.getElementById('paySuccess').classList.add('active');
