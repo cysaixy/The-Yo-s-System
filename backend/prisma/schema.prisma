@@ -164,17 +164,19 @@ model InventoryItem {
 
 model InventoryLog {
   id              Int      @id @default(autoincrement())
-  menuId          Int      @map("menu_id")
-  staffId         Int      @map("staff_id")
+  inventoryId     Int?     @map("inventory_id")
+  menuId          Int?     @map("menu_id")
+  staffId         Int?     @map("staff_id")
   stockInId       Int?     @map("stock_in_id")
   transactionType String   @map("transaction_type") @db.VarChar(30)
-  quantityChange  Int      @map("quantity_change")
+  quantityChange  Decimal  @map("quantity_change") @db.Decimal(10, 2)
   logDate         DateTime @default(now()) @map("log_date")
   remarks         String?
 
-  menuItem MenuItem @relation(fields: [menuId], references: [id])
-  staff    Staff    @relation(fields: [staffId], references: [id])
-  stockIn  StockIn? @relation(fields: [stockInId], references: [id])
+  inventoryItem InventoryItem? @relation(fields: [inventoryId], references: [id])
+  menuItem      MenuItem?      @relation(fields: [menuId], references: [id])
+  staff         Staff?         @relation(fields: [staffId], references: [id])
+  stockIn       StockIn?       @relation(fields: [stockInId], references: [id])
 
   @@map("inventory_log")
 }

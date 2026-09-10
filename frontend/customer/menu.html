@@ -93,14 +93,15 @@
 
     <p class="menu-photo-note" style="margin-top:-40px; margin-bottom:36px;">Tip: tap <strong style="color:var(--brass);">+ Add</strong> on anything you like — your picks are waiting for you when you check out.</p>
 
-    <div class="menu-tabs" role="tablist" aria-label="Menu categories">
+    <div class="menu-tabs" id="menuTabsContainer" role="tablist" aria-label="Menu categories">
       <button class="tab-btn active" data-tab="rice-meals-bowls" role="tab" aria-selected="true" aria-controls="rice-meals-bowls" id="tab-rice">Rice Meals &amp; Bowls</button>
       <button class="tab-btn" data-tab="wings-noodles-snacks" role="tab" aria-selected="false" aria-controls="wings-noodles-snacks" id="tab-wings">Wings, Noodles &amp; Snacks</button>
       <button class="tab-btn" data-tab="espresso-coffee" role="tab" aria-selected="false" aria-controls="espresso-coffee" id="tab-espresso">Espresso &amp; Coffee</button>
       <button class="tab-btn" data-tab="specialty-beverages" role="tab" aria-selected="false" aria-controls="specialty-beverages" id="tab-specialty">Specialty Beverages</button>
     </div>
 
-    <div class="menu-grid active" id="rice-meals-bowls" role="tabpanel" aria-labelledby="tab-rice">
+    <div id="menuGridsContainer">
+      <div class="menu-grid active" id="rice-meals-bowls" role="tabpanel" aria-labelledby="tab-rice">
       <div class="menu-item" data-id="pork-sisig-rice-meal" data-name="Pork Sisig Rice Meal" data-price="100">
         <div class="item-photo">
           <img src="../pics&vids/menu/pork-sisig-rice-meal.jpg" alt="Pork Sisig Rice Meal" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">
@@ -1312,6 +1313,7 @@
       </div>
     </div>
   </div>
+  </div>
 </section>
 
 <footer>
@@ -1344,46 +1346,162 @@
 
 <script>
   (function () {
-    const tabs = document.querySelectorAll('.tab-btn');
-    const grids = document.querySelectorAll('.menu-grid');
+    const tabsContainer = document.getElementById('menuTabsContainer');
+    const gridsContainer = document.getElementById('menuGridsContainer');
 
-    function activateTab(tabId) {
-      tabs.forEach(b => {
-        const isActive = b.dataset.tab === tabId;
-        b.classList.toggle('active', isActive);
-        b.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      });
-      grids.forEach(g => g.classList.toggle('active', g.id === tabId));
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>'"]/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[c]));
     }
 
-    tabs.forEach(btn => {
-      btn.addEventListener('click', () => {
-        activateTab(btn.dataset.tab);
-        // Update hash without jumping
-        history.replaceState(null, '', '#' + btn.dataset.tab);
-      });
-    });
+    function slugify(str) {
+      return String(str || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
 
-    // On page load: read hash and activate the matching tab
-    function initFromHash() {
+    function isDrinkCategory(name) {
+      const lower = String(name || '').toLowerCase();
+      return lower.includes('coffee') || lower.includes('beverage') || lower.includes('drink') || lower.includes('tea') || lower.includes('frappe') || lower.includes('espresso');
+    }
+
+    function bindTabEvents() {
+      const tabs = tabsContainer ? tabsContainer.querySelectorAll('.tab-btn') : document.querySelectorAll('.tab-btn');
+      const grids = gridsContainer ? gridsContainer.querySelectorAll('.menu-grid') : document.querySelectorAll('.menu-grid');
+
+      function activateTab(tabId) {
+        tabs.forEach(b => {
+          const isActive = b.dataset.tab === tabId;
+          b.classList.toggle('active', isActive);
+          b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+        grids.forEach(g => g.classList.toggle('active', g.id === tabId));
+      }
+
+      tabs.forEach(btn => {
+        btn.onclick = () => {
+          activateTab(btn.dataset.tab);
+          history.replaceState(null, '', '#' + btn.dataset.tab);
+        };
+      });
+
+      // Check URL hash
       const hash = (window.location.hash || '').replace('#', '');
       const validIds = Array.from(tabs).map(b => b.dataset.tab);
       if (hash && validIds.includes(hash)) {
         activateTab(hash);
-        // Smooth scroll to the top of the menu section
         const grid = document.getElementById(hash);
         if (grid) {
-          setTimeout(() => {
-            grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 80);
+          setTimeout(() => grid.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
         }
       }
     }
 
+    // Initial binding for static markup
+    bindTabEvents();
+
+    // Fetch dynamic menu from server so newly added items (like TEST) and categories render automatically
+    async function fetchAndRenderLiveMenu() {
+      try {
+        const res = await fetch('/api/customer/menu');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !Array.isArray(data.categories) || !Array.isArray(data.items) || data.categories.length === 0) return;
+
+        // Preferred order for canonical categories
+        const PREFERRED_ORDER = [
+          'rice-meals-bowls',
+          'wings-noodles-snacks',
+          'espresso-coffee',
+          'specialty-beverages'
+        ];
+
+        const sortedCategories = [...data.categories].sort((a, b) => {
+          const slugA = slugify(a.name);
+          const slugB = slugify(b.name);
+          const idxA = PREFERRED_ORDER.indexOf(slugA);
+          const idxB = PREFERRED_ORDER.indexOf(slugB);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return a.id - b.id;
+        });
+
+        // Group items by category_id
+        const itemsByCat = new Map();
+        sortedCategories.forEach(c => itemsByCat.set(c.id, []));
+        data.items.forEach(item => {
+          if ((item.status || 'available').toLowerCase() !== 'available') return;
+          if (itemsByCat.has(item.category_id)) {
+            itemsByCat.get(item.category_id).push(item);
+          } else {
+            itemsByCat.set(item.category_id, [item]);
+          }
+        });
+
+        // Current active tab slug
+        const activeTabBtn = tabsContainer ? tabsContainer.querySelector('.tab-btn.active') : null;
+        let activeSlug = (window.location.hash || '').replace('#', '') || (activeTabBtn ? activeTabBtn.dataset.tab : slugify(sortedCategories[0]?.name));
+
+        // Rebuild tabs
+        if (tabsContainer) {
+          tabsContainer.innerHTML = sortedCategories.map((cat, idx) => {
+            const slug = slugify(cat.name);
+            const isActive = slug === activeSlug || (!activeSlug && idx === 0);
+            return `<button class="tab-btn ${isActive ? 'active' : ''}" data-tab="${slug}" role="tab" aria-selected="${isActive ? 'true' : 'false'}" aria-controls="${slug}">${escapeHtml(cat.name)}</button>`;
+          }).join('');
+        }
+
+        // Rebuild grids
+        if (gridsContainer) {
+          gridsContainer.innerHTML = sortedCategories.map((cat, idx) => {
+            const slug = slugify(cat.name);
+            const isActive = slug === activeSlug || (!activeSlug && idx === 0);
+            const catItems = itemsByCat.get(cat.id) || [];
+            const isDrink = isDrinkCategory(cat.name);
+
+            const iconSvg = isDrink
+              ? '<svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5h0A5.5 5.5 0 0 1 6 14V8Z"/><path d="M17 9.5h1.5a2 2 0 0 1 0 4H17"/><path d="M9 8c0-1.4-1-1.6-1-3M12 8c0-1.4-1-1.6-1-3" stroke-linecap="round"/></svg>'
+              : '<svg class="item-photo-icon" viewBox="0 0 24 24"><path d="M4 12h16M4 12a8 4 0 0 0 16 0M4 12a8 4 0 0 1 16 0"/></svg>';
+
+            const cardsHtml = catItems.length > 0
+              ? catItems.map(item => {
+                  const hasPhoto = Boolean(item.image_url && String(item.image_url).trim());
+                  return `
+                    <div class="menu-item" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}">
+                      <div class="item-photo ${hasPhoto ? '' : 'no-photo'}">
+                        ${hasPhoto ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" loading="lazy" onerror="this.remove(); this.parentElement.classList.add('no-photo');">` : ''}
+                        ${iconSvg}
+                      </div>
+                      <div class="item-main">
+                        <div class="item-text">
+                          <span class="name">${escapeHtml(item.name)}</span>
+                          ${item.description ? `<span class="desc">${escapeHtml(item.description)}</span>` : ''}
+                        </div>
+                        <div class="item-buy">
+                          <span class="price">₱${Number(item.price).toFixed(0)}</span>
+                          <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')
+              : '<div style="grid-column: 1/-1; text-align: center; opacity: 0.6; padding: 40px; font-family: Inter, sans-serif;">No products currently available in this category.</div>';
+
+            return `<div class="menu-grid ${isActive ? 'active' : ''}" id="${slug}" role="tabpanel">${cardsHtml}</div>`;
+          }).join('');
+        }
+
+        // Rebind tab listeners to newly rendered elements
+        bindTabEvents();
+      } catch (err) {
+        console.warn('Could not load dynamic menu from API:', err);
+      }
+    }
+
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initFromHash);
+      document.addEventListener('DOMContentLoaded', fetchAndRenderLiveMenu);
     } else {
-      initFromHash();
+      fetchAndRenderLiveMenu();
     }
   })();
 </script>
