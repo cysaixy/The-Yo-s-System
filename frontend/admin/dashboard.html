@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Poppins:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=5">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
   /* ---------- Section headers ---------- */
   .dash-section { margin-bottom: 30px; }
@@ -18,21 +18,21 @@
     font-size: 1.02rem; letter-spacing: 0.02em; margin: 0;
   }
   .dash-section-head .dash-sub {
-    font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase;
     opacity: 0.5; letter-spacing: 0.05em;
   }
 
   /* ---------- Stat cards ---------- */
-  .stat-card .stat-note { margin-top: 4px; font-family: 'Space Mono', monospace; font-size: 0.68rem; opacity: 0.55; }
+  .stat-card .stat-note { margin-top: 4px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.68rem; opacity: 0.55; }
   .stat-card .value.warning { color: var(--warning); }
 
   /* ---------- Tables ---------- */
   .admin-table-wrap { overflow-x: auto; }
   .admin-table td.r, .admin-table th.r { text-align: right; }
-  .admin-table td.amt { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--brass-dark); white-space: nowrap; }
+  .admin-table td.amt { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; color: var(--brass-dark); white-space: nowrap; }
   .admin-table td.rank { color: var(--brass); font-weight: 800; }
   .admin-table td.muted { opacity: 0.6; }
-  .admin-table td .sub-line { display: block; font-size: 0.72rem; opacity: 0.55; font-family: 'Space Mono', monospace; }
+  .admin-table td .sub-line { display: block; font-size: 0.72rem; opacity: 0.55; font-family: 'Plus Jakarta Sans', sans-serif; }
 
   /* ---------- Sales breakdown ---------- */
   .breakdown-grid { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: center; }
@@ -50,9 +50,9 @@
   .type-head { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; flex-wrap: wrap; }
   .type-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .type-name { flex: 1; font-weight: 600; }
-  .type-orders { font-family: 'Space Mono', monospace; font-size: 0.7rem; opacity: 0.55; }
-  .type-amt { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--brass-dark); }
-  .type-pct { font-family: 'Space Mono', monospace; font-size: 0.72rem; opacity: 0.6; width: 40px; text-align: right; }
+  .type-orders { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; opacity: 0.55; }
+  .type-amt { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; color: var(--brass-dark); }
+  .type-pct { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; opacity: 0.6; width: 40px; text-align: right; }
   .type-track { height: 6px; background: var(--stone); border-radius: 4px; margin-top: 6px; overflow: hidden; }
   .type-fill { height: 100%; border-radius: 4px; }
 
@@ -60,7 +60,7 @@
   .target-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .target-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; flex: 1; }
   .target-cell { min-width: 0; }
-  .target-cell .label { font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase; opacity: 0.55; }
+  .target-cell .label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; text-transform: uppercase; opacity: 0.55; }
   .target-cell .target-value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.35rem; margin-top: 4px; overflow-wrap: anywhere; }
   .target-cell .target-value.brass { color: var(--brass-dark); }
   .target-cell .target-value .muted { font-size: 0.8rem; opacity: 0.45; font-weight: 600; }
@@ -73,7 +73,7 @@
   }
   .progress-labels {
     display: flex; justify-content: space-between; margin-top: 8px;
-    font-family: 'Space Mono', monospace; font-size: 0.68rem; opacity: 0.6;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.68rem; opacity: 0.6;
     text-transform: uppercase; letter-spacing: 0.03em;
     flex-wrap: wrap; gap: 4px 12px;
   }
@@ -81,11 +81,11 @@
   /* ---------- Charts ---------- */
   .chart-wrap { width: 100%; }
   .chart-wrap svg { width: 100%; height: auto; display: block; }
-  .chart-label { font-family: 'Space Mono', monospace; font-size: 10px; fill: #96928a; }
+  .chart-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; fill: #96928a; }
   .chart-legend-row { margin-bottom: 10px; }
   .chart-legend {
     display: inline-flex; align-items: center; gap: 6px; margin-right: 18px;
-    font-family: 'Space Mono', monospace; font-size: 0.7rem; text-transform: uppercase; opacity: 0.7;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; text-transform: uppercase; opacity: 0.7;
   }
   .chart-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 
@@ -101,7 +101,7 @@
     gap: 14px; margin-bottom: 14px;
   }
   .live-orders-title { display: flex; align-items: center; gap: 10px; }
-  .live-orders-title h2 { margin: 0; font: 700 1rem 'Poppins', sans-serif; color: #39435c; }
+  .live-orders-title h2 { margin: 0; font: 700 1rem 'Plus Jakarta Sans', sans-serif; color: #39435c; }
   .live-orders-title p { margin: 2px 0 0; font-size: .72rem; color: #858b99; }
   .live-indicator {
     width: 9px; height: 9px; border-radius: 50%; background: #2e7d4f;

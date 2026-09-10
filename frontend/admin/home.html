@@ -6,24 +6,28 @@
 <meta http-equiv="refresh" content="0; url=dashboard.html">
 <link rel="canonical" href="dashboard.html">
 <title>Dashboard — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=5">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
   .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
   @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
 
   .section-gap { margin-top: 20px; }
   .panel-sub {
-    font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase;
     letter-spacing: 0.05em; opacity: 0.5;
   }
   .panel-body-flush { padding: 0; }
 
   /* ---------- Inventory overview ---------- */
   .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
-  .mini-card { background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; }
+  .mini-card {
+    background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px;
+    transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  }
+  .mini-card:hover { background: var(--stone-hover); border-color: var(--line-strong); transform: translateY(-2px); }
   .mini-card .label {
-    font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
     letter-spacing: 0.05em; opacity: 0.55;
   }
   .mini-card .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.7rem; margin-top: 4px; }
@@ -34,21 +38,22 @@
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px;
     font-size: 0.78rem; border-top: 1px solid var(--line); padding-top: 14px;
   }
-  .stock-legend span { display: flex; align-items: center; gap: 8px; }
+  .stock-legend span { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 5px; transition: background var(--transition-fast); }
+  .stock-legend span:hover { background: var(--stone); }
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-  .legend-count { margin-left: auto; font-family: 'Space Mono', monospace; font-weight: 700; }
+  .legend-count { margin-left: auto; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; }
 
   /* ---------- Tables ---------- */
   .admin-table-wrap { overflow-x: auto; }
   .admin-table td.r, .admin-table th.r { text-align: right; }
   .admin-table td.rank { color: var(--brass); font-weight: 800; width: 40px; }
-  .admin-table td.qty { font-family: 'Space Mono', monospace; white-space: nowrap; }
+  .admin-table td.qty { font-family: 'Plus Jakarta Sans', sans-serif; white-space: nowrap; }
   .admin-table td.qty .mul { opacity: 0.45; }
   .admin-table td.amt {
-    font-family: 'Space Mono', monospace; font-weight: 700; color: var(--brass-dark); white-space: nowrap;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; color: var(--brass-dark); white-space: nowrap;
   }
   .admin-table td.muted { opacity: 0.6; }
-  .admin-table td .sub-line { display: block; font-size: 0.72rem; opacity: 0.55; font-family: 'Space Mono', monospace; }
+  .admin-table td .sub-line { display: block; font-size: 0.72rem; opacity: 0.55; font-family: 'Plus Jakarta Sans', sans-serif; }
 
   /* ---------- Stock alert sub-heading ---------- */
   .alert-head {

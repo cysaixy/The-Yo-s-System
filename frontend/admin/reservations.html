@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reservations — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=5">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
   /* ================================================================
      RESERVATIONS — Scoped Design System
@@ -35,7 +35,7 @@
   }
 
   .res-filters .fb-label {
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.60rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -48,7 +48,7 @@
     border: 1px solid var(--line);
     border-radius: 8px;
     background: var(--stone);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.82rem;
     color: var(--ink);
     transition: border-color 0.15s ease;
@@ -90,7 +90,7 @@
     border: 1px solid var(--brass-dark);
     padding: 8px 16px;
     border-radius: 8px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
@@ -124,7 +124,7 @@
     border-radius: 20px;
     border: 1px solid var(--line);
     background: var(--component-bg);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.76rem;
     font-weight: 600;
     color: var(--ink);
@@ -150,7 +150,7 @@
     height: 18px;
     padding: 0 5px;
     border-radius: 10px;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.65rem;
     font-weight: 700;
   }
@@ -197,7 +197,7 @@
 
   .urgency-tag {
     display: inline-block;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.58rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -228,7 +228,7 @@
     text-decoration: underline;
   }
   .contact-cell .sub {
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.70rem;
     color: var(--ink-muted);
     opacity: 0.8;
@@ -237,7 +237,7 @@
   /* Table cell & Guest badge */
   .table-badge {
     display: inline-block;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.72rem;
     font-weight: 700;
     padding: 3px 8px;
@@ -254,7 +254,7 @@
     height: 24px;
     padding: 0 6px;
     border-radius: 6px;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.76rem;
     font-weight: 700;
     background: var(--stone);
@@ -283,7 +283,7 @@
     padding: 3px 9px;
     border-radius: 14px;
     font-size: 0.62rem;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -304,7 +304,7 @@
 
   /* Deadline indicator */
   .deadline-value {
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.74rem;
     font-weight: 600;
     white-space: nowrap;
@@ -326,7 +326,7 @@
     justify-content: center;
     padding: 4px 9px;
     border-radius: 6px;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -371,7 +371,7 @@
     padding: 12px 16px;
     border-top: 1px solid var(--line);
     background: #faf8f4;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.68rem;
     text-transform: uppercase;
     color: var(--ink-muted);
@@ -385,7 +385,7 @@
     font-size: 0.85rem;
   }
   .detail-list dt {
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.63rem;
     text-transform: uppercase;
     color: var(--ink-muted);
@@ -429,7 +429,7 @@
     padding: 8px 10px;
     border-bottom: 1px solid var(--line);
     background: var(--stone);
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.60rem;
     text-transform: uppercase;
     color: var(--ink-muted);
@@ -439,9 +439,9 @@
     border-bottom: 1px dashed var(--line);
   }
   .order-items-table .item-name { font-weight: 600; }
-  .order-items-table .item-qty { font-family: 'Space Mono', monospace; text-align: center; width: 60px; }
-  .order-items-table .item-price { font-family: 'Space Mono', monospace; text-align: right; width: 80px; }
-  .order-items-table .item-subtotal { font-family: 'Space Mono', monospace; text-align: right; width: 90px; font-weight: 700; color: var(--brass-dark); }
+  .order-items-table .item-qty { font-family: 'Plus Jakarta Sans', sans-serif; text-align: center; width: 60px; }
+  .order-items-table .item-price { font-family: 'Plus Jakarta Sans', sans-serif; text-align: right; width: 80px; }
+  .order-items-table .item-subtotal { font-family: 'Plus Jakarta Sans', sans-serif; text-align: right; width: 90px; font-weight: 700; color: var(--brass-dark); }
   .order-items-table .item-notes { font-size: 0.72rem; color: var(--ink-muted); margin-top: 2px; }
   .order-items-table .addon-row { font-size: 0.70rem; color: var(--brass-dark); padding-left: 14px; }
 
@@ -452,7 +452,7 @@
     margin-top: 12px;
     padding-top: 12px;
     border-top: 2px solid var(--ink);
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.90rem;
     font-weight: 700;
     color: var(--ink);
@@ -490,7 +490,7 @@
   .stepper .qty-val {
     min-width: 24px;
     text-align: center;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.78rem;
     font-weight: 700;
   }
@@ -499,7 +499,7 @@
   .toast {
     position: fixed; bottom: 22px; right: 22px; z-index: 250;
     background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 8px;
-    font-size: 0.84rem; font-family: 'Inter', sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+    font-size: 0.84rem; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,0.22);
     opacity: 0; transform: translateY(10px); pointer-events: none; transition: all 0.2s ease;
   }
   .toast.show { opacity: 1; transform: translateY(0); }
@@ -795,10 +795,10 @@
         <td>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span style="color:var(--ink-muted); opacity:0.5;">—</span>'}</td>
         <td>
           <div><strong>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}</strong>${tag}</div>
-          <div style="font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--ink-muted); margin-top:2px;">${r.reservation_time ? String(r.reservation_time).slice(0, 5) : '—'}</div>
+          <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.72rem; color:var(--ink-muted); margin-top:2px;">${r.reservation_time ? String(r.reservation_time).slice(0, 5) : '—'}</div>
         </td>
         <td style="text-align:center;"><span class="guests-badge">${r.guests}</span></td>
-        <td title="${formatDate(r.datetime_reserved)}" style="font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--ink-muted); white-space:nowrap;">
+        <td title="${formatDate(r.datetime_reserved)}" style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.72rem; color:var(--ink-muted); white-space:nowrap;">
           ${formatDate(r.datetime_reserved, { dateStyle: 'short', timeStyle: 'short' })}
         </td>
         <td><span class="res-status-pill ${STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></td>
@@ -1321,7 +1321,7 @@
               <div style="background:#fff; border:1px solid ${isSelected ? 'var(--brass)' : 'var(--line)'}; border-radius:8px; padding:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px;">
                   <strong style="font-size:0.80rem; line-height:1.2;">${escapeHtml(item.name)}</strong>
-                  <span style="font-family:'Space Mono',monospace; font-size:0.78rem; font-weight:700; color:var(--brass-dark); white-space:nowrap;">₱${Number(item.price).toFixed(2)}</span>
+                  <span style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.78rem; font-weight:700; color:var(--brass-dark); white-space:nowrap;">₱${Number(item.price).toFixed(2)}</span>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                   <div class="stepper" style="flex-shrink:0;">
@@ -1428,9 +1428,9 @@
         <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--line); font-size:0.82rem;">
           <div>
             <strong>${escapeHtml(data.menuItem.name)}</strong>
-            <span style="font-family:'Space Mono',monospace; color:var(--brass-dark); margin-left:6px;">× ${data.quantity}</span>
+            <span style="font-family:'Plus Jakarta Sans', sans-serif; color:var(--brass-dark); margin-left:6px;">× ${data.quantity}</span>
           </div>
-          <span style="font-family:'Space Mono',monospace; font-weight:700; color:var(--brass-dark);">
+          <span style="font-family:'Plus Jakarta Sans', sans-serif; font-weight:700; color:var(--brass-dark);">
             ₱${(subtotal + addonTotal).toFixed(2)}
           </span>
         </div>
@@ -1537,7 +1537,7 @@
           <dt>Guests</dt><dd><span class="guests-badge">${r.guests} guests</span></dd>
           <dt>Table</dt><dd>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span style="color:var(--ink-muted);">Not yet assigned</span>'}</dd>
           <dt>Status</dt><dd><span class="res-status-pill ${STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></dd>
-          <dt>Requested</dt><dd style="font-family:'Space Mono',monospace; font-size:0.74rem;">${formatDate(r.datetime_reserved)}</dd>
+          <dt>Requested</dt><dd style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.74rem;">${formatDate(r.datetime_reserved)}</dd>
           <dt>Notes</dt><dd style="white-space:pre-wrap; font-size:0.82rem;">${r.notes ? escapeHtml(r.notes) : '—'}</dd>
         </div>
         <div class="modal-close-row"><button class="btn" id="detailsClose">Close</button></div>

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Products, Add-Ons & Bundles — The~Yo's Admin</title>
 <meta name="description" content="Manage The~Yo's menu products, add-ons, and combo bundles with inventory connections.">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=5">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
 /* ================================================================
    PRODUCTS PAGE — Scoped styles (.prd-* namespace)
@@ -32,7 +32,7 @@
 }
 .prd-header-search input {
   padding: 9px 12px 9px 32px; border: 1px solid var(--line); border-radius: 7px;
-  background: #fff; font-family: 'Inter', sans-serif; font-size: 0.83rem;
+  background: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.83rem;
   color: var(--ink); outline: none; width: 230px; transition: border-color .15s;
 }
 .prd-header-search input:focus { border-color: var(--brass); }
@@ -40,7 +40,7 @@
 /* ---- Buttons ---- */
 .prd-btn {
   display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px;
-  border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.83rem;
+  border-radius: 7px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.83rem;
   font-weight: 600; cursor: pointer; border: 1px solid; transition: all .15s; white-space: nowrap;
 }
 .prd-btn-gold  { background: var(--brass); color: #fff; border-color: var(--brass); }
@@ -61,7 +61,7 @@
   padding: 18px 20px; display: flex; flex-direction: column; gap: 6px;
 }
 .prd-stat-card .psc-label {
-  font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
   letter-spacing: 0.08em; color: var(--ink); opacity: 0.5;
 }
 .prd-stat-card .psc-value {
@@ -77,7 +77,7 @@
   border-bottom: 2px solid var(--line); margin-bottom: 22px;
 }
 .prd-tab {
-  padding: 10px 20px; font-family: 'Inter', sans-serif; font-size: 0.84rem; font-weight: 600;
+  padding: 10px 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.84rem; font-weight: 600;
   color: var(--ink); opacity: 0.5; cursor: pointer; border: none; background: none;
   border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; white-space: nowrap;
 }
@@ -96,7 +96,7 @@
 }
 .prd-sub-tab {
   padding: 7px 16px; border-radius: 6px; border: none; background: none;
-  font-family: 'Inter', sans-serif; font-size: 0.80rem; font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.80rem; font-weight: 600;
   color: var(--ink); opacity: 0.55; cursor: pointer; transition: all .15s; white-space: nowrap;
 }
 .prd-sub-tab:hover { opacity: 0.85; }
@@ -116,18 +116,18 @@
 }
 .prd-search {
   width: 100%; padding: 9px 12px 9px 33px; border: 1px solid var(--line); border-radius: 7px;
-  background: #fff; font-family: 'Inter', sans-serif; font-size: 0.84rem; color: var(--ink);
+  background: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.84rem; color: var(--ink);
   outline: none; transition: border-color .15s;
 }
 .prd-search:focus { border-color: var(--brass); }
 .prd-filter-group { display: flex; align-items: center; gap: 8px; }
 .prd-filter-label {
-  font-family: 'Space Mono', monospace; font-size: 0.63rem; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.63rem; text-transform: uppercase;
   letter-spacing: 0.06em; opacity: 0.45;
 }
 .prd-select {
   padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px;
-  background: #fff; font-family: 'Inter', sans-serif; font-size: 0.82rem;
+  background: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem;
   color: var(--ink); cursor: pointer; outline: none; transition: border-color .15s;
 }
 .prd-select:focus { border-color: var(--brass); }
@@ -141,7 +141,7 @@
 .prd-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 0.84rem; }
 .prd-table thead tr { background: var(--stone); border-bottom: 1px solid var(--line); }
 .prd-table th {
-  padding: 11px 16px; text-align: left; font-family: 'Space Mono', monospace;
+  padding: 11px 16px; text-align: left; font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.61rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55;
   font-weight: 700; white-space: nowrap;
 }
@@ -153,13 +153,13 @@
 .prd-table tbody tr:hover td { background: rgba(163,132,74,0.04); }
 .prd-table .item-name { font-weight: 600; }
 .prd-table .item-desc { font-size: 0.76rem; opacity: 0.5; margin-top: 2px; }
-.prd-table .price-val { font-family: 'Space Mono', monospace; font-size: 0.84rem; }
-.prd-table .stock-qty { font-family: 'Space Mono', monospace; font-weight: 700; }
+.prd-table .price-val { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.84rem; }
+.prd-table .stock-qty { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; }
 
 /* ---- Status badges ---- */
 .prd-badge {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 10px; border-radius: 20px; font-family: 'Space Mono', monospace;
+  padding: 3px 10px; border-radius: 20px; font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.60rem; font-weight: 700; text-transform: uppercase; white-space: nowrap;
 }
 .badge-available { background: rgba(46,125,79,0.12);  color: #1e6b41; }
@@ -184,7 +184,7 @@
 .prd-action-dropdown.open { display: block; }
 .prd-action-dropdown button {
   width: 100%; text-align: left; padding: 10px 14px; border: none; background: none;
-  font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem; font-weight: 500; cursor: pointer;
   color: var(--ink); display: flex; align-items: center; gap: 9px; transition: background .1s;
 }
 .prd-action-dropdown button:hover { background: var(--stone); }
@@ -324,12 +324,12 @@
 .prd-form-field { display: flex; flex-direction: column; gap: 5px; }
 .prd-form-field.span2 { grid-column: 1 / -1; }
 .prd-form-field label {
-  font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
   letter-spacing: 0.06em; opacity: 0.55;
 }
 .prd-form-field input, .prd-form-field select, .prd-form-field textarea {
   padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px;
-  font-family: 'Inter', sans-serif; font-size: 0.84rem; background: var(--bone);
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.84rem; background: var(--bone);
   color: var(--ink); outline: none; transition: border-color .15s;
   box-sizing: border-box; width: 100%; max-width: 100%;
 }
@@ -734,7 +734,7 @@ function buildPageHTML() {
 
       <div class="prd-form-field">
         <label>Regular Price Total</label>
-        <input type="text" id="bundleRegTotal" readonly style="background:var(--stone); font-family:'Space Mono',monospace; font-weight:700;" value="₱0.00">
+        <input type="text" id="bundleRegTotal" readonly style="background:var(--stone); font-family:'Plus Jakarta Sans', sans-serif; font-weight:700;" value="₱0.00">
       </div>
 
       <div class="prd-form-field">
@@ -749,7 +749,7 @@ function buildPageHTML() {
 
       <div class="prd-form-field">
         <label>Customer Savings</label>
-        <input type="text" id="bundleSavings" readonly style="background:var(--stone); font-family:'Space Mono',monospace; color:var(--success); font-weight:700;" value="₱0.00">
+        <input type="text" id="bundleSavings" readonly style="background:var(--stone); font-family:'Plus Jakarta Sans', sans-serif; color:var(--success); font-weight:700;" value="₱0.00">
       </div>
     </div>
     <div class="prd-error-msg" id="bundleError"></div>
@@ -978,7 +978,7 @@ function renderCategories() {
     return `
     <tr>
       <td><span style="font-weight:600;">${escapeHtml(c.name)}</span></td>
-      <td><span style="font-family:'Space Mono',monospace;">${count} products</span></td>
+      <td><span style="font-family:'Plus Jakarta Sans', sans-serif;">${count} products</span></td>
       <td>
         <div class="prd-action-wrap">
           <button class="prd-action-btn action-toggle" data-id="cat-${c.id}"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/></svg></button>

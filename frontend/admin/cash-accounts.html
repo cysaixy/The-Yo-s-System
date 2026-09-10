@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cash Accounts — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=5">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=6">
 </head>
 <body>
 
@@ -111,7 +111,7 @@
             <tr>
               <td>${escapeHtml(a.name)}</td>
               <td><span class="pill pill-neutral">${a.account_type}</span></td>
-              <td style="font-family:'Space Mono'; font-weight:700;">${peso(a.balance)}</td>
+              <td style="font-family:'Plus Jakarta Sans'; font-weight:700;">${peso(a.balance)}</td>
               <td><span class="pill ${a.status === 'active' ? 'pill-success' : 'pill-neutral'}">${a.status}</span></td>
               <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(a.created_at, { dateStyle: 'medium' })}</td>
               <td><div class="row-actions">

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventory — The~Yo's Admin</title>
 <meta name="description" content="Manage The~Yo's inventory — ingredients, raw materials, packaging, and supplies.">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=5">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
 /* ================================================================
    INVENTORY PAGE — Scoped styles (.inv-* namespace)
@@ -21,7 +21,7 @@
   margin-bottom: 24px;
 }
 .inv-tab {
-  padding: 10px 20px; font-family: 'Inter', sans-serif; font-size: 0.84rem;
+  padding: 10px 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.84rem;
   font-weight: 600; color: var(--ink); opacity: 0.55; cursor: pointer;
   border: none; background: none; border-bottom: 2px solid transparent;
   margin-bottom: -2px; transition: all .15s ease; white-space: nowrap;
@@ -45,7 +45,7 @@
   padding: 20px 22px; display: flex; flex-direction: column; gap: 6px;
 }
 .inv-stat-card .isc-label {
-  font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
   letter-spacing: 0.08em; color: var(--ink); opacity: 0.5;
 }
 .inv-stat-card .isc-value {
@@ -53,7 +53,7 @@
   line-height: 1; color: var(--ink);
 }
 .inv-stat-card .isc-value.gold { color: var(--brass-dark); }
-.inv-stat-card .isc-value.sm { font-size: 1.05rem; font-weight: 600; font-family: 'Inter', sans-serif; opacity: 0.75; }
+.inv-stat-card .isc-value.sm { font-size: 1.05rem; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; opacity: 0.75; }
 .inv-stat-card .isc-sub { font-size: 0.76rem; opacity: 0.5; margin-top: 2px; }
 
 /* ---- Status strip ---- */
@@ -63,7 +63,7 @@
   align-items: center; margin-bottom: 22px;
 }
 .inv-status-strip .strip-label {
-  font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
   letter-spacing: 0.07em; opacity: 0.45; margin-right: 4px;
 }
 .inv-status-item {
@@ -88,7 +88,7 @@
 }
 .inv-sub-tab {
   padding: 7px 16px; border-radius: 6px; border: none; background: none;
-  font-family: 'Inter', sans-serif; font-size: 0.80rem; font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.80rem; font-weight: 600;
   color: var(--ink); opacity: 0.55; cursor: pointer; transition: all .15s ease;
   white-space: nowrap;
 }
@@ -114,7 +114,7 @@
 }
 .inv-search {
   width: 100%; padding: 9px 12px 9px 34px; border: 1px solid var(--line);
-  border-radius: 7px; background: #fff; font-family: 'Inter', sans-serif;
+  border-radius: 7px; background: #fff; font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.84rem; color: var(--ink); outline: none; transition: border-color .15s;
 }
 .inv-search:focus { border-color: var(--brass); }
@@ -122,12 +122,12 @@
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
 .inv-filter-label {
-  font-family: 'Space Mono', monospace; font-size: 0.63rem; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.63rem; text-transform: uppercase;
   letter-spacing: 0.06em; opacity: 0.45;
 }
 .inv-select {
   padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px;
-  background: #fff; font-family: 'Inter', sans-serif; font-size: 0.82rem;
+  background: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem;
   color: var(--ink); cursor: pointer; outline: none; transition: border-color .15s;
 }
 .inv-select:focus { border-color: var(--brass); }
@@ -145,7 +145,7 @@
 }
 .inv-table th {
   padding: 11px 16px; text-align: left;
-  font-family: 'Space Mono', monospace; font-size: 0.61rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.61rem;
   text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55;
   font-weight: 700; white-space: nowrap;
 }
@@ -159,21 +159,21 @@
 .inv-table .item-name { font-weight: 600; }
 .inv-table .item-cat { font-size: 0.77rem; opacity: 0.5; margin-top: 2px; }
 .inv-table .stock-qty {
-  font-family: 'Space Mono', monospace; font-weight: 700; font-size: 0.9rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.9rem;
 }
 .inv-table .price-val {
-  font-family: 'Space Mono', monospace; font-size: 0.82rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem;
 }
 .inv-table .unit-label {
-  font-size: 0.75rem; opacity: 0.65; font-family: 'Space Mono', monospace;
+  font-size: 0.75rem; opacity: 0.65; font-family: 'Plus Jakarta Sans', sans-serif;
 }
-.inv-table .reorder-val { font-size: 0.78rem; opacity: 0.6; font-family: 'Space Mono', monospace; }
+.inv-table .reorder-val { font-size: 0.78rem; opacity: 0.6; font-family: 'Plus Jakarta Sans', sans-serif; }
 
 /* ---- Status badges ---- */
 .inv-badge {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 10px; border-radius: 20px;
-  font-family: 'Space Mono', monospace; font-size: 0.60rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.60rem;
   font-weight: 700; text-transform: uppercase; white-space: nowrap;
 }
 .badge-instock  { background: rgba(46,125,79,0.12);   color: #1e6b41; }
@@ -199,7 +199,7 @@
 .inv-action-dropdown.open { display: block; }
 .inv-action-dropdown button {
   width: 100%; text-align: left; padding: 10px 14px; border: none;
-  background: none; font-family: 'Inter', sans-serif; font-size: 0.82rem;
+  background: none; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem;
   font-weight: 500; cursor: pointer; color: var(--ink);
   display: flex; align-items: center; gap: 9px; transition: background .1s;
 }
@@ -255,12 +255,12 @@
 .inv-form-field { display: flex; flex-direction: column; gap: 5px; }
 .inv-form-field.span2 { grid-column: 1 / -1; }
 .inv-form-field label {
-  font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
   letter-spacing: 0.06em; opacity: 0.55;
 }
 .inv-form-field input, .inv-form-field select, .inv-form-field textarea {
   padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px;
-  font-family: 'Inter', sans-serif; font-size: 0.84rem; background: var(--bone);
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.84rem; background: var(--bone);
   color: var(--ink); outline: none; transition: border-color .15s;
 }
 .inv-form-field input:focus, .inv-form-field select:focus, .inv-form-field textarea:focus {
@@ -298,7 +298,7 @@
 }
 .inv-header-search input {
   padding: 9px 12px 9px 32px; border: 1px solid var(--line); border-radius: 7px;
-  background: #fff; font-family: 'Inter', sans-serif; font-size: 0.83rem;
+  background: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.83rem;
   color: var(--ink); outline: none; width: 220px; transition: border-color .15s;
 }
 .inv-header-search input:focus { border-color: var(--brass); }
@@ -307,7 +307,7 @@
 .inv-add-btn {
   display: inline-flex; align-items: center; gap: 7px;
   background: var(--brass); color: #fff; border: 1px solid var(--brass);
-  padding: 9px 16px; border-radius: 7px; font-family: 'Inter', sans-serif;
+  padding: 9px 16px; border-radius: 7px; font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: all .15s;
   white-space: nowrap;
 }
@@ -316,7 +316,7 @@
 
 .inv-btn {
   display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px;
-  border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.83rem;
+  border-radius: 7px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.83rem;
   font-weight: 600; cursor: pointer; border: 1px solid; transition: all .15s;
 }
 .inv-btn-gold { background: var(--brass); color: #fff; border-color: var(--brass); }
@@ -1115,7 +1115,7 @@ function renderLogTable(wrap, entries) {
           <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(e.log_date)}</td>
           <td><span style="font-weight:600;">${escapeHtml(e.item_name)}</span></td>
           <td><span class="pill pill-neutral">${escapeHtml(e.transaction_type)}</span></td>
-          <td style="font-family:'Space Mono',monospace;font-weight:700;color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'};">
+          <td style="font-family:'Plus Jakarta Sans', sans-serif;font-weight:700;color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'};">
             ${e.quantity_change > 0 ? '+' : ''}${e.quantity_change}
           </td>
           <td>${escapeHtml(e.staff_name || '—')}</td>

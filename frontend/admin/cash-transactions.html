@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cash Transactions — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=5">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=6">
 </head>
 <body>
 
@@ -116,7 +116,7 @@
                 <td>${escapeHtml(t.account_name)}</td>
                 <td><span class="pill ${t.transaction_type === 'in' ? 'pill-success' : 'pill-danger'}">${t.transaction_type === 'in' ? 'Cash In' : 'Cash Out'}</span></td>
                 <td>${escapeHtml(t.category || '—')}</td>
-                <td style="font-family:'Space Mono'; font-weight:700; color:${t.transaction_type === 'in' ? 'var(--success)' : 'var(--danger)'};">${t.transaction_type === 'in' ? '+' : '-'}${peso(t.amount)}</td>
+                <td style="font-family:'Plus Jakarta Sans'; font-weight:700; color:${t.transaction_type === 'in' ? 'var(--success)' : 'var(--danger)'};">${t.transaction_type === 'in' ? '+' : '-'}${peso(t.amount)}</td>
                 <td>${t.staff_name || '—'}</td>
                 <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(t.transaction_date)}</td>
                 <td style="font-size:0.8rem; color:var(--ink-muted); max-width:200px;">${escapeHtml(t.description || '—')}</td>

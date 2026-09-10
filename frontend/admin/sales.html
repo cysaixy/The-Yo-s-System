@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sales Transactions — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=5">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
   /* ============================================================
      SALES TRANSACTIONS — scoped design system (gold/brown theme)
      ============================================================ */
   .stx-tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--line); margin-bottom: 22px; }
   .stx-tab {
-    padding: 11px 20px; font-family: 'Inter', sans-serif; font-size: 0.86rem; font-weight: 600;
+    padding: 11px 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.86rem; font-weight: 600;
     color: var(--ink); opacity: 0.55; cursor: pointer; border: none; background: none;
     border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s ease;
     display: inline-flex; align-items: center; gap: 8px;
@@ -28,7 +28,7 @@
     padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
-  .stx-card .label { font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
+  .stx-card .label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
   .stx-card .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.55rem; line-height: 1.15; color: var(--ink); margin-top: 5px; }
   .stx-card .value.brass { color: var(--brass-dark); }
   .stx-card .value.green { color: var(--success); }
@@ -42,13 +42,13 @@
     padding: 12px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
   .stx-controls-label {
-    font-family: 'Space Mono', monospace; font-size: 0.60rem; text-transform: uppercase;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.60rem; text-transform: uppercase;
     letter-spacing: 0.08em; opacity: 0.45; white-space: nowrap; margin-right: 2px;
   }
   .stx-period-btns { display: flex; gap: 4px; flex-wrap: wrap; }
   .stx-period-btn {
     padding: 7px 14px; border: 1px solid var(--line); border-radius: 8px;
-    background: var(--stone); font-family: 'Inter', sans-serif; font-size: 0.80rem;
+    background: var(--stone); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.80rem;
     font-weight: 600; color: var(--ink); cursor: pointer; transition: all .15s ease;
     white-space: nowrap;
   }
@@ -61,12 +61,12 @@
   .stx-date-wrap { display: flex; align-items: center; gap: 8px; }
   .stx-date-wrap input[type="date"] {
     padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px;
-    background: var(--stone); font-family: 'Inter', sans-serif;
+    background: var(--stone); font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.82rem; color: var(--ink); cursor: pointer;
   }
   .stx-date-wrap span { font-size: 0.78rem; opacity: 0.5; }
   .stx-period-summary {
-    margin-left: auto; font-family: 'Space Mono', monospace; font-size: 0.68rem;
+    margin-left: auto; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.68rem;
     opacity: 0.5; white-space: nowrap;
   }
 
@@ -74,7 +74,7 @@
   .stx-subtabs { display: inline-flex; gap: 4px; background: var(--stone); border: 1px solid var(--line); border-radius: 9px; padding: 4px; margin-bottom: 16px; flex-wrap: wrap; }
   .stx-subtab {
     padding: 7px 16px; border-radius: 7px; border: none; background: none;
-    font-family: 'Inter', sans-serif; font-size: 0.80rem; font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.80rem; font-weight: 600;
     color: var(--ink); opacity: 0.55; cursor: pointer; transition: all .15s ease; white-space: nowrap;
   }
   .stx-subtab:hover { opacity: 0.9; }
@@ -89,13 +89,13 @@
   }
   .stx-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .stx-filters .fb {
-    font-family: 'Space Mono', monospace; font-size: 0.60rem; text-transform: uppercase;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.60rem; text-transform: uppercase;
     letter-spacing: 0.06em; opacity: 0.45; white-space: nowrap;
   }
   .stx-filter-divider { width: 1px; height: 22px; background: var(--line); margin: 0 2px; }
   .stx-filters input, .stx-filters select {
     padding: 7px 11px; border: 1px solid var(--line); border-radius: 8px;
-    background: var(--stone); font-family: 'Inter', sans-serif;
+    background: var(--stone); font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.81rem; color: var(--ink); cursor: pointer; transition: border-color .15s;
   }
   .stx-filters input:focus, .stx-filters select:focus { outline: none; border-color: var(--brass); }
@@ -120,7 +120,7 @@
   .stx-pop-item {
     display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
     padding: 9px 10px; border: none; background: none; border-radius: 7px;
-    font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--ink); cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem; color: var(--ink); cursor: pointer;
   }
   .stx-pop-item:hover { background: var(--stone); }
   .stx-pop-item svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -137,7 +137,7 @@
   .stx-result-bar b { font-weight: 700; color: var(--ink); opacity: 1; }
   .stx-clear-filters-btn {
     font-size: 0.74rem; color: var(--brass-dark); background: none; border: none;
-    cursor: pointer; text-decoration: underline; padding: 0; font-family: 'Inter', sans-serif;
+    cursor: pointer; text-decoration: underline; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif;
   }
 
   /* ---- Table ---- */
@@ -152,7 +152,7 @@
   }
   .stx-table-wrap th.sortable.asc .caret { border-bottom: 5px solid var(--brass-dark); border-top: none; opacity: 1; }
   .stx-table-wrap th.sortable.desc .caret { border-top: 5px solid var(--brass-dark); border-bottom: none; opacity: 1; }
-  .stx-table-wrap td.mono, .stx-table-wrap td.right { font-family: 'Space Mono', monospace; }
+  .stx-table-wrap td.mono, .stx-table-wrap td.right { font-family: 'Plus Jakarta Sans', sans-serif; }
   .stx-table-wrap td.right, .stx-table-wrap th.right { text-align: right; }
   .stx-empty { padding: 52px 20px; text-align: center; color: var(--ink); opacity: 0.55; font-size: 0.88rem; }
   .stx-empty svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 10px; opacity: 0.5; }
@@ -160,14 +160,14 @@
   /* ---- Pills ---- */
   .source-pill {
     display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px;
-    font-size: 0.66rem; font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase;
+    font-size: 0.66rem; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; text-transform: uppercase;
   }
   .source-online { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
   .source-pos { background: rgba(21,23,26,0.08); color: var(--ink); opacity: 0.7; }
   .source-reservation { background: rgba(163,132,74,0.2); color: var(--brass-dark); }
-  .view-daily-orders-btn, .view-daily-order-detail { border:1px solid rgba(163,132,74,.38); border-radius:6px; background:#fff; color:var(--brass-dark); padding:6px 9px; font:700 .67rem 'Space Mono',monospace; text-transform:uppercase; cursor:pointer; }
+  .view-daily-orders-btn, .view-daily-order-detail { border:1px solid rgba(163,132,74,.38); border-radius:6px; background:#fff; color:var(--brass-dark); padding:6px 9px; font:700 .67rem 'Plus Jakarta Sans', sans-serif; text-transform:uppercase; cursor:pointer; }
   .view-daily-orders-btn:hover, .view-daily-order-detail:hover { background:rgba(163,132,74,.12); border-color:var(--brass); }
-  .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.66rem; font-family: 'Space Mono', monospace; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+  .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.66rem; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
   .status-pending { background: rgba(184,134,11,0.14); color: var(--warning); }
   .status-confirmed { background: rgba(163,132,74,0.15); color: var(--brass-dark); }
   .status-preparing { background: rgba(52,109,196,0.14); color: #2c5fb0; }
@@ -180,7 +180,7 @@
 
   .row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
   .row-actions button {
-    font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase; font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase; font-weight: 700;
     border-radius: 5px; padding: 6px 10px; cursor: pointer; border: 1px solid var(--line);
     background: var(--component-bg); color: var(--ink); transition: all .15s ease;
   }
@@ -195,9 +195,9 @@
   .order-modal-box { max-width: 680px; width: 100%; max-height: 92vh; overflow-y: auto; }
   .om-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; font-size: 0.84rem; margin-bottom: 16px; }
   .om-meta .row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px dashed var(--line); }
-  .om-meta .row span:first-child { opacity: 0.55; font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase; padding-top: 2px; }
+  .om-meta .row span:first-child { opacity: 0.55; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase; padding-top: 2px; }
   .om-items { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 16px; }
-  .om-items th { text-align: left; padding: 8px 10px; background: var(--stone); font-family: 'Space Mono', monospace; font-size: 0.6rem; text-transform: uppercase; opacity: 0.55; }
+  .om-items th { text-align: left; padding: 8px 10px; background: var(--stone); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.6rem; text-transform: uppercase; opacity: 0.55; }
   .om-items td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
   .om-items td.right, .om-items th.right { text-align: right; }
   .om-totals { width: 100%; font-size: 0.84rem; margin-bottom: 18px; }
@@ -210,7 +210,7 @@
   /* ---- Delivery details block ---- */
   .om-delivery { margin-bottom: 16px; }
   .om-delivery-head {
-    font-family: 'Space Mono', monospace; font-size: 0.66rem; text-transform: uppercase;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase;
     letter-spacing: 0.06em; opacity: 0.55; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
   }
   .om-delivery-head svg { width: 14px; height: 14px; fill: none; stroke: var(--brass-dark); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -221,7 +221,7 @@
   /* ---- Editable delivery fee ---- */
   .fee-display-wrap { display: inline-flex; align-items: center; gap: 8px; }
   .fee-edit-btn {
-    font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase; font-weight: 700;
     border: 1px solid var(--line); background: var(--component-bg); color: var(--brass-dark);
     border-radius: 5px; padding: 3px 8px; cursor: pointer;
   }
@@ -229,7 +229,7 @@
   .fee-edit-row { display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding: 6px 0 10px; }
   .fee-edit-row input {
     width: 110px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 6px;
-    font-family: 'Space Mono', monospace; font-size: 0.85rem; background: var(--bone); color: var(--ink); text-align: right;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; background: var(--bone); color: var(--ink); text-align: right;
   }
   .fee-edit-row input:focus { outline: none; border-color: var(--brass); }
   .fee-edit-row .btn.small { padding: 6px 12px; font-size: 0.72rem; }

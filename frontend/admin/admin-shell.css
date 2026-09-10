@@ -1,6 +1,6 @@
 /* admin-shell.css — shared design system for The~Yo's admin panel */
 
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Poppins:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
   --ink: #15171a;
@@ -41,7 +41,7 @@ body {
     radial-gradient(ellipse 60% 80% at 0% 100%, rgba(163,132,74,0.06) 0%, transparent 55%),
     linear-gradient(160deg, #f8f3ea 0%, #f2ede4 45%, #ede8de 100%);
   color: var(--ink);
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   min-height: 100vh;
 }
 
@@ -69,7 +69,7 @@ body {
   -ms-overflow-style: none;
   box-shadow: none;
   z-index: 100;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .admin-sidebar::-webkit-scrollbar { display: none; }
 
@@ -94,6 +94,11 @@ body {
   font-size: 0.78rem; font-weight: 900; letter-spacing: -0.02em;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(138,109,58,0.28);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.admin-logo:hover .mark {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 6px 16px rgba(138,109,58,0.36);
 }
 .brand-label { white-space: nowrap; color: var(--ink); letter-spacing: -0.01em; }
 .sidebar-toggle {
@@ -112,7 +117,7 @@ body {
 .nav-group + .nav-group { margin-top: 10px; }
 
 .nav-group-label {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -129,23 +134,25 @@ body {
   margin-bottom: 2px;
   text-decoration: none;
   color: #39435c;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.84rem; font-weight: 500;
   line-height: 1.45;
-  transition: background var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast), padding-left var(--transition-fast);
   white-space: nowrap;
   overflow: hidden;
 }
 .admin-nav-link:hover {
-  color: #39435c;
-  background: #faf8f4;
-  transform: none;
+  color: #a9752b;
+  background: #faf3e6;
+  padding-left: 14px;
 }
+.admin-nav-link:hover .icon { transform: scale(1.08); }
 .admin-nav-link.active {
   background: #f4ecdd;
   color: #a9752b;
   font-weight: 600;
 }
+.admin-nav-link.active:hover { padding-left: 11px; }
 .admin-nav-link.active::before {
   content: '';
   position: absolute;
@@ -158,6 +165,7 @@ body {
   width: 18px; height: 18px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  transition: transform var(--transition-fast);
 }
 .admin-nav-link .icon svg {
   width: 18px; height: 18px;
@@ -207,7 +215,7 @@ body {
   color: var(--ink);
 }
 .sidebar-user-info span {
-  display: block; font-family: 'Space Mono', monospace;
+  display: block; font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.60rem; text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--ink-muted); margin-top: 1px;
 }
@@ -320,7 +328,7 @@ body {
   display: none; align-items: center; justify-content: center;
   right: -5px; top: -5px; border-radius: 9px;
   background: #e5493a; color: #fff;
-  font: 700 0.58rem 'Space Mono', monospace;
+  font: 700 0.58rem 'Plus Jakarta Sans', sans-serif;
   border: 2px solid #1c1e24;
 }
 
@@ -349,7 +357,7 @@ body {
 }
 .online-order-panel-head span {
   display: block; margin-top: 2px;
-  font: 600 0.62rem 'Space Mono', monospace;
+  font: 600 0.62rem 'Plus Jakarta Sans', sans-serif;
   text-transform: uppercase; color: var(--brass-dark);
 }
 .online-order-panel-head button {
@@ -385,7 +393,7 @@ body {
 .online-order-panel-empty { padding: 22px 16px; text-align: center; font-size: 0.8rem; color: var(--ink-muted); }
 .online-order-panel-action {
   display: block; padding: 11px 16px; text-decoration: none;
-  font: 700 0.70rem 'Space Mono', monospace; text-transform: uppercase;
+  font: 700 0.70rem 'Plus Jakarta Sans', sans-serif; text-transform: uppercase;
   color: var(--brass-dark); background: #faf7f2;
   border-top: 1px solid var(--line);
   transition: background var(--transition-fast);
@@ -400,7 +408,7 @@ body {
 .admin-user .who { text-align: right; line-height: 1.3; }
 .admin-user .who strong { display: block; font-size: 0.86rem; font-weight: 700; }
 .admin-user .who span {
-  font-family: 'Space Mono', monospace; font-size: 0.62rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem;
   color: var(--ink-inverse-muted); text-transform: uppercase;
 }
 .admin-user .avatar {
@@ -415,7 +423,7 @@ body {
   border: 1px solid rgba(255,255,255,0.18);
   color: rgba(255,255,255,0.8);
   padding: 7px 13px; border-radius: 6px;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.65rem; text-transform: uppercase;
   cursor: pointer; transition: all var(--transition-fast);
   letter-spacing: 0.04em;
@@ -446,9 +454,9 @@ body {
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-base);
+  transition: box-shadow var(--transition-base), border-color var(--transition-base);
 }
-.admin-panel:hover { box-shadow: var(--shadow-md); }
+.admin-panel:hover { box-shadow: var(--shadow-md); border-color: var(--line-strong); }
 
 .admin-panel-head {
   padding: 15px 20px;
@@ -474,7 +482,7 @@ body {
 .admin-table th {
   text-align: left; padding: 12px 16px;
   background: #f8f3eb;
-  font-family: 'Space Mono', monospace; font-size: 0.62rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem;
   text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--ink-muted);
   border-bottom: 2px solid var(--line);
@@ -482,8 +490,9 @@ body {
 }
 .admin-table td { padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .admin-table tbody tr:last-child td { border-bottom: none; }
-.admin-table tbody tr { transition: background var(--transition-fast); }
-.admin-table tbody tr:hover td { background: rgba(163,132,74,0.05); }
+.admin-table tbody tr { transition: background var(--transition-fast); position: relative; }
+.admin-table tbody tr:hover td { background: rgba(163,132,74,0.06); }
+.admin-table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--brass); }
 
 .admin-loading, .admin-error, .panel-empty {
   padding: 36px 20px; text-align: center;
@@ -517,10 +526,16 @@ body {
   height: 3px;
   background: linear-gradient(90deg, var(--brass-light), var(--brass-dark));
   border-radius: var(--radius-md) var(--radius-md) 0 0;
+  transition: height var(--transition-fast);
 }
-.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  border-color: var(--line-strong);
+}
+.stat-card:hover::before { height: 4px; }
 .stat-card .label {
-  font-family: 'Space Mono', monospace; font-size: 0.62rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem;
   text-transform: uppercase; letter-spacing: 0.07em;
   color: var(--ink-muted);
 }
@@ -542,7 +557,7 @@ body {
   border: 1px solid var(--brass-dark);
   padding: 10px 18px;
   border-radius: var(--radius-sm);
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.84rem; font-weight: 600;
   cursor: pointer; text-decoration: none;
   box-shadow: 0 4px 14px rgba(138,109,58,0.2);
@@ -581,7 +596,7 @@ body {
 
 .form-field label {
   display: block;
-  font-family: 'Space Mono', monospace; font-size: 0.63rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.63rem;
   text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--ink-muted); margin-bottom: 6px;
 }
@@ -590,7 +605,7 @@ body {
 .form-field textarea {
   width: 100%; padding: 10px 12px;
   border: 1px solid var(--line); border-radius: var(--radius-sm);
-  font-family: 'Poppins', sans-serif; font-size: 0.86rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.86rem;
   background: #fdfbf8; color: var(--ink);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -616,12 +631,12 @@ body {
 .filter-bar select, .filter-bar input {
   padding: 8px 12px; border: 1px solid var(--line);
   border-radius: var(--radius-sm); background: #fff;
-  font-family: 'Poppins', sans-serif; font-size: 0.82rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem;
   color: var(--ink); transition: border-color var(--transition-fast);
 }
 .filter-bar select:hover, .filter-bar input:hover { border-color: var(--line-strong); }
 .filter-bar label {
-  font-family: 'Space Mono', monospace; font-size: 0.66rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem;
   text-transform: uppercase; color: var(--ink-muted); margin-right: 6px;
 }
 
@@ -631,7 +646,7 @@ body {
 .pill {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 10px; border-radius: 20px;
-  font-size: 0.65rem; font-family: 'Space Mono', monospace;
+  font-size: 0.65rem; font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 700; text-transform: uppercase; white-space: nowrap;
 }
 .pill-brass { background: rgba(163,132,74,0.14); color: var(--brass-dark); }
@@ -644,7 +659,7 @@ body {
 .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .row-actions button {
   display: inline-flex; align-items: center; justify-content: center;
-  font-family: 'Space Mono', monospace; font-size: 0.66rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem;
   text-transform: uppercase; font-weight: 700;
   border-radius: 6px; padding: 7px 12px;
   cursor: pointer; border: 1px solid var(--line);
@@ -702,7 +717,7 @@ body {
   display: flex; align-items: center; gap: 10px;
   background: rgba(184,134,11,0.1); color: var(--warning);
   border-bottom: 1px solid rgba(184,134,11,0.25);
-  padding: 10px 24px; font-family: 'Poppins', sans-serif;
+  padding: 10px 24px; font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.83rem; font-weight: 600;
 }
 .session-warning-banner .msg { flex: 1; }
@@ -739,7 +754,7 @@ body {
   border-radius: 10px; background: rgba(163,132,74,0.12);
 }
 .online-order-toast strong {
-  display: block; font: 700 0.74rem 'Space Mono', monospace;
+  display: block; font: 700 0.74rem 'Plus Jakarta Sans', sans-serif;
   text-transform: uppercase; color: var(--brass-dark);
 }
 .online-order-toast span {
