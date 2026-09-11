@@ -1,5 +1,5 @@
 // src/middlewares/auth.middleware.js
-import { auth } from '../config/firebase.js';
+import { getFirebaseAuth } from '../config/firebase.js';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
 
@@ -16,7 +16,7 @@ export async function verifyFirebaseToken(req, res, next) {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decodedToken = await auth.verifyIdToken(token);
+    const decodedToken = await getFirebaseAuth().verifyIdToken(token);
     const { uid, email } = decodedToken;
 
     const { rows } = await pool.query(

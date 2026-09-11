@@ -2,7 +2,7 @@
 import pool from '../../config/db.js';
 import { issueCode, checkCode, deleteCode } from '../../utils/otpStore.js';
 import { sendOtpEmail } from '../../utils/email.util.js';
-import { auth } from '../../config/firebase.js';
+import { getFirebaseAuth } from '../../config/firebase.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -163,7 +163,7 @@ export async function updatePassword(req, res) {
       return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
     }
 
-    await auth.updateUser(req.user.firebaseUid, { password: newPassword });
+    await getFirebaseAuth().updateUser(req.user.firebaseUid, { password: newPassword });
 
     return res.status(200).json({ message: 'Password updated successfully.' });
   } catch (error) {

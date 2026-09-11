@@ -1,7 +1,5 @@
 {
-  "buildCommand": "cd backend && npm ci",
   "devCommand": "cd backend && npm run dev",
-  "installCommand": "cd backend && npm ci",
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api" },
     { "source": "/pics&vids/:path*", "destination": "/frontend/pics&vids/:path*" },
