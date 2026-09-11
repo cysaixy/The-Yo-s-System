@@ -112,11 +112,6 @@ export function clearStaffSession() {
   localStorage.removeItem('staffInfo');
 }
 
-// How long before actual expiry to show the warning banner. Staff JWTs
-// are minted with a 1-day expiry (see backend/src/utils/generateToken.js)
-// so this only ever fires for someone who's had a page open ~24h - it's
-// a courtesy heads-up, not a sign anything is broken.
-const SESSION_WARNING_MS = 5 * 60 * 1000;
 const NOTIFICATION_HISTORY_KEY = 'yo-admin-notification-history';
 const ORDER_SNAPSHOT_KEY = 'yo-admin-order-snapshot';
 const INVENTORY_SNAPSHOT_KEY = 'yo-admin-inventory-alert-count';
@@ -280,7 +275,7 @@ function notificationTime(value) {
   return date.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
-function initOnlineOrderNotifications(token, staff) {
+function initOnlineOrderNotifications(staff) {
   notificationStorageScope = String(staff?.id || staff?.email || 'anonymous');
   const count = document.getElementById('onlineOrderCount');
   const button = document.getElementById('adminOnlineOrdersBtn');
@@ -310,7 +305,7 @@ function initOnlineOrderNotifications(token, staff) {
     if (!panel.contains(event.target) && !button.contains(event.target)) panel.classList.remove('open');
   });
 
-  const headers = { Authorization: `Bearer ${token}` };
+  const fetchOptions = { credentials: 'include', cache: 'no-store' };
   let pollInFlight = false;
   let lastInventoryPollAt = 0;
   const poll = async () => {
@@ -319,9 +314,9 @@ function initOnlineOrderNotifications(token, staff) {
     try {
       const shouldFetchInventory = Date.now() - lastInventoryPollAt >= 60000;
       const [ordersRes, inventoryRes] = await Promise.all([
-        fetch(`${ADMIN_API_BASE_URL}/api/admin/sales/live-state`, { headers, cache: 'no-store' }),
+        fetch(`${ADMIN_API_BASE_URL}/api/admin/sales/live-state`, fetchOptions),
         shouldFetchInventory
-          ? fetch(`${ADMIN_API_BASE_URL}/api/admin/dashboard/inventory-overview`, { headers, cache: 'no-store' })
+          ? fetch(`${ADMIN_API_BASE_URL}/api/admin/dashboard/inventory-overview`, fetchOptions)
           : Promise.resolve(null),
       ]);
       if (!ordersRes.ok) return;
@@ -417,73 +412,13 @@ function initOnlineOrderNotifications(token, staff) {
   });
 }
 
-function injectSessionWarningStyles() {
-  if (document.getElementById('sessionWarningStyles')) return;
-  const style = document.createElement('style');
-  style.id = 'sessionWarningStyles';
-  style.textContent = `
-    .session-warning-banner {
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(184,134,11,0.12); color: var(--warning, #b8860b);
-      border-bottom: 1px solid rgba(184,134,11,0.3);
-      padding: 10px 20px; font-family: 'Poppins', sans-serif; font-size: 0.84rem; font-weight: 600;
-    }
-    .session-warning-banner .msg { flex: 1; }
-    .session-warning-banner button {
-      background: transparent; border: 1px solid rgba(184,134,11,0.4); color: var(--warning, #b8860b);
-      border-radius: 5px; padding: 4px 10px; font-size: 0.72rem; cursor: pointer; font-weight: 700;
-    }
-    .session-warning-banner button:hover { background: rgba(184,134,11,0.15); }
-  `;
-  document.head.appendChild(style);
-}
-
-// Shows a dismissible "your session is about to expire" banner just above
-// the admin header. Purely informational - the hard redirect timer set in
-// renderAdminShell still fires at the real expiry regardless of whether
-// this is dismissed, so staff can't accidentally lose the warning and get
-// silently logged out.
-function showSessionWarningBanner() {
-  if (document.getElementById('sessionWarningBanner')) return; // already shown
-  injectSessionWarningStyles();
-
-  const shell = document.querySelector('.admin-shell');
-  if (!shell) return;
-
-  const banner = document.createElement('div');
-  banner.id = 'sessionWarningBanner';
-  banner.className = 'session-warning-banner';
-  banner.innerHTML = `
-    <span class="msg">â± Your session will expire in about 5 minutes. Please save or finish any pending work.</span>
-    <button type="button" id="sessionWarningDismiss">Dismiss</button>
-  `;
-
-  const adminMain = shell.querySelector('.admin-main');
-  adminMain.insertBefore(banner, adminMain.firstChild);
-
-  document.getElementById('sessionWarningDismiss').addEventListener('click', () => {
-    banner.remove();
-  });
-}
-
 export function renderAdminShell({ active, title }) {
-  const token = localStorage.getItem('staffToken');
+  // With httpOnly cookies, token is not in localStorage.
+  // Staff info is cached in localStorage for UI rendering.
   const staffRaw = localStorage.getItem('staffInfo');
 
-  if (!token || !staffRaw) {
+  if (!staffRaw) {
     window.location.href = 'login.html';
-    return null;
-  }
-
-  // Check expiry BEFORE rendering anything or letting any page script run
-  // its fetch calls. A token that's already expired (or expires in the
-  // next few seconds - close enough that it'll die mid-request) sends the
-  // user straight to login instead of rendering a page that immediately
-  // fires 3-4 API calls that are all guaranteed to 401.
-  const expiryMs = getTokenExpiryMs(token);
-  const EXPIRY_GRACE_MS = 5000;
-  if (expiryMs === null || expiryMs - EXPIRY_GRACE_MS <= Date.now()) {
-    clearStaffSessionAndRedirect('expired');
     return null;
   }
 
@@ -557,9 +492,11 @@ export function renderAdminShell({ active, title }) {
     </div>
   `;
 
-  document.getElementById('adminLogoutBtn').addEventListener('click', () => {
-    localStorage.removeItem('staffToken');
-    localStorage.removeItem('staffInfo');
+document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
+    try {
+      await fetch('/api/admin/staff/logout', { method: 'POST', credentials: 'include' });
+    } catch {}
+    clearStaffSession();
     window.location.href = 'login.html';
   });
 
@@ -607,7 +544,7 @@ export function renderAdminShell({ active, title }) {
     if (e.target.closest('.admin-nav-link')) closeMobileNav();
   });
 
-  initOnlineOrderNotifications(token, staff);
+initOnlineOrderNotifications(staff);
 
   // A signed-in staff member who isn't allowed on this page (e.g. they
   // bookmarked it before permissions changed) gets bounced to Home rather
@@ -619,25 +556,5 @@ export function renderAdminShell({ active, title }) {
     return null;
   }
 
-  // Belt-and-suspenders: if the staff member leaves this page open long
-  // enough for the token to expire mid-session (rather than arriving with
-  // one already expired), catch it the moment it happens instead of
-  // waiting for the next API call's 401 to reveal it.
-  const msUntilExpiry = expiryMs - Date.now();
-  window.setTimeout(() => {
-    clearStaffSessionAndRedirect('expired-inline');
-  }, msUntilExpiry);
-
-  // Heads-up banner ~5 minutes before that hard cutoff, so a session
-  // dying mid-order doesn't come out of nowhere. If the page is loaded
-  // with less than 5 minutes left (rare - expiry is 1 day), show it
-  // right away instead of scheduling a negative-delay timeout.
-  const msUntilWarning = msUntilExpiry - SESSION_WARNING_MS;
-  if (msUntilWarning <= 0) {
-    showSessionWarningBanner();
-  } else {
-    window.setTimeout(showSessionWarningBanner, msUntilWarning);
-  }
-
-  return { staff, token };
+  return { staff };
 }
