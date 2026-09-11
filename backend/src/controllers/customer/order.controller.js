@@ -1,5 +1,6 @@
 // src/controllers/customer/order.controller.js
 import pool from "../../config/db.js";
+import { restoreOrderInventory } from "../../utils/inventoryRestore.js";
 
 const VALID_ORDER_TYPES = ["online", "delivery", "dine_in", "pickup"];
 const VALID_PAYMENT_METHODS = ["cash", "gcash", "card", "bank_transfer"];
@@ -446,6 +447,18 @@ export async function cancelOrder(req, res, next) {
       return res.status(409).json({
         error: `This order can't be cancelled because it is already ${check.rows[0].status}.`,
       });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await restoreOrderInventory(client, id, null);
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      return next(err);
+    } finally {
+      client.release();
     }
 
     res.json({ message: "Order cancelled successfully.", order: rows[0] });

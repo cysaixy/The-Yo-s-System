@@ -1,5 +1,6 @@
 // src/controllers/admin/salesController.js
 import pool from "../../config/db.js";
+import { restoreOrderInventory } from "../../utils/inventoryRestore.js";
 
 const VALID_ORDER_TYPES = ["dine_in", "pickup"];
 const VALID_PAYMENT_METHODS = ["cash", "card", "gcash", "bank_transfer", "other"];
@@ -507,6 +508,21 @@ export async function updateOrderStatus(req, res, next) {
         current_status: current.rows[0].status,
       });
     }
+
+    if (status === 'cancelled') {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await restoreOrderInventory(client, req.params.id, req.staff.id);
+        await client.query("COMMIT");
+      } catch (err) {
+        await client.query("ROLLBACK");
+        return next(err);
+      } finally {
+        client.release();
+      }
+    }
+
     res.json({ order: rows[0] });
   } catch (err) {
     next(err);
