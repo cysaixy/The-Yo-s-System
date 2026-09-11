@@ -78,14 +78,21 @@
 
   /* ---------- Charts ---------- */
   .chart-wrap { width: 100%; }
-  .chart-wrap svg { width: 100%; height: auto; display: block; }
-  .chart-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; fill: #96928a; }
-  .chart-legend-row { margin-bottom: 10px; }
+  .chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; fill: var(--ink-muted); }
+  .chart-peak-label { font-family: 'Archivo', sans-serif; font-size: 12px; font-weight: 800; }
+  .chart-legend-row { margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 6px 10px; }
   .chart-legend {
-    display: inline-flex; align-items: center; gap: 6px; margin-right: 18px;
-    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; text-transform: uppercase; opacity: 0.7;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 11px 5px 8px; border-radius: 999px;
+    background: var(--stone); border: 1px solid var(--line);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; font-weight: 600;
+    color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em;
   }
-  .chart-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .chart-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
+  .chart-dot-hit { cursor: pointer; }
+  .chart-dot-hit:hover + .chart-dot-visible,
+  .chart-dot-visible.hoverable:hover { r: 5; }
 
   /* ---------- Live order rail ---------- */
   .live-orders-section {
@@ -265,10 +272,14 @@
     return data;
   }
 
-  // Hand-rolled SVG line chart — no library, no fake data. Each dot
-  // carries a native <title> tooltip so values are inspectable.
-  function trendChart({ labels, series, height = 230 }) {
-    const W = 640, PL = 56, PR = 16, PT = 14, PB = 30;
+  // Hand-rolled SVG line chart — no library, no fake data, no curve
+  // smoothing (would distort the real shape of a sharp spike/drop).
+  // Each dot carries a native <title> tooltip and a larger invisible
+  // hit-circle so it's easy to tap on a touchscreen tablet.
+  let chartIdSeq = 0;
+  function trendChart({ labels, series, height = 230, highlightPeak = false }) {
+    const W = 640, PL = 56, PR = 16, PT = 20, PB = 30;
+    const gid = `tcg${chartIdSeq++}`;
     const allVals = series.flatMap((s) => s.values);
     const max = Math.max(...allVals, 1);
     const innerW = W - PL - PR;
@@ -279,23 +290,48 @@
 
     const grid = [0, 0.25, 0.5, 0.75, 1].map((f) => {
       const y = ys(max * f);
-      return `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="#ebe6db" stroke-width="1"/>` +
+      return `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="#e9e2d2" stroke-width="1" stroke-dasharray="2,4"/>` +
         `<text x="${PL - 8}" y="${y + 4}" text-anchor="end" class="chart-label">${compactPeso(max * f)}</text>`;
     }).join('');
 
     const areaPath = series.length === 1
-      ? `<path d="${series[0].values.map((v, i) => `${i === 0 ? 'M' : 'L'}${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ')} L${xs(n - 1).toFixed(1)},${(PT + innerH)} L${xs(0).toFixed(1)},${(PT + innerH)} Z" fill="rgba(163,132,74,0.10)"/>`
+      ? `<defs>
+           <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+             <stop offset="0%" stop-color="${series[0].color}" stop-opacity="0.28"/>
+             <stop offset="100%" stop-color="${series[0].color}" stop-opacity="0"/>
+           </linearGradient>
+         </defs>
+         <path d="${series[0].values.map((v, i) => `${i === 0 ? 'M' : 'L'}${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ')} L${xs(n - 1).toFixed(1)},${(PT + innerH)} L${xs(0).toFixed(1)},${(PT + innerH)} Z" fill="url(#${gid})"/>`
       : '';
 
     const lines = series.map((s) => {
       const path = s.values.map((v, i) => `${i === 0 ? 'M' : 'L'}${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
-      const dots = s.values.map((v, i) =>
-        `<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3" fill="${s.color}" stroke="#fff" stroke-width="1.4">
-          <title>${s.titles ? s.titles[i] : (labels[i] + ': ' + v)}</title>
-        </circle>`
+      const dots = s.values.map((v, i) => `
+          <circle class="chart-dot-hit" cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="11" fill="transparent">
+            <title>${s.titles ? s.titles[i] : (labels[i] + ': ' + v)}</title>
+          </circle>
+          <circle class="chart-dot-visible hoverable" cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3" fill="${s.color}" stroke="#fff" stroke-width="1.4" pointer-events="none"/>`
       ).join('');
-      return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
+      return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
     }).join('');
+
+    // Highlight the peak point on single-series charts (e.g. Sales Trend)
+    // with a soft halo + value callout, so a spike reads at a glance.
+    let peakMarkup = '';
+    if (highlightPeak && series.length === 1) {
+      const vals = series[0].values;
+      const maxV = Math.max(...vals);
+      if (maxV > 0) {
+        const idx = vals.indexOf(maxV);
+        const px = xs(idx).toFixed(1);
+        const py = ys(maxV);
+        const anchor = idx < n * 0.12 ? 'start' : idx > n * 0.88 ? 'end' : 'middle';
+        peakMarkup = `
+          <circle cx="${px}" cy="${py.toFixed(1)}" r="10" fill="${series[0].color}" opacity="0.15"/>
+          <circle cx="${px}" cy="${py.toFixed(1)}" r="4.5" fill="${series[0].color}" stroke="#fff" stroke-width="2"/>
+          <text x="${px}" y="${(py - 14).toFixed(1)}" text-anchor="${anchor}" class="chart-peak-label" fill="${series[0].color}">${compactPeso(maxV)}</text>`;
+      }
+    }
 
     const labelStep = Math.max(1, Math.ceil(n / 6));
     const xLabels = labels.map((l, i) => (i % labelStep === 0 || i === n - 1)
@@ -304,7 +340,7 @@
     const legend = `<div class="chart-legend-row">${series.map((s) =>
       `<span class="chart-legend"><i style="background:${s.color}"></i>${s.name}</span>`).join('')}</div>`;
 
-    return `<div class="chart-wrap">${legend}<svg viewBox="0 0 ${W} ${height}" role="img">${grid}${areaPath}${lines}${xLabels}</svg></div>`;
+    return `<div class="chart-wrap">${legend}<svg viewBox="0 0 ${W} ${height}" role="img">${grid}${areaPath}${lines}${peakMarkup}${xLabels}</svg></div>`;
   }
 
   // Donut chart for the order-type breakdown.
@@ -735,6 +771,7 @@
               values: days.map((x) => num(x.sales)),
               titles: days.map((x) => `${fmtDay(x.date)} · ${peso(x.sales)} · ${x.orders} ${x.orders === 1 ? 'order' : 'orders'}`),
             }],
+            highlightPeak: true,
           })
         : `<div class="panel-empty">No sales recorded in the last 15 days.</div>`;
     } catch (err) {
