@@ -1,7 +1,7 @@
 // admin-api.js
 // Shared fetch wrapper + formatting helpers for every admin page.
-// Assumes a staff JWT was stored under localStorage 'staffToken' by
-// whatever staff-login page you have (not included in this build).
+// Uses httpOnly cookie for authentication (set by /api/admin/staff/login).
+// No localStorage token storage — cookies are sent automatically with credentials: 'include'.
 
 // Left empty on purpose so every request is relative to whatever origin
 // served this page. That means:
@@ -13,32 +13,21 @@
 // set this back to an absolute URL (e.g. "https://your-api.vercel.app").
 export const API_BASE_URL = "";
 
-// login.html and admin-shell.js both need these - login.html writes the
-// session here after a successful POST /api/admin/staff/login, and
-// admin-shell.js reads it on every other page to decide whether to render
-// the dashboard or bounce to login.html. Previously these two functions
-// didn't exist in this file at all, so importing them in login.html threw
-// immediately and blocked staff sign-in entirely.
-export function setStaffSession(token, staff) {
-  localStorage.setItem('staffToken', token);
-  localStorage.setItem('staffInfo', JSON.stringify(staff));
-}
-
-export function getStaffToken() {
-  return localStorage.getItem('staffToken');
+export function clearStaffSession() {
+  localStorage.removeItem('staffInfo');
 }
 
 export async function adminFetch(path, options = {}) {
-  const token = localStorage.getItem('staffToken');
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  // Cookie is sent automatically with credentials: 'include'
+  const fetchOptions = { ...options, headers, credentials: 'include' };
 
   let res;
   try {
-    res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+    res = await fetch(`${API_BASE_URL}${path}`, fetchOptions);
   } catch (cause) {
     if (cause?.name === 'AbortError') throw cause;
 
@@ -53,8 +42,7 @@ export async function adminFetch(path, options = {}) {
 
   if (res.status === 401) {
     // Session expired / not logged in - bounce back to login.
-    localStorage.removeItem('staffToken');
-    localStorage.removeItem('staffInfo');
+    clearStaffSession();
     window.location.href = 'login.html';
     throw new Error('Session expired. Redirecting to login…');
   }

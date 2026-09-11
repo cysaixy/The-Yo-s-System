@@ -1,5 +1,5 @@
 // src/controllers/admin/inventoryController.js
-import pool from "../../config/db.js";
+import pool from '../../config/db.js';
 
 // GET /api/admin/inventory
 export async function overview(req, res, next) {
@@ -60,11 +60,11 @@ export async function createItem(req, res, next) {
     } = req.body || {};
 
     if (!name || !category) {
-      return res.status(400).json({ error: "Item name and category are required." });
+      return res.status(400).json({ error: 'Item name and category are required.' });
     }
 
     const toNumber = (value, fallback) => {
-      if (value === undefined || value === null || value === "") return fallback;
+      if (value === undefined || value === null || value === '') return fallback;
       return Number(value);
     };
     const stock = toNumber(stock_quantity, 0);
@@ -72,7 +72,7 @@ export async function createItem(req, res, next) {
     const reorder = toNumber(reorder_level, 5);
 
     if (![stock, cost, reorder].every(Number.isFinite) || stock < 0 || cost < 0 || reorder < 0) {
-      return res.status(400).json({ error: "Stock quantity, unit cost, and reorder level must be non-negative numbers." });
+      return res.status(400).json({ error: 'Stock quantity, unit cost, and reorder level must be non-negative numbers.' });
     }
 
     let status = 'in_stock';
@@ -101,9 +101,9 @@ export async function updateItem(req, res, next) {
       name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, notes
     } = req.body || {};
 
-    const existingRes = await pool.query(`SELECT * FROM inventory_items WHERE id = $1`, [id]);
+    const existingRes = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [id]);
     if (existingRes.rows.length === 0) {
-      return res.status(404).json({ error: "Inventory item not found." });
+      return res.status(404).json({ error: 'Inventory item not found.' });
     }
     const current = existingRes.rows[0];
 
@@ -145,28 +145,28 @@ export async function deleteItem(req, res, next) {
 
     // Check if linked to any products or add-ons
     const linkedProducts = await pool.query(
-      `SELECT m.name FROM menu_items m JOIN menu_item_inventory mii ON mii.menu_id = m.id WHERE mii.inventory_id = $1`,
+      'SELECT m.name FROM menu_items m JOIN menu_item_inventory mii ON mii.menu_id = m.id WHERE mii.inventory_id = $1',
       [id]
     );
     const linkedAddons = await pool.query(
-      `SELECT a.name FROM add_ons a JOIN addon_inventory ai ON ai.addon_id = a.id WHERE ai.inventory_id = $1`,
+      'SELECT a.name FROM add_ons a JOIN addon_inventory ai ON ai.addon_id = a.id WHERE ai.inventory_id = $1',
       [id]
     );
 
     if (linkedProducts.rows.length > 0 || linkedAddons.rows.length > 0) {
       const parts = [];
-      if (linkedProducts.rows.length > 0) parts.push(`products (${linkedProducts.rows.map(r => r.name).join(", ")})`);
-      if (linkedAddons.rows.length > 0) parts.push(`add-ons (${linkedAddons.rows.map(r => r.name).join(", ")})`);
+      if (linkedProducts.rows.length > 0) parts.push(`products (${linkedProducts.rows.map(r => r.name).join(', ')})`);
+      if (linkedAddons.rows.length > 0) parts.push(`add-ons (${linkedAddons.rows.map(r => r.name).join(', ')})`);
       return res.status(409).json({
-        error: `This inventory item is currently linked to ${parts.join(" and ")}. Please remove the linkage first or deactivate the item.`,
+        error: `This inventory item is currently linked to ${parts.join(' and ')}. Please remove the linkage first or deactivate the item.`,
         linkedProducts: linkedProducts.rows,
         linkedAddons: linkedAddons.rows
       });
     }
 
-    const { rowCount } = await pool.query(`DELETE FROM inventory_items WHERE id = $1`, [id]);
+    const { rowCount } = await pool.query('DELETE FROM inventory_items WHERE id = $1', [id]);
     if (rowCount === 0) {
-      return res.status(404).json({ error: "Inventory item not found." });
+      return res.status(404).json({ error: 'Inventory item not found.' });
     }
 
     res.status(204).send();
@@ -183,15 +183,15 @@ export async function createAdjustment(req, res, next) {
     const targetId = inventory_id || menu_id;
 
     if (!targetId || quantity_change === undefined) {
-      return res.status(400).json({ error: "Item ID and quantity_change are required." });
+      return res.status(400).json({ error: 'Item ID and quantity_change are required.' });
     }
 
     const staffId = req.staff?.id || null;
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     // Try inventory_items first
     const { rows: invRows } = await client.query(
-      `SELECT id, name, stock_quantity, reorder_level FROM inventory_items WHERE id = $1`,
+      'SELECT id, name, stock_quantity, reorder_level FROM inventory_items WHERE id = $1',
       [targetId]
     );
 
@@ -201,8 +201,8 @@ export async function createAdjustment(req, res, next) {
       const item = invRows[0];
       const newStock = Number(item.stock_quantity) + Number(quantity_change);
       if (newStock < 0) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({ error: "Adjustment would result in negative stock." });
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Adjustment would result in negative stock.' });
       }
 
       let status = 'in_stock';
@@ -211,7 +211,7 @@ export async function createAdjustment(req, res, next) {
       else if (newStock <= item.reorder_level * 1.5) status = 'low_stock';
 
       const { rows: upd } = await client.query(
-        `UPDATE inventory_items SET stock_quantity = $1, status = $2 WHERE id = $3 RETURNING *`,
+        'UPDATE inventory_items SET stock_quantity = $1, status = $2 WHERE id = $3 RETURNING *',
         [newStock, status, targetId]
       );
       updatedItem = upd[0];
@@ -224,8 +224,8 @@ export async function createAdjustment(req, res, next) {
         [quantity_change, targetId]
       );
       if (upd.length === 0) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({ error: "Item not found or adjustment would result in negative stock." });
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Item not found or adjustment would result in negative stock.' });
       }
       updatedItem = upd[0];
     }
@@ -240,14 +240,14 @@ export async function createAdjustment(req, res, next) {
       [logInventoryId, logMenuId, staffId, quantity_change, remarks || null]
     );
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     return res.status(201).json({
       adjustment: logRows[0],
       newItem: updatedItem,
       newStockQuantity: updatedItem.stock_quantity,
     });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();
@@ -268,7 +268,7 @@ export async function log(req, res, next) {
     if (from) { params.push(from); conditions.push(`il.log_date::date >= $${params.length}`); }
     if (to) { params.push(to); conditions.push(`il.log_date::date <= $${params.length}`); }
 
-    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const { rows } = await pool.query(
       `SELECT il.id, COALESCE(ii.name, mi.name, 'Inventory Item') AS item_name,

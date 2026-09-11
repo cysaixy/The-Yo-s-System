@@ -1,11 +1,11 @@
 // src/controllers/admin/dashboardController.js
-import pool from "../../config/db.js";
+import pool from '../../config/db.js';
 
 // Every order type the POS and online ordering can produce. The dashboard
 // always reports all five so a missing type shows a clean ₱0 row instead
 // of disappearing (a real zero looks intentional; a missing row looks
 // like a bug).
-const ALL_ORDER_TYPES = ["dine_in", "pickup", "delivery", "takeout", "online"];
+const ALL_ORDER_TYPES = ['dine_in', 'pickup', 'delivery', 'takeout', 'online'];
 
 function round2(n) {
   return Math.round((Number(n) || 0) * 100) / 100;
@@ -80,7 +80,7 @@ export async function summary(req, res, next) {
     const bestSellers = bestSellersRes.rows;
     const stockOverview = stockOverviewRes.rows;
     const lowStockCount = stockOverview.filter(
-      (item) => item.stock_status === "low_stock" || item.stock_status === "out_of_stock"
+      (item) => item.stock_status === 'low_stock' || item.stock_status === 'out_of_stock'
     ).length;
 
     res.json({
@@ -165,7 +165,7 @@ export async function monthlyTarget(req, res, next) {
                 (EXTRACT(DAY FROM (date_trunc('month', CURRENT_DATE)
                                    + INTERVAL '1 month' - CURRENT_DATE)))::int AS days_remaining`
       ),
-      pool.query(`SELECT value FROM app_settings WHERE key = 'monthly_sales_target'`),
+      pool.query('SELECT value FROM app_settings WHERE key = \'monthly_sales_target\''),
     ]);
 
     const target = settingRes.rows[0] ? num(settingRes.rows[0].value) : null;
@@ -190,7 +190,7 @@ export async function setMonthlyTarget(req, res, next) {
   try {
     const target = Number(req.body?.target);
     if (!Number.isFinite(target) || target < 0) {
-      return res.status(400).json({ error: "Target must be a non-negative number." });
+      return res.status(400).json({ error: 'Target must be a non-negative number.' });
     }
 
     await pool.query(
@@ -237,7 +237,7 @@ export async function bestSellers(req, res, next) {
       items: rowsRes.rows.map((r) => ({
         id: r.id,
         name: r.name,
-        category_name: r.category_name || "Uncategorized",
+        category_name: r.category_name || 'Uncategorized',
         qty_sold: num(r.qty_sold),
         sales_amount: round2(r.sales_amount),
         share_percent: total > 0 ? round2((num(r.sales_amount) / total) * 100) : 0,
@@ -452,7 +452,7 @@ export async function inventoryUsage(req, res, next) {
       const opening = closing + used;
       return {
         description: r.description,
-        unit: r.unit || "pcs",
+        unit: r.unit || 'pcs',
         opening_qty: opening,
         closing_qty: closing,
         used_qty: used,
@@ -495,10 +495,10 @@ export async function inventoryStatus(req, res, next) {
       items: rows.map((r) => ({
         id: r.id,
         name: r.name,
-        category: r.category || "Uncategorized",
+        category: r.category || 'Uncategorized',
         sku: r.sku,
         quantity: num(r.stock_quantity),
-        unit: r.unit || "pcs",
+        unit: r.unit || 'pcs',
         stock_status: r.stock_status,
         reorder_level: num(r.reorder_level),
         supplier: r.supplier || null,

@@ -40,21 +40,21 @@ export function issueCode(email) {
 // Returns { success: true } or { error }.
 export function checkCode(email, submittedCode) {
   const entry = codes.get(email);
-  if (!entry) return { error: "No verification code was requested for this email." };
+  if (!entry) return { error: 'No verification code was requested for this email.' };
 
   if (Date.now() > entry.expiresAt) {
     codes.delete(email);
-    return { error: "That code expired. Please request a new one." };
+    return { error: 'That code expired. Please request a new one.' };
   }
 
   entry.attempts += 1;
   if (entry.attempts > MAX_ATTEMPTS) {
     codes.delete(email);
-    return { error: "Too many incorrect attempts. Please request a new code." };
+    return { error: 'Too many incorrect attempts. Please request a new code.' };
   }
 
   if (entry.code !== String(submittedCode).trim()) {
-    return { error: "Incorrect code. Please try again." };
+    return { error: 'Incorrect code. Please try again.' };
   }
 
   codes.delete(email); // one-time use

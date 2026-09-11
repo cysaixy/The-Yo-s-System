@@ -1,0 +1,10 @@
+◇ injected env (32) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+[db.js] Using connection string, host: localhost:5432
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+[db.js] Using connection string, host: localhost:5432
+[db.js] Which env var won: DATABASE_URL
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Connected to database
+Database tables initialized successfully.
+Server running on port 3000

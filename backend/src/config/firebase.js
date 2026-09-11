@@ -1,5 +1,5 @@
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
 // Normalizes FIREBASE_PRIVATE_KEY regardless of how it's stored:
 //   - Strips surrounding quote characters, in case the env var value
@@ -16,7 +16,7 @@ function normalizePrivateKey(raw) {
   if (key.startsWith('"') && key.endsWith('"')) {
     key = key.slice(1, -1);
   }
-  return key.replace(/\\n/g, "\n");
+  return key.replace(/\\n/g, '\n');
 }
 
 if (!getApps().length) {
@@ -26,7 +26,7 @@ if (!getApps().length) {
 
   if (!projectId || !clientEmail || !privateKey) {
     console.error(
-      "[firebase.js] Missing Firebase Admin credentials:",
+      '[firebase.js] Missing Firebase Admin credentials:',
       { hasProjectId: !!projectId, hasClientEmail: !!clientEmail, hasPrivateKey: !!privateKey }
     );
   }

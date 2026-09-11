@@ -1,12 +1,12 @@
 // src/controllers/admin/productsController.js
-import pool from "../../config/db.js";
+import pool from '../../config/db.js';
 
 // --- Categories ---
 
 export const listCategories = async (req, res, next) => {
   try {
     const { rows } = await pool.query(
-      "SELECT id, name FROM categories ORDER BY name ASC"
+      'SELECT id, name FROM categories ORDER BY name ASC'
     );
 
     return res.status(200).json({
@@ -20,12 +20,12 @@ export const listCategories = async (req, res, next) => {
 
 export const createCategory = async (req, res, next) => {
   try {
-    const name = String(req.body?.name || "").trim();
-    if (!name) return res.status(400).json({ error: "Name is required." });
-    if (name.length > 100) return res.status(400).json({ error: "Category name must be 100 characters or fewer." });
+    const name = String(req.body?.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Name is required.' });
+    if (name.length > 100) return res.status(400).json({ error: 'Category name must be 100 characters or fewer.' });
 
     const { rows } = await pool.query(
-      `INSERT INTO categories (name) VALUES ($1) RETURNING id, name`,
+      'INSERT INTO categories (name) VALUES ($1) RETURNING id, name',
       [name]
     );
     res.status(201).json({ category: rows[0] });
@@ -36,14 +36,14 @@ export const createCategory = async (req, res, next) => {
 
 export const updateCategory = async (req, res, next) => {
   try {
-    const name = String(req.body?.name || "").trim();
-    if (!name) return res.status(400).json({ error: "Name is required." });
-    if (name.length > 100) return res.status(400).json({ error: "Category name must be 100 characters or fewer." });
+    const name = String(req.body?.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Name is required.' });
+    if (name.length > 100) return res.status(400).json({ error: 'Category name must be 100 characters or fewer.' });
     const { rows } = await pool.query(
-      `UPDATE categories SET name = $1 WHERE id = $2 RETURNING id, name`,
+      'UPDATE categories SET name = $1 WHERE id = $2 RETURNING id, name',
       [name, req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: "Category not found." });
+    if (!rows[0]) return res.status(404).json({ error: 'Category not found.' });
     res.json({ category: rows[0] });
   } catch (err) {
     next(err);
@@ -52,12 +52,12 @@ export const updateCategory = async (req, res, next) => {
 
 export const deleteCategory = async (req, res, next) => {
   try {
-    const { rowCount } = await pool.query(`DELETE FROM categories WHERE id = $1`, [req.params.id]);
-    if (rowCount === 0) return res.status(404).json({ error: "Category not found." });
+    const { rowCount } = await pool.query('DELETE FROM categories WHERE id = $1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Category not found.' });
     res.status(204).send();
   } catch (err) {
-    if (err.code === "23503") {
-      return res.status(409).json({ error: "Cannot delete category referenced by menu items." });
+    if (err.code === '23503') {
+      return res.status(409).json({ error: 'Cannot delete category referenced by menu items.' });
     }
     next(err);
   }
@@ -133,10 +133,10 @@ export const getMenuItem = async (req, res, next) => {
       },
     });
   } catch (err) {
-    if (err.code === "22P02") {
+    if (err.code === '22P02') {
       return res.status(400).json({
         success: false,
-        message: "Invalid menu item ID format.",
+        message: 'Invalid menu item ID format.',
       });
     }
     next(err);
@@ -148,10 +148,10 @@ export const createMenuItem = async (req, res, next) => {
   try {
     const { category_id, name, description, price, cost, image_url, stock_quantity, status, inventory_components } = req.body;
     if (!category_id || !name || price === undefined) {
-      return res.status(400).json({ error: "category_id, name, and price are required." });
+      return res.status(400).json({ error: 'category_id, name, and price are required.' });
     }
 
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     const { rows } = await client.query(
       `INSERT INTO menu_items (category_id, name, description, price, cost, image_url, stock_quantity, status)
@@ -174,7 +174,7 @@ export const createMenuItem = async (req, res, next) => {
       }
     }
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
 
     const { rows: invComp } = await pool.query(
       `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
@@ -186,7 +186,7 @@ export const createMenuItem = async (req, res, next) => {
 
     res.status(201).json({ item: { ...item, inventory_components: invComp } });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();
@@ -198,7 +198,7 @@ export const updateMenuItem = async (req, res, next) => {
   try {
     const { category_id, name, description, price, cost, image_url, status, stock_quantity, inventory_components } = req.body;
 
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     const { rows } = await client.query(
       `UPDATE menu_items
@@ -215,24 +215,24 @@ export const updateMenuItem = async (req, res, next) => {
       [category_id, name, description, price, cost !== undefined ? Number(cost) : undefined, image_url, status, stock_quantity, req.params.id]
     );
     if (!rows[0]) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Menu item not found." });
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Menu item not found.' });
     }
 
     // Re-create inventory components if supplied
     if (Array.isArray(inventory_components)) {
-      await client.query(`DELETE FROM menu_item_inventory WHERE menu_id = $1`, [req.params.id]);
+      await client.query('DELETE FROM menu_item_inventory WHERE menu_id = $1', [req.params.id]);
       for (const comp of inventory_components) {
         if (comp.inventory_id && Number(comp.quantity) > 0) {
           await client.query(
-            `INSERT INTO menu_item_inventory (menu_id, inventory_id, quantity, unit) VALUES ($1, $2, $3, $4)`,
+            'INSERT INTO menu_item_inventory (menu_id, inventory_id, quantity, unit) VALUES ($1, $2, $3, $4)',
             [req.params.id, comp.inventory_id, comp.quantity, comp.unit || 'g']
           );
         }
       }
     }
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
 
     const { rows: invComp } = await pool.query(
       `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
@@ -244,7 +244,7 @@ export const updateMenuItem = async (req, res, next) => {
 
     res.json({ item: { ...rows[0], inventory_components: invComp } });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();
@@ -253,12 +253,12 @@ export const updateMenuItem = async (req, res, next) => {
 
 export const deleteMenuItem = async (req, res, next) => {
   try {
-    const { rowCount } = await pool.query(`DELETE FROM menu_items WHERE id = $1`, [req.params.id]);
-    if (rowCount === 0) return res.status(404).json({ error: "Menu item not found." });
+    const { rowCount } = await pool.query('DELETE FROM menu_items WHERE id = $1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Menu item not found.' });
     res.status(204).send();
   } catch (err) {
-    if (err.code === "23503") {
-      return res.status(409).json({ error: "Cannot delete item because it has order or bundle history." });
+    if (err.code === '23503') {
+      return res.status(409).json({ error: 'Cannot delete item because it has order or bundle history.' });
     }
     next(err);
   }
@@ -269,29 +269,29 @@ export const deleteMenuItem = async (req, res, next) => {
 export const listAddons = async (req, res, next) => {
   try {
     let { rows: addons } = await pool.query(
-      `SELECT id, name, description, price, cost, category, status, created_at FROM add_ons ORDER BY name ASC`
+      'SELECT id, name, description, price, cost, category, status, created_at FROM add_ons ORDER BY name ASC'
     );
 
     if (addons.length === 0) {
       // Seed sample Add-Ons
-      const a1 = await pool.query(`INSERT INTO add_ons (name, description, price, cost, category, status) VALUES ('Extra Shot', 'Additional espresso shot', 30.00, 12.00, 'Coffee Add-On', 'available') RETURNING id`);
-      const a2 = await pool.query(`INSERT INTO add_ons (name, description, price, cost, category, status) VALUES ('Oat Milk', 'Substitute with barista oat milk', 30.00, 20.00, 'Dairy Alternative', 'available') RETURNING id`);
-      const a3 = await pool.query(`INSERT INTO add_ons (name, description, price, cost, category, status) VALUES ('Caramel Drizzle', 'Extra caramel drizzle topping', 20.00, 5.00, 'Toppings', 'available') RETURNING id`);
+      const a1 = await pool.query('INSERT INTO add_ons (name, description, price, cost, category, status) VALUES (\'Extra Shot\', \'Additional espresso shot\', 30.00, 12.00, \'Coffee Add-On\', \'available\') RETURNING id');
+      const a2 = await pool.query('INSERT INTO add_ons (name, description, price, cost, category, status) VALUES (\'Oat Milk\', \'Substitute with barista oat milk\', 30.00, 20.00, \'Dairy Alternative\', \'available\') RETURNING id');
+      const a3 = await pool.query('INSERT INTO add_ons (name, description, price, cost, category, status) VALUES (\'Caramel Drizzle\', \'Extra caramel drizzle topping\', 20.00, 5.00, \'Toppings\', \'available\') RETURNING id');
 
       // Link to first available inventory items if exist
-      const { rows: invs } = await pool.query(`SELECT id, name FROM inventory_items LIMIT 5`);
+      const { rows: invs } = await pool.query('SELECT id, name FROM inventory_items LIMIT 5');
       if (invs.length > 0) {
         const espresso = invs.find(i => i.name.includes('Espresso')) || invs[0];
         const oat      = invs.find(i => i.name.includes('Oat')) || invs[0];
         const caramel  = invs.find(i => i.name.includes('Caramel')) || invs[0];
 
-        if (a1.rows[0] && espresso) await pool.query(`INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 18, 'g')`, [a1.rows[0].id, espresso.id]);
-        if (a2.rows[0] && oat)      await pool.query(`INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 150, 'ml')`, [a2.rows[0].id, oat.id]);
-        if (a3.rows[0] && caramel)  await pool.query(`INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 15, 'ml')`, [a3.rows[0].id, caramel.id]);
+        if (a1.rows[0] && espresso) await pool.query('INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 18, \'g\')', [a1.rows[0].id, espresso.id]);
+        if (a2.rows[0] && oat)      await pool.query('INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 150, \'ml\')', [a2.rows[0].id, oat.id]);
+        if (a3.rows[0] && caramel)  await pool.query('INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 15, \'ml\')', [a3.rows[0].id, caramel.id]);
       }
 
       const refetched = await pool.query(
-        `SELECT id, name, description, price, cost, category, status, created_at FROM add_ons ORDER BY name ASC`
+        'SELECT id, name, description, price, cost, category, status, created_at FROM add_ons ORDER BY name ASC'
       );
       addons = refetched.rows;
     }
@@ -349,10 +349,10 @@ export const createAddon = async (req, res, next) => {
   try {
     const { name, description, price, cost, category, status, inventory_components, product_ids } = req.body || {};
     if (!name || price === undefined) {
-      return res.status(400).json({ error: "Add-On name and price are required." });
+      return res.status(400).json({ error: 'Add-On name and price are required.' });
     }
 
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     const { rows } = await client.query(
       `INSERT INTO add_ons (name, description, price, cost, category, status)
@@ -379,16 +379,16 @@ export const createAddon = async (req, res, next) => {
     if (Array.isArray(product_ids)) {
       for (const menuId of product_ids) {
         await client.query(
-          `INSERT INTO addon_products (addon_id, menu_id) VALUES ($1, $2)`,
+          'INSERT INTO addon_products (addon_id, menu_id) VALUES ($1, $2)',
           [addon.id, menuId]
         );
       }
     }
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     res.status(201).json({ addon });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();
@@ -401,7 +401,7 @@ export const updateAddon = async (req, res, next) => {
     const { id } = req.params;
     const { name, description, price, cost, category, status, inventory_components, product_ids } = req.body || {};
 
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     const { rows } = await client.query(
       `UPDATE add_ons
@@ -417,17 +417,17 @@ export const updateAddon = async (req, res, next) => {
     );
 
     if (rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Add-On not found." });
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Add-On not found.' });
     }
 
     // Re-create inventory components if supplied
     if (Array.isArray(inventory_components)) {
-      await client.query(`DELETE FROM addon_inventory WHERE addon_id = $1`, [id]);
+      await client.query('DELETE FROM addon_inventory WHERE addon_id = $1', [id]);
       for (const comp of inventory_components) {
         if (comp.inventory_id && comp.quantity > 0) {
           await client.query(
-            `INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, $3, $4)`,
+            'INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, $3, $4)',
             [id, comp.inventory_id, comp.quantity, comp.unit || 'g']
           );
         }
@@ -436,19 +436,19 @@ export const updateAddon = async (req, res, next) => {
 
     // Re-create product links if supplied
     if (Array.isArray(product_ids)) {
-      await client.query(`DELETE FROM addon_products WHERE addon_id = $1`, [id]);
+      await client.query('DELETE FROM addon_products WHERE addon_id = $1', [id]);
       for (const menuId of product_ids) {
         await client.query(
-          `INSERT INTO addon_products (addon_id, menu_id) VALUES ($1, $2)`,
+          'INSERT INTO addon_products (addon_id, menu_id) VALUES ($1, $2)',
           [id, menuId]
         );
       }
     }
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     res.json({ addon: rows[0] });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();
@@ -457,8 +457,8 @@ export const updateAddon = async (req, res, next) => {
 
 export const deleteAddon = async (req, res, next) => {
   try {
-    const { rowCount } = await pool.query(`DELETE FROM add_ons WHERE id = $1`, [req.params.id]);
-    if (rowCount === 0) return res.status(404).json({ error: "Add-On not found." });
+    const { rowCount } = await pool.query('DELETE FROM add_ons WHERE id = $1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Add-On not found.' });
     res.status(204).send();
   } catch (err) {
     next(err);
@@ -470,7 +470,7 @@ export const deleteAddon = async (req, res, next) => {
 export const listBundles = async (req, res, next) => {
   try {
     const { rows: bundles } = await pool.query(
-      `SELECT id, name, description, bundle_price, discount_percent, image_url, status, created_at FROM bundles ORDER BY name ASC`
+      'SELECT id, name, description, bundle_price, discount_percent, image_url, status, created_at FROM bundles ORDER BY name ASC'
     );
 
     const result = await Promise.all(
@@ -519,10 +519,10 @@ export const createBundle = async (req, res, next) => {
   try {
     const { name, description, bundle_price, discount_percent, image_url, status, products } = req.body || {};
     if (!name || bundle_price === undefined) {
-      return res.status(400).json({ error: "Bundle name and bundle_price are required." });
+      return res.status(400).json({ error: 'Bundle name and bundle_price are required.' });
     }
 
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     const { rows } = await client.query(
       `INSERT INTO bundles (name, description, bundle_price, discount_percent, image_url, status)
@@ -536,17 +536,17 @@ export const createBundle = async (req, res, next) => {
       for (const p of products) {
         if (p.menu_id && p.quantity > 0) {
           await client.query(
-            `INSERT INTO bundle_products (bundle_id, menu_id, quantity) VALUES ($1, $2, $3)`,
+            'INSERT INTO bundle_products (bundle_id, menu_id, quantity) VALUES ($1, $2, $3)',
             [bundle.id, p.menu_id, Number(p.quantity)]
           );
         }
       }
     }
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     res.status(201).json({ bundle });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();
@@ -559,7 +559,7 @@ export const updateBundle = async (req, res, next) => {
     const { id } = req.params;
     const { name, description, bundle_price, discount_percent, image_url, status, products } = req.body || {};
 
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     const { rows } = await client.query(
       `UPDATE bundles
@@ -575,26 +575,26 @@ export const updateBundle = async (req, res, next) => {
     );
 
     if (rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Bundle not found." });
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Bundle not found.' });
     }
 
     if (Array.isArray(products)) {
-      await client.query(`DELETE FROM bundle_products WHERE bundle_id = $1`, [id]);
+      await client.query('DELETE FROM bundle_products WHERE bundle_id = $1', [id]);
       for (const p of products) {
         if (p.menu_id && p.quantity > 0) {
           await client.query(
-            `INSERT INTO bundle_products (bundle_id, menu_id, quantity) VALUES ($1, $2, $3)`,
+            'INSERT INTO bundle_products (bundle_id, menu_id, quantity) VALUES ($1, $2, $3)',
             [id, p.menu_id, Number(p.quantity)]
           );
         }
       }
     }
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     res.json({ bundle: rows[0] });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();
@@ -603,8 +603,8 @@ export const updateBundle = async (req, res, next) => {
 
 export const deleteBundle = async (req, res, next) => {
   try {
-    const { rowCount } = await pool.query(`DELETE FROM bundles WHERE id = $1`, [req.params.id]);
-    if (rowCount === 0) return res.status(404).json({ error: "Bundle not found." });
+    const { rowCount } = await pool.query('DELETE FROM bundles WHERE id = $1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Bundle not found.' });
     res.status(204).send();
   } catch (err) {
     next(err);

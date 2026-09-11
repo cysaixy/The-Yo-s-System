@@ -23,10 +23,14 @@ console.log(
     : `[db.js] No connection string found — falling back to DB_HOST=${process.env.DB_HOST}`
 );
 
+const isLocal =
+  connectionString &&
+  (connectionString.includes("localhost") || connectionString.includes("127.0.0.1"));
+
 const pool = connectionString
   ? new Pool({
       connectionString,
-      ssl: { rejectUnauthorized: false },
+      ssl: isLocal ? false : { rejectUnauthorized: true },
       max: 20,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 5_000,

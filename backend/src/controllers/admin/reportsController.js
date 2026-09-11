@@ -1,5 +1,5 @@
 // src/controllers/admin/reportsController.js
-import pool from "../../config/db.js";
+import pool from '../../config/db.js';
 
 // A single consolidated reports endpoint. Note: this overlaps on purpose
 // with dashboardController.salesBreakdown (order type/category) and

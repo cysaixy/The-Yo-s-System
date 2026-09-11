@@ -277,28 +277,29 @@
     loginBtn.disabled = true;
     loginBtn.textContent = 'Signing in…';
 
-    try {
-      const res = await fetch('/api/admin/staff/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: document.getElementById('staffEmail').value.trim(),
-          password: document.getElementById('staffPassword').value,
-        }),
-      });
-      const data = await res.json();
+try {
+        const res = await fetch('/api/admin/staff/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            email: document.getElementById('staffEmail').value.trim(),
+            password: document.getElementById('staffPassword').value,
+          }),
+        });
+        const data = await res.json();
 
-      if (!res.ok) {
-        statusEl.textContent = data.error || 'Invalid email or password.';
-        statusEl.className = 'login-status err';
-        return;
-      }
+        if (!res.ok) {
+          statusEl.textContent = data.error || 'Invalid email or password.';
+          statusEl.className = 'login-status err';
+          return;
+        }
 
-      localStorage.setItem('staffToken', data.token);
-      localStorage.setItem('staffInfo', JSON.stringify(data.staff));
+        // Token is set as httpOnly cookie by server
+        localStorage.setItem('staffInfo', JSON.stringify(data.staff));
 
-      const redirect = params.get('redirect') || 'dashboard.html';
-      window.location.href = redirect;
+        const redirect = params.get('redirect') || 'dashboard.html';
+        window.location.href = redirect;
     } catch (err) {
       statusEl.textContent = 'Connection error. Please try again.';
       statusEl.className = 'login-status err';

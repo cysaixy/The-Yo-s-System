@@ -179,6 +179,10 @@ model InventoryLog {
   staff         Staff?         @relation(fields: [staffId], references: [id])
   stockIn       StockIn?       @relation(fields: [stockInId], references: [id])
 
+  @@index([inventoryId, logDate], map: "inventory_log_inventory_date_idx")
+  @@index([menuId], map: "inventory_log_menu_id_idx")
+  @@index([staffId], map: "inventory_log_staff_id_idx")
+  @@index([logDate], map: "inventory_log_date_idx")
   @@map("inventory_log")
 }
 
@@ -200,6 +204,7 @@ model MenuItem {
   inventoryLogs  InventoryLog[]
   stockIns       StockIn[]
 
+  @@index([categoryId, status], map: "menu_items_category_status_idx")
   @@map("menu_items")
 }
 
@@ -263,6 +268,10 @@ model Order {
   payments    Payment[]
 
   @@index([handledByStaffId], map: "orders_handled_by_staff_id_idx")
+  @@index([customerId], map: "orders_customer_id_idx")
+  @@index([status], map: "orders_status_idx")
+  @@index([datetimeOrdered], map: "orders_datetime_ordered_idx")
+  @@index([reservationId], map: "orders_reservation_id_idx")
   @@map("orders")
 }
 
@@ -277,6 +286,7 @@ model Payment {
 
   order Order @relation(fields: [orderId], references: [id])
 
+  @@index([orderId], map: "payments_order_id_idx")
   @@map("payments")
 }
 
@@ -300,6 +310,10 @@ model Reservation {
   customer Customer @relation(fields: [customerId], references: [id])
   orders   Order[]
 
+  @@index([customerId], map: "reservations_customer_id_idx")
+  @@index([reservationDate, status], map: "reservations_date_status_idx")
+  @@index([tableNo, reservationDate, status], map: "reservations_table_date_status_idx")
+  @@index([reservationDate], map: "reservations_date_idx")
   @@map("reservations")
 }
 

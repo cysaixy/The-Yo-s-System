@@ -1,5 +1,5 @@
 // src/controllers/admin/purchasesController.js
-import pool from "../../config/db.js";
+import pool from '../../config/db.js';
 
 export async function list(req, res, next) {
   try {
@@ -10,7 +10,7 @@ export async function list(req, res, next) {
     if (from) { params.push(from); conditions.push(`si.stockin_date::date >= $${params.length}`); }
     if (to) { params.push(to); conditions.push(`si.stockin_date::date <= $${params.length}`); }
 
-    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const { rows } = await pool.query(
       `SELECT si.id, mi.name AS item_name, s.name AS staff_name, si.quantity,
@@ -36,14 +36,14 @@ export async function create(req, res, next) {
 
     if (!menu_id || !quantity || quantity <= 0) {
       return res.status(400).json({
-        error: "Bad Request",
-        message: "menu_id and a positive quantity are required.",
+        error: 'Bad Request',
+        message: 'menu_id and a positive quantity are required.',
       });
     }
 
     const staffId = req.staff?.id || null;
 
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     const { rows: stockInRows } = await client.query(
       `INSERT INTO stock_in (menu_id, staff_id, quantity, expiration_date, remarks)
@@ -54,7 +54,7 @@ export async function create(req, res, next) {
     const stockIn = stockInRows[0];
 
     await client.query(
-      `UPDATE menu_items SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
+      'UPDATE menu_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
       [Number(quantity), menu_id]
     );
 
@@ -64,10 +64,10 @@ export async function create(req, res, next) {
       [menu_id, staffId, stockIn.id, Number(quantity), remarks || null]
     );
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     return res.status(201).json(stockIn);
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();

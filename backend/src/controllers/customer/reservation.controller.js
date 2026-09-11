@@ -1,6 +1,6 @@
 // src/controllers/customer/reservation.controller.js
-import pool from "../../config/db.js";
-import { checkTimeSlotCapacity, checkCustomerExistingReservation, getMaxRoomCapacity } from "../../utils/reservationCapacity.js";
+import pool from '../../config/db.js';
+import { checkTimeSlotCapacity, checkCustomerExistingReservation, getMaxRoomCapacity } from '../../utils/reservationCapacity.js';
 
 // Restaurant rules the booking form must respect (mirrored on the client).
 const MAX_GUESTS = 20;
@@ -18,19 +18,19 @@ export async function createReservation(req, res, next) {
 
     if (!customer_id) {
       return res.status(400).json({
-        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
+        error: 'No customer profile found for this account. Call /api/customer/auth/sync first.',
       });
     }
-    if (!reservation_date || !reservation_time || guests === undefined || guests === null || guests === "") {
+    if (!reservation_date || !reservation_time || guests === undefined || guests === null || guests === '') {
       return res.status(400).json({
-        error: "reservation_date, reservation_time, and guests are required.",
+        error: 'reservation_date, reservation_time, and guests are required.',
       });
     }
 
     // Validate date format
-    const [y, m, d] = String(reservation_date).split("-").map(Number);
+    const [y, m, d] = String(reservation_date).split('-').map(Number);
     if (!y || !m || !d) {
-      return res.status(400).json({ error: "reservation_date must be YYYY-MM-DD." });
+      return res.status(400).json({ error: 'reservation_date must be YYYY-MM-DD.' });
     }
     const date = new Date(y, m - 1, d);
     const today = new Date();
@@ -47,7 +47,7 @@ export async function createReservation(req, res, next) {
 
     // Also reject past dates (redundant but safe)
     if (date < today) {
-      return res.status(400).json({ error: "Reservation date can't be in the past." });
+      return res.status(400).json({ error: 'Reservation date can\'t be in the past.' });
     }
 
     // Guests must be a whole number within the room's capacity.
@@ -70,12 +70,12 @@ export async function createReservation(req, res, next) {
     const timeHours = timeMatch ? Number(timeMatch[1]) : -1;
     const timeMins = timeMatch ? Number(timeMatch[2]) : -1;
     if (!timeMatch || timeHours > 23 || timeMins > 59) {
-      return res.status(400).json({ error: "reservation_time must be a valid HH:MM time." });
+      return res.status(400).json({ error: 'reservation_time must be a valid HH:MM time.' });
     }
     const timeMinutes = timeHours * 60 + timeMins;
     if (timeMinutes < OPENING_MINUTES || timeMinutes > CLOSING_MINUTES) {
       return res.status(400).json({
-        error: "We're open from 9:00 AM to 9:00 PM. Please pick a time within those hours.",
+        error: 'We\'re open from 9:00 AM to 9:00 PM. Please pick a time within those hours.',
       });
     }
 
@@ -155,7 +155,7 @@ export async function getCustomerReservations(req, res, next) {
     const customer_id = req.user?.customer?.id;
     if (!customer_id) {
       return res.status(400).json({
-        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
+        error: 'No customer profile found for this account. Call /api/customer/auth/sync first.',
       });
     }
 
@@ -194,11 +194,11 @@ export async function cancelReservation(req, res, next) {
     if (!rows[0]) {
       // Distinguish "not found / not yours" from "already decided".
       const check = await pool.query(
-        `SELECT status FROM reservations WHERE id = $1 AND customer_id = $2`,
+        'SELECT status FROM reservations WHERE id = $1 AND customer_id = $2',
         [id, customer_id]
       );
       if (!check.rows[0]) {
-        return res.status(404).json({ error: "Reservation not found." });
+        return res.status(404).json({ error: 'Reservation not found.' });
       }
       return res.status(409).json({
         error: `This reservation can't be cancelled because it was already ${check.rows[0].status}.`,

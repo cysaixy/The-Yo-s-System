@@ -1,16 +1,16 @@
 // src/controllers/admin/salesController.js
-import pool from "../../config/db.js";
-import { restoreOrderInventory } from "../../utils/inventoryRestore.js";
+import pool from '../../config/db.js';
+import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
 
-const VALID_ORDER_TYPES = ["dine_in", "pickup"];
-const VALID_PAYMENT_METHODS = ["cash", "card", "gcash", "bank_transfer", "other"];
-const VALID_ORDER_STATUSES = ["pending", "confirmed", "preparing", "ready", "completed", "cancelled"];
+const VALID_ORDER_TYPES = ['dine_in', 'pickup'];
+const VALID_PAYMENT_METHODS = ['cash', 'card', 'gcash', 'bank_transfer', 'other'];
+const VALID_ORDER_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
 const ALLOWED_PREVIOUS_STATUSES = {
-  confirmed: ["pending"],
-  preparing: ["confirmed"],
-  ready: ["preparing"],
-  completed: ["ready"],
-  cancelled: ["pending", "confirmed", "preparing", "ready", "completed"],
+  confirmed: ['pending'],
+  preparing: ['confirmed'],
+  ready: ['preparing'],
+  completed: ['ready'],
+  cancelled: ['pending', 'confirmed', 'preparing', 'ready', 'completed'],
 };
 
 // orders.customer_id is NOT NULL in the schema, so walk-in POS sales (no
@@ -19,34 +19,34 @@ const ALLOWED_PREVIOUS_STATUSES = {
 // on every subsequent order that doesn't have a real customer attached.
 // Staff can still search and attach a real customer when it's useful
 // (repeat customers, loyalty tracking), but it's optional, not required.
-const WALK_IN_EMAIL = "walkin@theyos.pos";
+const WALK_IN_EMAIL = 'walkin@theyos.pos';
 
 async function getOrCreateWalkInCustomerId(client) {
   const existing = await client.query(
-    `SELECT id FROM customers WHERE email = $1 LIMIT 1`,
+    'SELECT id FROM customers WHERE email = $1 LIMIT 1',
     [WALK_IN_EMAIL]
   );
   if (existing.rows[0]) return existing.rows[0].id;
 
   const created = await client.query(
-    `INSERT INTO customers (name, email) VALUES ('Walk-in Customer', $1) RETURNING id`,
+    'INSERT INTO customers (name, email) VALUES (\'Walk-in Customer\', $1) RETURNING id',
     [WALK_IN_EMAIL]
   );
   return created.rows[0].id;
 }
 
-function salesDateExpression({ dateType = "entry", storeHour = 0 } = {}) {
+function salesDateExpression({ dateType = 'entry', storeHour = 0 } = {}) {
   const hour = Math.min(23, Math.max(0, Math.trunc(Number(storeHour) || 0)));
-  const timestamp = dateType === "sale"
-    ? "COALESCE((SELECT MAX(pd.datetime_paid) FROM payments pd WHERE pd.order_id = o.id), o.datetime_ordered)"
-    : "o.datetime_ordered";
+  const timestamp = dateType === 'sale'
+    ? 'COALESCE((SELECT MAX(pd.datetime_paid) FROM payments pd WHERE pd.order_id = o.id), o.datetime_ordered)'
+    : 'o.datetime_ordered';
   return `(${timestamp} - INTERVAL '${hour} hours')`;
 }
 
 // Build a reusable "period + status" WHERE fragment. The reporting date
 // can follow either order entry or payment time, with a configurable start
 // of business day (for example 05:00 through 04:59 the next calendar day).
-function periodWhere({ from, to, status = "!cancelled", dateType = "entry", storeHour = 0 }, paramStart = 1) {
+function periodWhere({ from, to, status = '!cancelled', dateType = 'entry', storeHour = 0 }, paramStart = 1) {
   const conditions = [];
   const params = [];
   const dateExpression = salesDateExpression({ dateType, storeHour });
@@ -54,10 +54,10 @@ function periodWhere({ from, to, status = "!cancelled", dateType = "entry", stor
 
   if (from) { params.push(from); conditions.push(`${dateExpression}::date >= $${n}`); n++; }
   if (to)   { params.push(to);   conditions.push(`${dateExpression}::date <= $${n}`); n++; }
-  if (status === "!cancelled") conditions.push(`o.status <> 'cancelled'`);
+  if (status === '!cancelled') conditions.push('o.status <> \'cancelled\'');
   else if (status) { params.push(status); conditions.push(`o.status = $${n}`); n++; }
 
-  return { where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "", params, nextIndex: n };
+  return { where: conditions.length ? `WHERE ${conditions.join(' AND ')}` : '', params, nextIndex: n };
 }
 
 function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
@@ -70,32 +70,32 @@ export async function createPosOrder(req, res, next) {
   try {
     const { customer_id, order_type, cart, delivery_fee, payment_method, payments } = req.body;
     const deliveryFee = round2(delivery_fee);
-    const payMethod = String(payment_method || "cash").toLowerCase();
+    const payMethod = String(payment_method || 'cash').toLowerCase();
     const requestedPayments = Array.isArray(payments)
       ? payments.map((payment) => ({
-          method: String(payment?.payment_method || payment?.method || "").toLowerCase(),
-          amount: round2(payment?.amount),
-        }))
+        method: String(payment?.payment_method || payment?.method || '').toLowerCase(),
+        amount: round2(payment?.amount),
+      }))
       : null;
 
     if (!VALID_ORDER_TYPES.includes(order_type)) {
-      return res.status(400).json({ error: `order_type must be one of: ${VALID_ORDER_TYPES.join(", ")}` });
+      return res.status(400).json({ error: `order_type must be one of: ${VALID_ORDER_TYPES.join(', ')}` });
     }
     if (requestedPayments) {
       if (requestedPayments.length < 2) {
-        return res.status(400).json({ error: "Split payments require at least two payment entries." });
+        return res.status(400).json({ error: 'Split payments require at least two payment entries.' });
       }
       const invalidPayment = requestedPayments.find(
         (payment) => !VALID_PAYMENT_METHODS.includes(payment.method) || payment.amount <= 0
       );
       if (invalidPayment) {
-        return res.status(400).json({ error: "Each split payment needs a valid payment method and positive amount." });
+        return res.status(400).json({ error: 'Each split payment needs a valid payment method and positive amount.' });
       }
     } else if (!VALID_PAYMENT_METHODS.includes(payMethod)) {
-      return res.status(400).json({ error: `payment_method must be one of: ${VALID_PAYMENT_METHODS.join(", ")}` });
+      return res.status(400).json({ error: `payment_method must be one of: ${VALID_PAYMENT_METHODS.join(', ')}` });
     }
     if (!Array.isArray(cart) || cart.length === 0) {
-      return res.status(400).json({ error: "cart must be a non-empty array." });
+      return res.status(400).json({ error: 'cart must be a non-empty array.' });
     }
 
     let total_amount = 0;
@@ -104,11 +104,11 @@ export async function createPosOrder(req, res, next) {
     for (const line of cart) {
       const menuQty = Number(line.quantity);
       if (!menuQty || menuQty < 1) {
-        return res.status(400).json({ error: "Each cart line needs a positive quantity." });
+        return res.status(400).json({ error: 'Each cart line needs a positive quantity.' });
       }
 
       const { rows } = await client.query(
-        "SELECT id, name, price, cost, stock_quantity FROM menu_items WHERE id = $1",
+        'SELECT id, name, price, cost, stock_quantity FROM menu_items WHERE id = $1',
         [line.menu_id]
       );
       const menuItem = rows[0];
@@ -139,30 +139,30 @@ export async function createPosOrder(req, res, next) {
         for (const ad of line.add_ons) {
           const aQty = Number(ad.quantity);
           if (!aQty || aQty < 1) {
-            return res.status(400).json({ error: "Add-on quantities must be positive." });
+            return res.status(400).json({ error: 'Add-on quantities must be positive.' });
           }
 
           const { rows: aRows } = await client.query(
-            `SELECT id, name, price, cost, status FROM add_ons WHERE id = $1`,
+            'SELECT id, name, price, cost, status FROM add_ons WHERE id = $1',
             [ad.addon_id]
           );
           const addon = aRows[0];
           if (!addon) {
             return res.status(400).json({ error: `Add-on ${ad.addon_id} not found.` });
           }
-          if (addon.status === "unavailable") {
+          if (addon.status === 'unavailable') {
             return res.status(409).json({ error: `${addon.name} is unavailable.` });
           }
 
           // An add-on with NO product links is a global add-on and can go on
           // any product. Otherwise it must be explicitly linked to this one.
           const { rows: anyLink } = await client.query(
-            `SELECT 1 FROM addon_products WHERE addon_id = $1 LIMIT 1`,
+            'SELECT 1 FROM addon_products WHERE addon_id = $1 LIMIT 1',
             [addon.id]
           );
           if (anyLink.length > 0) {
             const { rows: productLink } = await client.query(
-              `SELECT 1 FROM addon_products WHERE addon_id = $1 AND menu_id = $2 LIMIT 1`,
+              'SELECT 1 FROM addon_products WHERE addon_id = $1 AND menu_id = $2 LIMIT 1',
               [addon.id, menuItem.id]
             );
             if (productLink.length === 0) {
@@ -219,7 +219,7 @@ export async function createPosOrder(req, res, next) {
       });
     }
 
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     const resolvedCustomerId = customer_id || await getOrCreateWalkInCustomerId(client);
 
@@ -247,7 +247,7 @@ export async function createPosOrder(req, res, next) {
       for (const comp of item.inventory_components) {
         const consumed = Number(comp.quantity) * item.quantity;
         await client.query(
-          `UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2`,
+          'UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2',
           [consumed, comp.inventory_id]
         );
         await client.query(
@@ -268,7 +268,7 @@ export async function createPosOrder(req, res, next) {
         for (const comp of a.inventory_components) {
           const consumed = Number(comp.quantity) * a.quantity;
           await client.query(
-            `UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2`,
+            'UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2',
             [consumed, comp.inventory_id]
           );
           await client.query(
@@ -282,7 +282,7 @@ export async function createPosOrder(req, res, next) {
       // If the product has NO ingredients, track and deduct its direct stock on menu_items
       if (!item.inventory_components || item.inventory_components.length === 0) {
         await client.query(
-          `UPDATE menu_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2 AND stock_quantity IS NOT NULL`,
+          'UPDATE menu_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2 AND stock_quantity IS NOT NULL',
           [item.quantity, item.menu_id]
         );
         await client.query(
@@ -304,7 +304,7 @@ export async function createPosOrder(req, res, next) {
       createdPayments.push(paymentResult.rows[0]);
     }
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     res.status(201).json({
       order: {
         ...order,
@@ -313,7 +313,7 @@ export async function createPosOrder(req, res, next) {
       },
     });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();
@@ -343,7 +343,7 @@ export async function listOrders(req, res, next) {
       conditions.push(`(c.name ILIKE $${params.length} OR s.name ILIKE $${params.length})`);
     }
 
-    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const rowLimit = Math.min(Number(limit) || 500, 2000);
 
     const { rows } = await pool.query(
@@ -425,7 +425,7 @@ export async function getOrder(req, res, next) {
        WHERE o.id = $1`,
       [req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: "Order not found." });
+    if (!rows[0]) return res.status(404).json({ error: 'Order not found.' });
     const order = rows[0];
 
     const { rows: items } = await pool.query(
@@ -482,11 +482,11 @@ export async function updateOrderStatus(req, res, next) {
   try {
     const status = String(req.body.status || '').toLowerCase();
     if (!VALID_ORDER_STATUSES.includes(status) || status === 'pending') {
-      return res.status(400).json({ error: `status must be one of: ${VALID_ORDER_STATUSES.filter(value => value !== 'pending').join(", ")}` });
+      return res.status(400).json({ error: `status must be one of: ${VALID_ORDER_STATUSES.filter(value => value !== 'pending').join(', ')}` });
     }
 
     const allowedPrevious = ALLOWED_PREVIOUS_STATUSES[status] || [];
-    const assignsHandler = ["confirmed", "preparing", "ready", "completed"].includes(status);
+    const assignsHandler = ['confirmed', 'preparing', 'ready', 'completed'].includes(status);
     const { rows } = await pool.query(
       `UPDATE orders
        SET status = $1,
@@ -501,8 +501,8 @@ export async function updateOrderStatus(req, res, next) {
       [status, req.staff.id, assignsHandler, req.params.id, allowedPrevious]
     );
     if (!rows[0]) {
-      const current = await pool.query("SELECT status FROM orders WHERE id = $1", [req.params.id]);
-      if (!current.rows[0]) return res.status(404).json({ error: "Order not found." });
+      const current = await pool.query('SELECT status FROM orders WHERE id = $1', [req.params.id]);
+      if (!current.rows[0]) return res.status(404).json({ error: 'Order not found.' });
       return res.status(409).json({
         error: `Order is already ${current.rows[0].status}. Refresh before applying another action.`,
         current_status: current.rows[0].status,
@@ -512,11 +512,11 @@ export async function updateOrderStatus(req, res, next) {
     if (status === 'cancelled') {
       const client = await pool.connect();
       try {
-        await client.query("BEGIN");
+        await client.query('BEGIN');
         await restoreOrderInventory(client, req.params.id, req.staff.id);
-        await client.query("COMMIT");
+        await client.query('COMMIT');
       } catch (err) {
-        await client.query("ROLLBACK");
+        await client.query('ROLLBACK');
         return next(err);
       } finally {
         client.release();
@@ -540,10 +540,10 @@ export async function updateDeliveryFee(req, res, next) {
     const newFee = round2(delivery_fee);
 
     if (delivery_fee === undefined || delivery_fee === null || isNaN(newFee) || newFee < 0) {
-      return res.status(400).json({ error: "delivery_fee must be a non-negative number." });
+      return res.status(400).json({ error: 'delivery_fee must be a non-negative number.' });
     }
 
-    await client.query("BEGIN");
+    await client.query('BEGIN');
 
     const { rows } = await client.query(
       `UPDATE orders
@@ -555,14 +555,14 @@ export async function updateDeliveryFee(req, res, next) {
     );
 
     if (!rows[0]) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Order not found." });
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Order not found.' });
     }
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     res.json({ order: rows[0] });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();
@@ -585,10 +585,10 @@ export async function updatePaymentStatus(req, res, next) {
   try {
     const { status } = req.body;
     const { rows } = await pool.query(
-      `UPDATE payments SET status = $1 WHERE id = $2 RETURNING id, order_id, status`,
+      'UPDATE payments SET status = $1 WHERE id = $2 RETURNING id, order_id, status',
       [status, req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: "Payment not found." });
+    if (!rows[0]) return res.status(404).json({ error: 'Payment not found.' });
     res.json({ payment: rows[0] });
   } catch (err) {
     next(err);
@@ -848,7 +848,7 @@ export async function categorySalesReport(req, res, next) {
         const profit = round2(revenue - cogs);
         return {
           category_id: c.category_id,
-          category_name: c.category_name || "Uncategorized",
+          category_name: c.category_name || 'Uncategorized',
           quantity_sold: Number(c.quantity_sold),
           revenue,
           cogs,

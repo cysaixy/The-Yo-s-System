@@ -10,19 +10,19 @@
 //        router.get('/inventory', requireStaffAuth, requirePermission('can_access_inventory'), ...)
 
 function requireAdmin(req, res, next) {
-  if (!req.staff) return res.status(401).json({ error: "Not authenticated." });
-  if (req.staff.role !== "Admin") {
-    return res.status(403).json({ error: "This action requires Admin access." });
+  if (!req.staff) return res.status(401).json({ error: 'Not authenticated.' });
+  if (req.staff.role !== 'Admin') {
+    return res.status(403).json({ error: 'This action requires Admin access.' });
   }
   next();
 }
 
 function requirePermission(permissionKey) {
   return function (req, res, next) {
-    if (!req.staff) return res.status(401).json({ error: "Not authenticated." });
+    if (!req.staff) return res.status(401).json({ error: 'Not authenticated.' });
 
     // Admins bypass individual permission flags entirely.
-    if (req.staff.role === "Admin") return next();
+    if (req.staff.role === 'Admin') return next();
 
     if (!req.staff[permissionKey]) {
       return res.status(403).json({

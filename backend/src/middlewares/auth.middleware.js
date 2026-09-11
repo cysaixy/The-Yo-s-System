@@ -1,24 +1,26 @@
 // src/middlewares/auth.middleware.js
-import { auth } from "../config/firebase.js";
-import jwt from "jsonwebtoken";
-import pool from "../config/db.js";
+import { auth } from '../config/firebase.js';
+import jwt from 'jsonwebtoken';
+import pool from '../config/db.js';
+
+const COOKIE_NAME = 'staff_token';
 
 // Firebase Token Middleware for Customers
 export async function verifyFirebaseToken(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized. Token missing." });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized. Token missing.' });
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader.split(' ')[1];
 
   try {
     const decodedToken = await auth.verifyIdToken(token);
     const { uid, email } = decodedToken;
 
     const { rows } = await pool.query(
-      "SELECT id, name, email, phone, address FROM customers WHERE firebase_uid = $1",
+      'SELECT id, name, email, phone, address FROM customers WHERE firebase_uid = $1',
       [uid]
     );
 
@@ -30,23 +32,21 @@ export async function verifyFirebaseToken(req, res, next) {
 
     next();
   } catch (error) {
-    console.error("Firebase Token Error:", error.message);
-    return res.status(401).json({ error: "Unauthorized. Invalid or expired token." });
+    console.error('Firebase Token Error:', error.message);
+    return res.status(401).json({ error: 'Unauthorized. Invalid or expired token.' });
   }
 }
 
-// Staff/Admin Auth Middleware — verifies the JWT issued by
-// generateStaffToken({ staffId }), loads the staff row + permissions, and
-// attaches it as req.staff for requireAdmin/requirePermission and every
-// controller that reads req.staff.id.
+// Staff/Admin Auth Middleware — verifies the JWT from httpOnly cookie,
+// loads the staff row + permissions, and attaches it as req.staff
 export async function requireStaffAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
+  // Try to get token from cookie first, fallback to Authorization header for backward compat
+  const token = req.cookies?.[COOKIE_NAME] || 
+    (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : null);
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized. Staff login required." });
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized. Staff login required.' });
   }
-
-  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -61,14 +61,14 @@ export async function requireStaffAuth(req, res, next) {
     );
     const staff = rows[0];
 
-    if (!staff || staff.status !== "active") {
-      return res.status(401).json({ error: "Unauthorized. Staff account not found or inactive." });
+    if (!staff || staff.status !== 'active') {
+      return res.status(401).json({ error: 'Unauthorized. Staff account not found or inactive.' });
     }
 
     req.staff = staff;
     next();
   } catch (error) {
-    console.error("Staff Token Error:", error.message);
-    return res.status(401).json({ error: "Unauthorized. Invalid or expired token." });
+    console.error('Staff Token Error:', error.message);
+    return res.status(401).json({ error: 'Unauthorized. Invalid or expired token.' });
   }
 }

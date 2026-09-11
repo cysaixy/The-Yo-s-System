@@ -1,5 +1,5 @@
 // src/utils/inventoryRestore.js
-import pool from "../config/db.js";
+import pool from '../config/db.js';
 
 export async function restoreOrderInventory(client, orderId, staffId = null) {
   // Get all order items with their add-ons
@@ -23,7 +23,7 @@ export async function restoreOrderInventory(client, orderId, staffId = null) {
     for (const comp of itemComps) {
       const consumed = Number(comp.quantity) * item.quantity;
       await client.query(
-        `UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
+        'UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
         [consumed, comp.inventory_id]
       );
       await client.query(
@@ -53,7 +53,7 @@ export async function restoreOrderInventory(client, orderId, staffId = null) {
       for (const comp of addonComps) {
         const consumed = Number(comp.quantity) * addon.quantity;
         await client.query(
-          `UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
+          'UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
           [consumed, comp.inventory_id]
         );
         await client.query(
@@ -67,7 +67,7 @@ export async function restoreOrderInventory(client, orderId, staffId = null) {
     // Restore direct stock on menu_items if item has no raw ingredients
     if (!itemComps || itemComps.length === 0) {
       await client.query(
-        `UPDATE menu_items SET stock_quantity = stock_quantity + $1 WHERE id = $2 AND stock_quantity IS NOT NULL`,
+        'UPDATE menu_items SET stock_quantity = stock_quantity + $1 WHERE id = $2 AND stock_quantity IS NOT NULL',
         [item.quantity, item.menu_id]
       );
       await client.query(

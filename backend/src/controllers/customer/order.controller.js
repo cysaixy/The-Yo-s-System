@@ -1,9 +1,9 @@
 // src/controllers/customer/order.controller.js
-import pool from "../../config/db.js";
-import { restoreOrderInventory } from "../../utils/inventoryRestore.js";
+import pool from '../../config/db.js';
+import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
 
-const VALID_ORDER_TYPES = ["online", "delivery", "dine_in", "pickup"];
-const VALID_PAYMENT_METHODS = ["cash", "gcash", "card", "bank_transfer"];
+const VALID_ORDER_TYPES = ['online', 'delivery', 'dine_in', 'pickup'];
+const VALID_PAYMENT_METHODS = ['cash', 'gcash', 'card', 'bank_transfer'];
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
@@ -24,20 +24,20 @@ export async function createOrder(req, res, next) {
 
     if (!customer_id) {
       return res.status(400).json({
-        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
+        error: 'No customer profile found for this account. Call /api/customer/auth/sync first.',
       });
     }
     if (!VALID_ORDER_TYPES.includes(order_type)) {
       return res.status(400).json({
-        error: `order_type must be one of: ${VALID_ORDER_TYPES.join(", ")}`,
+        error: `order_type must be one of: ${VALID_ORDER_TYPES.join(', ')}`,
       });
     }
     if (!Array.isArray(cart) || cart.length === 0) {
-      return res.status(400).json({ error: "cart must be a non-empty array." });
+      return res.status(400).json({ error: 'cart must be a non-empty array.' });
     }
     if (payment_method && !VALID_PAYMENT_METHODS.includes(payment_method)) {
       return res.status(400).json({
-        error: `payment_method must be one of: ${VALID_PAYMENT_METHODS.join(", ")}`,
+        error: `payment_method must be one of: ${VALID_PAYMENT_METHODS.join(', ')}`,
       });
     }
 
@@ -47,34 +47,34 @@ export async function createOrder(req, res, next) {
     // delivery fee themselves — it starts pending and the Admin assigns it
     // later after checking the location. Any delivery_fee value the client
     // sends is deliberately ignored (never trusted from the browser).
-    const isDelivery = order_type === "delivery" || order_type === "online";
+    const isDelivery = order_type === 'delivery' || order_type === 'online';
     // The existing database CHECK constraint stores customer delivery orders
     // as `online`. Accept the clearer client value too, but normalize before
     // insertion so old deployments cannot fail with constraint 23514.
-    const storedOrderType = order_type === "delivery" ? "online" : order_type;
+    const storedOrderType = order_type === 'delivery' ? 'online' : order_type;
     if (isDelivery) {
       if (!delivery_address || !String(delivery_address).trim()) {
-        return res.status(400).json({ error: "Please enter your delivery address." });
+        return res.status(400).json({ error: 'Please enter your delivery address.' });
       }
       if (!customer_phone || !String(customer_phone).trim()) {
-        return res.status(400).json({ error: "Please enter your contact number." });
+        return res.status(400).json({ error: 'Please enter your contact number.' });
       }
     }
 
     const deliveryFee = 0;
-    const deliveryFeeStatus = isDelivery ? "pending" : null;
+    const deliveryFeeStatus = isDelivery ? 'pending' : null;
     let total_amount = 0;
     const validatedItems = [];
 
-    // Re-price and check stock directly from database
+    // Re-price and validate menu items (without stock checks - those move inside transaction)
     for (const line of cart) {
       const menuQty = Number(line.quantity);
       if (!Number.isInteger(menuQty) || menuQty < 1) {
-        return res.status(400).json({ error: "Line quantities must be positive integers." });
+        return res.status(400).json({ error: 'Line quantities must be positive integers.' });
       }
 
       const { rows } = await client.query(
-        "SELECT id, name, price, cost, stock_quantity, status FROM menu_items WHERE id = $1",
+        'SELECT id, name, price, cost, stock_quantity, status FROM menu_items WHERE id = $1',
         [line.menu_id]
       );
       const menuItem = rows[0];
@@ -82,26 +82,18 @@ export async function createOrder(req, res, next) {
       if (!menuItem) {
         return res.status(400).json({ error: `Menu item ${line.menu_id} not found.` });
       }
-      if (menuItem.status !== "available") {
+      if (menuItem.status !== 'available') {
         return res.status(409).json({ error: `${menuItem.name} is currently unavailable.` });
       }
-      if (menuItem.stock_quantity !== null && menuItem.stock_quantity < menuQty) {
-        return res.status(409).json({ error: `${menuItem.name} is out of stock.` });
-      }
 
-      // Check linked raw ingredients for this menu item
+      // Check linked raw ingredients for this menu item (structure only, stock check moves to transaction)
       const { rows: itemComps } = await client.query(
-        `SELECT mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
+        `SELECT mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name
          FROM menu_item_inventory mii
          JOIN inventory_items ii ON ii.id = mii.inventory_id
          WHERE mii.menu_id = $1`,
         [menuItem.id]
       );
-      for (const comp of itemComps) {
-        if (Number(comp.stock_quantity) < Number(comp.quantity) * menuQty) {
-          return res.status(409).json({ error: `${menuItem.name} is out of stock (missing ingredient: ${comp.inventory_name}).` });
-        }
-      }
 
       // Validate add-ons with the same rule the kitchen uses: an add-on with
       // NO product links is global; otherwise it must be linked to this item.
@@ -110,28 +102,28 @@ export async function createOrder(req, res, next) {
         for (const ad of line.add_ons) {
           const aQty = Number(ad.quantity);
           if (!Number.isInteger(aQty) || aQty < 1) {
-            return res.status(400).json({ error: "Add-on quantities must be positive integers." });
+            return res.status(400).json({ error: 'Add-on quantities must be positive integers.' });
           }
 
           const { rows: aRows } = await client.query(
-            `SELECT id, name, price, cost, status FROM add_ons WHERE id = $1`,
+            'SELECT id, name, price, cost, status FROM add_ons WHERE id = $1',
             [ad.addon_id]
           );
           const addon = aRows[0];
           if (!addon) {
             return res.status(400).json({ error: `Add-on ${ad.addon_id} not found.` });
           }
-          if (addon.status === "unavailable") {
+          if (addon.status === 'unavailable') {
             return res.status(409).json({ error: `${addon.name} is unavailable.` });
           }
 
           const { rows: anyLink } = await client.query(
-            `SELECT 1 FROM addon_products WHERE addon_id = $1 LIMIT 1`,
+            'SELECT 1 FROM addon_products WHERE addon_id = $1 LIMIT 1',
             [addon.id]
           );
           if (anyLink.length > 0) {
             const { rows: productLink } = await client.query(
-              `SELECT 1 FROM addon_products WHERE addon_id = $1 AND menu_id = $2 LIMIT 1`,
+              'SELECT 1 FROM addon_products WHERE addon_id = $1 AND menu_id = $2 LIMIT 1',
               [addon.id, menuItem.id]
             );
             if (productLink.length === 0) {
@@ -139,19 +131,14 @@ export async function createOrder(req, res, next) {
             }
           }
 
-          // Check linked raw ingredients have enough stock for the add-on qty.
+          // Get add-on ingredient components (structure only, stock check moves to transaction)
           const { rows: comps } = await client.query(
-            `SELECT ai.inventory_id, ai.quantity, ai.unit, ii.name AS inventory_name, ii.stock_quantity
+            `SELECT ai.inventory_id, ai.quantity, ai.unit, ii.name AS inventory_name
              FROM addon_inventory ai
              JOIN inventory_items ii ON ii.id = ai.inventory_id
              WHERE ai.addon_id = $1`,
             [addon.id]
           );
-          for (const comp of comps) {
-            if (Number(comp.stock_quantity) < Number(comp.quantity) * aQty) {
-              return res.status(409).json({ error: `${addon.name} is out of stock (missing ${comp.inventory_name}).` });
-            }
-          }
 
           addons.push({
             id: addon.id,
@@ -180,7 +167,75 @@ export async function createOrder(req, res, next) {
 
     total_amount = round2(total_amount + deliveryFee);
 
-    await client.query("BEGIN");
+    await client.query('BEGIN');
+
+    // Concurrency-safe stock check and deduction inside transaction
+    // Lock all inventory rows that will be touched, then check and deduct atomically
+    for (const item of validatedItems) {
+      // Lock and check menu item ingredients
+      for (const comp of item.inventory_components) {
+        const needed = Number(comp.quantity) * item.quantity;
+        const { rowCount } = await client.query(
+          `UPDATE inventory_items 
+           SET stock_quantity = stock_quantity - $1 
+           WHERE id = $2 AND stock_quantity >= $1`,
+          [needed, comp.inventory_id]
+        );
+        if (rowCount === 0) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({ 
+            error: `${item.name} is out of stock (missing ingredient: ${comp.inventory_name}).` 
+          });
+        }
+        // Log the deduction
+        await client.query(
+          `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+           VALUES ($1, $2, NULL, 'sale', $3, $4)`,
+          [comp.inventory_id, item.menu_id, -needed, `Online Order · ${item.name} (${comp.inventory_name})`]
+        );
+      }
+
+      // Lock and check add-on ingredients
+      for (const a of item.addons) {
+        for (const comp of a.inventory_components) {
+          const needed = Number(comp.quantity) * a.quantity;
+          const { rowCount } = await client.query(
+            `UPDATE inventory_items 
+             SET stock_quantity = stock_quantity - $1 
+             WHERE id = $2 AND stock_quantity >= $1`,
+            [needed, comp.inventory_id]
+          );
+          if (rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ 
+              error: `${a.name} is out of stock (missing ${comp.inventory_name}).` 
+            });
+          }
+          await client.query(
+            `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+             VALUES ($1, $2, NULL, 'sale', $3, $4)`,
+            [comp.inventory_id, item.menu_id, -needed, `Online Order · ${a.name} (${comp.inventory_name})`]
+          );
+        }
+      }
+
+      // Decrement menu item stock if tracking applies and item has no raw ingredients
+      if (!item.inventory_components || item.inventory_components.length === 0) {
+        const { rowCount } = await client.query(
+          `UPDATE menu_items 
+           SET stock_quantity = stock_quantity - $1 
+           WHERE id = $2 AND stock_quantity IS NOT NULL AND stock_quantity >= $1`,
+          [item.quantity, item.menu_id]
+        );
+        if (rowCount > 0) {
+          await client.query(
+            `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
+             VALUES (NULL, $1, NULL, 'sale', $2, $3)`,
+            [item.menu_id, -item.quantity, `Online Order · ${item.name}`]
+          );
+        }
+      }
+    }
 
     const orderResult = await client.query(
       `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, delivery_fee, delivery_address, notes, customer_name, customer_phone, payment_method, datetime_ordered)
@@ -212,64 +267,19 @@ export async function createOrder(req, res, next) {
       );
       const orderItemId = oiRows[0].id;
 
-      // Deduct the product's raw ingredients from inventory
-      for (const comp of item.inventory_components) {
-        const consumed = Number(comp.quantity) * item.quantity;
-        await client.query(
-          `UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2`,
-          [consumed, comp.inventory_id]
-        );
-        await client.query(
-          `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
-           VALUES ($1, $2, NULL, 'sale', $3, $4)`,
-          [comp.inventory_id, item.menu_id, -consumed, `Online Order #${order.id} · ${item.name} (${comp.inventory_name})`]
-        );
-      }
-
       for (const a of item.addons) {
         await client.query(
           `INSERT INTO order_item_add_ons (order_item_id, addon_id, name, quantity, price, cost, subtotal)
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [orderItemId, a.id, a.name, a.quantity, a.price, a.cost, round2(a.price * a.quantity)]
         );
-
-        // Deduct the add-on's raw ingredients from inventory.
-        for (const comp of a.inventory_components) {
-          const consumed = Number(comp.quantity) * a.quantity;
-          await client.query(
-            `UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2`,
-            [consumed, comp.inventory_id]
-          );
-          await client.query(
-            `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
-             VALUES ($1, $2, NULL, 'sale', $3, $4)`,
-            [comp.inventory_id, item.menu_id, -consumed, `Online Order #${order.id} · ${a.name} (${comp.inventory_name})`]
-          );
-        }
-      }
-
-      // Decrement stock if stock tracking applies and item has no raw ingredients
-      if (!item.inventory_components || item.inventory_components.length === 0) {
-        const { rowCount } = await client.query(
-          `UPDATE menu_items 
-           SET stock_quantity = stock_quantity - $1 
-           WHERE id = $2 AND stock_quantity IS NOT NULL AND stock_quantity >= $1`,
-          [item.quantity, item.menu_id]
-        );
-        if (rowCount > 0) {
-          await client.query(
-            `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
-             VALUES (NULL, $1, NULL, 'sale', $2, $3)`,
-            [item.menu_id, -item.quantity, `Online Order #${order.id} · ${item.name}`]
-          );
-        }
       }
     }
 
-    await client.query("COMMIT");
+    await client.query('COMMIT');
     res.status(201).json({ order });
   } catch (err) {
-    await client.query("ROLLBACK");
+    await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();
@@ -297,22 +307,22 @@ const ORDER_ITEM_AGG = (orderRef) => `
      GROUP BY oi.id, mi.name
    ) sub) AS items`;
 
-const RESERVATION_FIELDS = `r.reservation_id, r.reservation_status, r.reservation_date, r.reservation_time`;
+const RESERVATION_FIELDS = 'r.reservation_id, r.reservation_status, r.reservation_date, r.reservation_time';
 
 export async function getOrder(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT o.*, ${ORDER_ITEM_AGG("o.id")}
+      `SELECT o.*, ${ORDER_ITEM_AGG('o.id')}
        FROM orders o
        WHERE o.id = $1`,
       [req.params.id]
     );
 
-    if (!rows[0]) return res.status(404).json({ error: "Order not found." });
+    if (!rows[0]) return res.status(404).json({ error: 'Order not found.' });
 
     // Customers may only view their own orders.
     if (req.user?.customer?.id && rows[0].customer_id !== req.user.customer.id) {
-      return res.status(403).json({ error: "You don't have access to this order." });
+      return res.status(403).json({ error: 'You don\'t have access to this order.' });
     }
 
     res.json({ order: rows[0] });
@@ -329,12 +339,12 @@ export async function getCustomerOrders(req, res, next) {
     const customer_id = req.user?.customer?.id;
     if (!customer_id) {
       return res.status(400).json({
-        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
+        error: 'No customer profile found for this account. Call /api/customer/auth/sync first.',
       });
     }
 
     const { rows } = await pool.query(
-      `SELECT o.*, ${ORDER_ITEM_AGG("o.id")}
+      `SELECT o.*, ${ORDER_ITEM_AGG('o.id')}
        FROM orders o
        WHERE o.customer_id = $1
        ORDER BY o.datetime_ordered DESC`,
@@ -356,7 +366,7 @@ export async function updateOrder(req, res, next) {
     const { id } = req.params;
     if (!customer_id) {
       return res.status(400).json({
-        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
+        error: 'No customer profile found for this account. Call /api/customer/auth/sync first.',
       });
     }
 
@@ -364,12 +374,12 @@ export async function updateOrder(req, res, next) {
 
     if (order_type !== undefined && !VALID_ORDER_TYPES.includes(order_type)) {
       return res.status(400).json({
-        error: `order_type must be one of: ${VALID_ORDER_TYPES.join(", ")}`,
+        error: `order_type must be one of: ${VALID_ORDER_TYPES.join(', ')}`,
       });
     }
     if (payment_method !== undefined && !VALID_PAYMENT_METHODS.includes(payment_method)) {
       return res.status(400).json({
-        error: `payment_method must be one of: ${VALID_PAYMENT_METHODS.join(", ")}`,
+        error: `payment_method must be one of: ${VALID_PAYMENT_METHODS.join(', ')}`,
       });
     }
 
@@ -383,10 +393,10 @@ export async function updateOrder(req, res, next) {
       }
     }
     if (cols.length === 0) {
-      return res.status(400).json({ error: "Nothing to update." });
+      return res.status(400).json({ error: 'Nothing to update.' });
     }
 
-    const setClause = cols.map((c, i) => `${c} = $${i + 1}`).join(", ");
+    const setClause = cols.map((c, i) => `${c} = $${i + 1}`).join(', ');
     const { rows } = await pool.query(
       `UPDATE orders
        SET ${setClause}
@@ -399,11 +409,11 @@ export async function updateOrder(req, res, next) {
     if (!rows[0]) {
       // Distinguish "not found / not yours" from "already confirmed".
       const check = await pool.query(
-        `SELECT status FROM orders WHERE id = $1 AND customer_id = $2`,
+        'SELECT status FROM orders WHERE id = $1 AND customer_id = $2',
         [id, customer_id]
       );
       if (!check.rows[0]) {
-        return res.status(404).json({ error: "Order not found." });
+        return res.status(404).json({ error: 'Order not found.' });
       }
       return res.status(409).json({
         error: `This order was already ${check.rows[0].status} and can no longer be edited.`,
@@ -417,51 +427,56 @@ export async function updateOrder(req, res, next) {
 }
 
 // Lets a customer cancel their own order, but ONLY while it is still pending.
+// Both status update and inventory restoration happen in a single atomic transaction.
 export async function cancelOrder(req, res, next) {
   try {
     const customer_id = req.user?.customer?.id;
     const { id } = req.params;
     if (!customer_id) {
       return res.status(400).json({
-        error: "No customer profile found for this account. Call /api/customer/auth/sync first.",
-      });
-    }
-
-    const { rows } = await pool.query(
-      `UPDATE orders
-       SET status = 'cancelled', status_updated_at = NOW()
-       WHERE id = $1 AND customer_id = $2 AND status = 'pending'
-       RETURNING id, customer_id, reservation_id, order_type, status, total_amount, delivery_fee,
-                 delivery_address, notes, customer_name, customer_phone, payment_method, datetime_ordered`,
-      [id, customer_id]
-    );
-
-    if (!rows[0]) {
-      const check = await pool.query(
-        `SELECT status FROM orders WHERE id = $1 AND customer_id = $2`,
-        [id, customer_id]
-      );
-      if (!check.rows[0]) {
-        return res.status(404).json({ error: "Order not found." });
-      }
-      return res.status(409).json({
-        error: `This order can't be cancelled because it is already ${check.rows[0].status}.`,
+        error: 'No customer profile found for this account. Call /api/customer/auth/sync first.',
       });
     }
 
     const client = await pool.connect();
     try {
-      await client.query("BEGIN");
+      await client.query('BEGIN');
+
+      // Update order status and restore inventory in same transaction
+      const { rows } = await client.query(
+        `UPDATE orders
+         SET status = 'cancelled', status_updated_at = NOW()
+         WHERE id = $1 AND customer_id = $2 AND status = 'pending'
+         RETURNING id, customer_id, reservation_id, order_type, status, total_amount, delivery_fee,
+                   delivery_address, notes, customer_name, customer_phone, payment_method, datetime_ordered`,
+        [id, customer_id]
+      );
+
+      if (!rows[0]) {
+        await client.query('ROLLBACK');
+        // Distinguish "not found / not yours" from "already decided".
+        const check = await pool.query(
+          'SELECT status FROM orders WHERE id = $1 AND customer_id = $2',
+          [id, customer_id]
+        );
+        if (!check.rows[0]) {
+          return res.status(404).json({ error: 'Order not found.' });
+        }
+        return res.status(409).json({
+          error: `This order can't be cancelled because it is already ${check.rows[0].status}.`,
+        });
+      }
+
       await restoreOrderInventory(client, id, null);
-      await client.query("COMMIT");
+      await client.query('COMMIT');
+
+      res.json({ message: 'Order cancelled successfully.', order: rows[0] });
     } catch (err) {
-      await client.query("ROLLBACK");
+      await client.query('ROLLBACK');
       return next(err);
     } finally {
       client.release();
     }
-
-    res.json({ message: "Order cancelled successfully.", order: rows[0] });
   } catch (err) {
     next(err);
   }
@@ -469,19 +484,27 @@ export async function cancelOrder(req, res, next) {
 
 export async function createPayment(req, res, next) {
   try {
+    const customer_id = req.user?.customer?.id;
+    if (!customer_id) {
+      return res.status(400).json({ error: 'No customer profile found.' });
+    }
+
     const { id: order_id } = req.params;
     const { payment_method, reference_number } = req.body;
 
     if (!VALID_PAYMENT_METHODS.includes(payment_method)) {
       return res.status(400).json({
-        error: `payment_method must be one of: ${VALID_PAYMENT_METHODS.join(", ")}`,
+        error: `payment_method must be one of: ${VALID_PAYMENT_METHODS.join(', ')}`,
       });
     }
 
-    const orderResult = await pool.query("SELECT total_amount FROM orders WHERE id = $1", [order_id]);
+    const orderResult = await pool.query(
+      'SELECT id, total_amount FROM orders WHERE id = $1 AND customer_id = $2',
+      [order_id, customer_id]
+    );
     const order = orderResult.rows[0];
 
-    if (!order) return res.status(404).json({ error: "Order not found." });
+    if (!order) return res.status(404).json({ error: 'Order not found.' });
 
     const { rows } = await pool.query(
       `INSERT INTO payments (order_id, payment_method, amount, reference_number, status, datetime_paid)
@@ -498,12 +521,19 @@ export async function createPayment(req, res, next) {
 
 export async function getPayment(req, res, next) {
   try {
+    const customer_id = req.user?.customer?.id;
+    if (!customer_id) {
+      return res.status(400).json({ error: 'No customer profile found.' });
+    }
+
     const { rows } = await pool.query(
-      "SELECT * FROM payments WHERE order_id = $1",
-      [req.params.id]
+      `SELECT p.* FROM payments p
+       JOIN orders o ON o.id = p.order_id
+       WHERE p.order_id = $1 AND o.customer_id = $2`,
+      [req.params.id, customer_id]
     );
 
-    if (!rows[0]) return res.status(404).json({ error: "No payment found for this order." });
+    if (!rows[0]) return res.status(404).json({ error: 'No payment found for this order.' });
     res.json({ payment: rows[0] });
   } catch (err) {
     next(err);

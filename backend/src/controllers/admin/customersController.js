@@ -1,5 +1,5 @@
 // src/controllers/admin/customersController.js
-import pool from "../../config/db.js";
+import pool from '../../config/db.js';
 
 export async function searchCustomers(req, res, next) {
   try {
@@ -26,7 +26,7 @@ export async function createCustomer(req, res, next) {
   try {
     const { name, phone, email } = req.body;
     if (!name || !phone) {
-      return res.status(400).json({ error: "Name and phone are required." });
+      return res.status(400).json({ error: 'Name and phone are required.' });
     }
 
     const cleanPhone = String(phone).trim();

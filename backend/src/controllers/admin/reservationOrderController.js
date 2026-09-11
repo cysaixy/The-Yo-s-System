@@ -1,5 +1,5 @@
 // src/controllers/admin/reservationOrderController.js
-import pool from "../../config/db.js";
+import pool from '../../config/db.js';
 
 const VALID_ORDER_STATUSES = ['no_order', 'editable', 'finalized', 'locked'];
 const VALID_RESERVATION_STATUSES = ['pending', 'contact_customer', 'order_preparing', 'order_finalized', 'confirmed', 'cancelled', 'completed'];
@@ -18,18 +18,18 @@ export async function getReservationOrder(req, res, next) {
     );
 
     if (!resv.rows[0]) {
-      return res.status(404).json({ error: "Reservation not found." });
+      return res.status(404).json({ error: 'Reservation not found.' });
     }
 
     const reservation = resv.rows[0];
 
     // Get order if exists
     const orderRes = await pool.query(
-      `SELECT * FROM orders WHERE reservation_id = $1`,
+      'SELECT * FROM orders WHERE reservation_id = $1',
       [id]
     );
 
-    let order = orderRes.rows[0] || null;
+    const order = orderRes.rows[0] || null;
     let orderItems = [];
 
     if (order) {
@@ -45,7 +45,7 @@ export async function getReservationOrder(req, res, next) {
       // Get add-ons for each item
       for (const item of orderItems) {
         const addonsRes = await pool.query(
-          `SELECT * FROM order_item_add_ons WHERE order_item_id = $1`,
+          'SELECT * FROM order_item_add_ons WHERE order_item_id = $1',
           [item.id]
         );
         item.add_ons = addonsRes.rows;
@@ -113,12 +113,12 @@ export async function upsertReservationOrder(req, res, next) {
 
     // Check reservation exists
     const resv = await pool.query(
-      `SELECT * FROM reservations WHERE id = $1`,
+      'SELECT * FROM reservations WHERE id = $1',
       [id]
     );
 
     if (!resv.rows[0]) {
-      return res.status(404).json({ error: "Reservation not found." });
+      return res.status(404).json({ error: 'Reservation not found.' });
     }
 
     const reservation = resv.rows[0];
@@ -132,7 +132,7 @@ export async function upsertReservationOrder(req, res, next) {
 
     if (isLocked && reservation.order_status === 'locked' && !admin_override) {
       return res.status(403).json({
-        error: "This order can no longer be edited because the order modification deadline has passed.",
+        error: 'This order can no longer be edited because the order modification deadline has passed.',
         order_locked: true,
         deadline: reservation.order_editing_deadline,
       });
@@ -141,7 +141,7 @@ export async function upsertReservationOrder(req, res, next) {
     // Check if admin_override is used by authorized admin
     if (admin_override && req.user?.staff?.role !== 'Admin') {
       return res.status(403).json({
-        error: "Only administrators can override the order editing deadline.",
+        error: 'Only administrators can override the order editing deadline.',
       });
     }
 
@@ -155,7 +155,7 @@ export async function upsertReservationOrder(req, res, next) {
 
     // Can't go back from locked unless admin override
     if (currentOrderStatus === 'locked' && newOrderStatus !== 'locked' && !admin_override) {
-      return res.status(400).json({ error: "Cannot change status from locked without admin override." });
+      return res.status(400).json({ error: 'Cannot change status from locked without admin override.' });
     }
 
     // Orders table uses different status values - default to 'pending' for new orders
@@ -170,8 +170,8 @@ export async function upsertReservationOrder(req, res, next) {
       await client.query('BEGIN');
 
       // Get or create order
-      let orderRes = await client.query(
-        `SELECT * FROM orders WHERE reservation_id = $1`,
+      const orderRes = await client.query(
+        'SELECT * FROM orders WHERE reservation_id = $1',
         [id]
       );
 
@@ -183,53 +183,53 @@ export async function upsertReservationOrder(req, res, next) {
         order = orderRes.rows[0];
         // Update order - keep existing order status, only update notes
         const updateRes = await client.query(
-          `UPDATE orders SET notes = $1 WHERE id = $2 RETURNING *`,
+          'UPDATE orders SET notes = $1 WHERE id = $2 RETURNING *',
           [combinedNotes || order.notes, order.id]
         );
         order = updateRes.rows[0];
 
-      // ── Inventory: restore old stock if we're re-saving a finalized order ──
-      // (items are about to be deleted and re-inserted; without this step the
-      //  same ingredients would be deducted twice.)
-      if (orderRes.rows[0] && currentOrderStatus === 'finalized' && newOrderStatus === 'finalized') {
+        // ── Inventory: restore old stock if we're re-saving a finalized order ──
+        // (items are about to be deleted and re-inserted; without this step the
+        //  same ingredients would be deducted twice.)
+        if (orderRes.rows[0] && currentOrderStatus === 'finalized' && newOrderStatus === 'finalized') {
         // Restore menu-item ingredients
-        const { rows: oldItemComps } = await client.query(
-          `SELECT mii.inventory_id, mii.quantity AS ing_qty, oi.quantity AS item_qty
+          const { rows: oldItemComps } = await client.query(
+            `SELECT mii.inventory_id, mii.quantity AS ing_qty, oi.quantity AS item_qty
            FROM order_items oi
            JOIN menu_item_inventory mii ON mii.menu_id = oi.menu_id
            WHERE oi.order_id = $1`,
-          [order.id]
-        );
-        for (const c of oldItemComps) {
-          await client.query(
-            `UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
-            [Number(c.ing_qty) * Number(c.item_qty), c.inventory_id]
+            [order.id]
           );
-        }
+          for (const c of oldItemComps) {
+            await client.query(
+              'UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
+              [Number(c.ing_qty) * Number(c.item_qty), c.inventory_id]
+            );
+          }
 
-        // Restore add-on ingredients
-        const { rows: oldAddonComps } = await client.query(
-          `SELECT ai.inventory_id, ai.quantity AS ing_qty, oia.quantity AS addon_qty
+          // Restore add-on ingredients
+          const { rows: oldAddonComps } = await client.query(
+            `SELECT ai.inventory_id, ai.quantity AS ing_qty, oia.quantity AS addon_qty
            FROM order_items oi
            JOIN order_item_add_ons oia ON oia.order_item_id = oi.id
            JOIN addon_inventory ai ON ai.addon_id = oia.addon_id
            WHERE oi.order_id = $1`,
-          [order.id]
-        );
-        for (const c of oldAddonComps) {
-          await client.query(
-            `UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
-            [Number(c.ing_qty) * Number(c.addon_qty), c.inventory_id]
+            [order.id]
           );
+          for (const c of oldAddonComps) {
+            await client.query(
+              'UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
+              [Number(c.ing_qty) * Number(c.addon_qty), c.inventory_id]
+            );
+          }
         }
-      }
 
-      // Delete existing order items and add-ons (we'll recreate)
+        // Delete existing order items and add-ons (we'll recreate)
         await client.query(
-          `DELETE FROM order_item_add_ons WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1)`,
+          'DELETE FROM order_item_add_ons WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = $1)',
           [order.id]
         );
-        await client.query(`DELETE FROM order_items WHERE order_id = $1`, [order.id]);
+        await client.query('DELETE FROM order_items WHERE order_id = $1', [order.id]);
       } else {
         // Create new order
         const createRes = await client.query(
@@ -246,7 +246,7 @@ export async function upsertReservationOrder(req, res, next) {
       if (items && items.length > 0) {
         for (const item of items) {
           const menuRes = await client.query(
-            `SELECT id, name, price, cost FROM menu_items WHERE id = $1 AND status = 'available'`,
+            'SELECT id, name, price, cost FROM menu_items WHERE id = $1 AND status = \'available\'',
             [item.menu_id]
           );
           if (!menuRes.rows[0]) continue;
@@ -270,7 +270,7 @@ export async function upsertReservationOrder(req, res, next) {
           if (item.add_ons && item.add_ons.length > 0) {
             for (const addon of item.add_ons) {
               const addonRes = await client.query(
-                `SELECT id, name, price, cost FROM add_ons WHERE id = $1 AND status = 'available'`,
+                'SELECT id, name, price, cost FROM add_ons WHERE id = $1 AND status = \'available\'',
                 [addon.addon_id]
               );
               if (!addonRes.rows[0]) continue;
@@ -312,7 +312,7 @@ export async function upsertReservationOrder(req, res, next) {
           for (const comp of itemComps) {
             const consumed = Number(comp.ing_qty) * Number(oi.item_qty);
             await client.query(
-              `UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2`,
+              'UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2',
               [consumed, comp.inventory_id]
             );
             await client.query(
@@ -339,7 +339,7 @@ export async function upsertReservationOrder(req, res, next) {
             for (const comp of addonComps) {
               const consumed = Number(comp.ing_qty) * Number(addon.addon_qty);
               await client.query(
-                `UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2`,
+                'UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2',
                 [consumed, comp.inventory_id]
               );
               await client.query(
@@ -354,7 +354,7 @@ export async function upsertReservationOrder(req, res, next) {
 
       // Update order total
       await client.query(
-        `UPDATE orders SET total_amount = $1 WHERE id = $2`,
+        'UPDATE orders SET total_amount = $1 WHERE id = $2',
         [totalAmount, order.id]
       );
 
@@ -368,7 +368,7 @@ export async function upsertReservationOrder(req, res, next) {
       }
 
       await client.query(
-        `UPDATE reservations SET order_status = $1, reservation_status = $2 WHERE id = $3`,
+        'UPDATE reservations SET order_status = $1, reservation_status = $2 WHERE id = $3',
         [newOrderStatus, newReservationStatus, id]
       );
 
@@ -376,7 +376,7 @@ export async function upsertReservationOrder(req, res, next) {
 
       // Fetch updated order with items
       const updatedOrderRes = await pool.query(
-        `SELECT * FROM orders WHERE id = $1`,
+        'SELECT * FROM orders WHERE id = $1',
         [order.id]
       );
 
@@ -391,7 +391,7 @@ export async function upsertReservationOrder(req, res, next) {
       const orderItems = itemsRes.rows;
       for (const item of orderItems) {
         const addonsRes = await pool.query(
-          `SELECT * FROM order_item_add_ons WHERE order_item_id = $1`,
+          'SELECT * FROM order_item_add_ons WHERE order_item_id = $1',
           [item.id]
         );
         item.add_ons = addonsRes.rows;
@@ -429,16 +429,16 @@ export async function updateReservationStatus(req, res, next) {
     const { reservation_status, contact_notes } = req.body;
 
     if (!VALID_RESERVATION_STATUSES.includes(reservation_status)) {
-      return res.status(400).json({ error: `Invalid reservation status.` });
+      return res.status(400).json({ error: 'Invalid reservation status.' });
     }
 
     const resv = await pool.query(
-      `SELECT * FROM reservations WHERE id = $1`,
+      'SELECT * FROM reservations WHERE id = $1',
       [id]
     );
 
     if (!resv.rows[0]) {
-      return res.status(404).json({ error: "Reservation not found." });
+      return res.status(404).json({ error: 'Reservation not found.' });
     }
 
     const reservation = resv.rows[0];
@@ -490,30 +490,30 @@ export async function adminConfirmReservation(req, res, next) {
       [id]
     );
 
-    if (!resv.rows[0]) return res.status(404).json({ error: "Reservation not found." });
+    if (!resv.rows[0]) return res.status(404).json({ error: 'Reservation not found.' });
     const reservation = resv.rows[0];
 
     // Check if order exists and is finalized
     const orderRes = await pool.query(
-      `SELECT * FROM orders WHERE reservation_id = $1`,
+      'SELECT * FROM orders WHERE reservation_id = $1',
       [id]
     );
 
     if (!orderRes.rows[0]) {
       return res.status(400).json({
-        error: "Please record and finalize the customer's order before confirming this reservation."
+        error: 'Please record and finalize the customer\'s order before confirming this reservation.'
       });
     }
 
     if (reservation.order_status !== 'finalized') {
       return res.status(400).json({
-        error: "Order must be finalized before confirming the reservation."
+        error: 'Order must be finalized before confirming the reservation.'
       });
     }
 
     if (!table_no || !String(table_no).trim()) {
       return res.status(400).json({
-        error: "Assign a table before confirming - a confirmed reservation needs a seat."
+        error: 'Assign a table before confirming - a confirmed reservation needs a seat.'
       });
     }
 
@@ -570,12 +570,12 @@ export async function checkOrderEditPermission(req, res, next) {
     const { admin_override } = req.query;
 
     const resv = await pool.query(
-      `SELECT * FROM reservations WHERE id = $1`,
+      'SELECT * FROM reservations WHERE id = $1',
       [id]
     );
 
     if (!resv.rows[0]) {
-      return res.status(404).json({ error: "Reservation not found." });
+      return res.status(404).json({ error: 'Reservation not found.' });
     }
 
     const reservation = resv.rows[0];
@@ -588,7 +588,7 @@ export async function checkOrderEditPermission(req, res, next) {
     // Auto-lock if past deadline
     if (isLocked) {
       await pool.query(
-        `UPDATE reservations SET order_status = 'locked' WHERE id = $1 AND order_status = 'editable'`,
+        'UPDATE reservations SET order_status = \'locked\' WHERE id = $1 AND order_status = \'editable\'',
         [id]
       );
       reservation.order_status = 'locked';

@@ -1,11 +1,11 @@
-import { Prisma } from "@prisma/client";
-import prisma from "./prisma.js";
+import { Prisma } from '@prisma/client';
+import prisma from './prisma.js';
 
-const columnCacheKey = Symbol.for("the-yos.product-json-columns");
+const columnCacheKey = Symbol.for('the-yos.product-json-columns');
 
 function normalizeArray(value) {
   if (Array.isArray(value)) return value;
-  if (typeof value !== "string") return [];
+  if (typeof value !== 'string') return [];
 
   try {
     const parsed = JSON.parse(value);
@@ -17,7 +17,7 @@ function normalizeArray(value) {
 
 function normalizeIngredients(value) {
   return normalizeArray(value).flatMap((entry) => {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
 
     const inventoryId = Number(entry.inventory_id ?? entry.inventoryId);
     if (!Number.isInteger(inventoryId) || inventoryId <= 0) return [];
@@ -65,8 +65,8 @@ export async function getProductJsonFields(productIds) {
   if (!ids.length) return fieldsByProductId;
 
   const columns = await getProductJsonColumns();
-  const hasIngredients = columns.has("ingredients");
-  const hasApplicableProductIds = columns.has("applicable_product_ids");
+  const hasIngredients = columns.has('ingredients');
+  const hasApplicableProductIds = columns.has('applicable_product_ids');
   if (!hasIngredients && !hasApplicableProductIds) return fieldsByProductId;
 
   let rows;

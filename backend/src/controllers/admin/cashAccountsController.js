@@ -1,7 +1,7 @@
 // src/controllers/admin/cashAccountsController.js
-import pool from "../../config/db.js";
+import pool from '../../config/db.js';
 
-const VALID_TYPES = ["cash", "bank", "ewallet"];
+const VALID_TYPES = ['cash', 'bank', 'ewallet'];
 
 export async function listAccounts(req, res, next) {
   try {
@@ -20,7 +20,7 @@ export async function createAccount(req, res, next) {
   try {
     const { name, account_type, balance } = req.body;
     if (!name || !VALID_TYPES.includes(account_type)) {
-      return res.status(400).json({ error: `name is required and account_type must be one of: ${VALID_TYPES.join(", ")}` });
+      return res.status(400).json({ error: `name is required and account_type must be one of: ${VALID_TYPES.join(', ')}` });
     }
     const { rows } = await pool.query(
       `INSERT INTO cash_accounts (name, account_type, balance)
@@ -46,7 +46,7 @@ export async function updateAccount(req, res, next) {
        RETURNING id, name, account_type, balance, status, created_at`,
       [name || null, account_type || null, status || null, req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: "Cash account not found." });
+    if (!rows[0]) return res.status(404).json({ error: 'Cash account not found.' });
     res.json({ account: rows[0] });
   } catch (err) {
     next(err);
@@ -55,12 +55,12 @@ export async function updateAccount(req, res, next) {
 
 export async function deleteAccount(req, res, next) {
   try {
-    const { rowCount } = await pool.query(`DELETE FROM cash_accounts WHERE id = $1`, [req.params.id]);
-    if (rowCount === 0) return res.status(404).json({ error: "Cash account not found." });
+    const { rowCount } = await pool.query('DELETE FROM cash_accounts WHERE id = $1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Cash account not found.' });
     res.status(204).send();
   } catch (err) {
-    if (err.code === "23503") {
-      return res.status(409).json({ error: "Cannot delete an account that already has transactions. Archive it instead." });
+    if (err.code === '23503') {
+      return res.status(409).json({ error: 'Cannot delete an account that already has transactions. Archive it instead.' });
     }
     next(err);
   }

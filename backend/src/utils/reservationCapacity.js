@@ -1,5 +1,5 @@
 // src/utils/reservationCapacity.js
-import pool from "../config/db.js";
+import pool from '../config/db.js';
 
 export const CONFLICT_WINDOW_MINUTES = 120; // ±2 hours seating window
 export const OPENING_MINUTES = 9 * 60;      // 9:00 AM (540 mins)
@@ -71,15 +71,15 @@ export async function checkTimeSlotCapacity(reservationDate, reservationTime, re
   }
 
   // Generate candidate time slots within operating hours (every 1 hour from 9:00 to 21:00)
-  const [reqH, reqM] = String(reservationTime).split(":").map(Number);
+  const [reqH, reqM] = String(reservationTime).split(':').map(Number);
   const reqTotalMinutes = (isNaN(reqH) ? 12 : reqH) * 60 + (isNaN(reqM) ? 0 : reqM);
 
   const candidateSlots = [];
-  const reqTimeFormatted = `${String(reqH || 0).padStart(2, "0")}:${String(reqM || 0).padStart(2, "0")}`;
+  const reqTimeFormatted = `${String(reqH || 0).padStart(2, '0')}:${String(reqM || 0).padStart(2, '0')}`;
 
   for (let mins = OPENING_MINUTES; mins <= CLOSING_MINUTES; mins += 60) {
-    const hh = String(Math.floor(mins / 60)).padStart(2, "0");
-    const mm = String(mins % 60).padStart(2, "0");
+    const hh = String(Math.floor(mins / 60)).padStart(2, '0');
+    const mm = String(mins % 60).padStart(2, '0');
     const candidateTime = `${hh}:${mm}`;
 
     if (candidateTime === reqTimeFormatted) continue;

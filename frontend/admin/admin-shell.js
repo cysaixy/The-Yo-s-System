@@ -1,4 +1,4 @@
-// admin-shell.js
+﻿// admin-shell.js
 // Renders the sidebar + header shared by every admin page and returns the
 // logged-in staff session, or null (after redirecting to login) if nobody
 // is signed in. Every admin page should call this first and stop if it
@@ -98,28 +98,18 @@ function navLinkHTML(item, active, staff) {
   </a>`;
 }
 
-// Decodes a JWT's payload without verifying the signature (verification
-// happens server-side - this is purely a client-side "is it worth even
-// trying" check) and returns its `exp` claim in milliseconds, or null if
-// the token is malformed/unparseable. Used to catch an expired session
-// BEFORE the page fires off a batch of doomed API calls, instead of
-// letting every one of them independently hit the backend, get a 401,
-// and log "Staff Token Error: jwt expired" in a spammy burst.
-function getTokenExpiryMs(token) {
-  try {
-    const payloadB64 = token.split('.')[1];
-    const payload = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')));
-    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
-  } catch {
-    return null; // malformed token - treat as expired, handled by caller
-  }
+// login.html and admin-shell.js both need these - login.html writes the
+// session here after a successful POST /api/admin/staff/login, and
+// admin-shell.js reads it on every other page to decide whether to render
+// the dashboard or bounce to login.html. Previously these two functions
+// didn't exist in this file at all, so importing them in login.html threw
+// immediately and blocked staff sign-in entirely.
+export function setStaffSession(staff) {
+  localStorage.setItem('staffInfo', JSON.stringify(staff));
 }
 
-function clearStaffSessionAndRedirect(reason) {
-  localStorage.removeItem('staffToken');
+export function clearStaffSession() {
   localStorage.removeItem('staffInfo');
-  const redirect = encodeURIComponent(window.location.pathname.split('/').pop() || 'dashboard.html');
-  window.location.href = `login.html?expired=1&redirect=${redirect}`;
 }
 
 // How long before actual expiry to show the warning banner. Staff JWTs
@@ -264,7 +254,7 @@ function showAdminToast(notification) {
       <strong>${escapeNotificationHtml(notification.title)}</strong>
       <span>${escapeNotificationHtml(notification.message)}</span>
     </div>
-    <button type="button" aria-label="Dismiss notification">×</button>
+    <button type="button" aria-label="Dismiss notification">Ã—</button>
   `;
   stack.appendChild(toast);
   const dismiss = () => {
@@ -301,13 +291,13 @@ function initOnlineOrderNotifications(token, staff) {
   const renderPanel = () => {
     const history = readNotificationHistory();
     panel.innerHTML = `
-      <div class="online-order-panel-head"><div><strong>Notifications</strong><span>${activeAlertCount} active ${activeAlertCount === 1 ? 'alert' : 'alerts'}</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">×</button></div>
+      <div class="online-order-panel-head"><div><strong>Notifications</strong><span>${activeAlertCount} active ${activeAlertCount === 1 ? 'alert' : 'alerts'}</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">Ã—</button></div>
       <div class="online-order-panel-list">${history.length ? history.map(item => `
         <a href="${escapeNotificationHtml(item.href || 'dashboard.html')}" class="online-order-panel-item">
           <span class="online-order-dot notification-${escapeNotificationHtml(item.type || 'order')}"></span>
           <div><strong>${escapeNotificationHtml(item.title)}</strong><span>${escapeNotificationHtml(item.message)}</span><time>${escapeNotificationHtml(notificationTime(item.createdAt))}</time></div>
         </a>`).join('') : '<div class="online-order-panel-empty">No notifications yet.</div>'}</div>
-      <a class="online-order-panel-action" href="dashboard.html">Open dashboard →</a>`;
+      <a class="online-order-panel-action" href="dashboard.html">Open dashboard â†’</a>`;
     panel.querySelector('#closeOnlineOrderPanel')?.addEventListener('click', () => panel.classList.remove('open'));
   };
 
@@ -354,7 +344,7 @@ function initOnlineOrderNotifications(token, staff) {
             id: `order-${order.id}-${order.status}`,
             type: 'order',
             title: order.source === 'online' ? 'New online order' : 'New order',
-            message: `Order #${order.id} · ${order.customer_name || 'Customer'} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}`,
+            message: `Order #${order.id} Â· ${order.customer_name || 'Customer'} Â· â‚±${Number(order.total_amount || 0).toLocaleString('en-PH')}`,
             href: 'sales.html',
           };
           if (addNotification(notification) && hadOrderSnapshot) notifications.push(notification);
@@ -364,7 +354,7 @@ function initOnlineOrderNotifications(token, staff) {
             id: `order-${order.id}-${order.status}`,
             type: 'status',
             title: `Order #${order.id} updated`,
-            message: `Status changed to ${String(order.status).replace(/_/g, ' ')}${order.handler_name ? ` · ${order.handler_name}` : ''}`,
+            message: `Status changed to ${String(order.status).replace(/_/g, ' ')}${order.handler_name ? ` Â· ${order.handler_name}` : ''}`,
             href: 'sales.html',
           };
           if (addNotification(notification)) notifications.push(notification);
@@ -464,7 +454,7 @@ function showSessionWarningBanner() {
   banner.id = 'sessionWarningBanner';
   banner.className = 'session-warning-banner';
   banner.innerHTML = `
-    <span class="msg">⏱ Your session will expire in about 5 minutes. Please save or finish any pending work.</span>
+    <span class="msg">â± Your session will expire in about 5 minutes. Please save or finish any pending work.</span>
     <button type="button" id="sessionWarningDismiss">Dismiss</button>
   `;
 

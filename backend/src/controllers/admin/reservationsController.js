@@ -1,10 +1,10 @@
 // src/controllers/admin/reservations.controller.js
-import pool from "../../config/db.js";
-import { checkTimeSlotCapacity } from "../../utils/reservationCapacity.js";
+import pool from '../../config/db.js';
+import { checkTimeSlotCapacity } from '../../utils/reservationCapacity.js';
 
-const VALID_STATUSES = ["pending", "confirmed", "cancelled", "completed", "contact_customer", "order_preparing", "order_finalized"];
-const VALID_ORDER_STATUSES = ["no_order", "editable", "finalized", "locked"];
-const VALID_RESERVATION_STATUSES = ["pending", "contact_customer", "order_preparing", "order_finalized", "confirmed", "cancelled", "completed"];
+const VALID_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed', 'contact_customer', 'order_preparing', 'order_finalized'];
+const VALID_ORDER_STATUSES = ['no_order', 'editable', 'finalized', 'locked'];
+const VALID_RESERVATION_STATUSES = ['pending', 'contact_customer', 'order_preparing', 'order_finalized', 'confirmed', 'cancelled', 'completed'];
 // Two reservations on the same table can't be closer than this many
 // minutes apart - the booking window covers a full seating.
 const CONFLICT_WINDOW_MINUTES = 120;
@@ -32,7 +32,7 @@ export async function getById(req, res, next) {
        JOIN customers c ON c.id = r.customer_id WHERE r.id = $1`,
       [req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: "Reservation not found." });
+    if (!rows[0]) return res.status(404).json({ error: 'Reservation not found.' });
     res.json({ reservation: rows[0] });
   } catch (err) {
     next(err);
@@ -49,17 +49,17 @@ export async function confirmReservation(req, res, next) {
     const { table_no } = req.body;
     if (!table_no || !String(table_no).trim()) {
       return res.status(400).json({
-        error: "Assign a table before confirming - a confirmed reservation needs a seat.",
+        error: 'Assign a table before confirming - a confirmed reservation needs a seat.',
       });
     }
 
     const cleanTableNo = String(table_no).trim();
 
     const resv = await pool.query(
-      `SELECT * FROM reservations WHERE id = $1`,
+      'SELECT * FROM reservations WHERE id = $1',
       [req.params.id]
     );
-    if (!resv.rows[0]) return res.status(404).json({ error: "Reservation not found." });
+    if (!resv.rows[0]) return res.status(404).json({ error: 'Reservation not found.' });
     const reservation = resv.rows[0];
 
     // Check for time-slot conflict on the same table
@@ -72,7 +72,7 @@ export async function confirmReservation(req, res, next) {
          AND r.id <> $3
          AND ABS(EXTRACT(EPOCH FROM (r.reservation_time - $4::time))) / 60 < $5`,
       [cleanTableNo, reservation.reservation_date, reservation.id,
-       reservation.reservation_time, CONFLICT_WINDOW_MINUTES]
+        reservation.reservation_time, CONFLICT_WINDOW_MINUTES]
     );
     if (conflict.rows[0]) {
       const other = conflict.rows[0];
@@ -99,18 +99,18 @@ export async function updateStatus(req, res, next) {
   try {
     const { status } = req.body;
     if (!VALID_STATUSES.includes(status)) {
-      return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(", ")}` });
+      return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
     }
-    if (status === "confirmed") {
+    if (status === 'confirmed') {
       return res.status(400).json({
-        error: "Confirming requires a table assignment - use the confirm flow.",
+        error: 'Confirming requires a table assignment - use the confirm flow.',
       });
     }
     const { rows } = await pool.query(
-      `UPDATE reservations SET status = $1 WHERE id = $2 RETURNING id, status`,
+      'UPDATE reservations SET status = $1 WHERE id = $2 RETURNING id, status',
       [status, req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: "Reservation not found." });
+    if (!rows[0]) return res.status(404).json({ error: 'Reservation not found.' });
     res.json({ reservation: rows[0] });
   } catch (err) {
     next(err);
@@ -122,7 +122,7 @@ export async function createReservationAdmin(req, res, next) {
     const { customer_id, reservation_date, reservation_time, guests, notes, status, reservation_status, order_status } = req.body;
     
     if (!customer_id || !reservation_date || !reservation_time || !guests) {
-      return res.status(400).json({ error: "customer_id, reservation_date, reservation_time, and guests are required." });
+      return res.status(400).json({ error: 'customer_id, reservation_date, reservation_time, and guests are required.' });
     }
 
     const guestsNum = Number(guests);
