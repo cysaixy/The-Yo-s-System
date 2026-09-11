@@ -186,37 +186,9 @@ export async function initTables() {
       );
     `);
 
-    // 10. tables — the room's physical tables and their seating capacity.
-    //     Reservations keep a snapshot of the assigned table in
-    //     reservations.table_no, but this registry is the source of truth
-    //     for capacity checks and double-booking prevention on confirm.
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS tables (
-        id SERIAL PRIMARY KEY,
-        table_no VARCHAR(50) NOT NULL UNIQUE,
-        capacity INTEGER NOT NULL CHECK (capacity > 0),
-        status VARCHAR(20) NOT NULL DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Seed the floor plan once. Kept INSERT-free afterward so staff can
-    // manage tables without the server overwriting their edits.
-    const seedCheck = await pool.query(`SELECT COUNT(*)::int AS n FROM tables`);
-    if (seedCheck.rows[0].n === 0) {
-      await pool.query(`
-        INSERT INTO tables (table_no, capacity, status) VALUES
-          ('T1', 2, 'active'),
-          ('T2', 2, 'active'),
-          ('T3', 4, 'active'),
-          ('T4', 4, 'active'),
-          ('T5', 4, 'active'),
-          ('T6', 6, 'active'),
-          ('T7', 8, 'active'),
-          ('T8', 10, 'active')
-      `);
-      console.log("Seeded default table registry (T1 - T8).");
-    }
+    // Drop legacy tables table — table numbers are now free-form text
+    // assigned directly by staff on reservation confirm / walk-in.
+    await pool.query(`DROP TABLE IF EXISTS tables CASCADE;`);
 
     console.log("Database tables initialized successfully.");
   } catch (err) {

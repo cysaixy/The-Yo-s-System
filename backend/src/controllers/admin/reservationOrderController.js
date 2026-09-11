@@ -511,29 +511,13 @@ export async function adminConfirmReservation(req, res, next) {
       });
     }
 
-    if (!table_no) {
+    if (!table_no || !String(table_no).trim()) {
       return res.status(400).json({
         error: "Assign a table before confirming - a confirmed reservation needs a seat."
       });
     }
 
-    // Check table
-    const tableRes = await pool.query(
-      `SELECT id, table_no, capacity, status FROM tables WHERE table_no = $1`,
-      [String(table_no).trim()]
-    );
-    if (!tableRes.rows[0]) {
-      return res.status(400).json({ error: `Table "${table_no}" doesn't exist.` });
-    }
-    const table = tableRes.rows[0];
-    if (table.status !== "active") {
-      return res.status(400).json({ error: `Table ${table.table_no} is currently unavailable.` });
-    }
-    if (table.capacity < reservation.guests) {
-      return res.status(400).json({
-        error: `${table.table_no} seats ${table.capacity} but this reservation is for ${reservation.guests} guests. Pick a bigger table.`
-      });
-    }
+    const cleanTableNo = String(table_no).trim();
 
     // Check conflicts
     const CONFLICT_WINDOW_MINUTES = 120;
@@ -545,12 +529,12 @@ export async function adminConfirmReservation(req, res, next) {
          AND r.status = 'confirmed'
          AND r.id <> $3
          AND ABS(EXTRACT(EPOCH FROM (r.reservation_time - $4::time))) / 60 < $5`,
-      [table.table_no, reservation.reservation_date, reservation.id, reservation.reservation_time, CONFLICT_WINDOW_MINUTES]
+      [cleanTableNo, reservation.reservation_date, reservation.id, reservation.reservation_time, CONFLICT_WINDOW_MINUTES]
     );
     if (conflict.rows[0]) {
       const other = conflict.rows[0];
       return res.status(409).json({
-        error: `${table.table_no} is already reserved that day at ${String(other.reservation_time).slice(0, 5)} (${other.guests} guests). Pick a different table or time.`
+        error: `${cleanTableNo} is already reserved that day at ${String(other.reservation_time).slice(0, 5)} (${other.guests} guests). Pick a different table or time.`
       });
     }
 
@@ -560,7 +544,7 @@ export async function adminConfirmReservation(req, res, next) {
        SET status = 'confirmed', table_no = $1, reservation_status = 'confirmed', confirmed_at = NOW()
        WHERE id = $2
        RETURNING id, status, table_no, reservation_status`,
-      [table.table_no, reservation.id]
+      [cleanTableNo, reservation.id]
     );
 
     // Also update order status to confirmed

@@ -158,6 +158,7 @@ model InventoryItem {
   createdAt     DateTime? @default(now()) @map("created_at")
 
   addonInventory AddonInventory[]
+  inventoryLogs InventoryLog[]
 
   @@map("inventory_items")
 }
@@ -349,12 +350,4 @@ model StockIn {
   @@map("stock_in")
 }
 
-model RestaurantTable {
-  id        Int       @id @default(autoincrement())
-  tableNo   String    @map("table_no") @db.VarChar(20)
-  capacity  Int
-  status    String    @db.VarChar(30)
-  createdAt DateTime? @default(now()) @map("created_at")
 
-  @@map("tables")
-}

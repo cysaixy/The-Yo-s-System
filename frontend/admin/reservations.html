@@ -1,14 +1,14 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reservations — The~Yo's Admin</title>
+<title>Reservations â€” The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
   /* ================================================================
-     RESERVATIONS — Scoped Design System
+     RESERVATIONS â€” Scoped Design System
      ================================================================ */
   
   /* ---- Toolbar & Controls ---- */
@@ -530,7 +530,6 @@
   if (session) init();
 
   let reservations = [];
-  let tables = [];
   let menuItems = [];
   const PAGE_SIZE = 10;
   let page = 1;
@@ -561,7 +560,7 @@
       <div class="res-toolbar">
         <div class="res-filters">
           <span class="fb-label">Filter by</span>
-          <input type="text" id="filterQ" placeholder="Name, email, table, notes…">
+          <input type="text" id="filterQ" placeholder="Name, email, table, notesâ€¦">
           <select id="filterStatus" title="Reservation Status">
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
@@ -574,7 +573,7 @@
           </select>
           <div class="res-date-range">
             <input type="date" id="filterFrom" title="From date">
-            <span>—</span>
+            <span>â€”</span>
             <input type="date" id="filterTo" title="To date">
           </div>
         </div>
@@ -587,7 +586,7 @@
       <div class="res-stat-chips" id="resCounts"></div>
 
       <div class="res-table-wrap" id="resWrap">
-        <div class="admin-loading">Loading reservations…</div>
+        <div class="admin-loading">Loading reservationsâ€¦</div>
       </div>
     `;
 
@@ -607,23 +606,19 @@
 
   async function load() {
     try {
-      const [resData, tableData, menuData] = await Promise.all([
+      const [resData, menuData] = await Promise.all([
         adminFetch('/api/admin/reservations'),
-        adminFetch('/api/admin/reservations/tables'),
         adminFetch('/api/admin/products/menuitems'),
       ]);
       const resJson = await resData.json();
-      const tableJson = await tableData.json();
       const menuJson = await menuData.json();
       if (!resData.ok) throw new Error(resJson.error || 'Could not load reservations.');
-      if (!tableData.ok) throw new Error(tableJson.error || 'Could not load tables.');
       if (!menuData.ok) throw new Error(menuJson.error || 'Could not load menu items.');
       reservations = resJson.reservations || [];
-      tables = tableJson.tables || [];
       menuItems = menuJson.items || [];
       render();
     } catch (err) {
-      document.getElementById('resWrap').innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
+      document.getElementById('resWrap').innerHTML = `<div class="admin-error">âš  ${escapeHtml(err.message)}</div>`;
     }
   }
 
@@ -730,10 +725,10 @@
         </tbody>
       </table>
       <div class="res-pager">
-        <span>Showing <b>${rows.length}</b> total result${rows.length === 1 ? '' : 's'} · Page ${page} of ${pageCount}</span>
+        <span>Showing <b>${rows.length}</b> total result${rows.length === 1 ? '' : 's'} Â· Page ${page} of ${pageCount}</span>
         <div class="res-actions-wrap">
-          <button type="button" class="res-btn" ${page <= 1 ? 'disabled' : ''} data-nav="prev">‹ Prev</button>
-          <button type="button" class="res-btn" ${page >= pageCount ? 'disabled' : ''} data-nav="next">Next ›</button>
+          <button type="button" class="res-btn" ${page <= 1 ? 'disabled' : ''} data-nav="prev">â€¹ Prev</button>
+          <button type="button" class="res-btn" ${page >= pageCount ? 'disabled' : ''} data-nav="next">Next â€º</button>
         </div>
       </div>
     `;
@@ -771,7 +766,7 @@
     const notes = r.notes || '';
     
     // Order deadline display
-    const deadline = r.order_editing_deadline ? fmtDate(r.order_editing_deadline) : '—';
+    const deadline = r.order_editing_deadline ? fmtDate(r.order_editing_deadline) : 'â€”';
     const deadlineDaysLeft = r.order_editing_deadline ? dayDiff(r.order_editing_deadline, today) : null;
     let deadlineClass = '';
     if (deadlineDaysLeft !== null) {
@@ -792,10 +787,10 @@
             ${r.customer_phone ? `<span class="sub">${escapeHtml(r.customer_phone)}</span>` : ''}
           </div>
         </td>
-        <td>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span style="color:var(--ink-muted); opacity:0.5;">—</span>'}</td>
+        <td>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span style="color:var(--ink-muted); opacity:0.5;">â€”</span>'}</td>
         <td>
-          <div><strong>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}</strong>${tag}</div>
-          <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.72rem; color:var(--ink-muted); margin-top:2px;">${r.reservation_time ? String(r.reservation_time).slice(0, 5) : '—'}</div>
+          <div><strong>${r.reservation_date ? fmtDate(r.reservation_date) : 'â€”'}</strong>${tag}</div>
+          <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.72rem; color:var(--ink-muted); margin-top:2px;">${r.reservation_time ? String(r.reservation_time).slice(0, 5) : 'â€”'}</div>
         </td>
         <td style="text-align:center;"><span class="guests-badge">${r.guests}</span></td>
         <td title="${formatDate(r.datetime_reserved)}" style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.72rem; color:var(--ink-muted); white-space:nowrap;">
@@ -804,7 +799,7 @@
         <td><span class="res-status-pill ${STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></td>
         <td><span class="order-status-pill ${ORDER_STATUS_PILL[orderStatusLabel] || 'order-status-no_order'}">${escapeHtml(orderStatusLabel.replace(/_/g, ' '))}</span></td>
         <td><span class="deadline-value ${deadlineClass}">${deadline}</span></td>
-        <td><div class="notes-cell${notes ? '' : ' empty'}" title="${escapeHtml(notes)}">${notes ? escapeHtml(notes) : '—'}</div></td>
+        <td><div class="notes-cell${notes ? '' : ' empty'}" title="${escapeHtml(notes)}">${notes ? escapeHtml(notes) : 'â€”'}</div></td>
         <td style="text-align:right;"><div class="res-actions-wrap" style="justify-content:flex-end;">${actionButtons(r)}</div></td>
       </tr>
     `;
@@ -858,29 +853,26 @@
     return `${viewBtn}`;
   }
 
-  // ---- Confirm modal: table assignment is mandatory, capacity checked live ----
+  // ---- Confirm modal: table assignment is mandatory ----
   function openConfirmModal(id) {
     const r = reservations.find(x => x.id == id);
     if (!r) return;
-    const options = tables.map(t => {
-      const selected = r.table_no === t.table_no ? ' selected' : '';
-      return `<option value="${escapeHtml(t.table_no)}" data-cap="${t.capacity}"${selected}>${escapeHtml(t.table_no)} — seats ${t.capacity}</option>`;
-    }).join('') || `<option value="">No active tables</option>`;
+    const currentTable = r.table_no || "";
 
-    const backdrop = document.createElement('div');
-    backdrop.className = 'modal-backdrop active';
+    const backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop active";
     backdrop.innerHTML = `
       <div class="modal-box" style="max-width:480px;">
         <h3>Confirm Reservation #${r.id}</h3>
         <div class="detail-list" style="margin-bottom:18px;">
           <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
-          <dt>Date &amp; Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dt>Date & Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : "â€”"} at ${String(r.reservation_time || "").slice(0, 5)}</dd>
           <dt>Guests</dt><dd><span class="guests-badge">${r.guests} guests</span></dd>
         </div>
         <div class="form-field" style="margin-top:16px;">
           <label for="confirmTable">Assign Table *</label>
-          <select id="confirmTable">${options}</select>
-          <div class="confirm-capacity" id="confirmCapacity"></div>
+          <input type="text" id="confirmTable" placeholder="e.g. Table 1, T-02, Patio A" value="${escapeHtml(currentTable)}" required>
+          <small style="color:var(--ink-muted); font-size:0.70rem; margin-top:3px; display:block;">Enter any table identifier (e.g., Table 1, T-05, Outdoor 2)</small>
         </div>
         <div class="modal-error" id="confirmError"></div>
         <div class="modal-close-row">
@@ -891,66 +883,53 @@
     `;
     document.body.appendChild(backdrop);
 
-    const sel = backdrop.querySelector('#confirmTable');
-    const capEl = backdrop.querySelector('#confirmCapacity');
-    function refreshCapacity() {
-      const opt = sel.options[sel.selectedIndex];
-      const cap = opt ? Number(opt.dataset.cap) : 0;
-      if (!cap) {
-        capEl.textContent = 'No active tables available.';
-        capEl.className = 'confirm-capacity bad';
-      } else if (cap >= r.guests) {
-        capEl.textContent = `✓ Seats ${cap} — fits your ${r.guests} guests.`;
-        capEl.className = 'confirm-capacity';
-        capEl.style.color = 'var(--success)';
-      } else {
-        capEl.textContent = `⚠ Table only seats ${cap}, but reservation has ${r.guests} guests.`;
-        capEl.className = 'confirm-capacity bad';
-      }
-    }
-    sel.addEventListener('change', refreshCapacity);
-    refreshCapacity();
+    const input = backdrop.querySelector("#confirmTable");
 
-    backdrop.querySelector('#confirmClose').addEventListener('click', close);
-    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
-    backdrop.querySelector('#confirmSubmit').addEventListener('click', async () => {
-      const btn = backdrop.querySelector('#confirmSubmit');
-      const errEl = backdrop.querySelector('#confirmError');
-      errEl.classList.remove('show');
+    backdrop.querySelector("#confirmClose").addEventListener("click", close);
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
+    backdrop.querySelector("#confirmSubmit").addEventListener("click", async () => {
+      const btn = backdrop.querySelector("#confirmSubmit");
+      const errEl = backdrop.querySelector("#confirmError");
+      errEl.classList.remove("show");
+      const tableNo = input.value.trim();
+      if (!tableNo) {
+        errEl.textContent = "Please enter a table number/identifier.";
+        errEl.classList.add("show");
+        return;
+      }
       btn.disabled = true;
       try {
         const res = await adminFetch(`/api/admin/reservations/${id}/confirm`, {
-          method: 'PATCH',
-          body: JSON.stringify({ table_no: sel.value }),
+          method: "PATCH",
+          body: JSON.stringify({ table_no: tableNo }),
         });
         const data = await res.json();
         if (!res.ok) {
-          errEl.textContent = data.error || 'Could not confirm this reservation.';
-          errEl.classList.add('show');
+          errEl.textContent = data.error || "Could not confirm this reservation.";
+          errEl.classList.add("show");
           btn.disabled = false;
           return;
         }
         const r0 = reservations.find(x => x.id == id);
         if (r0) { 
-          r0.status = 'confirmed'; 
+          r0.status = "confirmed"; 
           r0.table_no = data.reservation.table_no;
-          r0.reservation_status = 'confirmed';
-          r0.order_status = 'finalized';
+          r0.reservation_status = "confirmed";
+          r0.order_status = "finalized";
         }
         close();
-        toast(`Confirmed — Table ${data.reservation.table_no} assigned.`, 'success');
+        toast(`Confirmed â€” Table ${data.reservation.table_no} assigned.`, "success");
         render();
       } catch (err) {
         errEl.textContent = err.message;
-        errEl.classList.add('show');
+        errEl.classList.add("show");
         btn.disabled = false;
       }
     });
 
     function close() { backdrop.remove(); }
   }
-
-  // ---- Walk-in Reservation Modal ----
+// ---- Walk-in Reservation Modal ----
   function openWalkinModal() {
     const minDate = new Date();
     minDate.setDate(minDate.getDate() + 4);
@@ -1031,7 +1010,7 @@
       }
 
       btn.disabled = true;
-      btn.textContent = 'Creating…';
+      btn.textContent = 'Creatingâ€¦';
 
       try {
         const customerRes = await adminFetch('/api/admin/customers', {
@@ -1063,7 +1042,7 @@
         if (!res.ok) {
           if (data.suggested_slots && data.suggested_slots.length > 0) {
             errEl.innerHTML = `
-              <div>⚠ ${escapeHtml(data.error || 'This time slot is full.')}</div>
+              <div>âš  ${escapeHtml(data.error || 'This time slot is full.')}</div>
               <div style="margin-top:6px; font-weight:600;">Suggested available times:</div>
               <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
                 ${data.suggested_slots.map(slot => `<button type="button" class="btn btn-outline small" style="padding:3px 8px;" onclick="document.getElementById('walkinTime').value='${slot}'; document.getElementById('walkinError').classList.remove('show');">${slot}</button>`).join('')}
@@ -1119,19 +1098,19 @@
     backdrop.innerHTML = `
       <div class="modal-box" style="max-width:680px; max-height:90vh; overflow-y:auto;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-          <h3 style="margin:0;">Manage Order — Reservation #${r.id}</h3>
-          <button type="button" class="res-btn" id="manageCloseBtn">✕</button>
+          <h3 style="margin:0;">Manage Order â€” Reservation #${r.id}</h3>
+          <button type="button" class="res-btn" id="manageCloseBtn">âœ•</button>
         </div>
         
         <div class="detail-list" style="margin-bottom:16px; font-size:0.82rem; background:var(--stone); border-radius:10px; padding:14px;">
           <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
-          <dt>Date &amp; Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dt>Date &amp; Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : 'â€”'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
           <dt>Guests</dt><dd>${r.guests} guests</dd>
           <dt>Res. Status</dt><dd><span class="res-status-pill ${STATUS_PILL[resStatus] || 'res-status-pending'}">${escapeHtml(resStatus.replace(/_/g, ' '))}</span></dd>
           <dt>Order Status</dt><dd><span class="order-status-pill ${ORDER_STATUS_PILL[orderStatus] || 'order-status-no_order'}">${escapeHtml(orderStatus.replace(/_/g, ' '))}</span></dd>
           <dt>Deadline</dt><dd>
             <span class="deadline-value ${deadline ? (isPastDeadline ? 'locked' : (dayDiff(r.order_editing_deadline, today) === 0 ? 'final-day' : 'editable')) : ''}">
-              ${deadline ? fmtDate(r.order_editing_deadline) : '—'}
+              ${deadline ? fmtDate(r.order_editing_deadline) : 'â€”'}
             </span>
             ${isPastDeadline ? ' <span style="color:var(--danger); font-size:0.7rem; font-weight:700;">(PASSED)</span>' : ''}
           </dd>
@@ -1152,7 +1131,7 @@
                 <tr>
                   <td>
                     <div class="item-name">${escapeHtml(item.name || item.item_name)}</div>
-                    ${item.add_ons?.length ? item.add_ons.map(a => `<div class="addon-row">+ ${escapeHtml(a.name)} × ${a.quantity}</div>`).join('') : ''}
+                    ${item.add_ons?.length ? item.add_ons.map(a => `<div class="addon-row">+ ${escapeHtml(a.name)} Ã— ${a.quantity}</div>`).join('') : ''}
                     ${item.notes ? `<div class="item-notes">${escapeHtml(item.notes)}</div>` : ''}
                   </td>
                   <td class="item-qty">${item.quantity}</td>
@@ -1244,13 +1223,13 @@
     backdrop.innerHTML = `
       <div class="modal-box" style="max-width:760px; max-height:90vh; overflow-y:auto;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-          <h3 style="margin:0;">${isEdit ? 'Edit' : 'Add'} Order — Reservation #${reservationId}</h3>
-          <button type="button" class="res-btn" id="orderEditorCloseBtn">✕</button>
+          <h3 style="margin:0;">${isEdit ? 'Edit' : 'Add'} Order â€” Reservation #${reservationId}</h3>
+          <button type="button" class="res-btn" id="orderEditorCloseBtn">âœ•</button>
         </div>
 
         <div style="margin-bottom:14px; padding:10px 14px; background:var(--stone); border-radius:8px; font-size:0.80rem;">
-          <b>${escapeHtml(reservation.customer_name)}</b> • 
-          ${reservation.reservation_date ? fmtDate(reservation.reservation_date) : '—'} at ${String(reservation.reservation_time || '').slice(0, 5)} • 
+          <b>${escapeHtml(reservation.customer_name)}</b> â€¢ 
+          ${reservation.reservation_date ? fmtDate(reservation.reservation_date) : 'â€”'} at ${String(reservation.reservation_time || '').slice(0, 5)} â€¢ 
           ${reservation.guests} guests
         </div>
 
@@ -1261,7 +1240,7 @@
           <div id="currentOrderItems" style="max-height:180px; overflow-y:auto;"></div>
           <div class="order-total-row" id="orderTotalRow" style="display:none;">
             <span>Total:</span>
-            <span id="orderTotalDisplay">₱0.00</span>
+            <span id="orderTotalDisplay">â‚±0.00</span>
           </div>
         </div>
 
@@ -1321,11 +1300,11 @@
               <div style="background:#fff; border:1px solid ${isSelected ? 'var(--brass)' : 'var(--line)'}; border-radius:8px; padding:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px;">
                   <strong style="font-size:0.80rem; line-height:1.2;">${escapeHtml(item.name)}</strong>
-                  <span style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.78rem; font-weight:700; color:var(--brass-dark); white-space:nowrap;">₱${Number(item.price).toFixed(2)}</span>
+                  <span style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.78rem; font-weight:700; color:var(--brass-dark); white-space:nowrap;">â‚±${Number(item.price).toFixed(2)}</span>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                   <div class="stepper" style="flex-shrink:0;">
-                    <button type="button" class="qty-dec" data-id="${item.id}" ${qty <= 1 ? 'disabled' : ''}>−</button>
+                    <button type="button" class="qty-dec" data-id="${item.id}" ${qty <= 1 ? 'disabled' : ''}>âˆ’</button>
                     <span class="qty-val" data-id="${item.id}">${qty}</span>
                     <button type="button" class="qty-inc" data-id="${item.id}">+</button>
                   </div>
@@ -1428,16 +1407,16 @@
         <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--line); font-size:0.82rem;">
           <div>
             <strong>${escapeHtml(data.menuItem.name)}</strong>
-            <span style="font-family:'Plus Jakarta Sans', sans-serif; color:var(--brass-dark); margin-left:6px;">× ${data.quantity}</span>
+            <span style="font-family:'Plus Jakarta Sans', sans-serif; color:var(--brass-dark); margin-left:6px;">Ã— ${data.quantity}</span>
           </div>
           <span style="font-family:'Plus Jakarta Sans', sans-serif; font-weight:700; color:var(--brass-dark);">
-            ₱${(subtotal + addonTotal).toFixed(2)}
+            â‚±${(subtotal + addonTotal).toFixed(2)}
           </span>
         </div>
       `;
     }).join('');
 
-    totalDisplay.textContent = `₱${total.toFixed(2)}`;
+    totalDisplay.textContent = `â‚±${total.toFixed(2)}`;
     totalRow.style.display = 'flex';
   }
 
@@ -1462,7 +1441,7 @@
     }));
 
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving…';
+    saveBtn.textContent = 'Savingâ€¦';
     errEl.classList.remove('show');
 
     try {
@@ -1524,21 +1503,21 @@
       <div class="modal-box" style="max-width:500px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
           <h3 style="margin:0;">Reservation #${r.id}</h3>
-          <button type="button" class="res-btn" id="detailsCloseBtn">✕</button>
+          <button type="button" class="res-btn" id="detailsCloseBtn">âœ•</button>
         </div>
         <div class="detail-list" style="margin-bottom:20px;">
           <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
           <dt>Email</dt>
-          <dd>${r.customer_email ? `<a href="mailto:${escapeHtml(r.customer_email)}">${escapeHtml(r.customer_email)}</a>` : '—'}</dd>
+          <dd>${r.customer_email ? `<a href="mailto:${escapeHtml(r.customer_email)}">${escapeHtml(r.customer_email)}</a>` : 'â€”'}</dd>
           <dt>Phone</dt>
-          <dd>${r.customer_phone ? `<a href="tel:${escapeHtml(r.customer_phone)}">${escapeHtml(r.customer_phone)}</a>` : '—'}</dd>
+          <dd>${r.customer_phone ? `<a href="tel:${escapeHtml(r.customer_phone)}">${escapeHtml(r.customer_phone)}</a>` : 'â€”'}</dd>
           <dt>Date &amp; Time</dt>
-          <dd><b>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}</b> at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dd><b>${r.reservation_date ? fmtDate(r.reservation_date) : 'â€”'}</b> at ${String(r.reservation_time || '').slice(0, 5)}</dd>
           <dt>Guests</dt><dd><span class="guests-badge">${r.guests} guests</span></dd>
           <dt>Table</dt><dd>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span style="color:var(--ink-muted);">Not yet assigned</span>'}</dd>
           <dt>Status</dt><dd><span class="res-status-pill ${STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></dd>
           <dt>Requested</dt><dd style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.74rem;">${formatDate(r.datetime_reserved)}</dd>
-          <dt>Notes</dt><dd style="white-space:pre-wrap; font-size:0.82rem;">${r.notes ? escapeHtml(r.notes) : '—'}</dd>
+          <dt>Notes</dt><dd style="white-space:pre-wrap; font-size:0.82rem;">${r.notes ? escapeHtml(r.notes) : 'â€”'}</dd>
         </div>
         <div class="modal-close-row"><button class="btn" id="detailsClose">Close</button></div>
       </div>
@@ -1641,8 +1620,10 @@
 
   function fmtDate(dateStr) {
     const d = parseDateOnly(dateStr);
-    return d ? d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    return d ? d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'â€”';
   }
 </script>
 </body>
 </html>
+
+
