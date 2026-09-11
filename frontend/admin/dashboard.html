@@ -77,22 +77,63 @@
   }
 
   /* ---------- Charts ---------- */
-  .chart-wrap { width: 100%; }
+  .chart-wrap { width: 100%; position: relative; }
   .chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
   .chart-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; fill: var(--ink-muted); }
-  .chart-peak-label { font-family: 'Archivo', sans-serif; font-size: 12px; font-weight: 800; }
-  .chart-legend-row { margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 6px 10px; }
+  .chart-grid-line { stroke: var(--line); stroke-width: 1; }
+  .chart-baseline { stroke: var(--line-strong); stroke-width: 1.2; }
+  .chart-area { transition: opacity var(--transition-base); }
+  .chart-line-path {
+    filter: drop-shadow(0 3px 6px rgba(163,132,74,0.22));
+  }
+  .chart-peak-badge-bg {
+    filter: drop-shadow(0 4px 10px rgba(47,37,20,0.18));
+  }
+  .chart-peak-label {
+    font-family: 'Archivo', sans-serif; font-size: 11.5px; font-weight: 800; fill: #fff;
+  }
+  .chart-peak-sub {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 8px; font-weight: 600; fill: rgba(255,255,255,0.75);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .chart-legend-row { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
   .chart-legend {
     display: inline-flex; align-items: center; gap: 7px;
-    padding: 5px 11px 5px 8px; border-radius: 999px;
+    padding: 5px 12px 5px 9px; border-radius: 999px;
     background: var(--stone); border: 1px solid var(--line);
-    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; font-weight: 700;
     color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
   }
+  .chart-legend:hover { background: var(--stone-hover); border-color: var(--line-strong); }
   .chart-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
   .chart-dot-hit { cursor: pointer; }
+  .chart-dot-visible {
+    transition: r 0.15s cubic-bezier(0.34,1.56,0.64,1), stroke-width 0.15s ease;
+  }
   .chart-dot-hit:hover + .chart-dot-visible,
-  .chart-dot-visible.hoverable:hover { r: 5; }
+  .chart-dot-visible.hoverable:hover { r: 6; stroke-width: 2.5; }
+
+  /* Custom floating tooltip (replaces native <title> for a themed look) */
+  .chart-tooltip {
+    position: fixed; z-index: 500; pointer-events: none;
+    background: #1b1d22; color: #fff;
+    border-radius: 8px; padding: 9px 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.74rem; font-weight: 600;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.28);
+    opacity: 0; transform: translate(-50%, calc(-100% - 12px)) translateY(4px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    white-space: nowrap;
+    max-width: min(260px, 90vw); white-space: normal;
+  }
+  .chart-tooltip.visible { opacity: 1; transform: translate(-50%, calc(-100% - 12px)) translateY(0); }
+  .chart-tooltip::after {
+    content: ''; position: absolute; left: 50%; top: 100%;
+    transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: #1b1d22;
+  }
+  .chart-tooltip .tt-title { font-weight: 800; color: var(--brass-light); margin-bottom: 2px; display: block; }
+  .chart-tooltip .tt-sub { display: block; opacity: 0.8; font-weight: 500; font-size: 0.7rem; }
 
   /* ---------- Live order rail ---------- */
   .live-orders-section {
@@ -272,13 +313,35 @@
     return data;
   }
 
-  // Hand-rolled SVG line chart — no library, no fake data, no curve
-  // smoothing (would distort the real shape of a sharp spike/drop).
-  // Each dot carries a native <title> tooltip and a larger invisible
-  // hit-circle so it's easy to tap on a touchscreen tablet.
+  // Hand-rolled SVG line chart. Lines are drawn as a gently smoothed
+  // Catmull-Rom → cubic-Bezier curve so trends read cleanly, while each
+  // real value still gets its own dot — a genuine spike still looks like
+  // a spike, it just isn't drawn with harsh straight-line corners.
+  // Each dot has a larger invisible hit-circle (for touch) that drives a
+  // themed floating tooltip (see chartTooltip helpers below) instead of
+  // the slow, unstyled native <title> tooltip.
   let chartIdSeq = 0;
+  function smoothPath(pts) {
+    if (pts.length < 3) return pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+    let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)} `;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const segMin = Math.min(p1[1], p2[1]);
+      const segMax = Math.max(p1[1], p2[1]);
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const c1y = Math.min(Math.max(p1[1] + (p2[1] - p0[1]) / 6, segMin), segMax);
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const c2y = Math.min(Math.max(p2[1] - (p3[1] - p1[1]) / 6, segMin), segMax);
+      d += `C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)} `;
+    }
+    return d.trim();
+  }
+
   function trendChart({ labels, series, height = 230, highlightPeak = false }) {
-    const W = 640, PL = 56, PR = 16, PT = 20, PB = 30;
+    const W = 640, PL = 56, PR = 16, PT = 24, PB = 30;
     const gid = `tcg${chartIdSeq++}`;
     const allVals = series.flatMap((s) => s.values);
     const max = Math.max(...allVals, 1);
@@ -288,48 +351,63 @@
     const xs = (i) => PL + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
     const ys = (v) => PT + innerH - (v / max) * innerH;
 
-    const grid = [0, 0.25, 0.5, 0.75, 1].map((f) => {
+    const gridSteps = [0, 0.25, 0.5, 0.75, 1];
+    const grid = gridSteps.map((f) => {
       const y = ys(max * f);
-      return `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="#e9e2d2" stroke-width="1" stroke-dasharray="2,4"/>` +
-        `<text x="${PL - 8}" y="${y + 4}" text-anchor="end" class="chart-label">${compactPeso(max * f)}</text>`;
+      const isBase = f === 0;
+      return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" class="${isBase ? 'chart-baseline' : 'chart-grid-line'}"/>` +
+        `<text x="${PL - 10}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-label">${compactPeso(max * f)}</text>`;
     }).join('');
 
     const areaPath = series.length === 1
       ? `<defs>
            <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
-             <stop offset="0%" stop-color="${series[0].color}" stop-opacity="0.28"/>
+             <stop offset="0%" stop-color="${series[0].color}" stop-opacity="0.30"/>
+             <stop offset="65%" stop-color="${series[0].color}" stop-opacity="0.06"/>
              <stop offset="100%" stop-color="${series[0].color}" stop-opacity="0"/>
            </linearGradient>
          </defs>
-         <path d="${series[0].values.map((v, i) => `${i === 0 ? 'M' : 'L'}${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ')} L${xs(n - 1).toFixed(1)},${(PT + innerH)} L${xs(0).toFixed(1)},${(PT + innerH)} Z" fill="url(#${gid})"/>`
+         <path class="chart-area" d="${smoothPath(series[0].values.map((v, i) => [xs(i), ys(v)]))} L${xs(n - 1).toFixed(1)},${(PT + innerH)} L${xs(0).toFixed(1)},${(PT + innerH)} Z" fill="url(#${gid})"/>`
       : '';
 
     const lines = series.map((s) => {
-      const path = s.values.map((v, i) => `${i === 0 ? 'M' : 'L'}${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(' ');
-      const dots = s.values.map((v, i) => `
-          <circle class="chart-dot-hit" cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="11" fill="transparent">
-            <title>${s.titles ? s.titles[i] : (labels[i] + ': ' + v)}</title>
-          </circle>
-          <circle class="chart-dot-visible hoverable" cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3" fill="${s.color}" stroke="#fff" stroke-width="1.4" pointer-events="none"/>`
-      ).join('');
-      return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
+      const pts = s.values.map((v, i) => [xs(i), ys(v)]);
+      const path = smoothPath(pts);
+      const dots = s.values.map((v, i) => {
+        const tt = s.titles ? s.titles[i] : `${labels[i]}: ${v}`;
+        return `
+          <circle class="chart-dot-hit" data-tt="${escapeHtml(tt)}" cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="11" fill="transparent"></circle>
+          <circle class="chart-dot-visible hoverable" cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3" fill="${s.color}" stroke="#fff" stroke-width="1.4" pointer-events="none"/>`;
+      }).join('');
+      return `<path class="chart-line-path" d="${path}" fill="none" stroke="${s.color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
     }).join('');
 
     // Highlight the peak point on single-series charts (e.g. Sales Trend)
-    // with a soft halo + value callout, so a spike reads at a glance.
+    // with a soft halo + a rounded value badge, so a spike reads at a glance.
     let peakMarkup = '';
     if (highlightPeak && series.length === 1) {
       const vals = series[0].values;
       const maxV = Math.max(...vals);
       if (maxV > 0) {
         const idx = vals.indexOf(maxV);
-        const px = xs(idx).toFixed(1);
+        const px = xs(idx);
         const py = ys(maxV);
-        const anchor = idx < n * 0.12 ? 'start' : idx > n * 0.88 ? 'end' : 'middle';
+        const label = compactPeso(maxV);
+        const badgeW = Math.max(52, label.length * 8.2 + 20);
+        const badgeH = 30;
+        const nearLeft = idx < n * 0.14;
+        const nearRight = idx > n * 0.86;
+        const bx = nearLeft ? px : nearRight ? px - badgeW : px - badgeW / 2;
+        const clampedBx = Math.min(Math.max(bx, PL - 4), W - PR - badgeW + 4);
+        const by = Math.max(py - badgeH - 16, 2);
         peakMarkup = `
-          <circle cx="${px}" cy="${py.toFixed(1)}" r="10" fill="${series[0].color}" opacity="0.15"/>
-          <circle cx="${px}" cy="${py.toFixed(1)}" r="4.5" fill="${series[0].color}" stroke="#fff" stroke-width="2"/>
-          <text x="${px}" y="${(py - 14).toFixed(1)}" text-anchor="${anchor}" class="chart-peak-label" fill="${series[0].color}">${compactPeso(maxV)}</text>`;
+          <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="13" fill="${series[0].color}" opacity="0.14"/>
+          <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5" fill="${series[0].color}" stroke="#fff" stroke-width="2.2"/>
+          <g class="chart-peak-badge-bg">
+            <rect x="${clampedBx.toFixed(1)}" y="${by.toFixed(1)}" width="${badgeW.toFixed(1)}" height="${badgeH}" rx="8" fill="${series[0].color}"/>
+            <text x="${(clampedBx + badgeW / 2).toFixed(1)}" y="${(by + 13).toFixed(1)}" text-anchor="middle" class="chart-peak-sub">Peak</text>
+            <text x="${(clampedBx + badgeW / 2).toFixed(1)}" y="${(by + 24.5).toFixed(1)}" text-anchor="middle" class="chart-peak-label">${label}</text>
+          </g>`;
       }
     }
 
@@ -342,6 +420,46 @@
 
     return `<div class="chart-wrap">${legend}<svg viewBox="0 0 ${W} ${height}" role="img">${grid}${areaPath}${lines}${peakMarkup}${xLabels}</svg></div>`;
   }
+
+  /* ---------- Shared floating tooltip for chart dots ---------- */
+  let chartTooltipEl = null;
+  function ensureChartTooltip() {
+    if (chartTooltipEl) return chartTooltipEl;
+    chartTooltipEl = document.createElement('div');
+    chartTooltipEl.className = 'chart-tooltip';
+    document.body.appendChild(chartTooltipEl);
+    return chartTooltipEl;
+  }
+  function positionChartTooltip(x, y) {
+    const tt = ensureChartTooltip();
+    const margin = 12;
+    const clampedX = Math.min(Math.max(x, margin + 60), window.innerWidth - margin - 60);
+    tt.style.left = `${clampedX}px`;
+    tt.style.top = `${Math.max(y, 50)}px`;
+  }
+  document.addEventListener('mouseover', (e) => {
+    const dot = e.target.closest('.chart-dot-hit');
+    if (!dot) return;
+    const tt = ensureChartTooltip();
+    const raw = dot.getAttribute('data-tt') || '';
+    const [title, ...rest] = raw.split(' · ');
+    tt.innerHTML = `<span class="tt-title">${title || ''}</span>${rest.length ? `<span class="tt-sub">${rest.join(' · ')}</span>` : ''}`;
+    const rect = dot.getBoundingClientRect();
+    positionChartTooltip(rect.left + rect.width / 2, rect.top);
+    tt.classList.add('visible');
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!chartTooltipEl || !chartTooltipEl.classList.contains('visible')) return;
+    const dot = e.target.closest('.chart-dot-hit');
+    if (!dot) return;
+    const rect = dot.getBoundingClientRect();
+    positionChartTooltip(rect.left + rect.width / 2, rect.top);
+  });
+  document.addEventListener('mouseout', (e) => {
+    const dot = e.target.closest('.chart-dot-hit');
+    if (!dot) return;
+    if (chartTooltipEl) chartTooltipEl.classList.remove('visible');
+  });
 
   // Donut chart for the order-type breakdown.
   function donutChart(segments, total) {
