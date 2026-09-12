@@ -713,6 +713,7 @@
             <select id="posOrderType">
               <option value="dine_in">Dine In</option>
               <option value="pickup">Takeout</option>
+              <option value="delivery">Delivery</option>
             </select>
           </div>
 
@@ -749,9 +750,40 @@
           <div class="pos-actions">
             <div id="custSelectedWrap" style="display:none;"></div>
             <div id="custSearchWrap" class="cust-search-wrap">
-              <input type="text" id="custSearchInput" placeholder="Optional: search customer by name, email, or phone…" autocomplete="off">
+              <div style="display:flex; gap:8px; margin-bottom:8px;">
+                <input type="text" id="custSearchInput" placeholder="Optional: search customer by name, email, or phone…" autocomplete="off" style="flex:1;">
+                <button class="btn btn-outline" id="showCustFormBtn" style="white-space:nowrap;">+ Add Customer</button>
+              </div>
               <div class="cust-results" id="custResults" style="display:none;"></div>
             </div>
+
+            <!-- New Customer Form -->
+            <div id="custFormWrap" style="display:none; margin-top:12px; padding:12px; background:var(--stone); border:1px solid var(--line); border-radius:8px;">
+              <h4 style="margin:0 0 10px; font-size:0.8rem; font-family:'Plus Jakarta Sans', sans-serif;">New Customer</h4>
+              <div style="display:grid; gap:8px; grid-template-columns:1fr 1fr;">
+                <div>
+                  <label style="display:block; font-size:0.65rem; text-transform:uppercase; color:var(--ink-muted); margin-bottom:4px;">Name *</label>
+                  <input type="text" id="custFormName" placeholder="Customer name" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--component-bg); font-family:'Plus Jakarta Sans', sans-serif; font-size:0.84rem;">
+                </div>
+                <div>
+                  <label style="display:block; font-size:0.65rem; text-transform:uppercase; color:var(--ink-muted); margin-bottom:4px;">Phone *</label>
+                  <input type="tel" id="custFormPhone" placeholder="Phone number" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--component-bg); font-family:'Plus Jakarta Sans', sans-serif; font-size:0.84rem;">
+                </div>
+                <div style="grid-column:1/-1;">
+                  <label style="display:block; font-size:0.65rem; text-transform:uppercase; color:var(--ink-muted); margin-bottom:4px;">Email</label>
+                  <input type="email" id="custFormEmail" placeholder="Email (optional)" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--component-bg); font-family:'Plus Jakarta Sans', sans-serif; font-size:0.84rem;">
+                </div>
+                <div style="grid-column:1/-1;">
+                  <label style="display:block; font-size:0.65rem; text-transform:uppercase; color:var(--ink-muted); margin-bottom:4px;">Address</label>
+                  <textarea id="custFormAddress" placeholder="Delivery address (optional)" rows="2" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--component-bg); font-family:'Plus Jakarta Sans', sans-serif; font-size:0.84rem; resize:vertical;"></textarea>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; margin-top:10px;">
+                <button class="btn btn-outline" id="custFormCancelBtn" style="flex:1;">Cancel</button>
+                <button class="btn" id="custFormSaveBtn" style="flex:1;">Save & Select</button>
+              </div>
+            </div>
+
             <p class="pos-hint">No customer? Orders logged under "Walk-in Customer" automatically.</p>
 
             <div class="pos-actions-row">
@@ -943,6 +975,17 @@
     document.getElementById('custQtyPlus').addEventListener('click', () => changeCustomizeQty(1));
     document.getElementById('customizeNotes').addEventListener('input', updateCustomizeTotals);
     document.getElementById('custSearchInput').addEventListener('input', onCustomerSearchInput);
+    document.getElementById('showCustFormBtn').addEventListener('click', () => {
+      document.getElementById('custFormWrap').style.display = 'block';
+      document.getElementById('showCustFormBtn').style.display = 'none';
+      document.getElementById('custFormName').focus();
+    });
+    document.getElementById('custFormCancelBtn').addEventListener('click', () => {
+      document.getElementById('custFormWrap').style.display = 'none';
+      document.getElementById('showCustFormBtn').style.display = '';
+      clearCustForm();
+    });
+    document.getElementById('custFormSaveBtn').addEventListener('click', saveNewCustomer);
     document.addEventListener('click', (e) => {
       const wrap = document.getElementById('custSearchWrap');
       if (wrap && !wrap.contains(e.target)) document.getElementById('custResults').style.display = 'none';
@@ -1637,6 +1680,48 @@
     document.getElementById('custSelectedWrap').style.display = 'none';
     document.getElementById('custSelectedWrap').innerHTML = '';
     document.getElementById('custSearchWrap').style.display = 'block';
+  }
+
+  function clearCustForm() {
+    document.getElementById('custFormName').value = '';
+    document.getElementById('custFormPhone').value = '';
+    document.getElementById('custFormEmail').value = '';
+    document.getElementById('custFormAddress').value = '';
+  }
+
+  function saveNewCustomer() {
+    const name = document.getElementById('custFormName').value.trim();
+    const phone = document.getElementById('custFormPhone').value.trim();
+    const email = document.getElementById('custFormEmail').value.trim();
+    const address = document.getElementById('custFormAddress').value.trim();
+
+    if (!name) { alert('Name is required'); return; }
+    if (!phone) { alert('Phone is required'); return; }
+
+    selectedCustomer = {
+      id: 'new_' + Date.now(),
+      name,
+      email,
+      phone,
+      address,
+      isNew: true
+    };
+
+    clearCustForm();
+    document.getElementById('custFormWrap').style.display = 'none';
+    document.getElementById('showCustFormBtn').style.display = '';
+
+    document.getElementById('custResults').style.display = 'none';
+    document.getElementById('custSearchInput').value = '';
+    document.getElementById('custSearchWrap').style.display = 'none';
+    const selectedWrap = document.getElementById('custSelectedWrap');
+    selectedWrap.style.display = 'block';
+    selectedWrap.innerHTML = `
+      <div class="cust-selected">
+        <div><div class="cn">${escapeHtml(name)}</div><div class="ce">${escapeHtml(email || phone || '')}</div></div>
+        <button id="custChangeBtn">Change</button>
+      </div>`;
+    document.getElementById('custChangeBtn').addEventListener('click', clearSelectedCustomer);
   }
 </script>
 </body>
