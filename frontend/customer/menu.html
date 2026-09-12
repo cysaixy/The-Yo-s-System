@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -82,7 +82,17 @@
       <li><a href="order.html" class="nav-btn">Order Now</a></li>
     </ul>
   </nav>
-  <button class="nav-toggle" id="navToggle">☰</button>
+  <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
+    <svg class="nav-toggle-icon nav-icon-menu" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="4" y1="12" x2="20" y2="12"></line>
+      <line x1="4" y1="18" x2="20" y2="18"></line>
+    </svg>
+    <svg class="nav-toggle-icon nav-icon-close" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
 </header>
 
 <section>
@@ -92,7 +102,7 @@
       <p>Explore our complete culinary line-up, featuring satisfying rice courses, premium chicken wing selections, local noodles, and fully loaded specialty drinks.</p>
     </div>
 
-    <p class="menu-photo-note" style="margin-top:-40px; margin-bottom:36px;">Tip: tap <strong style="color:var(--brass);">+ Add</strong> on anything you like â€” your picks are waiting for you when you check out.</p>
+    <p class="menu-photo-note" style="margin-top:-40px; margin-bottom:36px;">Tip: tap <strong style="color:var(--brass);">+ Add</strong> on anything you like &mdash; your picks are waiting for you when you check out.</p>
 
     <div class="menu-tabs" id="menuTabsContainer" role="tablist" aria-label="Menu categories">
       <button class="tab-btn active" data-tab="rice-meals-bowls" role="tab" aria-selected="true" aria-controls="rice-meals-bowls" id="tab-rice">Rice Meals &amp; Bowls</button>

@@ -511,7 +511,7 @@
 
       <div class="dash-section">
         <div class="dash-section-head"><h3>Sales Overview</h3><span class="dash-sub">as of today · ${today}</span></div>
-        <div class="stat-grid" id="sec-overview"><div class="admin-loading">Loading…</div></div>
+        <div id="sec-overview"><div class="admin-loading">Loading…</div></div>
       </div>
 
       <div class="dash-section">
@@ -536,7 +536,7 @@
 
       <div class="dash-section">
         <div class="dash-section-head"><h3>Cash Overview</h3><span class="dash-sub">as of today</span></div>
-        <div class="stat-grid" id="sec-cash-overview"><div class="admin-loading">Loading…</div></div>
+        <div id="sec-cash-overview"><div class="admin-loading">Loading…</div></div>
       </div>
 
       <div class="dash-section">
@@ -546,7 +546,7 @@
 
       <div class="dash-section">
         <div class="dash-section-head"><h3>Inventory Overview</h3><span class="dash-sub">raw stock status</span></div>
-        <div class="stat-grid" id="sec-inventory-overview"><div class="admin-loading">Loading…</div></div>
+        <div id="sec-inventory-overview"><div class="admin-loading">Loading…</div></div>
       </div>
 
       <div class="dash-section">
@@ -699,11 +699,19 @@
     try {
       const d = await getJSON('/api/admin/dashboard');
       el.innerHTML = `
-        <div class="stat-card"><div class="label">Today's Sales</div><div class="value brass">${peso(d.todaySales)}</div></div>
-        <div class="stat-card"><div class="label">Today's Orders</div><div class="value">${d.todayOrderCount}</div></div>
-        <div class="stat-card"><div class="label">Avg Order Value</div><div class="value">${peso(d.avgOrderValue)}</div></div>
-        <div class="stat-card"><div class="label">Gross Profit</div><div class="value ${d.grossProfit < 0 ? 'danger' : 'brass'}">${peso(d.grossProfit)}</div><div class="stat-note">${d.profitMargin}% margin</div></div>
-        <div class="stat-card"><div class="label">Order Types</div><div class="value">${d.orderTypesCount}</div><div class="stat-note">of 5 tracked today</div></div>
+        <div class="stat-hero-row">
+          <div class="stat-hero">
+            <div class="label">Today's Sales</div>
+            <div class="hero-row"><div class="value">${peso(d.todaySales)}</div></div>
+            <div class="stat-note">${d.todayOrderCount} ${d.todayOrderCount === 1 ? 'order' : 'orders'} today · ${d.profitMargin}% gross margin</div>
+          </div>
+          <div class="stat-secondary-grid">
+            <div class="stat-card"><div class="label">Orders</div><div class="value">${d.todayOrderCount}</div></div>
+            <div class="stat-card"><div class="label">Avg Order</div><div class="value">${peso(d.avgOrderValue)}</div></div>
+            <div class="stat-card"><div class="label">Gross Profit</div><div class="value ${d.grossProfit < 0 ? 'danger' : 'brass'}">${peso(d.grossProfit)}</div></div>
+            <div class="stat-card"><div class="label">Order Types</div><div class="value">${d.orderTypesCount}<span style="font-size:0.85rem; opacity:0.45;"> / 5</span></div></div>
+          </div>
+        </div>
       `;
     } catch (err) {
       el.innerHTML = lockBox(err.message);
@@ -904,13 +912,23 @@
       const d = await getJSON('/api/admin/dashboard/cash-overview');
       const varClass = d.variance === 0 ? '' : (d.variance < 0 ? 'danger' : 'success');
       el.innerHTML = `
-        <div class="stat-card"><div class="label">Opening Cash</div><div class="value">${peso(d.opening)}</div></div>
-        <div class="stat-card"><div class="label">Cash Sales Today</div><div class="value brass">${peso(d.cash_sales)}</div><div class="stat-note">${d.cash_sale_count} ${d.cash_sale_count === 1 ? 'sale' : 'sales'}</div></div>
-        <div class="stat-card"><div class="label">Cash In</div><div class="value success">${peso(d.cash_in)}</div></div>
-        <div class="stat-card"><div class="label">Cash Out</div><div class="value danger">${peso(d.cash_out)}</div></div>
-        <div class="stat-card"><div class="label">Expected Cash</div><div class="value">${peso(d.expected)}</div></div>
-        <div class="stat-card"><div class="label">Actual Cash</div><div class="value">${peso(d.actual)}</div></div>
-        <div class="stat-card"><div class="label">Variance</div><div class="value ${varClass}">${peso(d.variance)}</div></div>
+        <div class="stat-hero-row">
+          <div class="stat-hero">
+            <div class="label">Cash Sales Today</div>
+            <div class="hero-row"><div class="value">${peso(d.cash_sales)}</div></div>
+            <div class="stat-note">${d.cash_sale_count} ${d.cash_sale_count === 1 ? 'sale' : 'sales'} · variance
+              <strong style="color:${d.variance === 0 ? 'inherit' : (d.variance < 0 ? 'var(--danger)' : 'var(--success)')}">${peso(d.variance)}</strong>
+            </div>
+          </div>
+          <div class="stat-secondary-grid">
+            <div class="stat-card"><div class="label">Opening</div><div class="value">${peso(d.opening)}</div></div>
+            <div class="stat-card"><div class="label">Cash In</div><div class="value success">${peso(d.cash_in)}</div></div>
+            <div class="stat-card"><div class="label">Cash Out</div><div class="value danger">${peso(d.cash_out)}</div></div>
+            <div class="stat-card"><div class="label">Expected</div><div class="value">${peso(d.expected)}</div></div>
+            <div class="stat-card"><div class="label">Actual</div><div class="value">${peso(d.actual)}</div></div>
+            <div class="stat-card"><div class="label">Variance</div><div class="value ${varClass}">${peso(d.variance)}</div></div>
+          </div>
+        </div>
       `;
     } catch (err) {
       el.innerHTML = lockBox(err.message);
@@ -944,12 +962,21 @@
     const el = document.getElementById('sec-inventory-overview');
     try {
       const d = await getJSON('/api/admin/dashboard/inventory-overview');
+      const needsAttention = d.below_reorder + d.low_stock + d.out_of_stock;
       el.innerHTML = `
-        <div class="stat-card"><div class="label">Total Items</div><div class="value">${d.total_items}</div></div>
-        <div class="stat-card"><div class="label">In Stock</div><div class="value success">${d.in_stock}</div></div>
-        <div class="stat-card"><div class="label">Below Reorder</div><div class="value warning">${d.below_reorder}</div></div>
-        <div class="stat-card"><div class="label">Low Stock</div><div class="value warning">${d.low_stock}</div></div>
-        <div class="stat-card"><div class="label">Out of Stock</div><div class="value ${d.out_of_stock > 0 ? 'danger' : ''}">${d.out_of_stock}</div></div>
+        <div class="stat-hero-row">
+          <div class="stat-hero">
+            <div class="label">Needs Attention</div>
+            <div class="hero-row"><div class="value ${needsAttention > 0 ? 'danger' : ''}">${needsAttention}</div></div>
+            <div class="stat-note">out of ${d.total_items} total items tracked</div>
+          </div>
+          <div class="stat-secondary-grid">
+            <div class="stat-card"><div class="label">In Stock</div><div class="value success">${d.in_stock}</div></div>
+            <div class="stat-card"><div class="label">Below Reorder</div><div class="value warning">${d.below_reorder}</div></div>
+            <div class="stat-card"><div class="label">Low Stock</div><div class="value warning">${d.low_stock}</div></div>
+            <div class="stat-card"><div class="label">Out of Stock</div><div class="value ${d.out_of_stock > 0 ? 'danger' : ''}">${d.out_of_stock}</div></div>
+          </div>
+        </div>
       `;
     } catch (err) {
       el.innerHTML = lockBox(err.message);

@@ -20,10 +20,57 @@ document.addEventListener("DOMContentLoaded", () => {
   const siteNav = document.getElementById('siteNav');
   
   if (navToggle && siteNav) {
+    if (!navToggle.querySelector('svg')) {
+      navToggle.innerHTML = `
+        <svg class="nav-toggle-icon nav-icon-menu" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="4" y1="6" x2="20" y2="6"></line>
+          <line x1="4" y1="12" x2="20" y2="12"></line>
+          <line x1="4" y1="18" x2="20" y2="18"></line>
+        </svg>
+        <svg class="nav-toggle-icon nav-icon-close" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      `;
+    }
+    navToggle.setAttribute('aria-label', 'Toggle navigation menu');
+    navToggle.setAttribute('aria-expanded', 'false');
+
+    const openNav = () => {
+      siteNav.classList.add('open');
+      navToggle.classList.add('open');
+      navToggle.setAttribute('aria-expanded', 'true');
+      navToggle.setAttribute('aria-label', 'Close menu');
+      document.body.style.overflow = 'hidden';
+    };
+
+    const closeNav = () => {
+      siteNav.classList.remove('open');
+      navToggle.classList.remove('open');
+      navToggle.setAttribute('aria-expanded', 'false');
+      navToggle.setAttribute('aria-label', 'Open menu');
+      document.body.style.overflow = '';
+    };
+
     navToggle.addEventListener('click', (e) => {
       e.stopPropagation();
-      siteNav.classList.toggle('open');
-      navToggle.textContent = siteNav.classList.contains('open') ? '✕' : '☰';
+      siteNav.classList.contains('open') ? closeNav() : openNav();
+    });
+
+    siteNav.addEventListener('click', (e) => {
+      if (e.target.closest('a')) closeNav();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (siteNav.classList.contains('open') && !siteNav.contains(e.target) && !navToggle.contains(e.target)) {
+        closeNav();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && siteNav.classList.contains('open')) {
+        closeNav();
+      }
     });
   }
 

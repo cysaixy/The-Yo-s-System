@@ -15,8 +15,33 @@ export async function verifyFirebaseToken(req, res, next) {
 
   const token = authHeader.split(' ')[1];
 
+  let decodedToken;
   try {
-    const decodedToken = await getFirebaseAuth().verifyIdToken(token);
+    const auth = getFirebaseAuth();
+    decodedToken = await auth.verifyIdToken(token);
+  } catch (error) {
+    console.error('Firebase Token Error:', error.message);
+    if (error.message?.includes('Firebase Admin credentials are incomplete') || error.code === 'FIREBASE_UNAVAILABLE') {
+      return res.status(503).json({
+        error: 'Authentication service is not configured on the server.',
+        details: error.message,
+      });
+    }
+
+    if (error.code === 'auth/id-token-expired') {
+      return res.status(401).json({
+        error: 'Your session has expired. Please refresh your session.',
+        code: 'TOKEN_EXPIRED',
+      });
+    }
+
+    return res.status(401).json({
+      error: 'Unauthorized. Invalid or expired token.',
+      code: error.code || 'TOKEN_INVALID',
+    });
+  }
+
+  try {
     const { uid, email } = decodedToken;
 
     const { rows } = await pool.query(
@@ -31,9 +56,9 @@ export async function verifyFirebaseToken(req, res, next) {
     };
 
     next();
-  } catch (error) {
-    console.error('Firebase Token Error:', error.message);
-    return res.status(401).json({ error: 'Unauthorized. Invalid or expired token.' });
+  } catch (dbError) {
+    console.error('Customer DB lookup error:', dbError.message);
+    return res.status(500).json({ error: 'Database error verifying customer account.' });
   }
 }
 

@@ -46,18 +46,38 @@ export {
 // someone signs in — the backend upserts, and COALESCE means blank fields
 // won't overwrite existing saved values.
 export async function syncCustomerProfile(idToken, profileFields = {}) {
-  const res = await fetch(`${API_BASE_URL}/api/customer/auth/sync`, {
+  let token = idToken;
+  let res = await fetch(`${API_BASE_URL}/api/customer/auth/sync`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${idToken}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(profileFields),
   });
+
+  // If token is expired or unauthorized, attempt a fresh token retrieval and retry once
+  if (res.status === 401 && auth.currentUser) {
+    try {
+      token = await auth.currentUser.getIdToken(true);
+      res = await fetch(`${API_BASE_URL}/api/customer/auth/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileFields),
+      });
+    } catch (refreshErr) {
+      console.warn("Could not force-refresh token:", refreshErr);
+    }
+  }
+
   const data = await res.json();
   if (!res.ok) {
     const err = new Error(data.error || "Could not sync your profile.");
     if (data.code) err.code = data.code;
+    if (data.details) err.details = data.details;
     throw err;
   }
   return data.customer;

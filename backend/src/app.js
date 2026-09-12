@@ -40,8 +40,31 @@ app.use(cookieParser());
 // Apply global rate limiting across all API endpoints
 app.use('/api', globalLimiter);
 
+import { getFirebaseAuth } from './config/firebase.js';
+
 // Health check - confirms the server + env vars are working
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) => {
+  let fbStatus = 'uninitialized';
+  let fbError = null;
+  try {
+    const auth = getFirebaseAuth();
+    fbStatus = auth ? 'ready' : 'null';
+  } catch (e) {
+    fbStatus = 'error';
+    fbError = e.message || String(e);
+  }
+
+  res.json({
+    status: 'ok',
+    firebase: {
+      status: fbStatus,
+      error: fbError,
+      hasProjectId: Boolean(process.env.FIREBASE_PROJECT_ID),
+      hasClientEmail: Boolean(process.env.FIREBASE_CLIENT_EMAIL),
+      hasPrivateKey: Boolean(process.env.FIREBASE_PRIVATE_KEY),
+    },
+  });
+});
 
 // --- Customer API ---
 app.use('/api/customer/menu', customerMenuRoutes);
