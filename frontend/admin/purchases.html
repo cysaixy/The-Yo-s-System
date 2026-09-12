@@ -184,23 +184,29 @@
     };
 
     if (itemType === 'inventory') {
-      payload.inventory_id = itemId;
+      payload.inventory_id = Number(itemId);
     } else {
-      payload.menu_id = itemId;
+      payload.menu_id = Number(itemId);
     }
 
     try {
+      console.log('Sending purchase payload:', payload);
       const res = await adminFetch('/api/admin/purchases/create', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || 'Could not save purchase.');
+      console.log('Backend response:', { status: res.status, data });
+      if (!res.ok) {
+        // Show the detailed error message from backend
+        throw new Error(data.message || data.error || 'Could not save purchase.');
+      }
       toggleModal(false);
       loadPurchases();
     } catch (err) {
       errEl.textContent = err.message;
       errEl.style.display = 'block';
+      console.error('Purchase error:', err);
     }
   }
 </script>
