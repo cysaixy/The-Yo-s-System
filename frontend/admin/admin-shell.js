@@ -249,7 +249,7 @@ function showAdminToast(notification) {
       <strong>${escapeNotificationHtml(notification.title)}</strong>
       <span>${escapeNotificationHtml(notification.message)}</span>
     </div>
-    <button type="button" aria-label="Dismiss notification">Ã—</button>
+    <button type="button" aria-label="Dismiss notification">×</button>
   `;
   stack.appendChild(toast);
   const dismiss = () => {
@@ -286,13 +286,13 @@ function initOnlineOrderNotifications(staff) {
   const renderPanel = () => {
     const history = readNotificationHistory();
     panel.innerHTML = `
-      <div class="online-order-panel-head"><div><strong>Notifications</strong><span>${activeAlertCount} active ${activeAlertCount === 1 ? 'alert' : 'alerts'}</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">Ã—</button></div>
+      <div class="online-order-panel-head"><div><strong>Notifications</strong><span>${activeAlertCount} active ${activeAlertCount === 1 ? 'alert' : 'alerts'}</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">×</button></div>
       <div class="online-order-panel-list">${history.length ? history.map(item => `
         <a href="${escapeNotificationHtml(item.href || 'dashboard.html')}" class="online-order-panel-item">
           <span class="online-order-dot notification-${escapeNotificationHtml(item.type || 'order')}"></span>
           <div><strong>${escapeNotificationHtml(item.title)}</strong><span>${escapeNotificationHtml(item.message)}</span><time>${escapeNotificationHtml(notificationTime(item.createdAt))}</time></div>
         </a>`).join('') : '<div class="online-order-panel-empty">No notifications yet.</div>'}</div>
-      <a class="online-order-panel-action" href="dashboard.html">Open dashboard â†’</a>`;
+      <a class="online-order-panel-action" href="dashboard.html">Open dashboard →</a>`;
     panel.querySelector('#closeOnlineOrderPanel')?.addEventListener('click', () => panel.classList.remove('open'));
   };
 
@@ -339,7 +339,7 @@ function initOnlineOrderNotifications(staff) {
             id: `order-${order.id}-${order.status}`,
             type: 'order',
             title: order.source === 'online' ? 'New online order' : 'New order',
-            message: `Order #${order.id} Â· ${order.customer_name || 'Customer'} Â· â‚±${Number(order.total_amount || 0).toLocaleString('en-PH')}`,
+            message: `Order #${order.id} · ${order.customer_name || 'Customer'} · ₱${Number(order.total_amount || 0).toLocaleString('en-PH')}`,
             href: 'sales.html',
           };
           if (addNotification(notification) && hadOrderSnapshot) notifications.push(notification);
@@ -349,7 +349,7 @@ function initOnlineOrderNotifications(staff) {
             id: `order-${order.id}-${order.status}`,
             type: 'status',
             title: `Order #${order.id} updated`,
-            message: `Status changed to ${String(order.status).replace(/_/g, ' ')}${order.handler_name ? ` Â· ${order.handler_name}` : ''}`,
+            message: `Status changed to ${String(order.status).replace(/_/g, ' ')}${order.handler_name ? ` · ${order.handler_name}` : ''}`,
             href: 'sales.html',
           };
           if (addNotification(notification)) notifications.push(notification);
