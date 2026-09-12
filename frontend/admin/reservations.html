@@ -725,10 +725,10 @@
         </tbody>
       </table>
       <div class="res-pager">
-        <span>Showing <b>${rows.length}</b> total result${rows.length === 1 ? '' : 's'} Â· Page ${page} of ${pageCount}</span>
+        <span>Showing <b>${rows.length}</b> total result${rows.length === 1 ? '' : 's'} &middot; Page ${page} of ${pageCount}</span>
         <div class="res-actions-wrap">
-          <button type="button" class="res-btn" ${page <= 1 ? 'disabled' : ''} data-nav="prev">â€¹ Prev</button>
-          <button type="button" class="res-btn" ${page >= pageCount ? 'disabled' : ''} data-nav="next">Next â€º</button>
+          <button type="button" class="res-btn" ${page <= 1 ? 'disabled' : ''} data-nav="prev">&lsaquo; Prev</button>
+          <button type="button" class="res-btn" ${page >= pageCount ? 'disabled' : ''} data-nav="next">Next &rsaquo;</button>
         </div>
       </div>
     `;
