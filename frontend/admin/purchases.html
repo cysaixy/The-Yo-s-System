@@ -20,6 +20,7 @@
 
   let inventoryItems = [];
   let menuItems = [];
+  let supportsMigration = false; // Will be detected by checking if inventory endpoint works
 
   function init() {
     const content = document.getElementById('adminContent');
@@ -82,8 +83,14 @@
     try {
       const res = await adminFetch('/api/admin/inventory');
       const data = await res.json();
-      if (res.ok) inventoryItems = data.items || [];
-    } catch { /* handled silently - modal will just show empty select */ }
+      if (res.ok && data.items) {
+        inventoryItems = data.items;
+        supportsMigration = true; // Inventory endpoint works, migration likely applied
+      }
+    } catch { 
+      supportsMigration = false;
+      inventoryItems = [];
+    }
   }
 
   async function loadMenuItems() {
@@ -136,7 +143,18 @@
   }
 
   function openModal() {
-    document.getElementById('pItemType').value = 'inventory';
+    const itemTypeSelect = document.getElementById('pItemType');
+    
+    // Default to menu items (legacy mode) if migration not supported
+    if (!supportsMigration || inventoryItems.length === 0) {
+      itemTypeSelect.value = 'menu';
+      // Hide inventory option if not supported
+      itemTypeSelect.querySelector('option[value="inventory"]').style.display = 
+        (supportsMigration && inventoryItems.length > 0) ? '' : 'none';
+    } else {
+      itemTypeSelect.value = 'inventory';
+    }
+    
     updateItemDropdown();
     document.getElementById('pQty').value = '';
     document.getElementById('pExpiry').value = '';
