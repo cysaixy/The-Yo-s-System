@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reservations â€” The~Yo's Admin</title>
+<title>Reservations — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
   /* ================================================================
-     RESERVATIONS â€” Scoped Design System
+     RESERVATIONS — Scoped Design System
      ================================================================ */
   
   /* ---- Toolbar & Controls ---- */
@@ -246,6 +246,37 @@
     color: var(--ink);
     border: 1px solid var(--line);
   }
+  /* Empty state for the Table column when no table is assigned yet.
+     .clickable variant is a real <button> that jumps straight into the
+     Confirm/Assign-table flow; the plain variant is just an inert note
+     for rows where assignment isn't applicable yet. */
+  .table-badge-empty {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink-muted);
+    border: 1px dashed var(--line-strong);
+    line-height: 1.3;
+    transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+  }
+  .table-badge-empty.clickable {
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .table-badge-empty.clickable:hover {
+    border-color: var(--brass);
+    border-style: solid;
+    color: var(--brass-dark);
+    background: rgba(163,132,74,0.08);
+  }
+  .table-badge-empty.clickable:active { transform: translateY(1px); }
+  .table-badge-empty .plus-icon { font-size: 0.8rem; line-height: 1; }
   .guests-badge {
     display: inline-flex;
     align-items: center;
@@ -560,7 +591,7 @@
       <div class="res-toolbar">
         <div class="res-filters">
           <span class="fb-label">Filter by</span>
-          <input type="text" id="filterQ" placeholder="Name, email, table, notesâ€¦">
+          <input type="text" id="filterQ" placeholder="Name, email, table, notes…">
           <select id="filterStatus" title="Reservation Status">
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
@@ -573,7 +604,7 @@
           </select>
           <div class="res-date-range">
             <input type="date" id="filterFrom" title="From date">
-            <span>â€”</span>
+            <span>—</span>
             <input type="date" id="filterTo" title="To date">
           </div>
         </div>
@@ -586,7 +617,7 @@
       <div class="res-stat-chips" id="resCounts"></div>
 
       <div class="res-table-wrap" id="resWrap">
-        <div class="admin-loading">Loading reservationsâ€¦</div>
+        <div class="admin-loading">Loading reservations…</div>
       </div>
     `;
 
@@ -618,7 +649,7 @@
       menuItems = menuJson.items || [];
       render();
     } catch (err) {
-      document.getElementById('resWrap').innerHTML = `<div class="admin-error">âš  ${escapeHtml(err.message)}</div>`;
+      document.getElementById('resWrap').innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
     }
   }
 
@@ -766,7 +797,7 @@
     const notes = r.notes || '';
     
     // Order deadline display
-    const deadline = r.order_editing_deadline ? fmtDate(r.order_editing_deadline) : 'â€”';
+    const deadline = r.order_editing_deadline ? fmtDate(r.order_editing_deadline) : '—';
     const deadlineDaysLeft = r.order_editing_deadline ? dayDiff(r.order_editing_deadline, today) : null;
     let deadlineClass = '';
     if (deadlineDaysLeft !== null) {
@@ -787,10 +818,15 @@
             ${r.customer_phone ? `<span class="sub">${escapeHtml(r.customer_phone)}</span>` : ''}
           </div>
         </td>
-        <td>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span style="color:var(--ink-muted); opacity:0.5;">â€”</span>'}</td>
+        <td>${r.table_no
+          ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>`
+          : (resStatusLabel === 'order_finalized'
+              ? `<button type="button" class="table-badge-empty clickable" data-action="confirmed" data-id="${r.id}" title="Assign a table for this reservation"><span class="plus-icon">+</span>Assign</button>`
+              : `<span class="table-badge-empty" title="Table is assigned when the reservation is confirmed">—</span>`)
+        }</td>
         <td>
-          <div><strong>${r.reservation_date ? fmtDate(r.reservation_date) : 'â€”'}</strong>${tag}</div>
-          <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.72rem; color:var(--ink-muted); margin-top:2px;">${r.reservation_time ? String(r.reservation_time).slice(0, 5) : 'â€”'}</div>
+          <div><strong>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}</strong>${tag}</div>
+          <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.72rem; color:var(--ink-muted); margin-top:2px;">${r.reservation_time ? String(r.reservation_time).slice(0, 5) : '—'}</div>
         </td>
         <td style="text-align:center;"><span class="guests-badge">${r.guests}</span></td>
         <td title="${formatDate(r.datetime_reserved)}" style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.72rem; color:var(--ink-muted); white-space:nowrap;">
@@ -799,7 +835,7 @@
         <td><span class="res-status-pill ${STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></td>
         <td><span class="order-status-pill ${ORDER_STATUS_PILL[orderStatusLabel] || 'order-status-no_order'}">${escapeHtml(orderStatusLabel.replace(/_/g, ' '))}</span></td>
         <td><span class="deadline-value ${deadlineClass}">${deadline}</span></td>
-        <td><div class="notes-cell${notes ? '' : ' empty'}" title="${escapeHtml(notes)}">${notes ? escapeHtml(notes) : 'â€”'}</div></td>
+        <td><div class="notes-cell${notes ? '' : ' empty'}" title="${escapeHtml(notes)}">${notes ? escapeHtml(notes) : '—'}</div></td>
         <td style="text-align:right;"><div class="res-actions-wrap" style="justify-content:flex-end;">${actionButtons(r)}</div></td>
       </tr>
     `;
@@ -866,7 +902,7 @@
         <h3>Confirm Reservation #${r.id}</h3>
         <div class="detail-list" style="margin-bottom:18px;">
           <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
-          <dt>Date & Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : "â€”"} at ${String(r.reservation_time || "").slice(0, 5)}</dd>
+          <dt>Date & Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : "—"} at ${String(r.reservation_time || "").slice(0, 5)}</dd>
           <dt>Guests</dt><dd><span class="guests-badge">${r.guests} guests</span></dd>
         </div>
         <div class="form-field" style="margin-top:16px;">
@@ -918,7 +954,7 @@
           r0.order_status = "finalized";
         }
         close();
-        toast(`Confirmed â€” Table ${data.reservation.table_no} assigned.`, "success");
+        toast(`Confirmed — Table ${data.reservation.table_no} assigned.`, "success");
         render();
       } catch (err) {
         errEl.textContent = err.message;
@@ -1010,7 +1046,7 @@
       }
 
       btn.disabled = true;
-      btn.textContent = 'Creatingâ€¦';
+      btn.textContent = 'Creating…';
 
       try {
         const customerRes = await adminFetch('/api/admin/customers', {
@@ -1042,7 +1078,7 @@
         if (!res.ok) {
           if (data.suggested_slots && data.suggested_slots.length > 0) {
             errEl.innerHTML = `
-              <div>âš  ${escapeHtml(data.error || 'This time slot is full.')}</div>
+              <div>⚠ ${escapeHtml(data.error || 'This time slot is full.')}</div>
               <div style="margin-top:6px; font-weight:600;">Suggested available times:</div>
               <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
                 ${data.suggested_slots.map(slot => `<button type="button" class="btn btn-outline small" style="padding:3px 8px;" onclick="document.getElementById('walkinTime').value='${slot}'; document.getElementById('walkinError').classList.remove('show');">${slot}</button>`).join('')}
@@ -1098,19 +1134,19 @@
     backdrop.innerHTML = `
       <div class="modal-box" style="max-width:680px; max-height:90vh; overflow-y:auto;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-          <h3 style="margin:0;">Manage Order â€” Reservation #${r.id}</h3>
-          <button type="button" class="res-btn" id="manageCloseBtn">âœ•</button>
+          <h3 style="margin:0;">Manage Order — Reservation #${r.id}</h3>
+          <button type="button" class="res-btn" id="manageCloseBtn">✕</button>
         </div>
         
         <div class="detail-list" style="margin-bottom:16px; font-size:0.82rem; background:var(--stone); border-radius:10px; padding:14px;">
           <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
-          <dt>Date &amp; Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : 'â€”'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dt>Date &amp; Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : '—'} at ${String(r.reservation_time || '').slice(0, 5)}</dd>
           <dt>Guests</dt><dd>${r.guests} guests</dd>
           <dt>Res. Status</dt><dd><span class="res-status-pill ${STATUS_PILL[resStatus] || 'res-status-pending'}">${escapeHtml(resStatus.replace(/_/g, ' '))}</span></dd>
           <dt>Order Status</dt><dd><span class="order-status-pill ${ORDER_STATUS_PILL[orderStatus] || 'order-status-no_order'}">${escapeHtml(orderStatus.replace(/_/g, ' '))}</span></dd>
           <dt>Deadline</dt><dd>
             <span class="deadline-value ${deadline ? (isPastDeadline ? 'locked' : (dayDiff(r.order_editing_deadline, today) === 0 ? 'final-day' : 'editable')) : ''}">
-              ${deadline ? fmtDate(r.order_editing_deadline) : 'â€”'}
+              ${deadline ? fmtDate(r.order_editing_deadline) : '—'}
             </span>
             ${isPastDeadline ? ' <span style="color:var(--danger); font-size:0.7rem; font-weight:700;">(PASSED)</span>' : ''}
           </dd>
@@ -1131,7 +1167,7 @@
                 <tr>
                   <td>
                     <div class="item-name">${escapeHtml(item.name || item.item_name)}</div>
-                    ${item.add_ons?.length ? item.add_ons.map(a => `<div class="addon-row">+ ${escapeHtml(a.name)} Ã— ${a.quantity}</div>`).join('') : ''}
+                    ${item.add_ons?.length ? item.add_ons.map(a => `<div class="addon-row">+ ${escapeHtml(a.name)} × ${a.quantity}</div>`).join('') : ''}
                     ${item.notes ? `<div class="item-notes">${escapeHtml(item.notes)}</div>` : ''}
                   </td>
                   <td class="item-qty">${item.quantity}</td>
@@ -1223,13 +1259,13 @@
     backdrop.innerHTML = `
       <div class="modal-box" style="max-width:760px; max-height:90vh; overflow-y:auto;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-          <h3 style="margin:0;">${isEdit ? 'Edit' : 'Add'} Order â€” Reservation #${reservationId}</h3>
-          <button type="button" class="res-btn" id="orderEditorCloseBtn">âœ•</button>
+          <h3 style="margin:0;">${isEdit ? 'Edit' : 'Add'} Order — Reservation #${reservationId}</h3>
+          <button type="button" class="res-btn" id="orderEditorCloseBtn">✕</button>
         </div>
 
         <div style="margin-bottom:14px; padding:10px 14px; background:var(--stone); border-radius:8px; font-size:0.80rem;">
-          <b>${escapeHtml(reservation.customer_name)}</b> â€¢ 
-          ${reservation.reservation_date ? fmtDate(reservation.reservation_date) : 'â€”'} at ${String(reservation.reservation_time || '').slice(0, 5)} â€¢ 
+          <b>${escapeHtml(reservation.customer_name)}</b> • 
+          ${reservation.reservation_date ? fmtDate(reservation.reservation_date) : '—'} at ${String(reservation.reservation_time || '').slice(0, 5)} • 
           ${reservation.guests} guests
         </div>
 
@@ -1240,7 +1276,7 @@
           <div id="currentOrderItems" style="max-height:180px; overflow-y:auto;"></div>
           <div class="order-total-row" id="orderTotalRow" style="display:none;">
             <span>Total:</span>
-            <span id="orderTotalDisplay">â‚±0.00</span>
+            <span id="orderTotalDisplay">₱0.00</span>
           </div>
         </div>
 
@@ -1300,11 +1336,11 @@
               <div style="background:#fff; border:1px solid ${isSelected ? 'var(--brass)' : 'var(--line)'}; border-radius:8px; padding:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px;">
                   <strong style="font-size:0.80rem; line-height:1.2;">${escapeHtml(item.name)}</strong>
-                  <span style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.78rem; font-weight:700; color:var(--brass-dark); white-space:nowrap;">â‚±${Number(item.price).toFixed(2)}</span>
+                  <span style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.78rem; font-weight:700; color:var(--brass-dark); white-space:nowrap;">₱${Number(item.price).toFixed(2)}</span>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                   <div class="stepper" style="flex-shrink:0;">
-                    <button type="button" class="qty-dec" data-id="${item.id}" ${qty <= 1 ? 'disabled' : ''}>âˆ’</button>
+                    <button type="button" class="qty-dec" data-id="${item.id}" ${qty <= 1 ? 'disabled' : ''}>−</button>
                     <span class="qty-val" data-id="${item.id}">${qty}</span>
                     <button type="button" class="qty-inc" data-id="${item.id}">+</button>
                   </div>
@@ -1407,16 +1443,16 @@
         <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--line); font-size:0.82rem;">
           <div>
             <strong>${escapeHtml(data.menuItem.name)}</strong>
-            <span style="font-family:'Plus Jakarta Sans', sans-serif; color:var(--brass-dark); margin-left:6px;">Ã— ${data.quantity}</span>
+            <span style="font-family:'Plus Jakarta Sans', sans-serif; color:var(--brass-dark); margin-left:6px;">× ${data.quantity}</span>
           </div>
           <span style="font-family:'Plus Jakarta Sans', sans-serif; font-weight:700; color:var(--brass-dark);">
-            â‚±${(subtotal + addonTotal).toFixed(2)}
+            ₱${(subtotal + addonTotal).toFixed(2)}
           </span>
         </div>
       `;
     }).join('');
 
-    totalDisplay.textContent = `â‚±${total.toFixed(2)}`;
+    totalDisplay.textContent = `₱${total.toFixed(2)}`;
     totalRow.style.display = 'flex';
   }
 
@@ -1441,7 +1477,7 @@
     }));
 
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Savingâ€¦';
+    saveBtn.textContent = 'Saving…';
     errEl.classList.remove('show');
 
     try {
@@ -1503,21 +1539,21 @@
       <div class="modal-box" style="max-width:500px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
           <h3 style="margin:0;">Reservation #${r.id}</h3>
-          <button type="button" class="res-btn" id="detailsCloseBtn">âœ•</button>
+          <button type="button" class="res-btn" id="detailsCloseBtn">✕</button>
         </div>
         <div class="detail-list" style="margin-bottom:20px;">
           <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
           <dt>Email</dt>
-          <dd>${r.customer_email ? `<a href="mailto:${escapeHtml(r.customer_email)}">${escapeHtml(r.customer_email)}</a>` : 'â€”'}</dd>
+          <dd>${r.customer_email ? `<a href="mailto:${escapeHtml(r.customer_email)}">${escapeHtml(r.customer_email)}</a>` : '—'}</dd>
           <dt>Phone</dt>
-          <dd>${r.customer_phone ? `<a href="tel:${escapeHtml(r.customer_phone)}">${escapeHtml(r.customer_phone)}</a>` : 'â€”'}</dd>
+          <dd>${r.customer_phone ? `<a href="tel:${escapeHtml(r.customer_phone)}">${escapeHtml(r.customer_phone)}</a>` : '—'}</dd>
           <dt>Date &amp; Time</dt>
-          <dd><b>${r.reservation_date ? fmtDate(r.reservation_date) : 'â€”'}</b> at ${String(r.reservation_time || '').slice(0, 5)}</dd>
+          <dd><b>${r.reservation_date ? fmtDate(r.reservation_date) : '—'}</b> at ${String(r.reservation_time || '').slice(0, 5)}</dd>
           <dt>Guests</dt><dd><span class="guests-badge">${r.guests} guests</span></dd>
-          <dt>Table</dt><dd>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span style="color:var(--ink-muted);">Not yet assigned</span>'}</dd>
+          <dt>Table</dt><dd>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span class="table-badge-empty">Not yet assigned</span>'}</dd>
           <dt>Status</dt><dd><span class="res-status-pill ${STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></dd>
           <dt>Requested</dt><dd style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.74rem;">${formatDate(r.datetime_reserved)}</dd>
-          <dt>Notes</dt><dd style="white-space:pre-wrap; font-size:0.82rem;">${r.notes ? escapeHtml(r.notes) : 'â€”'}</dd>
+          <dt>Notes</dt><dd style="white-space:pre-wrap; font-size:0.82rem;">${r.notes ? escapeHtml(r.notes) : '—'}</dd>
         </div>
         <div class="modal-close-row"><button class="btn" id="detailsClose">Close</button></div>
       </div>
@@ -1620,7 +1656,7 @@
 
   function fmtDate(dateStr) {
     const d = parseDateOnly(dateStr);
-    return d ? d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'â€”';
+    return d ? d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
   }
 </script>
 </body>

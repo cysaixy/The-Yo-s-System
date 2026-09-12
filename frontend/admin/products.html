@@ -59,7 +59,9 @@
 .prd-stat-card {
   background: #fff; border: 1px solid var(--line); border-radius: 10px;
   padding: 18px 20px; display: flex; flex-direction: column; gap: 6px;
+  transition: box-shadow var(--transition-base), border-color var(--transition-base), transform var(--transition-fast);
 }
+.prd-stat-card:hover { box-shadow: var(--shadow-md); border-color: var(--line-strong); transform: translateY(-3px); }
 .prd-stat-card .psc-label {
   font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
   letter-spacing: 0.08em; color: var(--ink); opacity: 0.5;
