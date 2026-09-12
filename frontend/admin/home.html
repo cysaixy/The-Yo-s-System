@@ -31,8 +31,6 @@
     letter-spacing: 0.05em; opacity: 0.55;
   }
   .mini-card .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.7rem; margin-top: 4px; }
-  .mini-card .value.danger { color: var(--danger); }
-  .mini-card .value.success { color: var(--success); }
 
   .stock-legend {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px;
@@ -178,7 +176,7 @@
       el.innerHTML = `
         <div class="mini-grid">
           <div class="mini-card"><div class="label">Total Items</div><div class="value">${d.total_items}</div></div>
-          <div class="mini-card"><div class="label">Needs Attention</div><div class="value ${needsAttention > 0 ? 'danger' : 'success'}">${needsAttention}</div></div>
+          <div class="mini-card"><div class="label">Needs Attention</div><div class="value">${needsAttention}</div></div>
         </div>
         <div class="stock-legend">
           <span><i class="dot" style="background:var(--success);"></i>In Stock<span class="legend-count">${d.in_stock}</span></span>

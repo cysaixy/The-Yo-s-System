@@ -33,9 +33,9 @@
         </div>
       </div>
       <div class="stat-grid" id="txSummary">
-        <div class="stat-card"><div class="label">Cash In</div><div class="value success">₱0</div></div>
-        <div class="stat-card"><div class="label">Cash Out</div><div class="value danger">₱0</div></div>
-        <div class="stat-card"><div class="label">Net Movement</div><div class="value brass">₱0</div></div>
+        <div class="stat-card"><div class="label">Cash In</div><div class="value">₱0</div></div>
+        <div class="stat-card"><div class="label">Cash Out</div><div class="value">₱0</div></div>
+        <div class="stat-card"><div class="label">Net Movement</div><div class="value">₱0</div></div>
       </div>
       <div class="admin-panel">
         <div class="admin-panel-head">
@@ -135,9 +135,9 @@
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
     const net = cashIn - cashOut;
     document.getElementById('txSummary').innerHTML = `
-      <div class="stat-card"><div class="label">Cash In</div><div class="value success">${peso(cashIn)}</div></div>
-      <div class="stat-card"><div class="label">Cash Out</div><div class="value danger">${peso(cashOut)}</div></div>
-      <div class="stat-card"><div class="label">Net Movement</div><div class="value ${net < 0 ? 'danger' : 'brass'}">${net < 0 ? '−' : ''}${peso(Math.abs(net))}</div></div>
+      <div class="stat-card"><div class="label">Cash In</div><div class="value">${peso(cashIn)}</div></div>
+      <div class="stat-card"><div class="label">Cash Out</div><div class="value">${peso(cashOut)}</div></div>
+      <div class="stat-card"><div class="label">Net Movement</div><div class="value">${net < 0 ? '−' : ''}${peso(Math.abs(net))}</div></div>
     `;
   }
 

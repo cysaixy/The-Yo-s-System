@@ -705,10 +705,10 @@
             <div class="hero-row"><div class="value">${peso(d.todaySales)}</div></div>
             <div class="stat-note">${d.todayOrderCount} ${d.todayOrderCount === 1 ? 'order' : 'orders'} today · ${d.profitMargin}% gross margin</div>
           </div>
-          <div class="stat-secondary-grid">
+          <div class="stat-secondary-grid cols-2">
             <div class="stat-card"><div class="label">Orders</div><div class="value">${d.todayOrderCount}</div></div>
             <div class="stat-card"><div class="label">Avg Order</div><div class="value">${peso(d.avgOrderValue)}</div></div>
-            <div class="stat-card"><div class="label">Gross Profit</div><div class="value ${d.grossProfit < 0 ? 'danger' : 'brass'}">${peso(d.grossProfit)}</div></div>
+            <div class="stat-card"><div class="label">Gross Profit</div><div class="value">${peso(d.grossProfit)}</div></div>
             <div class="stat-card"><div class="label">Order Types</div><div class="value">${d.orderTypesCount}<span style="font-size:0.85rem; opacity:0.45;"> / 5</span></div></div>
           </div>
         </div>
@@ -910,23 +910,20 @@
     const el = document.getElementById('sec-cash-overview');
     try {
       const d = await getJSON('/api/admin/dashboard/cash-overview');
-      const varClass = d.variance === 0 ? '' : (d.variance < 0 ? 'danger' : 'success');
       el.innerHTML = `
         <div class="stat-hero-row">
           <div class="stat-hero">
             <div class="label">Cash Sales Today</div>
             <div class="hero-row"><div class="value">${peso(d.cash_sales)}</div></div>
-            <div class="stat-note">${d.cash_sale_count} ${d.cash_sale_count === 1 ? 'sale' : 'sales'} · variance
-              <strong style="color:${d.variance === 0 ? 'inherit' : (d.variance < 0 ? 'var(--danger)' : 'var(--success)')}">${peso(d.variance)}</strong>
-            </div>
+            <div class="stat-note">${d.cash_sale_count} ${d.cash_sale_count === 1 ? 'sale' : 'sales'} · variance ${peso(d.variance)}</div>
           </div>
-          <div class="stat-secondary-grid">
+          <div class="stat-secondary-grid cols-3">
             <div class="stat-card"><div class="label">Opening</div><div class="value">${peso(d.opening)}</div></div>
-            <div class="stat-card"><div class="label">Cash In</div><div class="value success">${peso(d.cash_in)}</div></div>
-            <div class="stat-card"><div class="label">Cash Out</div><div class="value danger">${peso(d.cash_out)}</div></div>
+            <div class="stat-card"><div class="label">Cash In</div><div class="value">${peso(d.cash_in)}</div></div>
+            <div class="stat-card"><div class="label">Cash Out</div><div class="value">${peso(d.cash_out)}</div></div>
             <div class="stat-card"><div class="label">Expected</div><div class="value">${peso(d.expected)}</div></div>
             <div class="stat-card"><div class="label">Actual</div><div class="value">${peso(d.actual)}</div></div>
-            <div class="stat-card"><div class="label">Variance</div><div class="value ${varClass}">${peso(d.variance)}</div></div>
+            <div class="stat-card"><div class="label">Variance</div><div class="value">${peso(d.variance)}</div></div>
           </div>
         </div>
       `;
@@ -967,14 +964,14 @@
         <div class="stat-hero-row">
           <div class="stat-hero">
             <div class="label">Needs Attention</div>
-            <div class="hero-row"><div class="value ${needsAttention > 0 ? 'danger' : ''}">${needsAttention}</div></div>
+            <div class="hero-row"><div class="value">${needsAttention}</div></div>
             <div class="stat-note">out of ${d.total_items} total items tracked</div>
           </div>
-          <div class="stat-secondary-grid">
-            <div class="stat-card"><div class="label">In Stock</div><div class="value success">${d.in_stock}</div></div>
-            <div class="stat-card"><div class="label">Below Reorder</div><div class="value warning">${d.below_reorder}</div></div>
-            <div class="stat-card"><div class="label">Low Stock</div><div class="value warning">${d.low_stock}</div></div>
-            <div class="stat-card"><div class="label">Out of Stock</div><div class="value ${d.out_of_stock > 0 ? 'danger' : ''}">${d.out_of_stock}</div></div>
+          <div class="stat-secondary-grid cols-2">
+            <div class="stat-card"><div class="label">In Stock</div><div class="value">${d.in_stock}</div></div>
+            <div class="stat-card"><div class="label">Below Reorder</div><div class="value">${d.below_reorder}</div></div>
+            <div class="stat-card"><div class="label">Low Stock</div><div class="value">${d.low_stock}</div></div>
+            <div class="stat-card"><div class="label">Out of Stock</div><div class="value">${d.out_of_stock}</div></div>
           </div>
         </div>
       `;

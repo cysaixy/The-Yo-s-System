@@ -54,7 +54,6 @@ app.get('/api/health', (req, res) => {
     fbError = e.message || String(e);
   }
 
-  const rawKey = process.env.FIREBASE_PRIVATE_KEY || '';
   res.json({
     status: 'ok',
     firebase: {
@@ -63,11 +62,6 @@ app.get('/api/health', (req, res) => {
       hasProjectId: Boolean(process.env.FIREBASE_PROJECT_ID),
       hasClientEmail: Boolean(process.env.FIREBASE_CLIENT_EMAIL),
       hasPrivateKey: Boolean(process.env.FIREBASE_PRIVATE_KEY),
-      rawKeyLength: rawKey.length,
-      rawKeyPrefix: rawKey.slice(0, 15),
-      rawKeySuffix: rawKey.slice(-15),
-      hasRealNewlines: rawKey.includes('\n'),
-      hasEscapedNewlines: rawKey.includes('\\n'),
     },
   });
 });

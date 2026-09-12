@@ -594,6 +594,16 @@ body {
 .stat-secondary-grid .value { font-size: 1.1rem; margin-top: 4px; }
 .stat-secondary-grid .label { font-size: 0.58rem; }
 
+/* Fixed column counts — pick the one matching your item count so the last
+   row never wraps into a single orphaned cell with empty space beside it. */
+.stat-secondary-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.stat-secondary-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.stat-secondary-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 480px) {
+  .stat-secondary-grid.cols-3,
+  .stat-secondary-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ========================================================
    BUTTONS
    ======================================================== */
