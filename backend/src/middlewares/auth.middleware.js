@@ -21,9 +21,14 @@ export async function verifyFirebaseToken(req, res, next) {
     decodedToken = await auth.verifyIdToken(token);
   } catch (error) {
     console.error('Firebase Token Error:', error.message);
-    if (error.message?.includes('Firebase Admin credentials are incomplete') || error.code === 'FIREBASE_UNAVAILABLE') {
+    if (
+      error.message?.includes('Firebase Admin credentials are incomplete') ||
+      error.message?.includes('Failed to parse private key') ||
+      error.code === 'FIREBASE_UNAVAILABLE' ||
+      error.code === 'app/invalid-credential'
+    ) {
       return res.status(503).json({
-        error: 'Authentication service is not configured on the server.',
+        error: 'Authentication service is not properly configured on the server.',
         details: error.message,
       });
     }
