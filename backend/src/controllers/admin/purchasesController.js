@@ -12,21 +12,46 @@ export async function list(req, res, next) {
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const { rows } = await pool.query(
-      `SELECT si.id, 
-              COALESCE(ii.name, mi.name) AS item_name,
-              COALESCE(ii.unit, 'pcs') AS unit,
-              s.name AS staff_name, 
-              si.quantity,
-              si.expiration_date, si.stockin_date, si.remarks
-       FROM stock_in si
-       LEFT JOIN inventory_items ii ON ii.id = si.inventory_id
-       LEFT JOIN menu_items mi ON mi.id = si.menu_id
-       LEFT JOIN staff s ON s.id = si.staff_id
-       ${where}
-       ORDER BY si.stockin_date DESC`,
-      params
-    );
+    // Check if inventory_id column exists (backward compatibility)
+    const { rows: columnCheck } = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'stock_in' AND column_name = 'inventory_id'
+    `);
+    
+    const hasInventoryId = columnCheck.length > 0;
+
+    let query;
+    if (hasInventoryId) {
+      // New schema with inventory_id support
+      query = `SELECT si.id, 
+                      COALESCE(ii.name, mi.name) AS item_name,
+                      COALESCE(ii.unit, 'pcs') AS unit,
+                      s.name AS staff_name, 
+                      si.quantity,
+                      si.expiration_date, si.stockin_date, si.remarks
+               FROM stock_in si
+               LEFT JOIN inventory_items ii ON ii.id = si.inventory_id
+               LEFT JOIN menu_items mi ON mi.id = si.menu_id
+               LEFT JOIN staff s ON s.id = si.staff_id
+               ${where}
+               ORDER BY si.stockin_date DESC`;
+    } else {
+      // Legacy schema without inventory_id
+      query = `SELECT si.id, 
+                      mi.name AS item_name,
+                      'pcs' AS unit,
+                      s.name AS staff_name, 
+                      si.quantity,
+                      si.expiration_date, si.stockin_date, si.remarks
+               FROM stock_in si
+               JOIN menu_items mi ON mi.id = si.menu_id
+               LEFT JOIN staff s ON s.id = si.staff_id
+               ${where}
+               ORDER BY si.stockin_date DESC`;
+    }
+
+    const { rows } = await pool.query(query, params);
 
     return res.json({ purchases: rows });
   } catch (err) {
@@ -51,23 +76,55 @@ export async function create(req, res, next) {
 
     await client.query('BEGIN');
 
-    const { rows: stockInRows } = await client.query(
-      `INSERT INTO stock_in (inventory_id, menu_id, staff_id, quantity, expiration_date, remarks)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, inventory_id, menu_id, quantity, expiration_date, stockin_date`,
-      [inventory_id || null, menu_id || null, staffId, Number(quantity), expiration_date || null, remarks || null]
-    );
-    const stockIn = stockInRows[0];
+    // Check if inventory_id column exists
+    const { rows: columnCheck } = await client.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'stock_in' AND column_name = 'inventory_id'
+    `);
+    const hasInventoryId = columnCheck.length > 0;
 
-    // Update the appropriate stock table
-    if (inventory_id) {
-      // Raw ingredient purchase - update inventory_items
-      await client.query(
-        'UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
-        [Number(quantity), inventory_id]
+    let stockIn;
+    if (hasInventoryId) {
+      // New schema - support both inventory_id and menu_id
+      const { rows: stockInRows } = await client.query(
+        `INSERT INTO stock_in (inventory_id, menu_id, staff_id, quantity, expiration_date, remarks)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, inventory_id, menu_id, quantity, expiration_date, stockin_date`,
+        [inventory_id || null, menu_id || null, staffId, Number(quantity), expiration_date || null, remarks || null]
       );
-    } else if (menu_id) {
-      // Direct product purchase (legacy path) - update menu_items
+      stockIn = stockInRows[0];
+
+      // Update the appropriate stock table
+      if (inventory_id) {
+        await client.query(
+          'UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
+          [Number(quantity), inventory_id]
+        );
+      } else if (menu_id) {
+        await client.query(
+          'UPDATE menu_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
+          [Number(quantity), menu_id]
+        );
+      }
+    } else {
+      // Legacy schema - only menu_id supported
+      if (inventory_id) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'Database migration required to support raw ingredient purchases. Please run the migration.',
+        });
+      }
+
+      const { rows: stockInRows } = await client.query(
+        `INSERT INTO stock_in (menu_id, staff_id, quantity, expiration_date, remarks)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, menu_id, quantity, expiration_date, stockin_date`,
+        [menu_id, staffId, Number(quantity), expiration_date || null, remarks || null]
+      );
+      stockIn = stockInRows[0];
+
       await client.query(
         'UPDATE menu_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
         [Number(quantity), menu_id]
