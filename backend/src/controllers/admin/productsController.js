@@ -1,5 +1,6 @@
 // src/controllers/admin/productsController.js
 import pool from '../../config/db.js';
+import { calculateItemCapacity, calculateBulkCapacity, getCapacityBreakdown } from '../../services/capacityService.js';
 
 // --- Categories ---
 
@@ -606,6 +607,47 @@ export const deleteBundle = async (req, res, next) => {
     const { rowCount } = await pool.query('DELETE FROM bundles WHERE id = $1', [req.params.id]);
     if (rowCount === 0) return res.status(404).json({ error: 'Bundle not found.' });
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+// --- CAPACITY CALCULATION ---
+
+/**
+ * GET /api/admin/products/capacity/:id
+ * Get detailed capacity breakdown for a single menu item
+ */
+export const getItemCapacity = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const breakdown = await getCapacityBreakdown(Number(id));
+    
+    if (breakdown.error) {
+      return res.status(404).json({ error: breakdown.error });
+    }
+    
+    res.json(breakdown);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/admin/products/capacity/bulk
+ * Get capacity for multiple items at once
+ * Body: { menuIds: [1, 2, 3, ...] }
+ */
+export const getBulkCapacity = async (req, res, next) => {
+  try {
+    const { menuIds } = req.body || {};
+    
+    if (!Array.isArray(menuIds) || menuIds.length === 0) {
+      return res.status(400).json({ error: 'menuIds array is required' });
+    }
+    
+    const capacities = await calculateBulkCapacity(menuIds);
+    res.json({ capacities });
   } catch (err) {
     next(err);
   }

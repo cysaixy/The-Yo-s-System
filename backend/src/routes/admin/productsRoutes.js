@@ -17,10 +17,13 @@ import {
   createBundle,
   updateBundle,
   deleteBundle,
+  getItemCapacity,
+  getBulkCapacity,
 } from '../../controllers/admin/productsController.js';
 import { requireStaffAuth } from '../../middlewares/auth.middleware.js';
 import { requireAdmin } from '../../middlewares/role.middleware.js';
 import { uploadProductImage } from '../../controllers/admin/uploadsController.js';
+import { validateRecipeUnits } from '../../middlewares/unitValidation.middleware.js';
 
 const productrouter = express.Router();
 
@@ -33,6 +36,10 @@ productrouter.get('/menuitems/:id', getMenuItem);
 productrouter.get('/addons', listAddons);
 productrouter.get('/bundles', listBundles);
 
+// --- Capacity Calculation (Staff Read Access) ---
+productrouter.get('/capacity/:id', getItemCapacity);
+productrouter.post('/capacity/bulk', getBulkCapacity);
+
 // --- Admin Only Category Management ---
 productrouter.post('/categories', requireAdmin, createCategory);
 productrouter.patch('/categories/:id', requireAdmin, updateCategory);
@@ -40,13 +47,13 @@ productrouter.delete('/categories/:id', requireAdmin, deleteCategory);
 
 // --- Admin Only Menu Item Management ---
 productrouter.post('/uploads/product-image', requireAdmin, uploadProductImage);
-productrouter.post('/menuitems', requireAdmin, createMenuItem);
-productrouter.patch('/menuitems/:id', requireAdmin, updateMenuItem);
+productrouter.post('/menuitems', requireAdmin, validateRecipeUnits, createMenuItem);
+productrouter.patch('/menuitems/:id', requireAdmin, validateRecipeUnits, updateMenuItem);
 productrouter.delete('/menuitems/:id', requireAdmin, deleteMenuItem);
 
 // --- Admin Only Add-Ons Management ---
-productrouter.post('/addons', requireAdmin, createAddon);
-productrouter.patch('/addons/:id', requireAdmin, updateAddon);
+productrouter.post('/addons', requireAdmin, validateRecipeUnits, createAddon);
+productrouter.patch('/addons/:id', requireAdmin, validateRecipeUnits, updateAddon);
 productrouter.delete('/addons/:id', requireAdmin, deleteAddon);
 
 // --- Admin Only Bundles Management ---

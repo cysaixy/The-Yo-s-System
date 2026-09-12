@@ -159,6 +159,9 @@ model InventoryItem {
 
   addonInventory AddonInventory[]
   inventoryLogs InventoryLog[]
+  // NEW — back-relation for StockIn.inventoryItem below (purchases can now
+  // restock a raw ingredient directly, not only a finished menu item).
+  stockIns       StockIn[]
 
   @@map("inventory_items")
 }
@@ -196,6 +199,12 @@ model MenuItem {
   stockQuantity Int     @map("stock_quantity")
   status        String  @db.VarChar(30)
   cost          Decimal @db.Decimal(10, 2)
+
+  // NEW — how this item's available quantity is determined:
+  //   'recipe' — derived live from linked ingredients (menu_item_inventory)
+  //   'direct' — stockQuantity above is authoritative (pre-packaged goods)
+  //   'none'   — not stock-tracked at all
+  trackingMode  String  @default("direct") @map("tracking_mode") @db.VarChar(10)
 
   category       Category        @relation(fields: [categoryId], references: [id])
   addonProducts  AddonProduct[]
@@ -350,14 +359,23 @@ model StaffPermission {
 
 model StockIn {
   id             Int       @id @default(autoincrement())
-  menuId         Int       @map("menu_id")
+  // menuId is now OPTIONAL — a purchase targets EITHER menuId OR
+  // inventoryId, never both (enforced by stock_in_one_target_chk in the
+  // migration). Existing rows (all menu_id-based) are unaffected.
+  menuId         Int?      @map("menu_id")
+  // NEW — the raw ingredient this purchase restocks, when not targeting a
+  // finished menu item directly. This is the normal path going forward:
+  // purchases replenish ingredients, not finished products.
+  inventoryId    Int?      @map("inventory_id")
   staffId        Int       @map("staff_id")
   quantity       Int
   expirationDate DateTime? @map("expiration_date") @db.Date
   stockinDate    DateTime  @default(now()) @map("stockin_date")
   remarks        String?
 
-  menuItem      MenuItem       @relation(fields: [menuId], references: [id])
+  menuItem      MenuItem?      @relation(fields: [menuId], references: [id])
+  // NEW relation — pairs with InventoryItem.stockIns above
+  inventoryItem InventoryItem? @relation(fields: [inventoryId], references: [id])
   staff         Staff          @relation(fields: [staffId], references: [id])
   inventoryLogs InventoryLog[]
 

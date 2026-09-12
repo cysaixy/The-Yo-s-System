@@ -719,25 +719,26 @@
 
       categoryList = data.categories || [];
 
-      // Only show items marked available - matches menu_items.status. The
-      // API returns each item's eligible add-ons alongside it.
-      menuDatabase = (data.items || [])
-        .filter(item => (item.status || 'available').toLowerCase() === 'available')
-        .map(item => ({
-          id: item.id,
-          cat: item.category_id,
-          name: item.name,
-          price: Number(item.price),
-          image_url: item.image_url,
-          description: item.description,
-          add_ons: (item.add_ons || []).map(a => ({
-            addon_id: a.id,
-            name: a.name,
-            description: a.description,
-            price: Number(a.price),
-            category: a.category
-          }))
-        }));
+      // Show all items - those with available capacity will be orderable,
+      // out-of-stock items will be shown as disabled.
+      menuDatabase = (data.items || []).map(item => ({
+        id: item.id,
+        cat: item.category_id,
+        name: item.name,
+        price: Number(item.price),
+        image_url: item.image_url,
+        description: item.description,
+        status: item.status || 'available',
+        available_quantity: item.available_quantity || 0,
+        tracking_mode: item.tracking_mode || 'direct',
+        add_ons: (item.add_ons || []).map(a => ({
+          addon_id: a.id,
+          name: a.name,
+          description: a.description,
+          price: Number(a.price),
+          category: a.category
+        }))
+      }));
 
       buildCategoryTabs();
       renderCatalog();
@@ -882,14 +883,22 @@
     }
 
     visibleItems.forEach(item => {
+      const isOutOfStock = item.status === 'out_of_stock' || item.available_quantity === 0;
       const itemElement = document.createElement('div');
-      itemElement.className = 'catalog-item';
-      itemElement.setAttribute('onclick', `openCustomizationModal(${item.id})`);
+      itemElement.className = `catalog-item ${isOutOfStock ? 'out-of-stock' : ''}`;
+      itemElement.setAttribute('onclick', isOutOfStock ? '' : `openCustomizationModal(${item.id})`);
+      if (isOutOfStock) {
+        itemElement.style.opacity = '0.5';
+        itemElement.style.cursor = 'not-allowed';
+      }
       itemElement.innerHTML = `
         ${productImageTemplate(item.image_url, item.name, 'catalog-item-media')}
         <div class="catalog-copy">
-          <div class="catalog-info"><h4>${item.name}</h4><span>₱${item.price}</span></div>
-          <button type="button" class="catalog-add" tabindex="-1" aria-hidden="true">+</button>
+          <div class="catalog-info">
+            <h4>${item.name}${isOutOfStock ? ' <span style="font-size:0.7rem; color:#999; font-weight:500;">(Out of Stock)</span>' : ''}</h4>
+            <span style="${isOutOfStock ? 'opacity: 0.5;' : ''}">₱${item.price}</span>
+          </div>
+          ${!isOutOfStock ? '<button type="button" class="catalog-add" tabindex="-1" aria-hidden="true">+</button>' : ''}
         </div>
       `;
       catalogContainer.appendChild(itemElement);

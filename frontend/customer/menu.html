@@ -1466,20 +1466,26 @@
             const cardsHtml = catItems.length > 0
               ? catItems.map(item => {
                   const hasPhoto = Boolean(item.image_url && String(item.image_url).trim());
+                  const availableQty = item.available_quantity || 0;
+                  const isOutOfStock = item.status === 'out_of_stock' || availableQty === 0;
+                  const trackingMode = item.tracking_mode || 'direct';
+                  
                   return `
-                    <div class="menu-item" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}">
+                    <div class="menu-item ${isOutOfStock ? 'out-of-stock' : ''}" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}">
                       <div class="item-photo ${hasPhoto ? '' : 'no-photo'}">
-                        ${hasPhoto ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" loading="lazy" onerror="const p=this.parentElement; p.classList.add('no-photo'); this.remove();">` : ''}
+                        ${hasPhoto ? `<img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}" loading="lazy" onerror="const p=this.parentElement; p.classList.add('no-photo'); this.remove();" style="${isOutOfStock ? 'opacity: 0.4; filter: grayscale(1);' : ''}">` : ''}
                         ${iconSvg}
+                        ${isOutOfStock ? '<div style="position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: white; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; z-index: 3;">Out</div>' : ''}
                       </div>
                       <div class="item-main">
                         <div class="item-text">
-                          <span class="name">${escapeHtml(item.name)}</span>
+                          <span class="name" style="${isOutOfStock ? 'opacity: 0.5;' : ''}">${escapeHtml(item.name)}</span>
                           ${item.description ? `<span class="desc">${escapeHtml(item.description)}</span>` : ''}
+                          ${trackingMode === 'recipe' && availableQty > 0 && availableQty < 10 ? `<span class="desc" style="color: var(--brass); font-weight: 600;">Only ${availableQty} available</span>` : ''}
                         </div>
                         <div class="item-buy">
-                          <span class="price">&#8369;${Number(item.price).toFixed(0)}</span>
-                          <button type="button" class="add-btn" onclick="Cart.add(this)">+ Add</button>
+                          <span class="price" style="${isOutOfStock ? 'opacity: 0.4;' : ''}">&#8369;${Number(item.price).toFixed(0)}</span>
+                          <button type="button" class="add-btn" onclick="Cart.add(this)" ${isOutOfStock ? 'disabled style="opacity: 0.3; cursor: not-allowed; pointer-events: none;"' : ''}>+ Add</button>
                         </div>
                       </div>
                     </div>

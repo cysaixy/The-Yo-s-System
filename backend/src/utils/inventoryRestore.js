@@ -1,7 +1,37 @@
 // src/utils/inventoryRestore.js
 import pool from '../config/db.js';
+import { restoreStock } from '../services/stockDeductionService.js';
 
+/**
+ * Restore inventory for a cancelled order using movement-based reversal.
+ * Uses inventory_log to restore the EXACT quantities that were deducted,
+ * not the current recipe (which may have changed since order placement).
+ * 
+ * @param {object} client - Database transaction client
+ * @param {number} orderId - Order ID to restore
+ * @param {number|null} staffId - Staff performing the cancellation (null for customer)
+ */
 export async function restoreOrderInventory(client, orderId, staffId = null) {
+  // Use the unified stock restoration service
+  const result = await restoreStock({
+    orderId,
+    reason: 'Order Cancellation',
+    staffId,
+    client,
+  });
+
+  return result;
+}
+
+/**
+ * Legacy restoration function that re-queries recipes.
+ * Kept for backward compatibility but not recommended.
+ * Issue: If recipes change between order and cancellation,
+ * restoration will use NEW recipe quantities, not original.
+ * 
+ * @deprecated Use restoreOrderInventory instead (uses movement-based reversal)
+ */
+export async function restoreOrderInventoryLegacy(client, orderId, staffId = null) {
   // Get all order items with their add-ons
   const { rows: orderItems } = await client.query(
     `SELECT oi.id, oi.menu_id, oi.quantity, oi.notes

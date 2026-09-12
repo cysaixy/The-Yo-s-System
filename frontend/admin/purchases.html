@@ -18,6 +18,7 @@
   const session = renderAdminShell({ active: 'purchases', title: 'Purchases' });
   if (session) init();
 
+  let inventoryItems = [];
   let menuItems = [];
 
   function init() {
@@ -36,11 +37,18 @@
           <h3>Record Purchase (Stock-In)</h3>
           <div class="form-grid">
             <div class="form-field" style="grid-column:1/-1;">
-              <label>Menu Item</label>
-              <select id="pMenuId"></select>
+              <label>Item Type</label>
+              <select id="pItemType">
+                <option value="inventory">Raw Ingredient</option>
+                <option value="menu">Direct Product (legacy)</option>
+              </select>
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Item</label>
+              <select id="pItemId"></select>
             </div>
             <div class="form-field">
-              <label>Quantity</label><input type="number" id="pQty" min="1">
+              <label>Quantity</label><input type="number" id="pQty" min="1" step="any">
             </div>
             <div class="form-field">
               <label>Expiration Date (optional)</label><input type="date" id="pExpiry">
@@ -61,12 +69,22 @@
     document.getElementById('newPurchaseBtn').addEventListener('click', openModal);
     document.getElementById('pCancelBtn').addEventListener('click', () => toggleModal(false));
     document.getElementById('pSaveBtn').addEventListener('click', savePurchase);
+    document.getElementById('pItemType').addEventListener('change', updateItemDropdown);
 
     loadPurchases();
+    loadInventoryItems();
     loadMenuItems();
   }
 
   function toggleModal(show) { document.getElementById('purchaseModal').classList.toggle('active', show); }
+
+  async function loadInventoryItems() {
+    try {
+      const res = await adminFetch('/api/admin/inventory');
+      const data = await res.json();
+      if (res.ok) inventoryItems = data.items || [];
+    } catch { /* handled silently - modal will just show empty select */ }
+  }
 
   async function loadMenuItems() {
     try {
@@ -89,7 +107,7 @@
             <tbody>${rows.map(p => `
               <tr>
                 <td>${escapeHtml(p.item_name)}</td>
-                <td>+${p.quantity}</td>
+                <td>+${p.quantity}${p.unit ? ' ' + escapeHtml(p.unit) : ''}</td>
                 <td>${p.expiration_date ? new Date(p.expiration_date).toLocaleDateString('en-PH') : '—'}</td>
                 <td>${p.staff_name || '—'}</td>
                 <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(p.stockin_date)}</td>
@@ -102,8 +120,24 @@
     }
   }
 
+  function updateItemDropdown() {
+    const itemType = document.getElementById('pItemType').value;
+    const itemSelect = document.getElementById('pItemId');
+    
+    if (itemType === 'inventory') {
+      itemSelect.innerHTML = inventoryItems.map(i => 
+        `<option value="${i.id}">${escapeHtml(i.name)} (${escapeHtml(i.unit)})</option>`
+      ).join('');
+    } else {
+      itemSelect.innerHTML = menuItems.map(i => 
+        `<option value="${i.id}">${escapeHtml(i.name)}</option>`
+      ).join('');
+    }
+  }
+
   function openModal() {
-    document.getElementById('pMenuId').innerHTML = menuItems.map(i => `<option value="${i.id}">${escapeHtml(i.name)}</option>`).join('');
+    document.getElementById('pItemType').value = 'inventory';
+    updateItemDropdown();
     document.getElementById('pQty').value = '';
     document.getElementById('pExpiry').value = '';
     document.getElementById('pRemarks').value = '';
@@ -112,22 +146,35 @@
   }
 
   async function savePurchase() {
-    const menu_id = document.getElementById('pMenuId').value;
+    const itemType = document.getElementById('pItemType').value;
+    const itemId = document.getElementById('pItemId').value;
     const quantity = Number(document.getElementById('pQty').value);
     const expiration_date = document.getElementById('pExpiry').value || null;
     const remarks = document.getElementById('pRemarks').value.trim() || null;
     const errEl = document.getElementById('pError');
 
-    if (!menu_id || !quantity || quantity <= 0) {
+    if (!itemId || !quantity || quantity <= 0) {
       errEl.textContent = 'Select an item and enter a positive quantity.';
       errEl.style.display = 'block';
       return;
     }
 
+    const payload = {
+      quantity,
+      expiration_date,
+      remarks
+    };
+
+    if (itemType === 'inventory') {
+      payload.inventory_id = itemId;
+    } else {
+      payload.menu_id = itemId;
+    }
+
     try {
       const res = await adminFetch('/api/admin/purchases/create', {
         method: 'POST',
-        body: JSON.stringify({ menu_id, quantity, expiration_date, remarks }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.message || 'Could not save purchase.');

@@ -13,10 +13,15 @@ export async function list(req, res, next) {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const { rows } = await pool.query(
-      `SELECT si.id, mi.name AS item_name, s.name AS staff_name, si.quantity,
+      `SELECT si.id, 
+              COALESCE(ii.name, mi.name) AS item_name,
+              COALESCE(ii.unit, 'pcs') AS unit,
+              s.name AS staff_name, 
+              si.quantity,
               si.expiration_date, si.stockin_date, si.remarks
        FROM stock_in si
-       JOIN menu_items mi ON mi.id = si.menu_id
+       LEFT JOIN inventory_items ii ON ii.id = si.inventory_id
+       LEFT JOIN menu_items mi ON mi.id = si.menu_id
        LEFT JOIN staff s ON s.id = si.staff_id
        ${where}
        ORDER BY si.stockin_date DESC`,
@@ -32,12 +37,13 @@ export async function list(req, res, next) {
 export async function create(req, res, next) {
   const client = await pool.connect();
   try {
-    const { menu_id, quantity, expiration_date, remarks } = req.body || {};
+    const { inventory_id, menu_id, quantity, expiration_date, remarks } = req.body || {};
 
-    if (!menu_id || !quantity || quantity <= 0) {
+    // Support both raw ingredients (inventory_id) and legacy direct products (menu_id)
+    if ((!inventory_id && !menu_id) || !quantity || quantity <= 0) {
       return res.status(400).json({
         error: 'Bad Request',
-        message: 'menu_id and a positive quantity are required.',
+        message: 'Either inventory_id or menu_id, and a positive quantity are required.',
       });
     }
 
@@ -46,22 +52,32 @@ export async function create(req, res, next) {
     await client.query('BEGIN');
 
     const { rows: stockInRows } = await client.query(
-      `INSERT INTO stock_in (menu_id, staff_id, quantity, expiration_date, remarks)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, menu_id, quantity, expiration_date, stockin_date`,
-      [menu_id, staffId, Number(quantity), expiration_date || null, remarks || null]
+      `INSERT INTO stock_in (inventory_id, menu_id, staff_id, quantity, expiration_date, remarks)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, inventory_id, menu_id, quantity, expiration_date, stockin_date`,
+      [inventory_id || null, menu_id || null, staffId, Number(quantity), expiration_date || null, remarks || null]
     );
     const stockIn = stockInRows[0];
 
-    await client.query(
-      'UPDATE menu_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
-      [Number(quantity), menu_id]
-    );
+    // Update the appropriate stock table
+    if (inventory_id) {
+      // Raw ingredient purchase - update inventory_items
+      await client.query(
+        'UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
+        [Number(quantity), inventory_id]
+      );
+    } else if (menu_id) {
+      // Direct product purchase (legacy path) - update menu_items
+      await client.query(
+        'UPDATE menu_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
+        [Number(quantity), menu_id]
+      );
+    }
 
     await client.query(
       `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, stock_in_id, transaction_type, quantity_change, remarks)
-       VALUES (NULL, $1, $2, $3, 'stock_in', $4, $5)`,
-      [menu_id, staffId, stockIn.id, Number(quantity), remarks || null]
+       VALUES ($1, $2, $3, $4, 'stock_in', $5, $6)`,
+      [inventory_id || null, menu_id || null, staffId, stockIn.id, Number(quantity), remarks || null]
     );
 
     await client.query('COMMIT');
