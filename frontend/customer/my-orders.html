@@ -576,15 +576,14 @@
     }
   }
 
-  let lastIdToken = null;
-
   window.refreshOrders = async function() {
-    if (!lastIdToken) return;
+    if (!currentUser) return;
     const loading = document.getElementById('ordersLoading');
     const list = document.getElementById('ordersList');
     if (loading) loading.style.display = 'block';
     if (list) list.innerHTML = '';
-    await loadOrders(lastIdToken);
+    const idToken = await currentUser.getIdToken();
+    await loadOrders(idToken);
   };
 
   onAuthStateChanged(auth, async (user) => {
@@ -594,7 +593,6 @@
       return;
     }
     const idToken = await user.getIdToken();
-    lastIdToken = idToken;
     loadOrders(idToken);
   });
 </script>

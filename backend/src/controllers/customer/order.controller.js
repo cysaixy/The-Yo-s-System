@@ -307,13 +307,14 @@ const ORDER_ITEM_AGG = (orderRef) => `
      GROUP BY oi.id, mi.name
    ) sub) AS items`;
 
-const RESERVATION_FIELDS = 'r.reservation_id, r.reservation_status, r.reservation_date, r.reservation_time';
-
 export async function getOrder(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT o.*, ${ORDER_ITEM_AGG('o.id')}
+      `SELECT o.*,
+              res.reservation_status, res.reservation_date, res.reservation_time,
+              ${ORDER_ITEM_AGG('o.id')}
        FROM orders o
+       LEFT JOIN reservations res ON res.id = o.reservation_id
        WHERE o.id = $1`,
       [req.params.id]
     );
@@ -344,8 +345,11 @@ export async function getCustomerOrders(req, res, next) {
     }
 
     const { rows } = await pool.query(
-      `SELECT o.*, ${ORDER_ITEM_AGG('o.id')}
+      `SELECT o.*,
+              res.reservation_status, res.reservation_date, res.reservation_time,
+              ${ORDER_ITEM_AGG('o.id')}
        FROM orders o
+       LEFT JOIN reservations res ON res.id = o.reservation_id
        WHERE o.customer_id = $1
        ORDER BY o.datetime_ordered DESC`,
       [customer_id]
