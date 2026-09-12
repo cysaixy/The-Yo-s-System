@@ -70,7 +70,7 @@ export const listAllMenuItems = async (req, res, next) => {
   try {
     const { rows: items } = await pool.query(
       `SELECT mi.id, mi.category_id, mi.name, mi.description, mi.price, mi.cost,
-              mi.image_url, mi.stock_quantity, mi.status, c.name AS category_name
+              mi.image_url, mi.stock_quantity, mi.status, mi.tracking_mode, c.name AS category_name
        FROM menu_items mi
        LEFT JOIN categories c ON c.id = mi.category_id
        ORDER BY mi.name`
@@ -92,7 +92,25 @@ export const listAllMenuItems = async (req, res, next) => {
       })
     );
 
-    res.json({ items: itemsWithInv });
+    // Calculate real-time capacity for recipe-tracked items
+    const menuIds = items.map(i => i.id);
+    const capacityMap = await calculateBulkCapacity(menuIds);
+
+    const itemsWithCapacity = itemsWithInv.map(item => {
+      // For recipe-tracked items, use calculated capacity instead of stock_quantity
+      const trackingMode = item.tracking_mode || 'direct';
+      const availableQty = trackingMode === 'recipe' 
+        ? (capacityMap[item.id] || 0)
+        : item.stock_quantity;
+
+      return {
+        ...item,
+        available_quantity: availableQty,
+        is_calculated: trackingMode === 'recipe'
+      };
+    });
+
+    res.json({ items: itemsWithCapacity });
   } catch (err) {
     next(err);
   }

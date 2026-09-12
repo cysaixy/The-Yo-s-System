@@ -980,12 +980,18 @@ function renderMenuItems() {
     tbody.innerHTML = `<tr><td colspan="6"><div class="prd-empty"><p>No menu products found.</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = menuItems.map(i => `
+  tbody.innerHTML = menuItems.map(i => {
+    // Use calculated capacity for recipe-tracked items
+    const stockDisplay = i.is_calculated 
+      ? `<span class="stock-qty" title="Calculated from ingredients">${i.available_quantity ?? '0'} <span style="color:var(--accent);font-size:0.7rem;">⚡</span></span>`
+      : `<span class="stock-qty">${i.stock_quantity ?? '0'}</span>`;
+    
+    return `
     <tr>
       <td><span class="item-name">${escapeHtml(i.name)}</span></td>
       <td><span style="font-size:0.80rem;">${escapeHtml(i.category_name || '—')}</span></td>
       <td class="right"><span class="price-val">${peso(i.price)}</span></td>
-      <td class="right"><span class="stock-qty">${i.stock_quantity ?? '0'}</span></td>
+      <td class="right">${stockDisplay}</td>
       <td><span class="prd-badge ${i.status === 'available' ? 'badge-available' : 'badge-unavailable'}">${escapeHtml(i.status)}</span></td>
       <td>
         <div class="prd-action-wrap">
@@ -997,7 +1003,8 @@ function renderMenuItems() {
           </div>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   bindActions(tbody, 'item');
 }
