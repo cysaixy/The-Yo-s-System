@@ -170,13 +170,14 @@ export const createMenuItem = async (req, res, next) => {
       return res.status(400).json({ error: 'category_id, name, and price are required.' });
     }
 
-    await client.query('BEGIN');
+    const hasRecipe = Array.isArray(inventory_components) && inventory_components.some(c => c.inventory_id && Number(c.quantity) > 0);
+    const trackingMode = hasRecipe ? 'recipe' : 'direct';
 
     const { rows } = await client.query(
-      `INSERT INTO menu_items (category_id, name, description, price, cost, image_url, stock_quantity, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, category_id, name, description, price, cost, image_url, stock_quantity, status`,
-      [category_id, name, description || null, price, cost || 0, image_url || null, stock_quantity || 0, status || 'available']
+      `INSERT INTO menu_items (category_id, name, description, price, cost, image_url, stock_quantity, status, tracking_mode)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, category_id, name, description, price, cost, image_url, stock_quantity, status, tracking_mode`,
+      [category_id, name, description || null, price, cost || 0, image_url || null, stock_quantity || 0, status || 'available', trackingMode]
     );
     const item = rows[0];
 
@@ -219,6 +220,12 @@ export const updateMenuItem = async (req, res, next) => {
 
     await client.query('BEGIN');
 
+    let trackingMode = undefined;
+    if (Array.isArray(inventory_components)) {
+      const hasRecipe = inventory_components.some(c => c.inventory_id && Number(c.quantity) > 0);
+      trackingMode = hasRecipe ? 'recipe' : 'direct';
+    }
+
     const { rows } = await client.query(
       `UPDATE menu_items
        SET category_id = COALESCE($1, category_id),
@@ -228,10 +235,11 @@ export const updateMenuItem = async (req, res, next) => {
            cost = COALESCE($5, cost),
            image_url = COALESCE($6, image_url),
            status = COALESCE($7, status),
-           stock_quantity = COALESCE($8, stock_quantity)
-       WHERE id = $9
-       RETURNING id, category_id, name, description, price, cost, image_url, status, stock_quantity`,
-      [category_id, name, description, price, cost !== undefined ? Number(cost) : undefined, image_url, status, stock_quantity, req.params.id]
+           stock_quantity = COALESCE($8, stock_quantity),
+           tracking_mode = COALESCE($9, tracking_mode)
+       WHERE id = $10
+       RETURNING id, category_id, name, description, price, cost, image_url, status, stock_quantity, tracking_mode`,
+      [category_id, name, description, price, cost !== undefined ? Number(cost) : undefined, image_url, status, stock_quantity, trackingMode, req.params.id]
     );
     if (!rows[0]) {
       await client.query('ROLLBACK');

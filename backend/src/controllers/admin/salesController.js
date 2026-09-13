@@ -68,7 +68,18 @@ function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 export async function createPosOrder(req, res, next) {
   const client = await pool.connect();
   try {
-    const { customer_id, order_type, cart, delivery_fee, payment_method, payments } = req.body;
+    const {
+      customer_id,
+      order_type,
+      cart,
+      delivery_fee,
+      payment_method,
+      payments,
+      customer_name,
+      customer_phone,
+      delivery_address,
+      status: requestedStatus
+    } = req.body;
     const deliveryFee = round2(delivery_fee);
     const payMethod = String(payment_method || 'cash').toLowerCase();
     const requestedPayments = Array.isArray(payments)
@@ -80,6 +91,9 @@ export async function createPosOrder(req, res, next) {
 
     if (!VALID_ORDER_TYPES.includes(order_type)) {
       return res.status(400).json({ error: `order_type must be one of: ${VALID_ORDER_TYPES.join(', ')}` });
+    }
+    if (order_type === 'delivery' && (!delivery_address || !String(delivery_address).trim())) {
+      return res.status(400).json({ error: 'Delivery address is required for delivery orders.' });
     }
     if (requestedPayments) {
       if (requestedPayments.length < 2) {
@@ -108,16 +122,13 @@ export async function createPosOrder(req, res, next) {
       }
 
       const { rows } = await client.query(
-        'SELECT id, name, price, cost, stock_quantity FROM menu_items WHERE id = $1',
+        'SELECT id, name, price, cost, stock_quantity, tracking_mode FROM menu_items WHERE id = $1',
         [line.menu_id]
       );
       const menuItem = rows[0];
 
       if (!menuItem) {
         return res.status(400).json({ error: `Menu item ${line.menu_id} not found.` });
-      }
-      if (menuItem.stock_quantity !== null && Number(menuItem.stock_quantity) < menuQty) {
-        return res.status(409).json({ error: `${menuItem.name} is out of stock.` });
       }
 
       // Check linked raw ingredients for this menu item
@@ -128,6 +139,14 @@ export async function createPosOrder(req, res, next) {
          WHERE mii.menu_id = $1`,
         [menuItem.id]
       );
+
+      // Recipe-tracked items (or items with linked recipe ingredients) rely on ingredient stock.
+      // Direct-tracked items rely on menu_items.stock_quantity.
+      const isRecipe = menuItem.tracking_mode === 'recipe' || itemComps.length > 0;
+      if (!isRecipe && menuItem.stock_quantity !== null && Number(menuItem.stock_quantity) < menuQty) {
+        return res.status(409).json({ error: `${menuItem.name} is out of stock.` });
+      }
+
       for (const comp of itemComps) {
         if (Number(comp.stock_quantity) < Number(comp.quantity) * menuQty) {
           return res.status(409).json({ error: `${menuItem.name} is out of stock (missing ingredient: ${comp.inventory_name}).` });
@@ -221,14 +240,64 @@ export async function createPosOrder(req, res, next) {
 
     await client.query('BEGIN');
 
-    const resolvedCustomerId = customer_id || await getOrCreateWalkInCustomerId(client);
+    let resolvedCustomerId = customer_id;
+    let resolvedCustomerName = customer_name ? String(customer_name).trim() : null;
+    let resolvedCustomerPhone = customer_phone ? String(customer_phone).trim() : null;
+    const cleanAddress = delivery_address ? String(delivery_address).trim() : null;
 
-    // POS sales are paid at the counter, so they start already completed.
+    if (!resolvedCustomerId && (resolvedCustomerName || resolvedCustomerPhone)) {
+      if (resolvedCustomerPhone) {
+        const { rows: existingCust } = await client.query(
+          'SELECT id, name, phone, address FROM customers WHERE phone = $1 LIMIT 1',
+          [resolvedCustomerPhone]
+        );
+        if (existingCust[0]) {
+          resolvedCustomerId = existingCust[0].id;
+          if (!resolvedCustomerName) resolvedCustomerName = existingCust[0].name;
+          if (cleanAddress && !existingCust[0].address) {
+            await client.query('UPDATE customers SET address = $1 WHERE id = $2', [cleanAddress, resolvedCustomerId]);
+          }
+        }
+      }
+      if (!resolvedCustomerId && resolvedCustomerName) {
+        const { rows: newCust } = await client.query(
+          `INSERT INTO customers (name, phone, address)
+           VALUES ($1, $2, $3)
+           RETURNING id`,
+          [resolvedCustomerName, resolvedCustomerPhone || null, cleanAddress || null]
+        );
+        resolvedCustomerId = newCust[0].id;
+      }
+    }
+
+    if (!resolvedCustomerId) {
+      resolvedCustomerId = await getOrCreateWalkInCustomerId(client);
+    }
+
+    // POS counter orders start completed; delivery orders start as confirmed so kitchen/courier can prepare & dispatch
+    const initialStatus = requestedStatus || (order_type === 'delivery' ? 'confirmed' : 'completed');
+
     const orderResult = await client.query(
-      `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, delivery_fee, datetime_ordered)
-       VALUES ($1, $2, NULL, $3, 'completed', $4, $5, NOW())
-       RETURNING id, customer_id, staff_id, order_type, status, total_amount, delivery_fee, datetime_ordered`,
-      [resolvedCustomerId, req.staff.id, order_type, total_amount, deliveryFee]
+      `INSERT INTO orders (
+         customer_id, staff_id, reservation_id, order_type, status,
+         total_amount, delivery_fee, delivery_address, customer_name, customer_phone,
+         payment_method, datetime_ordered
+       )
+       VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+       RETURNING id, customer_id, staff_id, order_type, status, total_amount, delivery_fee,
+                 delivery_address, customer_name, customer_phone, payment_method, datetime_ordered`,
+      [
+        resolvedCustomerId,
+        req.staff.id,
+        order_type,
+        initialStatus,
+        total_amount,
+        deliveryFee,
+        cleanAddress,
+        resolvedCustomerName,
+        resolvedCustomerPhone,
+        payMethod
+      ]
     );
     const order = orderResult.rows[0];
 
@@ -340,14 +409,16 @@ export async function listOrders(req, res, next) {
     }
     if (search) {
       params.push(`%${search}%`);
-      conditions.push(`(c.name ILIKE $${params.length} OR s.name ILIKE $${params.length})`);
+      conditions.push(`(COALESCE(o.customer_name, c.name) ILIKE $${params.length} OR s.name ILIKE $${params.length})`);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const rowLimit = Math.min(Number(limit) || 500, 2000);
 
     const { rows } = await pool.query(
-      `SELECT o.id, c.name AS customer_name, c.phone AS contact_no,
+      `SELECT o.id,
+              COALESCE(o.customer_name, c.name) AS customer_name,
+              COALESCE(o.customer_phone, c.phone) AS contact_no,
               COALESCE(o.delivery_address, c.address) AS address,
               s.name AS staff_name, o.order_type,
               o.status, o.total_amount, o.delivery_fee, o.datetime_ordered,
@@ -378,7 +449,9 @@ export async function listOrders(req, res, next) {
 export async function liveOrderState(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT o.id, c.name AS customer_name, s.name AS staff_name,
+      `SELECT o.id,
+              COALESCE(o.customer_name, c.name) AS customer_name,
+              s.name AS staff_name,
               handler.name AS handler_name, o.order_type, o.status,
               o.total_amount, o.datetime_ordered, o.status_updated_at,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
@@ -414,7 +487,11 @@ export async function liveOrderState(req, res, next) {
 export async function getOrder(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT o.*, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
+      `SELECT o.*,
+              COALESCE(o.customer_name, c.name) AS customer_name,
+              c.email AS customer_email,
+              COALESCE(o.customer_phone, c.phone) AS customer_phone,
+              COALESCE(o.delivery_address, c.address) AS delivery_address,
               s.name AS staff_name,
               r.reservation_date, r.reservation_time,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source
