@@ -2,7 +2,7 @@
 import pool from '../../config/db.js';
 import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
 
-const VALID_ORDER_TYPES = ['dine_in', 'pickup'];
+const VALID_ORDER_TYPES = ['dine_in', 'pickup', 'delivery'];
 const VALID_PAYMENT_METHODS = ['cash', 'card', 'gcash', 'bank_transfer', 'other'];
 const VALID_ORDER_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
 const ALLOWED_PREVIOUS_STATUSES = {

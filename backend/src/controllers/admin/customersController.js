@@ -9,7 +9,7 @@ export async function searchCustomers(req, res, next) {
     }
     const term = `%${q.trim()}%`;
     const { rows } = await pool.query(
-      `SELECT id, name, email, phone
+      `SELECT id, name, email, phone, address
        FROM customers
        WHERE name ILIKE $1 OR email ILIKE $1 OR phone ILIKE $1
        ORDER BY name ASC

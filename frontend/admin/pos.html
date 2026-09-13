@@ -1351,11 +1351,24 @@
     const totalAmount = cart.reduce((sum, c) => sum + lineTotal(c), 0);
     paymentGrandTotal = totalAmount + delivery_fee;
 
+    // Validate delivery address for delivery orders
+    if (order_type === 'delivery') {
+      const hasAddress = selectedCustomer && selectedCustomer.address;
+      if (!hasAddress) {
+        errEl.textContent = 'Delivery orders require a customer with an address. Please add/select a customer with address.';
+        errEl.style.display = 'block';
+        return;
+      }
+    }
+
     // Cache params for final submit
     pendingOrderParams = {
       order_type,
       delivery_fee,
-      customer_id: selectedCustomer ? Number(selectedCustomer.id) : null,
+      customer_id: selectedCustomer && !selectedCustomer.isNew ? Number(selectedCustomer.id) : null,
+      customer_name: selectedCustomer ? selectedCustomer.name : null,
+      customer_phone: selectedCustomer ? selectedCustomer.phone : null,
+      delivery_address: (order_type === 'delivery' && selectedCustomer) ? selectedCustomer.address : null,
       cart: cart.map(c => ({
         menu_id: c.menu_id,
         quantity: c.qty,
@@ -1645,14 +1658,14 @@
       const customers = data.customers || [];
       resultsEl.innerHTML = customers.length
         ? customers.map(c => `
-            <div class="cust-result-row" data-id="${c.id}" data-name="${escapeHtml(c.name)}" data-email="${escapeHtml(c.email || '')}">
+            <div class="cust-result-row" data-id="${c.id}" data-name="${escapeHtml(c.name)}" data-email="${escapeHtml(c.email || '')}" data-phone="${escapeHtml(c.phone || '')}" data-address="${escapeHtml(c.address || '')}">
               <div class="cn">${escapeHtml(c.name)}</div>
               <div class="ce">${escapeHtml(c.email || c.phone || '')}</div>
             </div>`).join('')
         : `<div class="cust-empty-hint">No matching customers.</div>`;
       resultsEl.style.display = 'block';
       resultsEl.querySelectorAll('.cust-result-row[data-id]').forEach(row => {
-        row.addEventListener('click', () => selectCustomer(row.dataset.id, row.dataset.name, row.dataset.email));
+        row.addEventListener('click', () => selectCustomer(row.dataset.id, row.dataset.name, row.dataset.email, row.dataset.phone, row.dataset.address));
       });
     } catch (err) {
       resultsEl.innerHTML = `<div class="cust-empty-hint">⚠ ${err.message}</div>`;
@@ -1660,8 +1673,8 @@
     }
   }
 
-  function selectCustomer(id, name, email) {
-    selectedCustomer = { id, name, email };
+  function selectCustomer(id, name, email, phone, address) {
+    selectedCustomer = { id, name, email, phone, address };
     document.getElementById('custResults').style.display = 'none';
     document.getElementById('custSearchInput').value = '';
     document.getElementById('custSearchWrap').style.display = 'none';
@@ -1669,7 +1682,7 @@
     selectedWrap.style.display = 'block';
     selectedWrap.innerHTML = `
       <div class="cust-selected">
-        <div><div class="cn">${escapeHtml(name)}</div><div class="ce">${escapeHtml(email || '')}</div></div>
+        <div><div class="cn">${escapeHtml(name)}</div><div class="ce">${escapeHtml(email || phone || '')}</div></div>
         <button id="custChangeBtn">Change</button>
       </div>`;
     document.getElementById('custChangeBtn').addEventListener('click', clearSelectedCustomer);
