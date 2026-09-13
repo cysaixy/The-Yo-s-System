@@ -753,6 +753,7 @@
               <div style="display:flex; gap:8px; margin-bottom:8px;">
                 <input type="text" id="custSearchInput" placeholder="Optional: search customer by name, email, or phone…" autocomplete="off" style="flex:1;">
                 <button class="btn btn-outline" id="showCustFormBtn" style="white-space:nowrap;">+ Add Customer</button>
+                <button class="btn btn-outline" id="showAllCustomersBtn" style="white-space:nowrap;">All Customers</button>
               </div>
               <div class="cust-results" id="custResults" style="display:none;"></div>
             </div>
@@ -998,6 +999,11 @@
       }
     }
     document.getElementById('posOrderType').addEventListener('change', updateAddressLabel);
+
+    document.getElementById('showAllCustomersBtn').addEventListener('click', () => {
+      document.getElementById('custSearchInput').value = '';
+      searchCustomers('');
+    });
 
     document.addEventListener('click', (e) => {
       const wrap = document.getElementById('custSearchWrap');
@@ -1665,7 +1671,8 @@
   async function searchCustomers(q) {
     const resultsEl = document.getElementById('custResults');
     try {
-      const res = await adminFetch(`/api/admin/customers/search?q=${encodeURIComponent(q)}`);
+      const queryParam = q && q.trim().length >= 2 ? `?q=${encodeURIComponent(q.trim())}` : '';
+      const res = await adminFetch(`/api/admin/customers/search${queryParam}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Search failed.');
       const customers = data.customers || [];

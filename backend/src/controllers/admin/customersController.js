@@ -5,7 +5,14 @@ export async function searchCustomers(req, res, next) {
   try {
     const { q } = req.query;
     if (!q || q.trim().length < 2) {
-      return res.json({ customers: [] });
+      // Return all customers (limit 50) when query is empty or too short
+      const { rows } = await pool.query(
+        `SELECT id, name, email, phone, address
+         FROM customers
+         ORDER BY name ASC
+         LIMIT 50`
+      );
+      return res.json({ customers: rows });
     }
     const term = `%${q.trim()}%`;
     const { rows } = await pool.query(
