@@ -297,15 +297,18 @@
       return `<div class="totals-row ${grandClass}"><span>Total</span><span>${peso(t.grandTotal)}</span></div>`;
     }
     return `
-      <div class="totals-row"><span>Subtotal</span><span>${peso(t.subtotal)}</span></div>
-      <div class="totals-row"><span>Delivery Fee</span><span>${t.feePending ? '<span class="pending-fee">Pending</span>' : peso(t.deliveryFee)}</span></div>
-      <div class="totals-row ${grandClass}"><span>Total</span><span>${peso(t.grandTotal)}</span></div>
+      <div class="totals-row"><span>Food Total</span><span>${peso(t.subtotal)}</span></div>
+      <div class="totals-row"><span>Delivery Fee (Cash to Rider)</span><span>${t.feePending ? '<span class="pending-fee">Pending Staff Assignment</span>' : peso(t.deliveryFee)}</span></div>
+      <div class="totals-row ${grandClass}"><span>Total Amount</span><span>${peso(t.grandTotal)}</span></div>
     `;
   }
 
   function deliveryNoteHTML(t) {
-    if (!t.feePending) return '';
-    return `<div class="delivery-note">🛵 <span>This is a delivery order — our staff will confirm your delivery fee shortly, and the total above will update automatically once it's set.</span></div>`;
+    if (!t.delivery) return '';
+    if (t.feePending) {
+      return `<div class="delivery-note">🛵 <span><strong>Delivery Notice:</strong> Your food is confirmed! Our staff will assign the delivery fee for your address shortly. The delivery fee will be paid in cash directly to your rider.</span></div>`;
+    }
+    return `<div class="delivery-note" style="border-left-color:#27ae60; background:rgba(39,174,96,0.08);">🛵 <span><strong>Delivery Fee: ${peso(t.deliveryFee)}</strong> — Please prepare cash to pay directly to the rider upon delivery.</span></div>`;
   }
 
   let currentUser = null;

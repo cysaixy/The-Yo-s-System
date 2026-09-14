@@ -1197,7 +1197,7 @@
       </div>
       ${lineItems}
       <div class="receipt-total"><span>${hasDeposit ? 'Pay today (50% downpayment)' : 'Amount to pay'}</span><strong>₱${amountDue}</strong></div>
-      ${hasDeposit ? `<p class="receipt-payment-note">Order total: ₱${currentCartTotal}. Your remaining balance after the downpayment is ₱${Math.round((currentCartTotal - amountDue) * 100) / 100}.</p>` : '<p class="receipt-payment-note">This is the full amount for the items listed above.</p>'}`;
+      ${hasDeposit ? `<p class="receipt-payment-note">Order total: ₱${currentCartTotal}. Your remaining balance after the downpayment is ₱${Math.round((currentCartTotal - amountDue) * 100) / 100}.</p>` : '<p class="receipt-payment-note">This is the full amount for the items listed above.</p>'}` + (service === 'Delivery' ? `<p class="receipt-payment-note" style="color:var(--brass); margin-top:8px;">🛵 <strong>Delivery Note:</strong> Food is paid now via ${escapeReceiptHtml(payment)}. The delivery fee will be confirmed by staff and paid in cash directly to the rider upon arrival.</p>` : '');
   }
 
   // ---------- STEP 2: DYNAMIC ORDER-TYPE FIELDS ----------
@@ -1342,7 +1342,7 @@
           </div>` : ''}
         ${isDelivery ? `
           <p class="delivery-fee-note" style="margin-top:14px; padding:12px 14px; border-radius:6px; background:rgba(163,132,74,0.1); border:1px solid rgba(163,132,74,0.3); font-size:0.85rem; text-align:left;">
-            <span style="display:inline-flex; align-items:center; gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; vertical-align:-2px;"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><strong>About your delivery fee:</strong></span> our staff will confirm the delivery fee for your address shortly. Your order total will update automatically once it's set — you can check the latest total anytime on the <a href="my-orders.html" style="color:var(--brass); font-weight:700;">My Orders</a> page.
+            <span style="display:inline-flex; align-items:center; gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; vertical-align:-2px;"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><strong>About your delivery fee:</strong></span> Our staff will confirm the delivery fee for your address shortly. The delivery fee will be paid in cash directly to your rider upon delivery. You can check the assigned fee anytime on your <a href="my-orders.html" style="color:var(--brass); font-weight:700;">My Orders</a> page.
           </p>` : ''}
         <div class="confirmation-actions">
           <button type="button" class="btn btn-outline" onclick="continueShopping()">Continue Shopping</button>
