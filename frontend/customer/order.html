@@ -1116,7 +1116,7 @@
 
     const proceedBtn = document.getElementById('btnProceedCheckout');
     if (proceedBtn) proceedBtn.disabled = cart.length === 0;
-    if (checkoutStep === 3) renderPaymentReceipt();
+    if (checkoutStep === 3) { renderPaymentReceipt(); updatePaymentButtonState(); }
   }
 
   function paymentAmountDue() {
@@ -1129,6 +1129,51 @@
     return String(value || '').replace(/[&<>"']/g, char => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[char]));
+  }
+
+  
+  function updatePaymentButtonState() {
+    const btn = document.getElementById('btnCheckoutNext');
+    if (!btn || checkoutStep !== 3) return;
+
+    const amountDue = paymentAmountDue();
+    const isOver300 = currentCartTotal >= 300;
+    const cashInput = document.querySelector('input[name="paymentChoice"][value="Cash"]');
+    const checkedInput = document.querySelector('input[name="paymentChoice"]:checked');
+    let payment = checkedInput ? checkedInput.value : 'GCash';
+
+    // If order >= 300, Cash cannot be used without downpayment
+    if (isOver300) {
+      if (cashInput) {
+        cashInput.disabled = true;
+        if (cashInput.parentElement) {
+          cashInput.parentElement.style.opacity = '0.4';
+          cashInput.parentElement.title = 'Orders ₱300+ require online downpayment (GCash/Maya/Card).';
+        }
+      }
+      if (payment === 'Cash') {
+        const gcashInput = document.querySelector('input[name="paymentChoice"][value="GCash"]');
+        if (gcashInput) { gcashInput.checked = true; payment = 'GCash'; }
+      }
+    } else {
+      if (cashInput) {
+        cashInput.disabled = false;
+        if (cashInput.parentElement) {
+          cashInput.parentElement.style.opacity = '1';
+          cashInput.parentElement.title = '';
+        }
+      }
+    }
+
+    if (['GCash', 'Maya', 'Card'].includes(payment)) {
+      btn.textContent = `Pay with ${payment} (₱${amountDue}) →`;
+      btn.style.background = payment === 'GCash' ? '#0056ff' : (payment === 'Maya' ? '#00b82b' : '#6772e5');
+      btn.style.color = '#fff';
+    } else {
+      btn.textContent = 'Place Order (Pay Cash on Delivery/Pickup)';
+      btn.style.background = '';
+      btn.style.color = '';
+    }
   }
 
   function renderPaymentReceipt() {
@@ -1238,7 +1283,11 @@
     document.getElementById('checkoutStepCount').textContent = `Step ${checkoutStep} of 3`;
     document.getElementById('btnCancelOrder').style.display = checkoutStep === 1 ? '' : 'none';
     document.getElementById('btnCheckoutBack').style.visibility = checkoutStep === 1 ? 'hidden' : 'visible';
-    document.getElementById('btnCheckoutNext').textContent = checkoutStep === 3 ? 'Place Order' : 'Continue';
+    if (checkoutStep === 3) {
+      updatePaymentButtonState();
+    } else {
+      document.getElementById('btnCheckoutNext').textContent = 'Continue';
+    }
     clearStep2Error();
     if (checkoutStep === 3) renderPaymentReceipt();
   }
@@ -1454,12 +1503,22 @@
         updateCartDisplay();
         resetCheckoutForm();
         isSubmittingOrder = false;
-        showOrderConfirmation(orderId, paymentChoice, confirmedPaymentAmount, requiresDeposit, order_type === 'online', data.checkout_url);
         if (data.checkout_url) {
-          setTimeout(() => {
-            window.location.href = data.checkout_url;
-          }, 1200);
+          // GCash / Online payment: Must pay first before checkout is finalized
+          setOrderSubmitting(true);
+          const btn = document.getElementById('btnCheckoutNext');
+          if (btn) btn.textContent = `Connecting to ${paymentChoice} to complete payment...`;
+          window.location.href = data.checkout_url;
+          return true;
         }
+
+        // Cash order: finalized directly
+        cart = [];
+        clearSavedOrderTray();
+        updateCartDisplay();
+        resetCheckoutForm();
+        isSubmittingOrder = false;
+        showOrderConfirmation(orderId, paymentChoice, confirmedPaymentAmount, requiresDeposit, order_type === 'online', null);
         return true;
       } else {
         alert("Order submission failed: " + (data.error || data.message));
@@ -1571,7 +1630,7 @@
     renderCatalog();
   });
   document.querySelectorAll('input[name="paymentChoice"]').forEach(input => {
-    input.addEventListener('change', renderPaymentReceipt);
+    input.addEventListener('change', () => { renderPaymentReceipt(); updatePaymentButtonState(); });
   });
   loadMenuFromServer();
   loadSavedReviews();

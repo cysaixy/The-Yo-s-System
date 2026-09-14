@@ -327,6 +327,43 @@
     if (el.value !== value) el.selectedIndex = 0;
   }
 
+  
+  function handlePaymentReturn(orders) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment_status');
+    const orderId = urlParams.get('order_id');
+    if (!paymentStatus || !orderId) return;
+
+    const banner = document.getElementById('paymentReturnBanner');
+    if (!banner) return;
+
+    if (paymentStatus === 'success') {
+      try { sessionStorage.removeItem('yo-order-tray'); } catch (e) {}
+      banner.style.display = 'block';
+      banner.style.background = 'rgba(46, 204, 113, 0.15)';
+      banner.style.border = '1px solid rgba(46, 204, 113, 0.4)';
+      banner.style.color = '#27ae60';
+      banner.innerHTML = `<strong>✓ Payment Received via GCash!</strong> Order #${orderId} has been paid and confirmed. Our kitchen has received your order.`;
+      
+      // Auto open this order's modal if present
+      const matched = orders.find(o => String(o.id) === String(orderId));
+      if (matched) {
+        setTimeout(() => openOrderDetails(matched.id), 500);
+      }
+    } else if (paymentStatus === 'cancelled') {
+      banner.style.display = 'block';
+      banner.style.background = 'rgba(231, 76, 60, 0.12)';
+      banner.style.border = '1px solid rgba(231, 76, 60, 0.35)';
+      banner.style.color = '#c0392b';
+      banner.innerHTML = `<strong>Payment was cancelled.</strong> Order #${orderId} is still pending. You can click "Pay via PayMongo" to complete payment.`;
+      
+      const matched = orders.find(o => String(o.id) === String(orderId));
+      if (matched) {
+        setTimeout(() => openOrderDetails(matched.id), 500);
+      }
+    }
+  }
+
   window.openOrderDetails = function(id) {
     const order = ordersById.get(id);
     if (!order) return;
