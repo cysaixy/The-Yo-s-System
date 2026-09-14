@@ -337,7 +337,18 @@ export async function getOrder(req, res, next) {
     const { rows } = await pool.query(
       `SELECT o.*,
               res.reservation_status, res.reservation_date, res.reservation_time,
-              ${ORDER_ITEM_AGG('o.id')}
+              ${ORDER_ITEM_AGG('o.id')},
+              COALESCE(
+                (SELECT json_agg(json_build_object(
+                  'id', p.id,
+                  'payment_method', p.payment_method,
+                  'amount', p.amount,
+                  'status', p.status,
+                  'datetime_paid', p.datetime_paid,
+                  'reference_number', p.reference_number
+                )) FROM payments p WHERE p.order_id = o.id),
+                '[]'::json
+              ) AS payments
        FROM orders o
        LEFT JOIN reservations res ON res.id = o.reservation_id
        WHERE o.id = $1`,
@@ -372,7 +383,18 @@ export async function getCustomerOrders(req, res, next) {
     const { rows } = await pool.query(
       `SELECT o.*,
               res.reservation_status, res.reservation_date, res.reservation_time,
-              ${ORDER_ITEM_AGG('o.id')}
+              ${ORDER_ITEM_AGG('o.id')},
+              COALESCE(
+                (SELECT json_agg(json_build_object(
+                  'id', p.id,
+                  'payment_method', p.payment_method,
+                  'amount', p.amount,
+                  'status', p.status,
+                  'datetime_paid', p.datetime_paid,
+                  'reference_number', p.reference_number
+                )) FROM payments p WHERE p.order_id = o.id),
+                '[]'::json
+              ) AS payments
        FROM orders o
        LEFT JOIN reservations res ON res.id = o.reservation_id
        WHERE o.customer_id = $1

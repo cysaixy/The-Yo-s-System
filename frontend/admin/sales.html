@@ -1397,6 +1397,20 @@
           </div>
           <div class="fee-error" id="omFeeError"></div>` : ''}
         <div class="row grand"><span>Grand Total</span><span>${peso(o.total_amount)}</span></div>
+        ${(() => {
+          const paidList = Array.isArray(o.payments) ? o.payments.filter(p => p && (p.status === 'paid' || p.status === 'completed')) : [];
+          const amountPaid = paidList.reduce((s, p) => s + Number(p.amount || 0), 0);
+          const totalAmt = Number(o.total_amount || 0);
+          const rem = Math.max(0, Math.round((totalAmt - amountPaid) * 100) / 100);
+          if (amountPaid > 0 && rem > 0) {
+            return `
+              <div class="row" style="color:#27ae60; font-weight:600;"><span>Paid via GCash (Downpayment)</span><span>-${peso(amountPaid)}</span></div>
+              <div class="row" style="color:var(--gold,#d4af37); font-weight:700; font-size:1.02rem;"><span>Remaining Balance to Collect</span><span>${peso(rem)}</span></div>`;
+          } else if (amountPaid > 0) {
+            return `<div class="row" style="color:#27ae60; font-weight:600;"><span>Paid in Full</span><span>${peso(amountPaid)}</span></div>`;
+          }
+          return '';
+        })()}
         ${o.cogs !== undefined ? `
           <div class="row"><span>COGS</span><span>${peso(o.cogs)}</span></div>
           <div class="row"><span>Gross Profit</span><span class="${o.profit >= 0 ? 'profit-pos' : 'money-neg'}">${peso(o.profit)}</span></div>

@@ -137,8 +137,61 @@
   .modal-card input:disabled, .modal-card select:disabled, .modal-card textarea:disabled {
     opacity: 0.55; cursor: not-allowed;
   }
-  .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
+  .modal-actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
   .modal-actions .btn { padding: 11px 20px; border-radius: 6px; margin-bottom: 0; }
+  
+  /* GCash button styling */
+  .btn-gcash-pay {
+    background: linear-gradient(135deg, #0056ff 0%, #0070f3 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-weight: 700 !important;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    box-shadow: 0 4px 14px rgba(0, 86, 255, 0.35);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 22px !important;
+    border-radius: 6px !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+  }
+  .btn-gcash-pay:hover {
+    background: linear-gradient(135deg, #0046d6 0%, #005ce6 100%) !important;
+    box-shadow: 0 6px 20px rgba(0, 86, 255, 0.55);
+    transform: translateY(-1px);
+  }
+  .btn-gcash-pay:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 86, 255, 0.4);
+  }
+  .totals-row.paid-highlight {
+    color: #27ae60;
+    font-weight: 600;
+  }
+  .totals-row.balance-highlight {
+    color: var(--brass);
+    font-weight: 700;
+    border-top: 1px dashed var(--line);
+    margin-top: 4px;
+    padding-top: 6px;
+  }
+  .order-paid-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    background: rgba(39, 174, 96, 0.12);
+    color: #27ae60;
+    border: 1px solid rgba(39, 174, 96, 0.3);
+    margin-top: 4px;
+  }
 </style>
 </head>
 <body>
@@ -191,6 +244,7 @@
       </div>
     </div>
 
+    <div id="paymentReturnBanner" style="display:none; margin-bottom:20px; padding:14px 18px; border-radius:6px; font-family:'Space Mono', monospace; font-size:0.85rem;"></div>
     <div id="ordersLoading" class="orders-loading">Loading your orders…</div>
     <div id="ordersList" class="orders-list"></div>
     <div id="ordersEmpty" class="orders-empty" style="display:none;">
@@ -248,8 +302,8 @@
 
     <div class="modal-actions">
       <button type="button" class="btn btn-outline" onclick="closeOrderDetails()">Close</button>
-      <button type="button" class="btn btn-outline" id="btnCancelInModal" style="display:none; color:#e05252; border-color:rgba(224,82,82,.4);" onclick="cancelOrder(currentDetailOrder?.id)">Cancel Order</button>
-      <button type="button" class="btn" id="btnPayInModal" style="display:none; background:#0056ff; color:#fff;" onclick="payOrderWithPayMongo(currentDetailOrder?.id)">Pay with GCash →</button>
+      <button type="button" class="btn btn-outline" id="btnCancelInModal" style="display:none; color:#e05252; border-color:rgba(224,82,82,.4);" onclick="cancelOrder()">Cancel Order</button>
+      <button type="button" class="btn btn-gcash-pay" id="btnPayInModal" style="display:none;" onclick="payOrderWithPayMongo()"><span>Pay with GCash</span> <span>→</span></button>
       <button type="button" class="btn" id="btnSaveDetails" onclick="saveOrderDetails()">Save Changes</button>
     </div>
   </div>
@@ -289,26 +343,96 @@
     const delivery = isDeliveryOrder(order);
     const subtotal = delivery ? Math.max(0, grandTotal - deliveryFee) : grandTotal;
     const feePending = delivery && deliveryFee <= 0 && order.status !== 'cancelled';
-    return { grandTotal, deliveryFee, subtotal, delivery, feePending };
+
+    const isOnlinePay = ['gcash', 'maya', 'card', 'paymaya', 'paymongo', 'qrph'].includes((order.payment_method || '').toLowerCase());
+    
+    // Check payments array
+    const paidList = Array.isArray(order.payments)
+      ? order.payments.filter(p => p && (p.status === 'paid' || p.status === 'completed'))
+      : [];
+    let amountPaid = paidList.reduce((s, p) => s + Number(p.amount || 0), 0);
+
+    const requiresDeposit = grandTotal >= 300 && isOnlinePay;
+    const depositDue = requiresDeposit ? Math.round((grandTotal / 2) * 100) / 100 : grandTotal;
+
+    // Fallback if payment record not yet returned in array but order was confirmed via GCash
+    if (amountPaid === 0 && order.status !== 'pending' && order.status !== 'cancelled' && isOnlinePay) {
+      amountPaid = depositDue;
+    }
+
+    const remainingBalance = Math.max(0, Math.round((grandTotal - amountPaid) * 100) / 100);
+
+    return {
+      grandTotal,
+      deliveryFee,
+      subtotal,
+      delivery,
+      feePending,
+      amountPaid,
+      remainingBalance,
+      requiresDeposit,
+      depositDue,
+      isOnlinePay,
+      orderType: order.order_type,
+      status: order.status
+    };
   }
 
   function totalsRowsHTML(t, { grandClass = 'grand' } = {}) {
-    if (!t.delivery) {
-      return `<div class="totals-row ${grandClass}"><span>Total</span><span>${peso(t.grandTotal)}</span></div>`;
+    let rows = '';
+    if (t.delivery) {
+      rows += `<div class="totals-row"><span>Food Total</span><span>${peso(t.subtotal)}</span></div>`;
+      rows += `<div class="totals-row"><span>Delivery Fee (Cash to Rider)</span><span>${t.feePending ? '<span class="pending-fee">Pending Staff Assignment</span>' : peso(t.deliveryFee)}</span></div>`;
+      rows += `<div class="totals-row ${grandClass}"><span>Total Order Amount</span><span>${peso(t.grandTotal)}</span></div>`;
+    } else {
+      rows += `<div class="totals-row ${grandClass}"><span>Total Order Amount</span><span>${peso(t.grandTotal)}</span></div>`;
     }
-    return `
-      <div class="totals-row"><span>Food Total</span><span>${peso(t.subtotal)}</span></div>
-      <div class="totals-row"><span>Delivery Fee (Cash to Rider)</span><span>${t.feePending ? '<span class="pending-fee">Pending Staff Assignment</span>' : peso(t.deliveryFee)}</span></div>
-      <div class="totals-row ${grandClass}"><span>Total Amount</span><span>${peso(t.grandTotal)}</span></div>
-    `;
+
+    if (t.amountPaid > 0) {
+      rows += `
+        <div class="totals-row paid-highlight">
+          <span>✓ ${t.remainingBalance > 0 ? 'Downpayment Paid (GCash)' : 'Full Payment Paid (GCash)'}</span>
+          <span>-${peso(t.amountPaid)}</span>
+        </div>
+        <div class="totals-row balance-highlight">
+          <span>Remaining Balance Due</span>
+          <span>${peso(t.remainingBalance)}</span>
+        </div>`;
+    } else if (t.status === 'pending' && t.requiresDeposit) {
+      rows += `
+        <div class="totals-row" style="color:#0056ff; font-weight:600; padding-top:2px;">
+          <span>50% Downpayment Due (GCash)</span>
+          <span>${peso(t.depositDue)}</span>
+        </div>
+        <div class="totals-row" style="opacity:0.75; font-size:0.75rem;">
+          <span>Remaining Balance (Cash)</span>
+          <span>${peso(t.grandTotal - t.depositDue)}</span>
+        </div>`;
+    }
+
+    return rows;
   }
 
   function deliveryNoteHTML(t) {
-    if (!t.delivery) return '';
-    if (t.feePending) {
-      return `<div class="delivery-note">🛵 <span><strong>Delivery Notice:</strong> Your food is confirmed! Our staff will assign the delivery fee for your address shortly. The delivery fee will be paid in cash directly to your rider.</span></div>`;
+    let html = '';
+    if (t.delivery) {
+      if (t.feePending) {
+        html += `<div class="delivery-note">🛵 <span><strong>Delivery Notice:</strong> Your food is confirmed! Our staff will assign the delivery fee for your address shortly. The delivery fee will be paid in cash directly to your rider.</span></div>`;
+      } else {
+        html += `<div class="delivery-note" style="border-left-color:#27ae60; background:rgba(39,174,96,0.08);">🛵 <span><strong>Delivery Fee: ${peso(t.deliveryFee)}</strong> — Please prepare cash to pay directly to the rider upon delivery.</span></div>`;
+      }
     }
-    return `<div class="delivery-note" style="border-left-color:#27ae60; background:rgba(39,174,96,0.08);">🛵 <span><strong>Delivery Fee: ${peso(t.deliveryFee)}</strong> — Please prepare cash to pay directly to the rider upon delivery.</span></div>`;
+
+    if (t.amountPaid > 0 && t.remainingBalance > 0) {
+      if (t.delivery) {
+        html += `<div class="delivery-note" style="border-left-color:var(--brass); background:rgba(163,132,74,0.08); margin-top:8px;">💵 <span><strong>Remaining Balance: ${peso(t.remainingBalance)}</strong> — Pay cash to rider upon delivery (plus delivery fee).</span></div>`;
+      } else if (t.orderType === 'pickup') {
+        html += `<div class="delivery-note" style="border-left-color:var(--brass); background:rgba(163,132,74,0.08); margin-top:8px;">💵 <span><strong>Remaining Balance: ${peso(t.remainingBalance)}</strong> — Pay cash upon pickup at the counter.</span></div>`;
+      } else {
+        html += `<div class="delivery-note" style="border-left-color:var(--brass); background:rgba(163,132,74,0.08); margin-top:8px;">💵 <span><strong>Remaining Balance: ${peso(t.remainingBalance)}</strong> — Pay cash at the restaurant.</span></div>`;
+      }
+    }
+    return html;
   }
 
   let currentUser = null;
@@ -355,6 +479,9 @@
               Authorization: `Bearer ${idToken}`,
             }
           });
+          try {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } catch (e) {}
           const res = await fetch(`${API_BASE_URL}/api/customer/orders`, {
             headers: { Authorization: `Bearer ${idToken}` },
           });
@@ -385,9 +512,11 @@
   }
 
   window.openOrderDetails = function(id) {
-    const order = ordersById.get(id);
+    const numId = Number(id);
+    const order = ordersById.get(numId) || ordersById.get(id);
     if (!order) return;
     currentDetailOrder = order;
+    window.currentDetailOrder = order;
     const editable = order.status === 'pending';
 
     document.getElementById('detailOrderTitle').textContent = `Order #${order.id} Details`;
@@ -427,7 +556,12 @@
     const btnPay = document.getElementById('btnPayInModal');
     if (btnPay) {
       const isOnlinePay = ['gcash', 'maya', 'card', 'paymaya', 'paymongo', 'qrph'].includes((order.payment_method || '').toLowerCase());
-      btnPay.style.display = (editable && isOnlinePay) ? '' : 'none';
+      const canPay = editable && isOnlinePay && t.amountPaid <= 0;
+      btnPay.style.display = canPay ? 'inline-flex' : 'none';
+      if (canPay) {
+        const payAmount = t.requiresDeposit ? t.depositDue : t.grandTotal;
+        btnPay.innerHTML = `<span>Pay with GCash (${peso(payAmount)})</span> <span>→</span>`;
+      }
     }
     const btnCancelModal = document.getElementById('btnCancelInModal');
     if (btnCancelModal) btnCancelModal.style.display = editable ? '' : 'none';
@@ -449,18 +583,36 @@
   window.closeOrderDetails = function() {
     document.getElementById('orderModal').classList.remove('active');
     currentDetailOrder = null;
+    window.currentDetailOrder = null;
   };
 
   
   window.payOrderWithPayMongo = async function(id) {
-    if (!id) return;
+    const orderId = id || currentDetailOrder?.id || window.currentDetailOrder?.id;
+    if (!orderId) {
+      alert("Please select an order first.");
+      return;
+    }
+
+    const order = currentDetailOrder || window.currentDetailOrder;
+    if (order && order.status && order.status !== 'pending') {
+      alert(`This order is already ${order.status}. No further payment is needed.`);
+      return;
+    }
+
+    const btn = document.getElementById('btnPayInModal');
     try {
       const user = auth.currentUser;
-      if (!user) return alert("Please sign in to proceed.");
+      if (!user) {
+        alert("Please sign in to proceed.");
+        return;
+      }
       const idToken = await user.getIdToken();
-      const btn = document.getElementById('btnPayInModal');
-      if (btn) { btn.disabled = true; btn.textContent = 'Opening Payment...'; }
-      const res = await fetch(`${API_BASE_URL}/api/customer/orders/${id}/checkout-session`, {
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>Connecting to GCash...</span>`;
+      }
+      const res = await fetch(`${API_BASE_URL}/api/customer/orders/${orderId}/checkout-session`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -468,28 +620,37 @@
         }
       });
       const data = await res.json();
-      if (data.checkout_url) {
+      if (res.ok && data.checkout_url) {
         window.location.href = data.checkout_url;
       } else {
         alert(data.error || "Could not generate payment link.");
-        if (btn) { btn.disabled = false; btn.textContent = 'Pay via PayMongo →'; }
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>Pay with GCash</span> <span>→</span>`;
+        }
       }
     } catch (err) {
       console.error("PayMongo Checkout error:", err);
-      alert("Network error connecting to payment gateway.");
-      const btn = document.getElementById('btnPayInModal');
-      if (btn) { btn.disabled = false; btn.textContent = 'Pay via PayMongo →'; }
+      alert("Network error connecting to payment gateway: " + (err.message || 'Please try again.'));
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Pay with GCash</span> <span>→</span>`;
+      }
     }
   };
 
   window.cancelOrder = async function(id) {
-    if (!id) return;
-    if (!confirm(`Are you sure you want to cancel Order #${id}?`)) return;
+    const orderId = id || currentDetailOrder?.id || window.currentDetailOrder?.id;
+    if (!orderId) {
+      alert("Please select an order first.");
+      return;
+    }
+    if (!confirm(`Are you sure you want to cancel Order #${orderId}?`)) return;
     if (!currentUser) return;
 
     try {
       const idToken = await currentUser.getIdToken();
-      const res = await fetch(`${API_BASE_URL}/api/customer/orders/${id}/cancel`, {
+      const res = await fetch(`${API_BASE_URL}/api/customer/orders/${orderId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -502,7 +663,7 @@
         return;
       }
       alert('✓ Order cancelled successfully.');
-      if (currentDetailOrder && currentDetailOrder.id === id) {
+      if ((currentDetailOrder && currentDetailOrder.id === orderId) || (window.currentDetailOrder && window.currentDetailOrder.id === orderId)) {
         window.closeOrderDetails();
       }
       window.refreshOrders();
@@ -614,9 +775,7 @@
           ${(order.order_type === 'online' && order.delivery_address) ? `<div class="order-meta">Deliver to: ${order.delivery_address}</div>` : ''}
         </div>
         <div class="order-total">
-          ${t.delivery
-            ? `<div class="card-totals">${totalsRowsHTML(t)}</div>`
-            : `<span class="amount">${peso(t.grandTotal)}</span><span class="label">Total</span>`}
+          <div class="card-totals">${totalsRowsHTML(t)}</div>
           <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:10px;">
             <button type="button" class="btn btn-outline view-details-btn" onclick="openOrderDetails(${order.id})">View Details</button>
             ${order.status === 'pending' ? `<button type="button" class="btn btn-outline" style="color:#e05252; border-color:rgba(224,82,82,.4); padding:8px 12px; font-size:0.72rem;" onclick="cancelOrder(${order.id})">Cancel</button>` : ''}
@@ -665,6 +824,7 @@
       }
       ordersById = new Map(orders.map(o => [o.id, o]));
       list.innerHTML = orders.map(renderOrder).join('');
+      handlePaymentReturn(orders);
     } catch (err) {
       loading.style.display = 'none';
       list.innerHTML = `<div class="orders-empty"><p>Network error while loading your orders. Please try again.</p></div>`;

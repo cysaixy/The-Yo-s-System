@@ -1166,10 +1166,18 @@
       btn.textContent = `Pay with GCash (₱${amountDue}) →`;
       btn.style.background = '#0056ff';
       btn.style.color = '#fff';
+      btn.style.borderColor = '#0056ff';
     } else {
-      btn.textContent = 'Place Order (Pay Cash on Delivery/Pickup)';
+      const serviceType = document.getElementById('orderType')?.value || '';
+      const cashLabel = serviceType === 'Delivery'
+        ? 'Place Order (Pay Cash on Delivery)'
+        : serviceType === 'Takeout'
+        ? 'Place Order (Pay Cash on Pickup)'
+        : 'Place Order (Pay Cash at Restaurant)';
+      btn.textContent = cashLabel;
       btn.style.background = '';
       btn.style.color = '';
+      btn.style.borderColor = '';
     }
   }
 
@@ -1190,6 +1198,30 @@
       </div>`;
     }).join('') || '<div class="cart-empty">Your order is empty.</div>';
 
+    const isDeliveryType = service === 'Delivery';
+    const remainingBalance = Math.round((currentCartTotal - amountDue) * 100) / 100;
+    
+    let balanceNote = '';
+    if (hasDeposit) {
+      if (service === 'Dine-In') {
+        balanceNote = `<p class="receipt-payment-note">Order total: ₱${currentCartTotal}. Pay 50% downpayment (₱${amountDue}) now via GCash to secure your dine-in reservation. Remaining balance of ₱${remainingBalance} will be paid in cash at the restaurant.</p>`;
+      } else if (service === 'Takeout') {
+        balanceNote = `<p class="receipt-payment-note">Order total: ₱${currentCartTotal}. Pay 50% downpayment (₱${amountDue}) now via GCash. Remaining balance of ₱${remainingBalance} will be paid in cash upon pickup at the counter.</p>`;
+      } else if (isDeliveryType) {
+        balanceNote = `<p class="receipt-payment-note">Order total: ₱${currentCartTotal}. Pay 50% downpayment (₱${amountDue}) now via GCash. Remaining food balance of ₱${remainingBalance} will be paid in cash to your rider upon delivery.</p>
+        <p class="receipt-payment-note" style="color:var(--brass); margin-top:8px;">🛵 <strong>Delivery Fee Note:</strong> Staff will assign the delivery fee based on your address. Delivery fee will also be paid in cash directly to your rider upon arrival.</p>`;
+      } else {
+        balanceNote = `<p class="receipt-payment-note">Order total: ₱${currentCartTotal}. Pay 50% downpayment (₱${amountDue}) now. Remaining balance is ₱${remainingBalance}.</p>`;
+      }
+    } else {
+      if (isDeliveryType) {
+        balanceNote = `<p class="receipt-payment-note">Food total: ₱${currentCartTotal}. Pay via ${escapeReceiptHtml(payment || 'Cash')}.</p>
+        <p class="receipt-payment-note" style="color:var(--brass); margin-top:8px;">🛵 <strong>Delivery Fee Note:</strong> Delivery fee will be assigned by staff and paid in cash directly to your rider upon arrival.</p>`;
+      } else {
+        balanceNote = `<p class="receipt-payment-note">Total amount: ₱${currentCartTotal} to be paid via ${escapeReceiptHtml(payment || 'Cash')}.</p>`;
+      }
+    }
+
     receipt.innerHTML = `
       <div class="payment-receipt-head">
         <span class="payment-receipt-title">Order Receipt</span>
@@ -1197,7 +1229,7 @@
       </div>
       ${lineItems}
       <div class="receipt-total"><span>${hasDeposit ? 'Pay today (50% downpayment)' : 'Amount to pay'}</span><strong>₱${amountDue}</strong></div>
-      ${hasDeposit ? `<p class="receipt-payment-note">Order total: ₱${currentCartTotal}. Your remaining balance after the downpayment is ₱${Math.round((currentCartTotal - amountDue) * 100) / 100}.</p>` : '<p class="receipt-payment-note">This is the full amount for the items listed above.</p>'}` + (service === 'Delivery' ? `<p class="receipt-payment-note" style="color:var(--brass); margin-top:8px;">🛵 <strong>Delivery Note:</strong> Food is paid now via ${escapeReceiptHtml(payment)}. The delivery fee will be confirmed by staff and paid in cash directly to the rider upon arrival.</p>` : '');
+      ${balanceNote}`;
   }
 
   // ---------- STEP 2: DYNAMIC ORDER-TYPE FIELDS ----------
