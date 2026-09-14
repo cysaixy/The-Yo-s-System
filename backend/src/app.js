@@ -100,8 +100,8 @@ app.use('/api/admin/customers', adminCustomersRoutes);
 // Webhooks (PayMongo, etc.)
 app.use('/api/webhooks', webhookRoutes);
 
-// 404 for anything unmatched
-app.use((req, res) => res.status(404).json({ error: 'Route not found.' }));
+// 404 for unmatched API routes
+app.use('/api', (req, res) => res.status(404).json({ error: 'Route not found.' }));
 
 // Must be last: catches errors passed via next(err) from any controller
 app.use(errorHandler);
