@@ -5,6 +5,8 @@
     { "source": "/pics&vids/:path*", "destination": "/frontend/pics&vids/:path*" },
     { "source": "/admin", "destination": "/frontend/admin/home.html" },
     { "source": "/admin/:path*", "destination": "/frontend/admin/:path*" },
+    { "source": "/customer", "destination": "/frontend/customer/index.html" },
+    { "source": "/customer/:path*", "destination": "/frontend/customer/:path*" },
     { "source": "/", "destination": "/frontend/customer/index.html" },
     { "source": "/:path*", "destination": "/frontend/customer/:path*" }
   ]

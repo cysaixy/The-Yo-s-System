@@ -292,8 +292,8 @@ export async function createOrder(req, res, next) {
           orderId: order.id,
           amount: amountToPay,
           description: `Order #${order.id} (${payment_method.toUpperCase()})`,
-          successUrl: `${origin}/customer/my-orders.html?order_id=${order.id}&payment_status=success`,
-          cancelUrl: `${origin}/customer/my-orders.html?order_id=${order.id}&payment_status=cancelled`,
+          successUrl: `${origin}/my-orders.html?order_id=${order.id}&payment_status=success`,
+          cancelUrl: `${origin}/my-orders.html?order_id=${order.id}&payment_status=cancelled`,
           customerName: order.customer_name,
           customerPhone: order.customer_phone,
         });
@@ -601,8 +601,8 @@ export async function createOrderCheckoutSession(req, res, next) {
       orderId: order.id,
       amount: amountToPay,
       description: `Order #${order.id} Payment`,
-      successUrl: `${origin}/customer/my-orders.html?order_id=${order.id}&payment_status=success`,
-      cancelUrl: `${origin}/customer/my-orders.html?order_id=${order.id}&payment_status=cancelled`,
+      successUrl: `${origin}/my-orders.html?order_id=${order.id}&payment_status=success`,
+      cancelUrl: `${origin}/my-orders.html?order_id=${order.id}&payment_status=cancelled`,
       customerName: order.customer_name,
       customerPhone: order.customer_phone,
     });
