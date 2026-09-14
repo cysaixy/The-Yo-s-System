@@ -1,9 +1,10 @@
 // src/controllers/customer/order.controller.js
 import pool from '../../config/db.js';
 import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
+import { createPaymongoCheckoutSession } from '../../utils/paymongo.js';
 
 const VALID_ORDER_TYPES = ['online', 'delivery', 'dine_in', 'pickup'];
-const VALID_PAYMENT_METHODS = ['cash', 'gcash', 'card', 'bank_transfer'];
+const VALID_PAYMENT_METHODS = ['cash', 'gcash', 'card', 'bank_transfer', 'maya', 'paymaya', 'paymongo', 'qrph'];
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
@@ -277,7 +278,31 @@ export async function createOrder(req, res, next) {
     }
 
     await client.query('COMMIT');
-    res.status(201).json({ order });
+
+    let checkout_url = null;
+    const onlineMethods = ['gcash', 'card', 'maya', 'paymaya', 'paymongo', 'qrph'];
+    if (payment_method && onlineMethods.includes(payment_method.toLowerCase()) && process.env.PAYMONGO_SECRET_KEY) {
+      try {
+        const origin = req.get('origin') || process.env.CLIENT_ORIGIN || 'http://localhost:3000';
+        const amountToPay = Number(order.total_amount) >= 300
+          ? round2(Number(order.total_amount) / 2)
+          : Number(order.total_amount);
+
+        checkout_url = await createPaymongoCheckoutSession({
+          orderId: order.id,
+          amount: amountToPay,
+          description: `Order #${order.id} (${payment_method.toUpperCase()})`,
+          successUrl: `${origin}/customer/my-orders.html?order_id=${order.id}&payment_status=success`,
+          cancelUrl: `${origin}/customer/my-orders.html?order_id=${order.id}&payment_status=cancelled`,
+          customerName: order.customer_name,
+          customerPhone: order.customer_phone,
+        });
+      } catch (pmErr) {
+        console.warn('⚠️ Could not generate PayMongo checkout session:', pmErr.message);
+      }
+    }
+
+    res.status(201).json({ order, checkout_url });
   } catch (err) {
     await client.query('ROLLBACK');
     next(err);
@@ -539,6 +564,50 @@ export async function getPayment(req, res, next) {
 
     if (!rows[0]) return res.status(404).json({ error: 'No payment found for this order.' });
     res.json({ payment: rows[0] });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createOrderCheckoutSession(req, res, next) {
+  try {
+    const customer_id = req.user?.customer?.id;
+    if (!customer_id) {
+      return res.status(400).json({ error: 'No customer profile found.' });
+    }
+
+    const { id: order_id } = req.params;
+    const orderResult = await pool.query(
+      'SELECT id, total_amount, status, payment_method, customer_name, customer_phone FROM orders WHERE id = $1 AND customer_id = $2',
+      [order_id, customer_id]
+    );
+    const order = orderResult.rows[0];
+
+    if (!order) return res.status(404).json({ error: 'Order not found.' });
+    if (order.status !== 'pending') {
+      return res.status(400).json({ error: `Order is already ${order.status}.` });
+    }
+
+    if (!process.env.PAYMONGO_SECRET_KEY) {
+      return res.status(500).json({ error: 'PayMongo secret key is not configured on server.' });
+    }
+
+    const origin = req.get('origin') || process.env.CLIENT_ORIGIN || 'http://localhost:3000';
+    const amountToPay = Number(order.total_amount) >= 300
+      ? round2(Number(order.total_amount) / 2)
+      : Number(order.total_amount);
+
+    const checkout_url = await createPaymongoCheckoutSession({
+      orderId: order.id,
+      amount: amountToPay,
+      description: `Order #${order.id} Payment`,
+      successUrl: `${origin}/customer/my-orders.html?order_id=${order.id}&payment_status=success`,
+      cancelUrl: `${origin}/customer/my-orders.html?order_id=${order.id}&payment_status=cancelled`,
+      customerName: order.customer_name,
+      customerPhone: order.customer_phone,
+    });
+
+    res.json({ checkout_url });
   } catch (err) {
     next(err);
   }

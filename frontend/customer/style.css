@@ -224,7 +224,8 @@ textarea { resize: none; height: 70px; }
 .payment-label input[type="radio"] { width: 18px; height: 18px; accent-color: var(--brass); cursor: pointer; margin: 0; }
 .payment-pill { font-family: 'Space Mono', monospace; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 3px; letter-spacing: 0.05em; }
 .p-gcash { background: #0056ff; color: #fff; }
-.p-maya { background: #00ff66; color: #121315; }
+.p-maya { background: #00d632; color: #121315; }
+.p-card { background: #6772e5; color: #fff; }
 .p-cash { background: var(--line); color: var(--ink); }
 .feedback-section { background: var(--bone); border-top: 1px solid var(--line); transition: background 0.3s ease; }
 .feedback-container { display: grid; grid-template-columns: 1.1fr 1.5fr; gap: 60px; }

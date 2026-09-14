@@ -26,6 +26,7 @@ import adminCashAccountsRoutes from './routes/admin/cashAccountsRoutes.js';
 import adminCashTransactionsRoutes from './routes/admin/cashTransactionsRoutes.js';
 import adminReportsRoutes from './routes/admin/reportsRoutes.js';
 import adminCustomersRoutes from './routes/admin/customersRoutes.js';
+import webhookRoutes from './routes/webhook.routes.js';
 
 const app = express();
 
@@ -33,8 +34,16 @@ const app = express();
 // Required for express-rate-limit to correctly identify client IP addresses
 app.set('trust proxy', 1);
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || '*' }));
-app.use(express.json({ limit: '7mb' }));
+app.use(cors({
+  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
+  credentials: true,
+}));
+app.use(express.json({
+  limit: '7mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString('utf8');
+  }
+}));
 app.use(cookieParser());
 
 // Apply global rate limiting across all API endpoints
@@ -87,6 +96,9 @@ app.use('/api/admin/reports', adminReportsRoutes);
 // Was missing entirely — pos.html's live customer search
 // (GET /api/admin/customers/search) had nowhere to send its requests.
 app.use('/api/admin/customers', adminCustomersRoutes);
+
+// Webhooks (PayMongo, etc.)
+app.use('/api/webhooks', webhookRoutes);
 
 // 404 for anything unmatched
 app.use((req, res) => res.status(404).json({ error: 'Route not found.' }));

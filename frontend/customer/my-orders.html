@@ -237,8 +237,9 @@
           <label for="detailPayment">Payment Method</label>
           <select id="detailPayment">
             <option value="gcash">GCash</option>
-            <option value="cash">Cash</option>
+            <option value="maya">Maya</option>
             <option value="card">Card</option>
+            <option value="cash">Cash</option>
             <option value="bank_transfer">Bank Transfer</option>
           </select>
         </div>
@@ -251,6 +252,7 @@
     <div class="modal-actions">
       <button type="button" class="btn btn-outline" onclick="closeOrderDetails()">Close</button>
       <button type="button" class="btn btn-outline" id="btnCancelInModal" style="display:none; color:#e05252; border-color:rgba(224,82,82,.4);" onclick="cancelOrder(currentDetailOrder?.id)">Cancel Order</button>
+      <button type="button" class="btn" id="btnPayInModal" style="display:none; background:#0056ff; color:#fff;" onclick="payOrderWithPayMongo(currentDetailOrder?.id)">Pay via PayMongo →</button>
       <button type="button" class="btn" id="btnSaveDetails" onclick="saveOrderDetails()">Save Changes</button>
     </div>
   </div>
@@ -278,7 +280,7 @@
   }
 
   const TYPE_LABEL = { online: 'Delivery', pickup: 'Takeout', dine_in: 'Dine-In' };
-  const PAYMENT_LABEL = { gcash: 'GCash', cash: 'Cash', card: 'Card', bank_transfer: 'Bank Transfer' };
+  const PAYMENT_LABEL = { gcash: 'GCash', maya: 'Maya', cash: 'Cash', card: 'Card', bank_transfer: 'Bank Transfer' };
 
   function isDeliveryOrder(order) {
     return order.order_type === 'online' || !!order.delivery_address;
@@ -365,6 +367,11 @@
     });
     const btnSave = document.getElementById('btnSaveDetails');
     if (btnSave) btnSave.style.display = editable ? '' : 'none';
+    const btnPay = document.getElementById('btnPayInModal');
+    if (btnPay) {
+      const isOnlinePay = ['gcash', 'maya', 'card', 'paymaya', 'paymongo', 'qrph'].includes((order.payment_method || '').toLowerCase());
+      btnPay.style.display = (editable && isOnlinePay) ? '' : 'none';
+    }
     const btnCancelModal = document.getElementById('btnCancelInModal');
     if (btnCancelModal) btnCancelModal.style.display = editable ? '' : 'none';
     const lockedNote = document.getElementById('detailLockedNote');
@@ -385,6 +392,37 @@
   window.closeOrderDetails = function() {
     document.getElementById('orderModal').classList.remove('active');
     currentDetailOrder = null;
+  };
+
+  
+  window.payOrderWithPayMongo = async function(id) {
+    if (!id) return;
+    try {
+      const user = auth.currentUser;
+      if (!user) return alert("Please sign in to proceed.");
+      const idToken = await user.getIdToken();
+      const btn = document.getElementById('btnPayInModal');
+      if (btn) { btn.disabled = true; btn.textContent = 'Opening Payment...'; }
+      const res = await fetch(`${API_BASE_URL}/api/customer/orders/${id}/checkout-session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        }
+      });
+      const data = await res.json();
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        alert(data.error || "Could not generate payment link.");
+        if (btn) { btn.disabled = false; btn.textContent = 'Pay via PayMongo →'; }
+      }
+    } catch (err) {
+      console.error("PayMongo Checkout error:", err);
+      alert("Network error connecting to payment gateway.");
+      const btn = document.getElementById('btnPayInModal');
+      if (btn) { btn.disabled = false; btn.textContent = 'Pay via PayMongo →'; }
+    }
   };
 
   window.cancelOrder = async function(id) {
