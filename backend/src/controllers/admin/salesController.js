@@ -425,8 +425,11 @@ export async function listOrders(req, res, next) {
               o.reservation_id,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
               (SELECT MAX(p.datetime_paid) FROM payments p WHERE p.order_id = o.id) AS sale_date,
-              (SELECT CASE WHEN COUNT(*) > 1 THEN 'split' ELSE MAX(p.payment_method) END
-               FROM payments p WHERE p.order_id = o.id) AS payment_method,
+              COALESCE(
+                (SELECT CASE WHEN COUNT(*) > 1 THEN 'split' ELSE MAX(p.payment_method) END
+                 FROM payments p WHERE p.order_id = o.id),
+                o.payment_method
+              ) AS payment_method,
               (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
               (SELECT COALESCE(SUM(oi.quantity), 0) FROM order_items oi WHERE oi.order_id = o.id) AS quantity_sold
        FROM orders o
@@ -529,11 +532,22 @@ export async function getOrder(req, res, next) {
       return { ...item, add_ons: addons, cogs: round2(cogs), profit: round2(profit) };
     }));
 
-    const { rows: payments } = await pool.query(
+    let { rows: payments } = await pool.query(
       `SELECT id, payment_method, amount, status, datetime_paid, reference_number
        FROM payments WHERE order_id = $1 ORDER BY id`,
       [order.id]
     );
+
+    if (payments.length === 0 && order.payment_method) {
+      payments = [{
+        id: null,
+        payment_method: order.payment_method,
+        amount: order.total_amount,
+        status: (order.status === 'confirmed' || order.status === 'completed') ? 'paid' : (order.status || 'pending'),
+        datetime_paid: order.datetime_ordered,
+        reference_number: null,
+      }];
+    }
 
     const cogs = itemsWithAddons.reduce((s, it) => s + it.cogs, 0);
     const revenue = round2(order.total_amount);

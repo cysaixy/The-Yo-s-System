@@ -1322,14 +1322,14 @@
 
   function renderOrderDetail(o) {
     const source = o.source === 'online' ? 'Online (Customer)' : `POS · ${escapeHtml(o.staff_name || 'Staff')}`;
-    const payment = o.payments && o.payments.length
-      ? o.payments.map(p => `${escapeHtml(PAYMENT_LABELS[p.payment_method] || p.payment_method)} · ${peso(p.amount)} · ${escapeHtml(p.status)}`).join('<br>')
-      : '—';
+    const payment = (o.payments && o.payments.length)
+      ? o.payments.map(p => `${escapeHtml(PAYMENT_LABELS[p.payment_method] || p.payment_method)} · ${peso(p.amount)} · ${escapeHtml(p.status || 'paid')}`).join('<br>')
+      : (o.payment_method ? `${escapeHtml(PAYMENT_LABELS[o.payment_method] || o.payment_method)} · ${peso(o.total_amount)} · ${escapeHtml(o.status || 'pending')}` : '—');
 
     // The order's own order_type may still say "online" (the source) rather
     // than the actual fulfillment method, so fall back to whether we have
     // delivery-specific data on the order to decide if this is a delivery.
-    const isDelivery = o.order_type === 'delivery' || !!o.delivery_address;
+    const isDelivery = o.order_type === 'delivery' || (o.order_type === 'online' && !!o.delivery_address);
     const typeLabel = (o.order_type === 'online' && isDelivery) ? 'Delivery' : orderTypeLabel(o.order_type);
 
     const deliveryBlock = isDelivery ? `
