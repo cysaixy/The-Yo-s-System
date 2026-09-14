@@ -104,7 +104,7 @@ export async function createPaymongoCheckoutSession({
             quantity: 1,
           },
         ],
-        payment_method_types: ['gcash', 'paymaya', 'card', 'qrph'],
+        payment_method_types: ['gcash', 'qrph'],
         description: description || `The Yo's - Order #${orderId}`,
         metadata: {
           order_id: String(orderId),

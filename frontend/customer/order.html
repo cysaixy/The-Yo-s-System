@@ -509,10 +509,8 @@
           <p style="display:flex; align-items:flex-start; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span><strong>Downpayment Required:</strong> Total balance exceeds ₱300. A 50% downpayment via GCash is mandatory to begin your order preparation.</span></p>
         </div>
 
-        <div class="payments-badge-wrapper" style="margin-top:6px; flex-wrap:wrap;">
-          <label class="payment-label"><input type="radio" name="paymentChoice" value="GCash"><span class="payment-pill p-gcash">GCash</span></label>
-          <label class="payment-label"><input type="radio" name="paymentChoice" value="Maya"><span class="payment-pill p-maya">Maya</span></label>
-          <label class="payment-label"><input type="radio" name="paymentChoice" value="Card"><span class="payment-pill p-card">Card</span></label>
+        <div class="payments-badge-wrapper" style="margin-top:6px;">
+          <label class="payment-label"><input type="radio" name="paymentChoice" value="GCash" checked><span class="payment-pill p-gcash">GCash</span></label>
           <label class="payment-label"><input type="radio" name="paymentChoice" value="Cash"><span class="payment-pill p-cash">Cash</span></label>
         </div>
 
@@ -1142,13 +1140,12 @@
     const checkedInput = document.querySelector('input[name="paymentChoice"]:checked');
     let payment = checkedInput ? checkedInput.value : 'GCash';
 
-    // If order >= 300, Cash cannot be used without downpayment
     if (isOver300) {
       if (cashInput) {
         cashInput.disabled = true;
         if (cashInput.parentElement) {
           cashInput.parentElement.style.opacity = '0.4';
-          cashInput.parentElement.title = 'Orders ₱300+ require online downpayment (GCash/Maya/Card).';
+          cashInput.parentElement.title = 'Orders ₱300+ require online downpayment via GCash.';
         }
       }
       if (payment === 'Cash') {
@@ -1165,9 +1162,9 @@
       }
     }
 
-    if (['GCash', 'Maya', 'Card'].includes(payment)) {
-      btn.textContent = `Pay with ${payment} (₱${amountDue}) →`;
-      btn.style.background = payment === 'GCash' ? '#0056ff' : (payment === 'Maya' ? '#00b82b' : '#6772e5');
+    if (payment === 'GCash') {
+      btn.textContent = `Pay with GCash (₱${amountDue}) →`;
+      btn.style.background = '#0056ff';
       btn.style.color = '#fff';
     } else {
       btn.textContent = 'Place Order (Pay Cash on Delivery/Pickup)';
@@ -1468,7 +1465,7 @@
       serviceType: serviceType,
       paymentChoice: paymentChoice,
       notes: combinedNotes || null,
-      delivery_address: (addrEl && addrEl.value.trim()) || null,
+      delivery_address: (order_type === 'online') ? ((addrEl && addrEl.value.trim()) || null) : null,
       customer_name: document.getElementById('name').value.trim() || null,
       customer_phone: document.getElementById('phone').value.trim() || null,
       payment_method: (paymentChoice || '').toLowerCase() || null

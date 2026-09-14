@@ -4,7 +4,7 @@ import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
 import { createPaymongoCheckoutSession } from '../../utils/paymongo.js';
 
 const VALID_ORDER_TYPES = ['online', 'delivery', 'dine_in', 'pickup'];
-const VALID_PAYMENT_METHODS = ['cash', 'gcash', 'card', 'bank_transfer', 'maya', 'paymaya', 'paymongo', 'qrph'];
+const VALID_PAYMENT_METHODS = ['cash', 'gcash'];
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
@@ -608,6 +608,55 @@ export async function createOrderCheckoutSession(req, res, next) {
     });
 
     res.json({ checkout_url });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function confirmOrderPayment(req, res, next) {
+  try {
+    const customer_id = req.user?.customer?.id;
+    if (!customer_id) {
+      return res.status(400).json({ error: 'No customer profile found.' });
+    }
+
+    const { id: order_id } = req.params;
+    const orderResult = await pool.query(
+      'SELECT id, total_amount, status, payment_method FROM orders WHERE id = $1 AND customer_id = $2',
+      [order_id, customer_id]
+    );
+    const order = orderResult.rows[0];
+
+    if (!order) return res.status(404).json({ error: 'Order not found.' });
+
+    if (order.status === 'pending') {
+      await pool.query(
+        `UPDATE orders
+         SET status = 'confirmed',
+             status_updated_at = NOW(),
+             payment_method = 'gcash'
+         WHERE id = $1`,
+        [order_id]
+      );
+
+      const existing = await pool.query(
+        'SELECT id FROM payments WHERE order_id = $1 LIMIT 1',
+        [order_id]
+      );
+      if (existing.rows.length === 0) {
+        const amountPaid = Number(order.total_amount) >= 300
+          ? round2(Number(order.total_amount) / 2)
+          : Number(order.total_amount);
+
+        await pool.query(
+          `INSERT INTO payments (order_id, payment_method, amount, reference_number, status, datetime_paid)
+           VALUES ($1, 'gcash', $2, $3, 'paid', NOW())`,
+          [order_id, amountPaid, `gcash_auto_${order_id}`]
+        );
+      }
+    }
+
+    res.json({ success: true, status: 'confirmed' });
   } catch (err) {
     next(err);
   }

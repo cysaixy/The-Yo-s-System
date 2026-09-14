@@ -237,13 +237,10 @@
           <label for="detailPayment">Payment Method</label>
           <select id="detailPayment">
             <option value="gcash">GCash</option>
-            <option value="maya">Maya</option>
-            <option value="card">Card</option>
             <option value="cash">Cash</option>
-            <option value="bank_transfer">Bank Transfer</option>
           </select>
         </div>
-        <div><label for="detailAddress">Delivery Address</label><input id="detailAddress" type="text"></div>
+        <div id="detailAddressContainer"><label for="detailAddress">Delivery Address</label><input id="detailAddress" type="text"></div>
       </div>
       <div><label for="detailNotes">Special Prep Instructions</label><textarea id="detailNotes"></textarea></div>
       <div id="detailLockedNote" class="locked-note" style="display:none;"></div>
@@ -252,7 +249,7 @@
     <div class="modal-actions">
       <button type="button" class="btn btn-outline" onclick="closeOrderDetails()">Close</button>
       <button type="button" class="btn btn-outline" id="btnCancelInModal" style="display:none; color:#e05252; border-color:rgba(224,82,82,.4);" onclick="cancelOrder(currentDetailOrder?.id)">Cancel Order</button>
-      <button type="button" class="btn" id="btnPayInModal" style="display:none; background:#0056ff; color:#fff;" onclick="payOrderWithPayMongo(currentDetailOrder?.id)">Pay via PayMongo →</button>
+      <button type="button" class="btn" id="btnPayInModal" style="display:none; background:#0056ff; color:#fff;" onclick="payOrderWithPayMongo(currentDetailOrder?.id)">Pay with GCash →</button>
       <button type="button" class="btn" id="btnSaveDetails" onclick="saveOrderDetails()">Save Changes</button>
     </div>
   </div>
@@ -280,10 +277,10 @@
   }
 
   const TYPE_LABEL = { online: 'Delivery', pickup: 'Takeout', dine_in: 'Dine-In' };
-  const PAYMENT_LABEL = { gcash: 'GCash', maya: 'Maya', cash: 'Cash', card: 'Card', bank_transfer: 'Bank Transfer' };
+  const PAYMENT_LABEL = { gcash: 'GCash', cash: 'Cash' };
 
   function isDeliveryOrder(order) {
-    return order.order_type === 'online' || !!order.delivery_address;
+    return order.order_type === 'online';
   }
 
   function totalsFor(order) {
@@ -343,13 +340,33 @@
       banner.style.background = 'rgba(46, 204, 113, 0.15)';
       banner.style.border = '1px solid rgba(46, 204, 113, 0.4)';
       banner.style.color = '#27ae60';
-      banner.innerHTML = `<strong>✓ Payment Received via GCash!</strong> Order #${orderId} has been paid and confirmed. Our kitchen has received your order.`;
-      
-      // Auto open this order's modal if present
-      const matched = orders.find(o => String(o.id) === String(orderId));
-      if (matched) {
-        setTimeout(() => openOrderDetails(matched.id), 500);
-      }
+      banner.innerHTML = `<strong>✓ Payment Received via GCash!</strong> Order #${orderId} is confirmed. Kitchen preparation will begin shortly.`;
+
+      (async () => {
+        try {
+          const idToken = await currentUser.getIdToken();
+          await fetch(`${API_BASE_URL}/api/customer/orders/${orderId}/confirm-payment`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${idToken}`,
+            }
+          });
+          const res = await fetch(`${API_BASE_URL}/api/customer/orders`, {
+            headers: { Authorization: `Bearer ${idToken}` },
+          });
+          const data = await res.json();
+          if (data.orders) {
+            ordersById = new Map(data.orders.map(o => [o.id, o]));
+            const list = document.getElementById('ordersList');
+            if (list) list.innerHTML = data.orders.map(renderOrder).join('');
+            openOrderDetails(Number(orderId));
+          }
+        } catch (e) {
+          console.warn('Auto confirm error:', e);
+          openOrderDetails(Number(orderId));
+        }
+      })();
     } else if (paymentStatus === 'cancelled') {
       banner.style.display = 'block';
       banner.style.background = 'rgba(231, 76, 60, 0.12)';
@@ -591,7 +608,7 @@
         <div>
           <div class="order-id">Order #${order.id}</div>
           <div class="order-meta">${date} · ${(order.order_type || '').replace('_', ' ')}</div>
-          ${order.delivery_address ? `<div class="order-meta">Deliver to: ${order.delivery_address}</div>` : ''}
+          ${(order.order_type === 'online' && order.delivery_address) ? `<div class="order-meta">Deliver to: ${order.delivery_address}</div>` : ''}
         </div>
         <div class="order-total">
           ${t.delivery

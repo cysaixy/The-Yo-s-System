@@ -11,6 +11,7 @@ import {
   createPayment,
   getPayment,
   createOrderCheckoutSession,
+  confirmOrderPayment,
 } from '../../controllers/customer/order.controller.js';
 
 const router = express.Router();
@@ -33,5 +34,6 @@ router.post('/:id/cancel', globalLimiter, verifyFirebaseToken, cancelOrder);
 router.post('/:id/payment', globalLimiter, verifyFirebaseToken, createPayment);
 router.get('/:id/payment', globalLimiter, verifyFirebaseToken, getPayment);
 router.post('/:id/checkout-session', globalLimiter, verifyFirebaseToken, createOrderCheckoutSession);
+router.post('/:id/confirm-payment', globalLimiter, verifyFirebaseToken, confirmOrderPayment);
 
 export default router;
