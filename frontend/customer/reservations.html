@@ -196,7 +196,7 @@
       </div>
 
       <div class="reserve-success" id="reserveSuccess">
-        <div class="check-ring">✓</div>
+        <div class="check-ring"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
         <h3 style="font-family:'Archivo', sans-serif; text-transform:uppercase; font-size:1.2rem; margin-bottom:10px;">Reservation Requested</h3>
         <div class="reserve-ref" id="reserveRef"></div>
         <p style="opacity:0.65; font-size:0.9rem; margin-bottom:12px;">Your reservation request has been received. Our staff will contact you to confirm your order and reservation.</p>
@@ -333,7 +333,7 @@
     }
 
     if (msg.length) {
-      warn.textContent = '⚠️ ' + msg.join(' ');
+      warn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ' + msg.map(m => escapeHtml(m)).join(' ');
       warn.style.display = 'block';
     } else {
       warn.style.display = 'none';
@@ -345,7 +345,7 @@
     if (this.value && blockedDates.has(this.value)) {
       this.value = '';
       const warn = document.getElementById('reserveWarn');
-      warn.textContent = '⚠️ Sorry — we\'re fully booked on that date. Please pick another day.';
+      warn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Sorry — we\'re fully booked on that date. Please pick another day.';
       warn.style.display = 'block';
       return;
     }

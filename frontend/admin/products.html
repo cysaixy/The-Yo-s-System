@@ -985,7 +985,7 @@ function renderMenuItems() {
   tbody.innerHTML = menuItems.map(i => {
     // Use calculated capacity for recipe-tracked items
     const stockDisplay = i.is_calculated 
-      ? `<span class="stock-qty" title="Calculated from ingredients">${i.available_quantity ?? '0'} <span style="color:var(--accent);font-size:0.7rem;">⚡</span></span>`
+      ? `<span class="stock-qty" title="Calculated from ingredients">${i.available_quantity ?? '0'} <span style="color:var(--accent);display:inline-flex;align-items:center;margin-left:2px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span></span>`
       : `<span class="stock-qty">${i.stock_quantity ?? '0'}</span>`;
     
     return `
