@@ -358,6 +358,12 @@
 .inv-btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
 .inv-btn-danger:hover { background: #a3271b; }
 .inv-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.inv-sku-btn {
+  background: none; border: none; color: var(--brass-dark); font-size: 0.72rem;
+  font-weight: 700; cursor: pointer; padding: 2px 4px; border-radius: 4px;
+  display: inline-flex; align-items: center; transition: opacity .15s ease;
+}
+.inv-sku-btn:hover { opacity: 0.8; text-decoration: underline; }
 
 @media (max-width: 900px) {
   .inv-summary-row { grid-template-columns: 1fr 1fr; }
@@ -406,6 +412,66 @@ const INVENTORY_CATEGORIES = [
 const PREDEFINED_UNITS = [
   "pcs", "kg", "g", "L", "ml", "pack", "box", "bottle", "can", "sachet", "tray", "dozen"
 ];
+
+const CATEGORY_PREFIX_MAP = {
+  "Coffee & Espresso": "COF",
+  "Milk & Dairy": "MLK",
+  "Non-Dairy & Plant-Based": "NDP",
+  "Tea & Matcha": "TEA",
+  "Syrups & Flavorings": "SYR",
+  "Powders & Blends": "POW",
+  "Sauces & Toppings": "SAU",
+  "Sweeteners": "SWT",
+  "Fruits & Fresh Ingredients": "FRU",
+  "Rice, Grains & Noodles": "RGN",
+  "Meat & Protein": "MEA",
+  "Vegetables": "VEG",
+  "Bread & Bakery": "BAK",
+  "Condiments": "CND",
+  "Packaging": "PKG",
+  "Cleaning & Sanitation": "CLN",
+  "Other Supplies": "OTH"
+};
+
+function getCategoryPrefix(category) {
+  if (CATEGORY_PREFIX_MAP[category]) return CATEGORY_PREFIX_MAP[category];
+  const clean = (category || "ITEM").replace(/[^a-zA-Z0-9 ]/g, "").trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length >= 3) {
+    return (words[0][0] + words[1][0] + words[2][0]).toUpperCase();
+  } else if (words.length === 2) {
+    return (words[0].slice(0, 2) + words[1][0]).toUpperCase();
+  } else {
+    return (clean.slice(0, 3) || "ITM").toUpperCase().padEnd(3, "X");
+  }
+}
+
+function generateNextSku(category, excludeId = null) {
+  const prefix = getCategoryPrefix(category);
+  let maxNum = 0;
+  const existingSet = new Set();
+  const pattern = new RegExp("^" + prefix + "[-_]?([0-9]+)$", "i");
+
+  (allItems || []).forEach(item => {
+    if (!item.sku) return;
+    if (excludeId && String(item.id) === String(excludeId)) return;
+    const s = item.sku.trim();
+    existingSet.add(s.toUpperCase());
+    const match = s.match(pattern);
+    if (match && match[1]) {
+      const n = parseInt(match[1], 10);
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    }
+  });
+
+  let nextNum = maxNum + 1;
+  let candidate = prefix + "-" + String(nextNum).padStart(3, "0");
+  while (existingSet.has(candidate.toUpperCase())) {
+    nextNum++;
+    candidate = prefix + "-" + String(nextNum).padStart(3, "0");
+  }
+  return candidate;
+}
 
 const session = renderAdminShell({ active: 'inventory', title: 'Inventory' });
 if (session) init();
@@ -593,8 +659,12 @@ function buildPageHTML() {
         </select>
       </div>
       <div class="inv-form-field">
-        <label>SKU / Item Code</label>
-        <input type="text" id="itemSku" placeholder="e.g. COF-001">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <label for="itemSku">SKU / Item Code</label>
+          <button type="button" class="inv-sku-btn" id="itemSkuGenBtn" title="Auto-generate SKU based on category">Auto Code</button>
+        </div>
+        <input type="text" id="itemSku" placeholder="e.g. COF-001" autocomplete="off">
+        <div style="font-size:0.70rem; color:var(--ink-muted); margin-top:2px;" id="skuHint">Auto-assigned based on category</div>
       </div>
       <div class="inv-form-field">
         <label>Current Stock *</label>
@@ -711,6 +781,34 @@ function bindAll() {
   document.getElementById('itemUnit').addEventListener('change', e => {
     const customInp = document.getElementById('itemUnitCustom');
     customInp.style.display = e.target.value === 'custom' ? 'block' : 'none';
+  });
+
+  // Auto SKU generation when category changes or when Auto Code button is clicked
+  document.getElementById('itemCategory').addEventListener('change', e => {
+    const cat = e.target.value;
+    const skuInp = document.getElementById('itemSku');
+    if (!editingItem || !skuInp.value.trim()) {
+      if (cat) {
+        skuInp.value = generateNextSku(cat, editingItem ? editingItem.id : null);
+        const hintEl = document.getElementById('skuHint');
+        if (hintEl) hintEl.textContent = 'Auto-suggested for ' + cat;
+      } else {
+        const hintEl = document.getElementById('skuHint');
+        if (hintEl) hintEl.textContent = 'Auto-assigned based on category';
+      }
+    }
+  });
+
+  document.getElementById('itemSkuGenBtn').addEventListener('click', () => {
+    const cat = document.getElementById('itemCategory').value;
+    if (!cat) {
+      alert('Please select a category first to generate a code.');
+      return;
+    }
+    const nextCode = generateNextSku(cat, editingItem ? editingItem.id : null);
+    document.getElementById('itemSku').value = nextCode;
+    const hintEl = document.getElementById('skuHint');
+    if (hintEl) hintEl.textContent = 'Generated code: ' + nextCode;
   });
 
   // Open Add modal
@@ -945,6 +1043,11 @@ function openItemModal(item = null) {
     customInp.style.display = 'none';
   }
 
+  const skuHint = document.getElementById('skuHint');
+  if (skuHint) {
+    skuHint.textContent = item && item.sku ? 'Custom or category-assigned SKU' : 'Auto-assigned based on category';
+  }
+
   document.getElementById('itemError').classList.remove('show');
   openModal('itemModal');
 }
@@ -968,10 +1071,24 @@ async function saveItem() {
   if (isNaN(cost) || cost < 0)   { errEl.textContent = 'Enter valid unit cost.'; errEl.classList.add('show'); return; }
   if (isNaN(reorder) || reorder < 0) { errEl.textContent = 'Enter valid reorder level.'; errEl.classList.add('show'); return; }
 
+  let skuVal = document.getElementById('itemSku').value.trim();
+  if (!skuVal && cat) {
+    skuVal = generateNextSku(cat, id || null);
+    document.getElementById('itemSku').value = skuVal;
+  }
+  if (skuVal) {
+    const dup = allItems.find(i => (!id || String(i.id) !== String(id)) && (i.sku || '').trim().toLowerCase() === skuVal.toLowerCase());
+    if (dup) {
+      errEl.textContent = 'SKU / Item Code "' + skuVal + '" is already in use by "' + dup.name + '".';
+      errEl.classList.add('show');
+      return;
+    }
+  }
+
   const payload = {
     name,
     category: cat,
-    sku: document.getElementById('itemSku').value.trim() || null,
+    sku: skuVal || null,
     stock_quantity: stock,
     unit: unit || 'pcs',
     unit_cost: cost,

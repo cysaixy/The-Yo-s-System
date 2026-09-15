@@ -52,6 +52,66 @@ export async function overview(req, res, next) {
   }
 }
 
+const CATEGORY_PREFIX_MAP = {
+  "Coffee & Espresso": "COF",
+  "Milk & Dairy": "MLK",
+  "Non-Dairy & Plant-Based": "NDP",
+  "Tea & Matcha": "TEA",
+  "Syrups & Flavorings": "SYR",
+  "Powders & Blends": "POW",
+  "Sauces & Toppings": "SAU",
+  "Sweeteners": "SWT",
+  "Fruits & Fresh Ingredients": "FRU",
+  "Rice, Grains & Noodles": "RGN",
+  "Meat & Protein": "MEA",
+  "Vegetables": "VEG",
+  "Bread & Bakery": "BAK",
+  "Condiments": "CND",
+  "Packaging": "PKG",
+  "Cleaning & Sanitation": "CLN",
+  "Other Supplies": "OTH"
+};
+
+function getCategoryPrefix(category) {
+  if (CATEGORY_PREFIX_MAP[category]) return CATEGORY_PREFIX_MAP[category];
+  const clean = (category || "ITEM").replace(/[^a-zA-Z0-9 ]/g, "").trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length >= 3) {
+    return (words[0][0] + words[1][0] + words[2][0]).toUpperCase();
+  } else if (words.length === 2) {
+    return (words[0].slice(0, 2) + words[1][0]).toUpperCase();
+  } else {
+    return (clean.slice(0, 3) || "ITM").toUpperCase().padEnd(3, "X");
+  }
+}
+
+export async function generateUniqueSku(category, client = pool) {
+  const prefix = getCategoryPrefix(category);
+  const { rows } = await client.query(
+    "SELECT sku FROM inventory_items WHERE sku ILIKE $1",
+    [prefix + "%"]
+  );
+  let maxNum = 0;
+  const existingSet = new Set();
+  const pattern = new RegExp("^" + prefix + "[-_]?([0-9]+)$", "i");
+  rows.forEach(r => {
+    if (!r.sku) return;
+    existingSet.add(r.sku.toUpperCase());
+    const match = r.sku.match(pattern);
+    if (match && match[1]) {
+      const n = parseInt(match[1], 10);
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    }
+  });
+  let nextNum = maxNum + 1;
+  let candidate = prefix + "-" + String(nextNum).padStart(3, "0");
+  while (existingSet.has(candidate.toUpperCase())) {
+    nextNum++;
+    candidate = prefix + "-" + String(nextNum).padStart(3, "0");
+  }
+  return candidate;
+}
+
 // POST /api/admin/inventory/items
 export async function createItem(req, res, next) {
   try {
@@ -75,6 +135,22 @@ export async function createItem(req, res, next) {
       return res.status(400).json({ error: 'Stock quantity, unit cost, and reorder level must be non-negative numbers.' });
     }
 
+    // Auto-generate or validate unique SKU based on category
+    let finalSku = (sku || '').trim();
+    if (finalSku) {
+      const dup = await pool.query(
+        'SELECT id, name FROM inventory_items WHERE LOWER(sku) = LOWER($1) LIMIT 1',
+        [finalSku]
+      );
+      if (dup.rows.length > 0) {
+        return res.status(400).json({
+          error: `SKU / Item Code "${finalSku}" is already in use by "${dup.rows[0].name}".`
+        });
+      }
+    } else {
+      finalSku = await generateUniqueSku(category, pool);
+    }
+
     let status = 'in_stock';
     if (stock <= 0) status = 'out_of_stock';
     else if (stock <= reorder) status = 'below_reorder';
@@ -84,7 +160,7 @@ export async function createItem(req, res, next) {
       `INSERT INTO inventory_items (name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, status, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [name, category, sku || null, stock, unit || 'pcs', cost, reorder, supplier || null, status, notes || null]
+      [name, category, finalSku || null, stock, unit || 'pcs', cost, reorder, supplier || null, status, notes || null]
     );
 
     res.status(201).json({ item: rows[0] });
@@ -106,6 +182,22 @@ export async function updateItem(req, res, next) {
       return res.status(404).json({ error: 'Inventory item not found.' });
     }
     const current = existingRes.rows[0];
+
+    let finalSku = sku;
+    if (sku !== undefined && sku !== null) {
+      finalSku = sku.trim() || null;
+      if (finalSku) {
+        const dup = await pool.query(
+          'SELECT id, name FROM inventory_items WHERE LOWER(sku) = LOWER($1) AND id != $2 LIMIT 1',
+          [finalSku, id]
+        );
+        if (dup.rows.length > 0) {
+          return res.status(400).json({
+            error: `SKU / Item Code "${finalSku}" is already in use by "${dup.rows[0].name}".`
+          });
+        }
+      }
+    }
 
     const newStock = stock_quantity !== undefined ? Number(stock_quantity) : Number(current.stock_quantity);
     const newReorder = reorder_level !== undefined ? Number(reorder_level) : Number(current.reorder_level);
@@ -129,7 +221,7 @@ export async function updateItem(req, res, next) {
            notes = COALESCE($10, notes)
        WHERE id = $11
        RETURNING *`,
-      [name, category, sku, newStock, unit, unit_cost, newReorder, supplier, status, notes, id]
+      [name, category, finalSku, newStock, unit, unit_cost, newReorder, supplier, status, notes, id]
     );
 
     res.json({ item: rows[0] });
