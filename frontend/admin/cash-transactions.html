@@ -31,6 +31,9 @@
             <option value="out">Cash Out</option>
           </select>
         </div>
+        <div><label>Account</label>
+          <select id="filterAccount"><option value="">All</option></select>
+        </div>
       </div>
       <div class="stat-grid" id="txSummary">
         <div class="stat-card"><div class="label">Cash In</div><div class="value">₱0</div></div>
@@ -69,6 +72,9 @@
             <div class="form-field" style="grid-column:1/-1;">
               <label>Description (optional)</label><textarea id="txDesc"></textarea>
             </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Order ID (optional)</label><input type="number" id="txOrderId" placeholder="Link to order (e.g. POS Sale, Refund)">
+            </div>
           </div>
           <div class="modal-close-row">
             <button class="btn btn-outline" id="txCancelBtn">Cancel</button>
@@ -80,6 +86,7 @@
     `;
 
     document.getElementById('filterType').addEventListener('change', load);
+    document.getElementById('filterAccount').addEventListener('change', load);
     document.getElementById('newTxBtn').addEventListener('click', openModal);
     document.getElementById('txCancelBtn').addEventListener('click', () => toggleModal(false));
     document.getElementById('txSaveBtn').addEventListener('click', save);
@@ -94,13 +101,22 @@
     try {
       const res = await adminFetch('/api/admin/cash-accounts');
       const data = await res.json();
-      if (res.ok) accounts = (data.accounts || []).filter(a => a.status === 'active');
+      if (res.ok) {
+        accounts = (data.accounts || []).filter(a => a.status === 'active');
+        const select = document.getElementById('filterAccount');
+        select.innerHTML = '<option value="">All</option>' +
+          accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+      }
     } catch { /* modal will just show an empty select if this fails */ }
   }
 
   async function load() {
     const type = document.getElementById('filterType').value;
-    const qs = type ? `?transaction_type=${type}` : '';
+    const accountId = document.getElementById('filterAccount').value;
+    const params = new URLSearchParams();
+    if (type) params.set('transaction_type', type);
+    if (accountId) params.set('cash_account_id', accountId);
+    const qs = params.toString() ? `?${params.toString()}` : '';
     try {
       const res = await adminFetch(`/api/admin/cash-transactions${qs}`);
       const data = await res.json();
@@ -110,7 +126,7 @@
       const wrap = document.getElementById('txWrap');
       wrap.innerHTML = rows.length
         ? `<table class="admin-table">
-            <thead><tr><th>Account</th><th>Type</th><th>Category</th><th>Amount</th><th>Staff</th><th>Date</th><th>Description</th></tr></thead>
+            <thead><tr><th>Account</th><th>Type</th><th>Category</th><th>Amount</th><th>Staff</th><th>Date</th><th>Order</th><th>Description</th></tr></thead>
             <tbody>${rows.map(t => `
               <tr>
                 <td>${escapeHtml(t.account_name)}</td>
@@ -119,6 +135,7 @@
                 <td style="font-family:'Plus Jakarta Sans'; font-weight:700; color:${t.transaction_type === 'in' ? 'var(--success)' : 'var(--danger)'};">${t.transaction_type === 'in' ? '+' : '-'}${peso(t.amount)}</td>
                 <td>${t.staff_name || '—'}</td>
                 <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(t.transaction_date)}</td>
+                <td>${renderOrderLink(t)}</td>
                 <td style="font-size:0.8rem; color:var(--ink-muted); max-width:200px;">${escapeHtml(t.description || '—')}</td>
               </tr>`).join('')}</tbody>
           </table>`
@@ -126,6 +143,13 @@
     } catch (err) {
       document.getElementById('txWrap').innerHTML = `<div class="admin-error">⚠ ${err.message}</div>`;
     }
+  }
+
+  function renderOrderLink(t) {
+    if (!t.order_id) return '<span style="color:var(--ink-muted);font-size:0.75rem;">—</span>';
+    const typeLabel = t.category === 'POS Sale' ? 'Sale' : (t.category === 'POS Refund' ? 'Refund' : 'Order');
+    const typeClass = t.category === 'POS Sale' ? 'pill-success' : (t.category === 'POS Refund' ? 'pill-danger' : 'pill-neutral');
+    return `<a href="sales.html" class="pill ${typeClass}" style="text-decoration:none;font-size:0.7rem;padding:2px 8px;" data-order-id="${t.order_id}">#${t.order_id} ${typeLabel}</a>`;
   }
 
   function renderSummary(rows) {
@@ -147,6 +171,7 @@
     document.getElementById('txAmount').value = '';
     document.getElementById('txCategory').value = '';
     document.getElementById('txDesc').value = '';
+    document.getElementById('txOrderId').value = '';
     document.getElementById('txError').style.display = 'none';
     toggleModal(true);
   }
@@ -159,6 +184,7 @@
       amount: Number(document.getElementById('txAmount').value),
       category: document.getElementById('txCategory').value.trim() || null,
       description: document.getElementById('txDesc').value.trim() || null,
+      order_id: document.getElementById('txOrderId').value ? Number(document.getElementById('txOrderId').value) : null,
     };
 
     if (!payload.cash_account_id || !payload.amount || payload.amount <= 0) {

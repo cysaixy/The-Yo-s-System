@@ -910,26 +910,167 @@
     const el = document.getElementById('sec-cash-overview');
     try {
       const d = await getJSON('/api/admin/dashboard/cash-overview');
+      if (!d.drawer_configured) {
+        el.innerHTML = `
+          <div class="panel-empty">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.4;"><path d="M21 12V7H5"/><path d="M3 5v14h18"/><path d="M18 12a2 2 0 0 0 0-4 2 2 0 0 0 0 4"/></svg>
+            <p class="loe-title">No Default Drawer Configured</p>
+            <p class="loe-sub">Create a cash account and set it as the default drawer in <a href="cash-accounts.html" style="color:var(--brass);">Cash Accounts</a> to track daily cash.</p>
+          </div>`;
+        return;
+      }
+
+      const varianceClass = d.variance > 0 ? 'pill-success' : (d.variance < 0 ? 'pill-danger' : 'pill-neutral');
+      const variancePrefix = d.variance > 0 ? '+' : '';
+
+      let actionButtons = '';
+      if (!d.reconciliation_closed) {
+        actionButtons = `
+          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn" id="closeDrawerBtn">Close Drawer (Count)</button>
+            <button class="btn btn-outline" id="viewReconciliationBtn">View Details</button>
+          </div>`;
+      } else {
+        actionButtons = `
+          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+            <span class="pill pill-success" style="font-size:0.8rem;">Drawer Closed</span>
+            <span style="font-size:0.8rem;color:var(--ink-muted);align-self:center;">Counted: ${peso(d.counted_closing_balance)}</span>
+            <button class="btn btn-outline" id="viewReconciliationBtn">View Details</button>
+          </div>`;
+      }
+
       el.innerHTML = `
         <div class="stat-hero-row">
           <div class="stat-hero">
             <div class="label">Cash Sales Today</div>
             <div class="hero-row"><div class="value">${peso(d.cash_sales)}</div></div>
-            <div class="stat-note">${d.cash_sale_count} ${d.cash_sale_count === 1 ? 'sale' : 'sales'} · variance ${peso(d.variance)}</div>
+            <div class="stat-note">
+              ${d.cash_sale_count} ${d.cash_sale_count === 1 ? 'sale' : 'sales'}
+              ${d.cash_refunds > 0 ? ` · ${d.cash_refunds > 0 ? '<span class="pill pill-danger" style="font-size:0.65rem;padding:1px 6px;">Refunds: ' + peso(d.cash_refunds) + '</span>' : ''}` : ''}
+              · Variance <span class="pill ${varianceClass}" style="font-size:0.7rem;padding:2px 8px;">${variancePrefix}${peso(d.variance)}</span>
+            </div>
           </div>
           <div class="stat-secondary-grid cols-3">
             <div class="stat-card"><div class="label">Opening</div><div class="value">${peso(d.opening)}</div></div>
+            <div class="stat-card"><div class="label">Cash Sales</div><div class="value">${peso(d.cash_sales)}</div></div>
+            <div class="stat-card"><div class="label">Cash Refunds</div><div class="value">${peso(d.cash_refunds)}</div></div>
             <div class="stat-card"><div class="label">Cash In</div><div class="value">${peso(d.cash_in)}</div></div>
             <div class="stat-card"><div class="label">Cash Out</div><div class="value">${peso(d.cash_out)}</div></div>
             <div class="stat-card"><div class="label">Expected</div><div class="value">${peso(d.expected)}</div></div>
             <div class="stat-card"><div class="label">Actual</div><div class="value">${peso(d.actual)}</div></div>
             <div class="stat-card"><div class="label">Variance</div><div class="value">${peso(d.variance)}</div></div>
+            <div class="stat-card"><div class="label">Tx Count</div><div class="value">${d.tx_count}</div></div>
           </div>
+          ${actionButtons}
         </div>
       `;
+
+      if (!d.reconciliation_closed) {
+        document.getElementById('closeDrawerBtn').addEventListener('click', () => openCloseDrawerModal(d));
+      }
+      document.getElementById('viewReconciliationBtn').addEventListener('click', () => openReconciliationDetail(d));
     } catch (err) {
       el.innerHTML = lockBox(err.message);
     }
+  }
+
+  function openCloseDrawerModal(d) {
+    const existing = document.querySelector('.modal-backdrop');
+    if (existing) existing.remove();
+    const back = document.createElement('div');
+    back.className = 'modal-backdrop active';
+    back.innerHTML = `
+      <div class="modal-box" style="max-width:420px;">
+        <h3>Close Drawer — ${d.drawer_name}</h3>
+        <p style="font-size:0.85rem;color:var(--ink-muted);margin-bottom:16px;">Enter the physically counted cash in the drawer. This finalizes today's reconciliation.</p>
+        <div class="form-grid" style="margin-bottom:16px;">
+          <div class="form-field"><label>Opening Balance</label><div style="font-weight:700;font-size:1.1rem;">${peso(d.opening)}</div></div>
+          <div class="form-field"><label>Expected Closing</label><div style="font-weight:700;font-size:1.1rem;color:var(--brass-dark);">${peso(d.expected)}</div></div>
+          <div class="form-field"><label>Current System Balance</label><div style="font-weight:700;font-size:1.1rem;">${peso(d.actual)}</div></div>
+        </div>
+        <div class="form-field" style="grid-column:1/-1;">
+          <label>Counted Closing Balance (₱)</label>
+          <input type="number" step="0.01" id="countedCloseInput" placeholder="Enter counted amount" style="font-size:1.2rem;font-weight:700;">
+        </div>
+        <div class="form-field" style="grid-column:1/-1;">
+          <label>Notes (optional)</label>
+          <textarea id="closeNotes" placeholder="Any discrepancies or notes..."></textarea>
+        </div>
+        <div class="admin-error" id="closeError" style="display:none;padding:10px 0 0;text-align:left;"></div>
+        <div class="modal-close-row">
+          <button class="btn btn-outline" id="closeCancelBtn">Cancel</button>
+          <button class="btn" id="closeSaveBtn">Close Drawer</button>
+        </div>
+      </div>`;
+    document.body.appendChild(back);
+
+    const close = () => back.remove();
+    back.querySelector('#closeCancelBtn').addEventListener('click', close);
+    back.addEventListener('click', (e) => { if (e.target === back) close(); });
+    back.querySelector('#closeSaveBtn').addEventListener('click', async () => {
+      const counted = Number(back.querySelector('#countedCloseInput').value);
+      const notes = back.querySelector('#closeNotes').value.trim();
+      if (!Number.isFinite(counted) || counted < 0) {
+        const errEl = back.querySelector('#closeError');
+        errEl.textContent = 'Enter a valid non-negative amount.';
+        errEl.style.display = 'block';
+        return;
+      }
+      const saveBtn = back.querySelector('#closeSaveBtn');
+      saveBtn.disabled = true;
+      try {
+        const res = await adminFetch(`/api/admin/cash-accounts/${d.drawer_id}/reconciliations/close`, {
+          method: 'POST',
+          body: JSON.stringify({ counted_closing_balance: counted, notes: notes || null }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Could not close drawer.');
+        close();
+        loadCashOverview();
+      } catch (err) {
+        const errEl = back.querySelector('#closeError');
+        errEl.textContent = err.message;
+        errEl.style.display = 'block';
+        saveBtn.disabled = false;
+      }
+    });
+    back.querySelector('#countedCloseInput').focus();
+  }
+
+  function openReconciliationDetail(d) {
+    const existing = document.querySelector('.modal-backdrop');
+    if (existing) existing.remove();
+    const back = document.createElement('div');
+    back.className = 'modal-backdrop active';
+    back.innerHTML = `
+      <div class="modal-box" style="max-width:480px;">
+        <h3>Reconciliation Details — ${d.drawer_name}</h3>
+        <div class="form-grid" style="margin-bottom:16px;">
+          <div class="form-field"><label>Date</label><div>${new Date().toLocaleDateString('en-PH', { dateStyle: 'full' })}</div></div>
+          <div class="form-field"><label>Opening Balance</label><div style="font-weight:700;">${peso(d.opening)}</div></div>
+          <div class="form-field"><label>Cash Sales</label><div style="font-weight:700;">${peso(d.cash_sales)}</div></div>
+          <div class="form-field"><label>Cash Refunds</label><div style="font-weight:700;">${peso(d.cash_refunds)}</div></div>
+          <div class="form-field"><label>Cash In (Manual)</label><div>${peso(d.cash_in)}</div></div>
+          <div class="form-field"><label>Cash Out (Manual)</label><div>${peso(d.cash_out)}</div></div>
+          <div class="form-field"><label>Expected Closing</label><div style="font-weight:700;color:var(--brass-dark);">${peso(d.expected)}</div></div>
+          <div class="form-field"><label>Actual Balance</label><div style="font-weight:700;">${peso(d.actual)}</div></div>
+          <div class="form-field"><label>Variance</label><div style="font-weight:700;color:${d.variance > 0 ? 'var(--success)' : (d.variance < 0 ? 'var(--danger)' : 'var(--ink)')};">${d.variance > 0 ? '+' : ''}${peso(d.variance)}</div></div>
+          ${d.counted_closing_balance !== null ? `
+          <div class="form-field"><label>Counted Closing</label><div style="font-weight:700;">${peso(d.counted_closing_balance)}</div></div>
+          <div class="form-field"><label>Status</label><div><span class="pill pill-success">Closed</span></div></div>
+          ` : `
+          <div class="form-field"><label>Status</label><div><span class="pill pill-warning">Open</span></div></div>
+          `}
+        </div>
+        <div class="modal-close-row">
+          <button class="btn" id="reconCloseBtn">Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(back);
+
+    const close = () => back.remove();
+    back.querySelector('#reconCloseBtn').addEventListener('click', close);
+    back.addEventListener('click', (e) => { if (e.target === back) close(); });
   }
 
   /* ========== 7. Cash trend ========== */

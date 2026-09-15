@@ -90,14 +90,16 @@ model Bundle {
 }
 
 model CashAccount {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100)
-  accountType String   @map("account_type") @db.VarChar(50)
-  balance     Decimal  @db.Decimal(10, 2)
-  status      String   @db.VarChar(30)
-  createdAt   DateTime @default(now()) @map("created_at")
+  id               Int      @id @default(autoincrement())
+  name             String   @db.VarChar(100)
+  accountType      String   @map("account_type") @db.VarChar(50)
+  balance          Decimal  @db.Decimal(10, 2)
+  status           String   @db.VarChar(30)
+  isDefaultDrawer  Boolean  @default(false) @map("is_default_drawer")
+  createdAt        DateTime @default(now()) @map("created_at")
 
-  cashTransactions CashTransaction[]
+  cashTransactions    CashTransaction[]
+  dailyReconciliations DailyReconciliation[]
 
   @@map("cash_accounts")
 }
@@ -106,6 +108,7 @@ model CashTransaction {
   id              Int      @id @default(autoincrement())
   cashAccountId   Int      @map("cash_account_id")
   staffId         Int?     @map("staff_id")
+  orderId         Int?     @map("order_id")
   transactionType String   @map("transaction_type") @db.VarChar(30)
   category        String?  @db.VarChar(100)
   amount          Decimal  @db.Decimal(10, 2)
@@ -114,7 +117,9 @@ model CashTransaction {
 
   cashAccount CashAccount @relation(fields: [cashAccountId], references: [id])
   staff       Staff?      @relation(fields: [staffId], references: [id])
+  order       Order?      @relation(fields: [orderId], references: [id])
 
+  @@index([orderId], map: "cash_transactions_order_id_idx")
   @@map("cash_transactions")
 }
 
@@ -269,12 +274,13 @@ model Order {
   paymentMethod          String?   @map("payment_method") @db.VarChar(30)
   deliveryFeeStatus       String?   @map("delivery_fee_status") @db.VarChar(30)
 
-  customer       Customer     @relation(fields: [customerId], references: [id])
-  staff          Staff?       @relation("OrderCreator", fields: [staffId], references: [id])
-  handledByStaff Staff?       @relation("OrderHandler", fields: [handledByStaffId], references: [id])
-  reservation    Reservation? @relation(fields: [reservationId], references: [id])
-  orderItems  OrderItem[]
-  payments    Payment[]
+  customer         Customer          @relation(fields: [customerId], references: [id])
+  staff            Staff?            @relation("OrderCreator", fields: [staffId], references: [id])
+  handledByStaff   Staff?            @relation("OrderHandler", fields: [handledByStaffId], references: [id])
+  reservation      Reservation?      @relation(fields: [reservationId], references: [id])
+  orderItems       OrderItem[]
+  payments         Payment[]
+  cashTransactions CashTransaction[]
 
   @@index([handledByStaffId], map: "orders_handled_by_staff_id_idx")
   @@index([customerId], map: "orders_customer_id_idx")
@@ -336,11 +342,12 @@ model Staff {
   createdAt DateTime @default(now()) @map("created_at")
 
   staffPermissions      StaffPermission?
-  ordersCreated         Order[]           @relation("OrderCreator")
-  ordersHandled         Order[]           @relation("OrderHandler")
+  ordersCreated         Order[]               @relation("OrderCreator")
+  ordersHandled         Order[]               @relation("OrderHandler")
   inventoryLogs         InventoryLog[]
   stockIns              StockIn[]
   cashTransactions      CashTransaction[]
+  dailyReconciliations  DailyReconciliation[]
 
   @@map("staff")
 }
@@ -382,4 +389,23 @@ model StockIn {
   @@map("stock_in")
 }
 
+model DailyReconciliation {
+  id                    Int       @id @default(autoincrement())
+  cashAccountId         Int       @map("cash_account_id")
+  reconciliationDate    DateTime  @map("reconciliation_date") @db.Date
+  openingBalance        Decimal   @default(0) @map("opening_balance") @db.Decimal(10, 2)
+  countedClosingBalance Decimal?  @map("counted_closing_balance") @db.Decimal(10, 2)
+  closedByStaffId       Int?      @map("closed_by_staff_id")
+  closedAt              DateTime? @map("closed_at")
+  notes                 String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @map("updated_at")
+
+  cashAccount CashAccount @relation(fields: [cashAccountId], references: [id], onDelete: Cascade)
+  closedBy    Staff?      @relation(fields: [closedByStaffId], references: [id], onDelete: SetNull)
+
+  @@unique([cashAccountId, reconciliationDate], map: "daily_reconciliations_account_date_uq")
+  @@index([reconciliationDate], map: "daily_reconciliations_date_idx")
+  @@map("daily_reconciliations")
+}
 

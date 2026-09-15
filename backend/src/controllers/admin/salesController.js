@@ -1,6 +1,7 @@
 // src/controllers/admin/salesController.js
 import pool from '../../config/db.js';
 import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
+import { postCashOrderSale, reverseCashOrderSale } from '../../services/cashReconciliationService.js';
 
 const VALID_ORDER_TYPES = ['dine_in', 'pickup', 'delivery'];
 const VALID_PAYMENT_METHODS = ['cash', 'card', 'gcash', 'bank_transfer', 'other'];
@@ -373,6 +374,17 @@ export async function createPosOrder(req, res, next) {
       createdPayments.push(paymentResult.rows[0]);
     }
 
+    // Post cash payments to the default drawer
+    for (const payment of createdPayments) {
+      if (payment.payment_method === 'cash') {
+        await postCashOrderSale(client, {
+          orderId: order.id,
+          amount: Number(payment.amount),
+          staffId: req.staff.id,
+        });
+      }
+    }
+
     await client.query('COMMIT');
     res.status(201).json({
       order: {
@@ -605,6 +617,11 @@ export async function updateOrderStatus(req, res, next) {
       try {
         await client.query('BEGIN');
         await restoreOrderInventory(client, req.params.id, req.staff.id);
+        // Reverse any cash payment posted to the drawer for this order
+        await reverseCashOrderSale(client, {
+          orderId: Number(req.params.id),
+          staffId: req.staff.id,
+        });
         await client.query('COMMIT');
       } catch (err) {
         await client.query('ROLLBACK');

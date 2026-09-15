@@ -284,51 +284,128 @@ export async function salesTrend(req, res, next) {
    ================================================================ */
 export async function cashOverview(req, res, next) {
   try {
-    const [balRes, txRes, salesRes] = await Promise.all([
-      // The physical drawer balance (cash-type accounts only).
-      pool.query(
-        `SELECT COALESCE(SUM(balance), 0) AS current_balance
-         FROM cash_accounts
-         WHERE account_type = 'cash' AND status = 'active'`
-      ),
-      pool.query(
-        `SELECT COALESCE(SUM(amount) FILTER (WHERE transaction_type = 'in'), 0) AS cash_in,
-                COALESCE(SUM(amount) FILTER (WHERE transaction_type = 'out'), 0) AS cash_out,
-                COUNT(*)::int AS tx_count
-         FROM cash_transactions
-         WHERE transaction_date::date = CURRENT_DATE`
-      ),
-      pool.query(
-        `SELECT COALESCE(SUM(p.amount), 0) AS cash_sales,
-                COUNT(*)::int AS cash_sale_count
-         FROM payments p
-         JOIN orders o ON o.id = p.order_id
-         WHERE p.payment_method = 'cash' AND p.status = 'paid'
-           AND o.datetime_ordered::date = CURRENT_DATE`
-      ),
-    ]);
+    // Get the default drawer account
+    const { rows: drawerRows } = await pool.query(
+      `SELECT id, name, balance
+       FROM cash_accounts
+       WHERE is_default_drawer = TRUE AND status = 'active'`
+    );
 
-    const actual = round2(balRes.rows[0].current_balance);
-    const cashIn = round2(txRes.rows[0].cash_in);
-    const cashOut = round2(txRes.rows[0].cash_out);
-    const cashSales = round2(salesRes.rows[0].cash_sales);
+    if (!drawerRows[0]) {
+      return res.json({
+        opening: 0,
+        cash_sales: 0,
+        cash_sale_count: 0,
+        cash_in: 0,
+        cash_out: 0,
+        expected: 0,
+        actual: 0,
+        variance: 0,
+        tx_count: 0,
+        drawer_configured: false,
+      });
+    }
 
-    // Opening balance = current balance backed out of today's manual
-    // movements. Expected = opening + everything that should have arrived.
-    const opening = round2(actual - cashIn + cashOut);
-    const expected = round2(opening + cashSales + cashIn - cashOut);
+    const drawer = drawerRows[0];
+
+    // Get or create today's reconciliation
+    const { rows: recRows } = await pool.query(
+      `SELECT * FROM daily_reconciliations
+       WHERE cash_account_id = $1 AND reconciliation_date = CURRENT_DATE`,
+      [drawer.id]
+    );
+
+    let reconciliation;
+    if (recRows[0]) {
+      reconciliation = recRows[0];
+    } else {
+      // Create reconciliation with opening balance from last count or current balance
+      const { rows: prior } = await pool.query(
+        `SELECT counted_closing_balance
+         FROM daily_reconciliations
+         WHERE cash_account_id = $1
+           AND reconciliation_date < CURRENT_DATE
+           AND counted_closing_balance IS NOT NULL
+         ORDER BY reconciliation_date DESC
+         LIMIT 1`,
+        [drawer.id]
+      );
+
+      const openingBalance = prior[0] ? Number(prior[0].counted_closing_balance) : Number(drawer.balance);
+
+      await pool.query(
+        `INSERT INTO daily_reconciliations (cash_account_id, reconciliation_date, opening_balance)
+         VALUES ($1, CURRENT_DATE, $2)
+         ON CONFLICT (cash_account_id, reconciliation_date) DO NOTHING`,
+        [drawer.id, openingBalance]
+      );
+
+      const { rows: created } = await pool.query(
+        `SELECT * FROM daily_reconciliations
+         WHERE cash_account_id = $1 AND reconciliation_date = CURRENT_DATE`,
+        [drawer.id]
+      );
+      reconciliation = created[0];
+    }
+
+    // Get today's cash transactions (manual in/out)
+    const { rows: txRows } = await pool.query(
+      `SELECT COALESCE(SUM(amount) FILTER (WHERE transaction_type = 'in'), 0) AS cash_in,
+              COALESCE(SUM(amount) FILTER (WHERE transaction_type = 'out'), 0) AS cash_out,
+              COUNT(*)::int AS tx_count
+       FROM cash_transactions
+       WHERE cash_account_id = $1 AND transaction_date::date = CURRENT_DATE`,
+      [drawer.id]
+    );
+
+    // Get today's cash sales (POS payments)
+    const { rows: salesRows } = await pool.query(
+      `SELECT COALESCE(SUM(p.amount), 0) AS cash_sales,
+              COUNT(*)::int AS cash_sale_count
+       FROM payments p
+       JOIN orders o ON o.id = p.order_id
+       JOIN cash_transactions ct ON ct.order_id = o.id AND ct.cash_account_id = $1
+       WHERE p.payment_method = 'cash' AND p.status = 'paid'
+         AND o.datetime_ordered::date = CURRENT_DATE`,
+      [drawer.id]
+    );
+
+    // Get today's cash refunds (cancellations)
+    const { rows: refundRows } = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) AS cash_refunds
+       FROM cash_transactions
+       WHERE cash_account_id = $1
+         AND transaction_type = 'out'
+         AND category = 'POS Refund'
+         AND transaction_date::date = CURRENT_DATE`,
+      [drawer.id]
+    );
+
+    const opening = round2(Number(reconciliation.opening_balance));
+    const cashIn = round2(Number(txRows[0].cash_in));
+    const cashOut = round2(Number(txRows[0].cash_out));
+    const cashSales = round2(Number(salesRows[0].cash_sales));
+    const cashRefunds = round2(Number(refundRows[0].cash_refunds));
+    const actual = round2(Number(drawer.balance));
+    const expected = round2(opening + cashSales - cashRefunds + cashIn - cashOut);
     const variance = round2(actual - expected);
 
     res.json({
+      drawer_id: drawer.id,
+      drawer_name: drawer.name,
       opening,
       cash_sales: cashSales,
-      cash_sale_count: num(salesRes.rows[0].cash_sale_count),
+      cash_sale_count: num(salesRows[0].cash_sale_count),
+      cash_refunds: cashRefunds,
       cash_in: cashIn,
       cash_out: cashOut,
       expected,
       actual,
       variance,
-      tx_count: num(txRes.rows[0].tx_count),
+      tx_count: num(txRows[0].tx_count),
+      reconciliation_closed: reconciliation.counted_closing_balance !== null,
+      counted_closing_balance: reconciliation.counted_closing_balance ? round2(Number(reconciliation.counted_closing_balance)) : null,
+drawer_configured: true,
     });
   } catch (err) {
     next(err);

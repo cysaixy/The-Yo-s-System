@@ -15,6 +15,17 @@ import { initTables } from "./src/config/initTables.js";
 
 const PORT = process.env.PORT || 3000;
 
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
 // Serve the frontend from the same server as the API, so the pages load
 // from http://localhost:3000 instead of a separate static server.
 //   /frontend/admin/reservations.html  -> frontend/admin/reservations.html
@@ -35,8 +46,13 @@ const startServer = async () => {
     console.log("Connected to database");
     await initTables();
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
+      console.log(`Server address:`, server.address());
+    });
+
+server.on('error', (err) => {
+      console.error('Server error:', err);
     });
   } catch (error) {
     console.error("Failed to connect to the database:", error.message);

@@ -105,7 +105,7 @@
     }
     wrap.innerHTML = `
       <table class="admin-table">
-        <thead><tr><th>Name</th><th>Type</th><th>Balance</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Name</th><th>Type</th><th>Balance</th><th>Status</th><th>Drawer</th><th>Created</th><th>Actions</th></tr></thead>
         <tbody>
           ${accounts.map(a => `
             <tr>
@@ -113,6 +113,13 @@
               <td><span class="pill pill-neutral">${a.account_type}</span></td>
               <td style="font-family:'Plus Jakarta Sans'; font-weight:700;">${peso(a.balance)}</td>
               <td><span class="pill ${a.status === 'active' ? 'pill-success' : 'pill-neutral'}">${a.status}</span></td>
+              <td>
+                ${a.is_default_drawer
+                  ? '<span class="pill pill-warning" style="background:var(--brass-light);color:var(--brass-dark);">Default Drawer</span>'
+                  : (a.account_type === 'cash' && a.status === 'active'
+                      ? '<button class="btn small set-drawer-btn" data-id="' + a.id + '">Set as Drawer</button>'
+                      : '<span style="color:var(--ink-muted);font-size:0.75rem;">—</span>')}
+              </td>
               <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(a.created_at, { dateStyle: 'medium' })}</td>
               <td><div class="row-actions">
                 <button class="edit-acct-btn" data-id="${a.id}">Edit</button>
@@ -124,6 +131,23 @@
     `;
     wrap.querySelectorAll('.edit-acct-btn').forEach(btn => btn.addEventListener('click', () => openModal(btn.dataset.id)));
     wrap.querySelectorAll('.del-acct-btn').forEach(btn => btn.addEventListener('click', () => remove(btn.dataset.id)));
+    wrap.querySelectorAll('.set-drawer-btn').forEach(btn => btn.addEventListener('click', () => setAsDrawer(btn.dataset.id)));
+  }
+
+  async function setAsDrawer(id) {
+    const ok = await confirmDialog('Set this account as the default POS drawer? Only one account can be the default drawer at a time.', { confirmLabel: 'Set as Drawer', danger: false });
+    if (!ok) return;
+    try {
+      const res = await adminFetch(`/api/admin/cash-accounts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ is_default_drawer: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not set as drawer.');
+      load();
+    } catch (err) {
+      showAlert(err.message, { title: 'Failed to set drawer' });
+    }
   }
 
   function openModal(id) {
@@ -150,23 +174,21 @@
     const errEl = document.getElementById('acctError');
     try {
       let res;
+      const payload = {
+        name: document.getElementById('acctName').value.trim(),
+        account_type: document.getElementById('acctType').value,
+      };
       if (id) {
+        payload.status = document.getElementById('acctStatus').value;
         res = await adminFetch(`/api/admin/cash-accounts/${id}`, {
           method: 'PUT',
-          body: JSON.stringify({
-            name: document.getElementById('acctName').value.trim(),
-            account_type: document.getElementById('acctType').value,
-            status: document.getElementById('acctStatus').value,
-          }),
+          body: JSON.stringify(payload),
         });
       } else {
+        payload.balance = Number(document.getElementById('acctBalance').value) || 0;
         res = await adminFetch('/api/admin/cash-accounts', {
           method: 'POST',
-          body: JSON.stringify({
-            name: document.getElementById('acctName').value.trim(),
-            account_type: document.getElementById('acctType').value,
-            balance: Number(document.getElementById('acctBalance').value) || 0,
-          }),
+          body: JSON.stringify(payload),
         });
       }
       const data = await res.json();
