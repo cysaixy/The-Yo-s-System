@@ -1,5 +1,6 @@
 // src/controllers/admin/dashboardController.js
 import pool from '../../config/db.js';
+import { getOrCreateTodayReconciliation } from '../../services/cashReconciliationService.js';
 
 // Every order type the POS and online ordering can produce. The dashboard
 // always reports all five so a missing type shows a clean ₱0 row instead
@@ -296,6 +297,7 @@ export async function cashOverview(req, res, next) {
         opening: 0,
         cash_sales: 0,
         cash_sale_count: 0,
+        cash_refunds: 0,
         cash_in: 0,
         cash_out: 0,
         expected: 0,
@@ -308,84 +310,33 @@ export async function cashOverview(req, res, next) {
 
     const drawer = drawerRows[0];
 
-    // Get or create today's reconciliation
-    const { rows: recRows } = await pool.query(
-      `SELECT * FROM daily_reconciliations
-       WHERE cash_account_id = $1 AND reconciliation_date = CURRENT_DATE`,
-      [drawer.id]
-    );
+    // Get or create today's reconciliation using shared service
+    const reconciliation = await getOrCreateTodayReconciliation(pool, drawer.id);
 
-    let reconciliation;
-    if (recRows[0]) {
-      reconciliation = recRows[0];
-    } else {
-      // Create reconciliation with opening balance from last count or current balance
-      const { rows: prior } = await pool.query(
-        `SELECT counted_closing_balance
-         FROM daily_reconciliations
-         WHERE cash_account_id = $1
-           AND reconciliation_date < CURRENT_DATE
-           AND counted_closing_balance IS NOT NULL
-         ORDER BY reconciliation_date DESC
-         LIMIT 1`,
-        [drawer.id]
-      );
-
-      const openingBalance = prior[0] ? Number(prior[0].counted_closing_balance) : Number(drawer.balance);
-
-      await pool.query(
-        `INSERT INTO daily_reconciliations (cash_account_id, reconciliation_date, opening_balance)
-         VALUES ($1, CURRENT_DATE, $2)
-         ON CONFLICT (cash_account_id, reconciliation_date) DO NOTHING`,
-        [drawer.id, openingBalance]
-      );
-
-      const { rows: created } = await pool.query(
-        `SELECT * FROM daily_reconciliations
-         WHERE cash_account_id = $1 AND reconciliation_date = CURRENT_DATE`,
-        [drawer.id]
-      );
-      reconciliation = created[0];
-    }
-
-    // Get today's cash transactions (manual in/out)
+    // Get today's cash transactions from cash_transactions (authoritative source)
+    // - cash_sales: POS Sale category
+    // - cash_refunds: POS Refund category
+    // - manual cash_in/out: order_id IS NULL
     const { rows: txRows } = await pool.query(
-      `SELECT COALESCE(SUM(amount) FILTER (WHERE transaction_type = 'in'), 0) AS cash_in,
-              COALESCE(SUM(amount) FILTER (WHERE transaction_type = 'out'), 0) AS cash_out,
-              COUNT(*)::int AS tx_count
+      `SELECT
+          COALESCE(SUM(amount) FILTER (WHERE category = 'POS Sale'), 0) AS cash_sales,
+          COUNT(*) FILTER (WHERE category = 'POS Sale')::int AS cash_sale_count,
+          COALESCE(SUM(amount) FILTER (WHERE category = 'POS Refund'), 0) AS cash_refunds,
+          COALESCE(SUM(amount) FILTER (WHERE order_id IS NULL AND transaction_type = 'in'), 0) AS cash_in,
+          COALESCE(SUM(amount) FILTER (WHERE order_id IS NULL AND transaction_type = 'out'), 0) AS cash_out,
+          COUNT(*) FILTER (WHERE order_id IS NULL)::int AS manual_tx_count
        FROM cash_transactions
        WHERE cash_account_id = $1 AND transaction_date::date = CURRENT_DATE`,
       [drawer.id]
     );
 
-    // Get today's cash sales (POS payments)
-    const { rows: salesRows } = await pool.query(
-      `SELECT COALESCE(SUM(p.amount), 0) AS cash_sales,
-              COUNT(*)::int AS cash_sale_count
-       FROM payments p
-       JOIN orders o ON o.id = p.order_id
-       JOIN cash_transactions ct ON ct.order_id = o.id AND ct.cash_account_id = $1
-       WHERE p.payment_method = 'cash' AND p.status = 'paid'
-         AND o.datetime_ordered::date = CURRENT_DATE`,
-      [drawer.id]
-    );
-
-    // Get today's cash refunds (cancellations)
-    const { rows: refundRows } = await pool.query(
-      `SELECT COALESCE(SUM(amount), 0) AS cash_refunds
-       FROM cash_transactions
-       WHERE cash_account_id = $1
-         AND transaction_type = 'out'
-         AND category = 'POS Refund'
-         AND transaction_date::date = CURRENT_DATE`,
-      [drawer.id]
-    );
-
     const opening = round2(Number(reconciliation.opening_balance));
+    const cashSales = round2(Number(txRows[0].cash_sales));
+    const cashSaleCount = num(txRows[0].cash_sale_count);
+    const cashRefunds = round2(Number(txRows[0].cash_refunds));
     const cashIn = round2(Number(txRows[0].cash_in));
     const cashOut = round2(Number(txRows[0].cash_out));
-    const cashSales = round2(Number(salesRows[0].cash_sales));
-    const cashRefunds = round2(Number(refundRows[0].cash_refunds));
+    const manualTxCount = num(txRows[0].manual_tx_count);
     const actual = round2(Number(drawer.balance));
     const expected = round2(opening + cashSales - cashRefunds + cashIn - cashOut);
     const variance = round2(actual - expected);
@@ -395,17 +346,17 @@ export async function cashOverview(req, res, next) {
       drawer_name: drawer.name,
       opening,
       cash_sales: cashSales,
-      cash_sale_count: num(salesRows[0].cash_sale_count),
+      cash_sale_count: cashSaleCount,
       cash_refunds: cashRefunds,
       cash_in: cashIn,
       cash_out: cashOut,
       expected,
       actual,
       variance,
-      tx_count: num(txRows[0].tx_count),
+      tx_count: manualTxCount,
       reconciliation_closed: reconciliation.counted_closing_balance !== null,
       counted_closing_balance: reconciliation.counted_closing_balance ? round2(Number(reconciliation.counted_closing_balance)) : null,
-drawer_configured: true,
+      drawer_configured: true,
     });
   } catch (err) {
     next(err);
@@ -421,29 +372,26 @@ export async function cashTrend(req, res, next) {
       `WITH days AS (
          SELECT generate_series(CURRENT_DATE - 14, CURRENT_DATE, '1 day')::date AS day
        ),
-       ins AS (
-         SELECT transaction_date::date AS day, SUM(amount) AS amt
-         FROM cash_transactions WHERE transaction_type = 'in' GROUP BY 1
-       ),
-       outs AS (
-         SELECT transaction_date::date AS day, SUM(amount) AS amt
-         FROM cash_transactions WHERE transaction_type = 'out' GROUP BY 1
-       ),
-       cash_sales AS (
-         SELECT o.datetime_ordered::date AS day, SUM(p.amount) AS amt
-         FROM payments p
-         JOIN orders o ON o.id = p.order_id
-         WHERE p.payment_method = 'cash' AND p.status = 'paid'
+       tx AS (
+         SELECT
+           transaction_date::date AS day,
+           SUM(amount) FILTER (WHERE category = 'POS Sale') AS cash_sales,
+           SUM(amount) FILTER (WHERE category = 'POS Refund') AS cash_refunds,
+           SUM(amount) FILTER (WHERE order_id IS NULL AND transaction_type = 'in') AS cash_in,
+           SUM(amount) FILTER (WHERE order_id IS NULL AND transaction_type = 'out') AS cash_out
+         FROM cash_transactions
+         WHERE cash_account_id = (
+           SELECT id FROM cash_accounts WHERE is_default_drawer = TRUE AND status = 'active'
+         )
          GROUP BY 1
        )
        SELECT to_char(d.day, 'YYYY-MM-DD') AS date,
-              COALESCE(i.amt, 0) AS cash_in,
-              COALESCE(o.amt, 0) AS cash_out,
-              COALESCE(s.amt, 0) AS cash_sales
+              COALESCE(t.cash_in, 0) AS cash_in,
+              COALESCE(t.cash_out, 0) AS cash_out,
+              COALESCE(t.cash_sales, 0) AS cash_sales,
+              COALESCE(t.cash_refunds, 0) AS cash_refunds
        FROM days d
-       LEFT JOIN ins i ON i.day = d.day
-       LEFT JOIN outs o ON o.day = d.day
-       LEFT JOIN cash_sales s ON s.day = d.day
+       LEFT JOIN tx t ON t.day = d.day
        ORDER BY d.day`
     );
 
@@ -453,6 +401,7 @@ export async function cashTrend(req, res, next) {
         cash_in: round2(r.cash_in),
         cash_out: round2(r.cash_out),
         cash_sales: round2(r.cash_sales),
+        cash_refunds: round2(r.cash_refunds),
       })),
     });
   } catch (err) {

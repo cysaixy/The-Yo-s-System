@@ -1,5 +1,6 @@
 // src/controllers/admin/cashAccountsController.js
 import pool from '../../config/db.js';
+import { getOrCreateTodayReconciliation } from '../../services/cashReconciliationService.js';
 
 const VALID_TYPES = ['cash', 'bank', 'ewallet'];
 
@@ -146,47 +147,16 @@ export async function getOrCreateReconciliation(req, res, next) {
       return res.status(404).json({ error: 'Cash account not found.' });
     }
 
+    const reconciliation = await getOrCreateTodayReconciliation(pool, accountId);
+
     const { rows: existing } = await pool.query(
       `SELECT * FROM daily_reconciliations
        WHERE cash_account_id = $1 AND reconciliation_date = CURRENT_DATE`,
       [accountId]
     );
-    if (existing[0]) {
-      return res.json({ reconciliation: existing[0], created: false });
-    }
+    const created = !existing[0];
 
-    const { rows: prior } = await pool.query(
-      `SELECT counted_closing_balance
-       FROM daily_reconciliations
-       WHERE cash_account_id = $1
-         AND reconciliation_date < CURRENT_DATE
-         AND counted_closing_balance IS NOT NULL
-       ORDER BY reconciliation_date DESC
-       LIMIT 1`,
-      [accountId]
-    );
-
-    let openingBalance;
-    if (prior[0]) {
-      openingBalance = Number(prior[0].counted_closing_balance);
-    } else {
-      openingBalance = Number(account[0].balance);
-    }
-
-    await pool.query(
-      `INSERT INTO daily_reconciliations (cash_account_id, reconciliation_date, opening_balance)
-       VALUES ($1, CURRENT_DATE, $2)
-       ON CONFLICT (cash_account_id, reconciliation_date) DO NOTHING`,
-      [accountId, openingBalance]
-    );
-
-    const { rows: created } = await pool.query(
-      `SELECT * FROM daily_reconciliations
-       WHERE cash_account_id = $1 AND reconciliation_date = CURRENT_DATE`,
-      [accountId]
-    );
-
-    res.json({ reconciliation: created[0], created: true });
+    res.json({ reconciliation, created });
   } catch (err) {
     next(err);
   }
