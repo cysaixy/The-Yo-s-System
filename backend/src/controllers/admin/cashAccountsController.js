@@ -19,15 +19,15 @@ export async function listAccounts(req, res, next) {
 
 export async function createAccount(req, res, next) {
   try {
-    const { name, account_type, balance } = req.body;
+    const { name, account_type, balance, status } = req.body;
     if (!name || !VALID_TYPES.includes(account_type)) {
       return res.status(400).json({ error: `name is required and account_type must be one of: ${VALID_TYPES.join(', ')}` });
     }
     const { rows } = await pool.query(
-      `INSERT INTO cash_accounts (name, account_type, balance)
-       VALUES ($1, $2, $3)
+      `INSERT INTO cash_accounts (name, account_type, balance, status)
+       VALUES ($1, $2, $3, COALESCE($4, 'active'))
        RETURNING id, name, account_type, balance, status, is_default_drawer, created_at`,
-      [name, account_type, Number(balance) || 0]
+      [name, account_type, Number(balance) || 0, status || null]
     );
     res.status(201).json({ account: rows[0] });
   } catch (err) {
