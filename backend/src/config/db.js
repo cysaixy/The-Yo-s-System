@@ -15,7 +15,20 @@ const isLocal =
 
 const pool = connectionString
   ? new Pool({
-    connectionString: connectionString.replace(/\/?[^/]*$/, '/pooler'),
+    connectionString:
+      isLocal
+        ? connectionString
+        : !connectionString.includes('-pooler')
+          ? (() => {
+              const hostMatch = connectionString.match(/@([^\/]+)/);
+              if (hostMatch) {
+                const host = hostMatch[1];
+                const newHost = host.replace(/\.c-/, '-pooler.c-');
+                return connectionString.replace(host, newHost);
+              }
+              return connectionString;
+            })()
+          : connectionString,
     ssl: isLocal ? false : { rejectUnauthorized: true },
     max: 2,
     idleTimeoutMillis: 30_000,
