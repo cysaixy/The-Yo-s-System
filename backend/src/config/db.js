@@ -9,27 +9,15 @@ const connectionString =
   process.env.DATABASE_URL ||
   process.env.POSTGRES_URL;
 
-// TEMPORARY DIAGNOSTIC — remove once confirmed which host we're hitting.
-console.log(
-  '[db.js] Using connection string, host:',
-  connectionString ? connectionString.split('@')[1]?.split('/')[0] : 'NONE FOUND'
-);
-console.log(
-  '[db.js] Which env var won:',
-  process.env.POSTGRES_URL_DATABASE_URL ? 'POSTGRES_URL_DATABASE_URL' :
-    process.env.DATABASE_URL ? 'DATABASE_URL' :
-      process.env.POSTGRES_URL ? 'POSTGRES_URL' : 'NONE'
-);
-
 const isLocal =
   connectionString &&
   (connectionString.includes('localhost') || connectionString.includes('127.0.0.1'));
 
 const pool = connectionString
   ? new Pool({
-    connectionString,
+    connectionString: connectionString.replace(/\/?[^/]*$/, '/pooler'),
     ssl: isLocal ? false : { rejectUnauthorized: true },
-    max: 20,
+    max: 2,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
   })
@@ -39,7 +27,7 @@ const pool = connectionString
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     database: process.env.DB_NAME,
-    max: 20,
+    max: 2,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
   });
@@ -61,7 +49,6 @@ pool.on('connect', (client) => {
 
 pool.on('error', (err) => {
   console.error('Unexpected PostgreSQL pool error:', err);
-  process.exit(1);
 });
 
 export default pool;

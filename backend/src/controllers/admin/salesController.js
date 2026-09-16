@@ -313,13 +313,17 @@ export async function createPosOrder(req, res, next) {
       );
       const orderItemId = oiRows[0].id;
 
-      // Deduct the product's raw ingredients from inventory
+      // Deduct the product's raw ingredients from inventory (guarded: fail if insufficient stock)
       for (const comp of item.inventory_components) {
         const consumed = Number(comp.quantity) * item.quantity;
-        await client.query(
-          'UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2',
+        const { rowCount } = await client.query(
+          'UPDATE inventory_items SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND stock_quantity >= $1',
           [consumed, comp.inventory_id]
         );
+        if (rowCount === 0) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({ error: `${item.name} is out of stock (missing ingredient: ${comp.inventory_name})` });
+        }
         await client.query(
           `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
            VALUES ($1, $2, $3, 'sale', $4, $5)`,
@@ -334,13 +338,17 @@ export async function createPosOrder(req, res, next) {
           [orderItemId, a.id, a.name, a.quantity, a.price, a.cost, a.price * a.quantity]
         );
 
-        // Deduct the add-on's raw ingredients from inventory.
+        // Deduct the add-on's raw ingredients from inventory (guarded: fail if insufficient stock)
         for (const comp of a.inventory_components) {
           const consumed = Number(comp.quantity) * a.quantity;
-          await client.query(
-            'UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2',
+          const { rowCount } = await client.query(
+            'UPDATE inventory_items SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND stock_quantity >= $1',
             [consumed, comp.inventory_id]
           );
+          if (rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: `${a.name} is out of stock (missing ${comp.inventory_name})` });
+          }
           await client.query(
             `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
              VALUES ($1, $2, $3, 'sale', $4, $5)`,
@@ -349,12 +357,16 @@ export async function createPosOrder(req, res, next) {
         }
       }
 
-      // If the product has NO ingredients, track and deduct its direct stock on menu_items
+      // If the product has NO ingredients, track and deduct its direct stock on menu_items (guarded: fail if insufficient stock)
       if (!item.inventory_components || item.inventory_components.length === 0) {
-        await client.query(
-          'UPDATE menu_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2 AND stock_quantity IS NOT NULL',
+        const { rowCount } = await client.query(
+          'UPDATE menu_items SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND stock_quantity IS NOT NULL AND stock_quantity >= $1',
           [item.quantity, item.menu_id]
         );
+        if (rowCount === 0) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({ error: `${item.name} is out of stock.` });
+        }
         await client.query(
           `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
            VALUES (NULL, $1, $2, 'sale', $3, $4)`,

@@ -1,0 +1,1 @@
+& npx eslint src/config/db.js src/controllers/admin/salesController.js src/controllers/admin/productsController.js

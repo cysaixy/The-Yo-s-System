@@ -165,6 +165,8 @@ export const getMenuItem = async (req, res, next) => {
 export const createMenuItem = async (req, res, next) => {
   const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
     const { category_id, name, description, price, cost, image_url, stock_quantity, status, inventory_components } = req.body;
     if (!category_id || !name || price === undefined) {
       return res.status(400).json({ error: 'category_id, name, and price are required.' });
