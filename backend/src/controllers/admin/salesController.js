@@ -47,7 +47,7 @@ function salesDateExpression({ dateType = 'entry', storeHour = 0 } = {}) {
 // Build a reusable "period + status" WHERE fragment. The reporting date
 // can follow either order entry or payment time, with a configurable start
 // of business day (for example 05:00 through 04:59 the next calendar day).
-function periodWhere({ from, to, status = '!cancelled', dateType = 'entry', storeHour = 0 }, paramStart = 1) {
+export function periodWhere({ from, to, status = '!cancelled', dateType = 'entry', storeHour = 0 }, paramStart = 1) {
   const conditions = [];
   const params = [];
   const dateExpression = salesDateExpression({ dateType, storeHour });

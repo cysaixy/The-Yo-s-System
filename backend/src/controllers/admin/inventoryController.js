@@ -6,46 +6,16 @@ export async function overview(req, res, next) {
   try {
     let { rows } = await pool.query(
       `SELECT id, name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, notes,
-              CASE
-                WHEN stock_quantity <= 0 THEN 'out_of_stock'
-                WHEN stock_quantity <= reorder_level THEN 'below_reorder'
-                WHEN stock_quantity <= (reorder_level * 1.5) THEN 'low_stock'
-                ELSE 'in_stock'
-              END AS stock_status
-       FROM inventory_items
-       ORDER BY name ASC`
+               CASE
+                 WHEN stock_quantity <= 0 THEN 'out_of_stock'
+                 WHEN stock_quantity <= reorder_level THEN 'below_reorder'
+                 WHEN stock_quantity <= (reorder_level * 1.5) THEN 'low_stock'
+                 ELSE 'in_stock'
+               END AS stock_status
+        FROM inventory_items
+        ORDER BY name ASC`
     );
 
-    // If inventory_items is currently empty, seed standard cafe inventory items
-    if (rows.length === 0) {
-      await pool.query(`
-        INSERT INTO inventory_items (name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, status, notes)
-        VALUES
-        ('Espresso Beans', 'Coffee & Espresso', 'COF-001', 15.00, 'kg', 850.00, 3.00, 'ABC Coffee Supplier', 'in_stock', 'Premium Arabica espresso beans'),
-        ('Fresh Milk', 'Milk & Dairy', 'MLK-001', 24.00, 'L', 95.00, 5.00, 'Dairy Fresh Co.', 'in_stock', 'Whole fresh milk'),
-        ('Oat Milk', 'Non-Dairy & Plant-Based', 'MLK-002', 12.00, 'L', 150.00, 4.00, 'OatLy Inc.', 'in_stock', 'Barista edition oat milk'),
-        ('Matcha Powder', 'Tea & Matcha', 'TEA-001', 2.50, 'kg', 1200.00, 1.00, 'Uji Tea Imports', 'in_stock', 'Ceremonial grade matcha'),
-        ('Vanilla Syrup', 'Syrups & Flavorings', 'SYR-001', 8.00, 'bottle', 380.00, 2.00, 'Monin Philippines', 'in_stock', '750ml vanilla syrup'),
-        ('Caramel Sauce', 'Sauces & Toppings', 'SAU-001', 5.00, 'bottle', 420.00, 2.00, 'Torani Sauces', 'in_stock', 'Drizzle sauce'),
-        ('Brown Sugar', 'Sweeteners', 'SWT-001', 20.00, 'kg', 65.00, 5.00, 'Local Sugar Mill', 'in_stock', 'Raw brown sugar'),
-        ('Paper Cups 16oz', 'Packaging', 'PKG-001', 500.00, 'pcs', 4.50, 100.00, 'EcoPack Corp', 'in_stock', 'Double wall hot cups'),
-        ('Plastic Lids', 'Packaging', 'PKG-002', 450.00, 'pcs', 1.80, 100.00, 'EcoPack Corp', 'in_stock', 'Sip lids for 16oz')
-      `);
-
-      const seeded = await pool.query(
-        `SELECT id, name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, notes,
-                CASE
-                  WHEN stock_quantity <= 0 THEN 'out_of_stock'
-                  WHEN stock_quantity <= reorder_level THEN 'below_reorder'
-                  WHEN stock_quantity <= (reorder_level * 1.5) THEN 'low_stock'
-                  ELSE 'in_stock'
-                END AS stock_status
-         FROM inventory_items
-         ORDER BY name ASC`
-      );
-      rows = seeded.rows;
-    }
-    
     res.json({ items: rows });
   } catch (err) {
     next(err);

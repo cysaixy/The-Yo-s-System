@@ -7,6 +7,7 @@ dotenv.config();
 
 import errorHandler from './middlewares/error.middleware.js';
 import { globalLimiter, authLimiter } from './middlewares/rateLimit.middleware.js';
+import { requireStaffAuth } from './middlewares/auth.middleware.js';
 
 // Customer routes
 import customerMenuRoutes from './routes/customer/menu.routes.js';
@@ -51,8 +52,8 @@ app.use('/api', globalLimiter);
 
 import { getFirebaseAuth } from './config/firebase.js';
 
-// Health check - confirms the server + env vars are working
-app.get('/api/health', (req, res) => {
+// Health check — staff-only, hides Firebase credential details from public
+app.get('/api/health', requireStaffAuth, (req, res) => {
   let fbStatus = 'uninitialized';
   let fbError = null;
   try {

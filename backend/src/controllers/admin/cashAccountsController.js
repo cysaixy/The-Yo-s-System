@@ -147,14 +147,19 @@ export async function getOrCreateReconciliation(req, res, next) {
       return res.status(404).json({ error: 'Cash account not found.' });
     }
 
-    const reconciliation = await getOrCreateTodayReconciliation(pool, accountId);
-
-    const { rows: existing } = await pool.query(
+    // Check if reconciliation exists BEFORE ensuring it, so we can
+    // accurately report whether it was newly created.
+    const { rows: before } = await pool.query(
       `SELECT * FROM daily_reconciliations
        WHERE cash_account_id = $1 AND reconciliation_date = CURRENT_DATE`,
       [accountId]
     );
-    const created = !existing[0];
+    const existedBefore = !!before[0];
+
+    const reconciliation = await getOrCreateTodayReconciliation(pool, accountId);
+
+    // Row was newly created only if it didn't exist before this call
+    const created = !existedBefore;
 
     res.json({ reconciliation, created });
   } catch (err) {

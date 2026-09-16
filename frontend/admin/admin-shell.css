@@ -104,12 +104,15 @@ body {
 .sidebar-toggle {
   margin-left: auto;
   width: 30px; height: 30px;
+  flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--line); border-radius: 7px;
   background: transparent; color: var(--ink-muted);
   font-size: 1.1rem; line-height: 1; cursor: pointer;
   transition: all var(--transition-fast);
+  padding: 0;
 }
+.sidebar-toggle svg { display: block; }
 .sidebar-toggle:hover { background: var(--stone); color: var(--brass-dark); border-color: var(--line-strong); }
 
 /* Nav sections */
@@ -261,6 +264,25 @@ body {
   justify-content: center; padding: 11px 10px; margin-bottom: 4px;
 }
 .admin-shell.sidebar-collapsed .admin-nav-link::before { display: none; }
+/* Icon-only mode: center the icon on the link regardless of whether a
+   badge is present, and pin the badge to the icon's corner instead of
+   letting its margin-left:auto push it off to the far edge of the row
+   (that's what was making it float away from the icon). */
+.admin-shell.sidebar-collapsed .admin-nav-link .icon {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+}
+.admin-shell.sidebar-collapsed .admin-nav-badge {
+  position: absolute;
+  top: 6px; right: 8px;
+  margin-left: 0;
+  min-width: 16px; height: 16px;
+  padding: 0 3px;
+  font-size: 0.58rem;
+  border: 2px solid #fff;
+  box-sizing: border-box;
+}
 .admin-shell.sidebar-collapsed .admin-nav-link.active {
   background: linear-gradient(140deg, rgba(163,132,74,0.18), rgba(163,132,74,0.10));
   color: var(--brass-dark);

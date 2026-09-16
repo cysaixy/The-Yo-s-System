@@ -301,30 +301,6 @@ export const listAddons = async (req, res, next) => {
       'SELECT id, name, description, price, cost, category, status, created_at FROM add_ons ORDER BY name ASC'
     );
 
-    if (addons.length === 0) {
-      // Seed sample Add-Ons
-      const a1 = await pool.query('INSERT INTO add_ons (name, description, price, cost, category, status) VALUES (\'Extra Shot\', \'Additional espresso shot\', 30.00, 12.00, \'Coffee Add-On\', \'available\') RETURNING id');
-      const a2 = await pool.query('INSERT INTO add_ons (name, description, price, cost, category, status) VALUES (\'Oat Milk\', \'Substitute with barista oat milk\', 30.00, 20.00, \'Dairy Alternative\', \'available\') RETURNING id');
-      const a3 = await pool.query('INSERT INTO add_ons (name, description, price, cost, category, status) VALUES (\'Caramel Drizzle\', \'Extra caramel drizzle topping\', 20.00, 5.00, \'Toppings\', \'available\') RETURNING id');
-
-      // Link to first available inventory items if exist
-      const { rows: invs } = await pool.query('SELECT id, name FROM inventory_items LIMIT 5');
-      if (invs.length > 0) {
-        const espresso = invs.find(i => i.name.includes('Espresso')) || invs[0];
-        const oat      = invs.find(i => i.name.includes('Oat')) || invs[0];
-        const caramel  = invs.find(i => i.name.includes('Caramel')) || invs[0];
-
-        if (a1.rows[0] && espresso) await pool.query('INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 18, \'g\')', [a1.rows[0].id, espresso.id]);
-        if (a2.rows[0] && oat)      await pool.query('INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 150, \'ml\')', [a2.rows[0].id, oat.id]);
-        if (a3.rows[0] && caramel)  await pool.query('INSERT INTO addon_inventory (addon_id, inventory_id, quantity, unit) VALUES ($1, $2, 15, \'ml\')', [a3.rows[0].id, caramel.id]);
-      }
-
-      const refetched = await pool.query(
-        'SELECT id, name, description, price, cost, category, status, created_at FROM add_ons ORDER BY name ASC'
-      );
-      addons = refetched.rows;
-    }
-
     const result = await Promise.all(
       addons.map(async (addon) => {
         // Linked inventory items

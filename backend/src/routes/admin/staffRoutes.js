@@ -2,6 +2,7 @@ import express from 'express';
 const staffRouter = express.Router();
 import {login, logout, me, listStaff, getStaffById, createStaff, updateStaff, updatePermissions, changePassword}from '../../controllers/admin/staffController.js';
 import { requireStaffAuth } from '../../middlewares/auth.middleware.js';
+import { csrfMiddleware } from '../../middlewares/csrf.middleware.js';
 import { requireAdmin } from '../../middlewares/role.middleware.js';
 
 // POST /api/admin/staff/login — public, no auth required yet
@@ -10,6 +11,7 @@ staffRouter.post('/logout', logout);
 
 // Everything below requires a valid staff JWT
 staffRouter.use(requireStaffAuth);
+staffRouter.use(csrfMiddleware);
 
 // GET /api/admin/staff/me — any logged-in staff can see their own info
 staffRouter.get('/me', me);

@@ -4,7 +4,7 @@ dotenv.config();
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import pool from "./config/db.js";
+import pool from "./src/config/db.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

@@ -411,6 +411,7 @@ let menuItems    = [];   // [{ id, name, price, stock_quantity, status }]
 let inventoryItems = []; // [{ id, name, category, stock_quantity, unit, unit_cost }]
 let addons       = [];   // [{ id, name, price, cost, category, status, inventory_components, products }]
 let bundles      = [];   // [{ id, name, bundle_price, savings, status, products }]
+let searchQuery  = '';   // live filter applied to Menu Items + Add-Ons tables
 
 let deletingTarget = null; // { type, id, name }
 let categoryPickerActive = false;
@@ -842,6 +843,11 @@ function buildPageHTML() {
    BIND ALL EVENTS
    ================================================================ */
 function bindAll() {
+  document.getElementById('hdrSearch').addEventListener('input', e => {
+    searchQuery = e.target.value.trim().toLowerCase();
+    renderMenuItems();
+    renderAddons();
+  });
   // Main tabs
   document.querySelectorAll('.prd-tab').forEach(btn =>
     btn.addEventListener('click', () => switchMainTab(btn.dataset.ptab)));
@@ -978,11 +984,14 @@ function updateSummaryCards() {
    ================================================================ */
 function renderMenuItems() {
   const tbody = document.getElementById('itemsTbody');
-  if (!menuItems.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="prd-empty"><p>No menu products found.</p></div></td></tr>`;
+  const items = searchQuery
+    ? menuItems.filter(i => i.name.toLowerCase().includes(searchQuery))
+    : menuItems;
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="prd-empty"><p>${searchQuery ? 'No menu products match your search.' : 'No menu products found.'}</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = menuItems.map(i => {
+  tbody.innerHTML = items.map(i => {
     // Use calculated capacity for recipe-tracked items
     const stockDisplay = i.is_calculated 
       ? `<span class="stock-qty" title="Calculated from ingredients">${i.available_quantity ?? '0'} <span style="color:var(--accent);display:inline-flex;align-items:center;margin-left:2px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span></span>`
@@ -1041,11 +1050,14 @@ function renderCategories() {
 
 function renderAddons() {
   const tbody = document.getElementById('addonsTbody');
-  if (!addons.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="prd-empty"><p>No add-ons created yet.</p></div></td></tr>`;
+  const items = searchQuery
+    ? addons.filter(a => a.name.toLowerCase().includes(searchQuery))
+    : addons;
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="prd-empty"><p>${searchQuery ? 'No add-ons match your search.' : 'No add-ons created yet.'}</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = addons.map(a => {
+  tbody.innerHTML = items.map(a => {
     const invStr  = a.inventory_components?.map(c => `${escapeHtml(c.inventory_name)} (${c.quantity}${c.unit})`).join(', ') || 'None';
     const prodStr = a.products?.map(p => escapeHtml(p.product_name)).join(', ') || 'All Products';
     const stBadge = a.status === 'available' ? 'badge-available' : 'badge-unavailable';

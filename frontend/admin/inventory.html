@@ -322,18 +322,6 @@
   text-transform: uppercase; letter-spacing: 0.02em; margin: 0;
 }
 .inv-header-actions { display: flex; align-items: center; gap: 10px; }
-.inv-header-search { position: relative; }
-.inv-header-search svg {
-  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-  width: 14px; height: 14px; fill: none; stroke: var(--ink); opacity: 0.35;
-  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
-}
-.inv-header-search input {
-  padding: 9px 12px 9px 32px; border: 1px solid var(--line); border-radius: 7px;
-  background: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.83rem;
-  color: var(--ink); outline: none; width: 220px; transition: border-color .15s;
-}
-.inv-header-search input:focus { border-color: var(--brass); }
 
 /* ---- Buttons ---- */
 .inv-add-btn {
@@ -368,7 +356,6 @@
 @media (max-width: 900px) {
   .inv-summary-row { grid-template-columns: 1fr 1fr; }
   .inv-status-strip { gap: 16px; }
-  .inv-header-search input { width: 160px; }
 }
 @media (max-width: 640px) {
   .inv-summary-row { grid-template-columns: 1fr; }
@@ -512,10 +499,6 @@ function buildPageHTML() {
   <div class="inv-header-row">
     <h2>Inventory</h2>
     <div class="inv-header-actions">
-      <div class="inv-header-search">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="hdrSearch" placeholder="Search inventory…" autocomplete="off">
-      </div>
       <button class="inv-add-btn" id="openAddBtn">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         Add Item
@@ -765,15 +748,8 @@ function bindAll() {
   document.querySelectorAll('.inv-tab').forEach(btn =>
     btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
-  // Searches & filters
-  document.getElementById('hdrSearch').addEventListener('input', e => {
-    document.getElementById('stockSearch').value = e.target.value;
-    applyFilters();
-  });
-  document.getElementById('stockSearch').addEventListener('input', e => {
-    document.getElementById('hdrSearch').value = e.target.value;
-    applyFilters();
-  });
+  // Search & filters
+  document.getElementById('stockSearch').addEventListener('input', applyFilters);
   document.getElementById('catFilter').addEventListener('change', applyFilters);
   document.getElementById('statusFilter').addEventListener('change', applyFilters);
 

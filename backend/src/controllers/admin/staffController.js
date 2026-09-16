@@ -41,10 +41,21 @@ export async function login(req, res, next) {
     const token = generateStaffToken(staff.id);
     delete staff.password;
 
-    // Set httpOnly cookie
+    // Set httpOnly session cookie
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
-    res.json({ staff });
+    // Set separate non-httpOnly CSRF token cookie (frontend reads this,
+    // sends it back as X-CSRF-Token header on state-changing requests)
+    const csrfToken = crypto.randomBytes(32).toString('hex');
+    res.cookie('csrf_token', csrfToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      path: '/',
+    });
+
+    res.json({ staff, csrfToken });
   } catch (err) {
     next(err);
   }

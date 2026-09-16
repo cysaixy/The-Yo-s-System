@@ -100,8 +100,20 @@
   }
   .stx-filters input:focus, .stx-filters select:focus { outline: none; border-color: var(--brass); }
   .stx-filters input[type="search"] { width: 210px; cursor: text; }
+  .stx-search-wrap { position: relative; }
+  .stx-search-wrap svg {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    width: 14px; height: 14px; fill: none; stroke: var(--ink); opacity: 0.35;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+  }
+  .stx-search-wrap input[type="search"] { padding-left: 30px; }
   .stx-filters select { padding-right: 28px; }
   .stx-filters select.filtered { border-color: var(--brass); color: var(--brass-dark); background: rgba(163,132,74,.06); font-weight: 600; }
+  .stx-filters .stx-filter-dim {
+    padding: 7px 11px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--stone); font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.81rem; color: var(--ink); white-space: nowrap;
+  }
   .stx-actions { display: flex; align-items: center; gap: 6px; }
   .stx-icon-btn {
     width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
@@ -440,10 +452,11 @@
             <div class="stx-toolbar">
               <div class="stx-filters">
                 <span class="fb">Filter by</span>
-                <input type="search" id="filterSearch" placeholder="Search transactions" style="display:none;">
-                <select id="filterDimension" title="Filter dimension" aria-label="Filter dimension">
-                  <option>Order type</option>
-                </select>
+                <div class="stx-search-wrap">
+                  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                  <input type="search" id="filterSearch" placeholder="Search receipt #, customer, or cashier…">
+                </div>
+                <span class="stx-filter-dim">Order type</span>
                 <select id="filterOrderType" title="Order Type">
                   <option value="all">All</option>
                   <option value="dine_in">Dine-In</option>
