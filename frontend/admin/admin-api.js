@@ -2,6 +2,8 @@
 // Shared fetch wrapper + formatting helpers for every admin page.
 // Uses httpOnly cookie for authentication (set by /api/admin/staff/login).
 // No localStorage token storage — cookies are sent automatically with credentials: 'include'.
+// CSRF: also reads the non-httpOnly csrf_token cookie and sends it back as X-CSRF-Token
+// so that state-changing POST/PUT requests are protected against cross-site request forgery.
 
 // Left empty on purpose so every request is relative to whatever origin
 // served this page. That means:
@@ -13,6 +15,12 @@
 // set this back to an absolute URL (e.g. "https://your-api.vercel.app").
 export const API_BASE_URL = "";
 
+function getCSRFToken() {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(/(?:^|; )csrf_token=([^;])+/);
+  return match ? match[1] : '';
+}
+
 export function clearStaffSession() {
   localStorage.removeItem('staffInfo');
 }
@@ -21,6 +29,7 @@ export async function adminFetch(path, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
+    'X-CSRF-Token': getCSRFToken(),
   };
   // Cookie is sent automatically with credentials: 'include'
   const fetchOptions = { ...options, headers, credentials: 'include' };
@@ -61,6 +70,6 @@ export function formatDate(value, opts = { dateStyle: 'medium', timeStyle: 'shor
 
 export function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    '&': '&', '<': '<', '>': '>', '"': '"', "'": ''',
   }[c]));
 }
