@@ -29,6 +29,10 @@ export async function login(req, res, next) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
+    if (!staff.password) {
+      return res.status(500).json({ error: 'Server configuration error: staff password not found.' });
+    }
+
     const matches = await bcrypt.compare(password, staff.password);
     if (!matches) {
       return res.status(401).json({ error: 'Invalid email or password.' });

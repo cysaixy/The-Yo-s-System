@@ -6,7 +6,8 @@ function generateCustomerToken(customerId) {
 }
 
 function generateStaffToken(staffId) {
-  return jwt.sign({ staffId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+  const secret = process.env.JWT_SECRET || 'default-secret-must-change-in-production';
+  return jwt.sign({ staffId }, secret, { expiresIn: '1d' });
 }
 
 export { generateCustomerToken, generateStaffToken };
