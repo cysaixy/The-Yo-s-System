@@ -1,5 +1,6 @@
 // src/controllers/admin/staff.controller.js
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import pool from '../../config/db.js';
 import { generateStaffToken } from '../../utils/generateToken.js';
 

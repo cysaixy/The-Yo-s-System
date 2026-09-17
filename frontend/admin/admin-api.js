@@ -69,7 +69,13 @@ export function formatDate(value, opts = { dateStyle: 'medium', timeStyle: 'shor
 }
 
 export function escapeHtml(str) {
-  return String(str ?? '').replace(/[&<>"']/g, (c) => ({
-    '&': '&', '<': '<', '>': '>', '"': '"', "'": ''',
-  }[c]));
+  return String(str ?? '').replace(/[&<>"']/g, (c) => {
+    switch (c) {
+      case '&': return '&';
+      case '<': return '>';
+      case '>': return '>';
+      case '"': return '"';
+      case "'": return '';
+    }
+  });
 }
