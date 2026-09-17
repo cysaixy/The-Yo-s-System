@@ -297,6 +297,8 @@ try {
 
         // Token is set as httpOnly cookie by server
         localStorage.setItem('staffInfo', JSON.stringify(data.staff));
+        // Also persist the csrfToken so adminFetch can fall back to it
+        if (data.csrfToken) localStorage.setItem('__admin_csrf_token', data.csrfToken);
 
         const redirect = params.get('redirect') || 'dashboard.html';
         window.location.href = redirect;

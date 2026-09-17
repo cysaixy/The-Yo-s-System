@@ -17,19 +17,32 @@ export const API_BASE_URL = "";
 
 function getCSRFToken() {
   if (typeof document === 'undefined') return '';
-  const match = document.cookie.match(/(?:^|; )csrf_token=([^;])+/);
-  return match ? match[1] : '';
+  // Read csrf_token cookie; be tolerant of whitespace and ordering
+  const match = document.cookie.match(/^\s*csrf_token=([^;]*)/);
+  return match ? match[1].trim() : '';
 }
 
 export function clearStaffSession() {
   localStorage.removeItem('staffInfo');
 }
 
+// Helper: persist the csrfToken from login response so adminFetch can
+// fall back to it if the cookie read fails (e.g. shortly after navigation).
+export function setCSRFTokenFromLogin(token) {
+  if (token) localStorage.setItem('__admin_csrf_token', token);
+}
+
 export async function adminFetch(path, options = {}) {
+  // Try cookie first, then fall back to the token stored at login
+  let csrfToken = getCSRFToken();
+  if (!csrfToken) {
+    csrfToken = localStorage.getItem('__admin_csrf_token') || '';
+  }
+
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
-    'X-CSRF-Token': getCSRFToken(),
+    'X-CSRF-Token': csrfToken,
   };
   // Cookie is sent automatically with credentials: 'include'
   const fetchOptions = { ...options, headers, credentials: 'include' };
@@ -69,13 +82,7 @@ export function formatDate(value, opts = { dateStyle: 'medium', timeStyle: 'shor
 }
 
 export function escapeHtml(str) {
-  return String(str ?? '').replace(/[&<>"']/g, (c) => {
-    switch (c) {
-      case '&': return '&';
-      case '<': return '>';
-      case '>': return '>';
-      case '"': return '"';
-      case "'": return '';
-    }
-  });
+  return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&', '<': '<', '>': '>', '"': '"', "'": ''',
+  }[c]));
 }
