@@ -83,10 +83,10 @@ export function formatDate(value, opts = { dateStyle: 'medium', timeStyle: 'shor
 
 export function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({
-    '&': '&amp',
-      '<': '&lt',
-      '>': '&gt',
-      '"': '&quot',
-      "'": '&#39',
-    }[c]);
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[c]));
 }
