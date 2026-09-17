@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ quiet: true });
 
 import errorHandler from './middlewares/error.middleware.js';
 import { globalLimiter, authLimiter } from './middlewares/rateLimit.middleware.js';

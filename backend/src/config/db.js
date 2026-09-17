@@ -2,9 +2,9 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ quiet: true });
 
-const connectionString =
+let connectionString =
   process.env.POSTGRES_URL_DATABASE_URL ||
   process.env.DATABASE_URL ||
   process.env.POSTGRES_URL;
@@ -12,6 +12,12 @@ const connectionString =
 const isLocal =
   connectionString &&
   (connectionString.includes('localhost') || connectionString.includes('127.0.0.1'));
+
+// If hosted Postgres connection string uses legacy sslmode aliases (e.g. sslmode=require),
+// upgrade to sslmode=verify-full to satisfy pg-connection-string and eliminate stderr security warnings in Vercel logs.
+if (connectionString && !isLocal) {
+  connectionString = connectionString.replace(/([?&]sslmode=)(?:require|prefer|verify-ca)(?=&|$)/, '$1verify-full');
+}
 
 const pool = connectionString
   ? new Pool({
