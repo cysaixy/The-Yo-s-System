@@ -15,14 +15,18 @@ const COOKIE_OPTIONS = {
 
 export async function login(req, res, next) {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
+
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Email and password are required.' });
+    }
 
     const { rows } = await pool.query(
       `SELECT s.*, p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
        FROM staff s
        LEFT JOIN staff_permissions p ON p.staff_id = s.id
-       WHERE s.email = $1`,
-      [email]
+       WHERE LOWER(s.email) = LOWER($1)`,
+      [email.trim()]
     );
     const staff = rows[0];
 
@@ -31,10 +35,17 @@ export async function login(req, res, next) {
     }
 
     if (!staff.password) {
-      return res.status(500).json({ error: 'Server configuration error: staff password not found.' });
+      return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
-    const matches = await bcrypt.compare(password, staff.password);
+    let matches = false;
+    try {
+      matches = await bcrypt.compare(password, staff.password);
+    } catch (bcryptErr) {
+      console.error('[staffController.login] bcrypt compare failed:', bcryptErr?.message || bcryptErr);
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
     if (!matches) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }

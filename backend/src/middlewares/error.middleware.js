@@ -28,6 +28,20 @@ function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: 'Invalid value for one of the fields (violates a database constraint).' });
   }
 
+  // Postgres connection timeout or terminated connection — surface as clean 503
+  if (
+    err.code === '08006' ||
+    err.code === '08001' ||
+    err.code === '57P01' ||
+    (err.message && (
+      err.message.includes('timeout exceeded') ||
+      err.message.includes('Connection terminated') ||
+      err.message.includes('ECONNREFUSED')
+    ))
+  ) {
+    return res.status(503).json({ error: 'Database service is temporarily unavailable. Please try again in a few seconds.' });
+  }
+
   const status = err.status || 500;
   const message =
     process.env.NODE_ENV === 'production' && status === 500

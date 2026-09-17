@@ -30,9 +30,10 @@ const pool = connectionString
             })()
           : connectionString,
     ssl: isLocal ? false : { rejectUnauthorized: true },
+    options: '-c timezone=Asia/Manila',
     max: 2,
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 5_000,
+    connectionTimeoutMillis: 15_000,
   })
   : new Pool({
     user: process.env.DB_USER,
@@ -40,25 +41,11 @@ const pool = connectionString
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     database: process.env.DB_NAME,
+    options: '-c timezone=Asia/Manila',
     max: 2,
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 5_000,
+    connectionTimeoutMillis: 15_000,
   });
-
-// Neon connections default to a UTC session timezone. Every `::date` cast,
-// CURRENT_DATE, and date_trunc('...', ...) call across the controllers
-// (salesController, dashboardController, purchasesController,
-// inventoryController) truncates timestamps using this session timezone.
-// Without pinning it, an order placed at 2:35 AM Manila time (6:35 PM UTC
-// the day before) gets filed under the wrong calendar day everywhere in
-// the admin panel — "today's" filters miss it, and it shows up under
-// yesterday instead. Setting it once here, on every new connection,
-// fixes date filtering/grouping across the whole backend in one place.
-pool.on('connect', (client) => {
-  client.query('SET TIME ZONE \'Asia/Manila\'').catch((err) => {
-    console.error('[db.js] Failed to set session timezone:', err);
-  });
-});
 
 pool.on('error', (err) => {
   console.error('Unexpected PostgreSQL pool error:', err);
