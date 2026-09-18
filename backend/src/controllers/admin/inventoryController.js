@@ -1,6 +1,37 @@
 // src/controllers/admin/inventoryController.js
 import pool from '../../config/db.js';
 
+// Vercel serves the API without running backend/server.js, so the local
+// initTables() bootstrap is not available there. Keep this small, targeted
+// schema guard at the feature boundary so incident reporting works after a
+// serverless deployment even before migrations are run manually.
+let incidentTableReady = null;
+async function ensureIncidentTable() {
+  if (!incidentTableReady) {
+    incidentTableReady = (async () => {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS inventory_incidents (
+          id SERIAL PRIMARY KEY,
+          inventory_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
+          staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL,
+          incident_type VARCHAR(20) NOT NULL CHECK (incident_type IN ('spoilage', 'theft')),
+          quantity NUMERIC(10,2) NOT NULL CHECK (quantity > 0),
+          occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          description TEXT NOT NULL,
+          location VARCHAR(150),
+          reference_number VARCHAR(100),
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await pool.query('CREATE INDEX IF NOT EXISTS inventory_incidents_occurred_at_idx ON inventory_incidents(occurred_at DESC)');
+    })().catch(err => {
+      incidentTableReady = null;
+      throw err;
+    });
+  }
+  return incidentTableReady;
+}
+
 // GET /api/admin/inventory
 export async function overview(req, res, next) {
   try {
@@ -321,6 +352,7 @@ export async function createAdjustment(req, res, next) {
 export async function createIncident(req, res, next) {
   const client = await pool.connect();
   try {
+    await ensureIncidentTable();
     const { inventory_id, incident_type, quantity, occurred_at, description, location, reference_number } = req.body || {};
     const inventoryId = Number(inventory_id);
     const lossQuantity = Number(quantity);
@@ -397,6 +429,7 @@ export async function createIncident(req, res, next) {
 // GET /api/admin/inventory/incidents
 export async function incidents(req, res, next) {
   try {
+    await ensureIncidentTable();
     const { incident_type, inventory_id, from, to } = req.query;
     const conditions = [];
     const params = [];
