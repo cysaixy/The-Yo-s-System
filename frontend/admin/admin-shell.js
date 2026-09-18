@@ -219,6 +219,28 @@ function addNotification(notification) {
   return true;
 }
 
+// Retain only the newest notification for orders that are still active.
+// This also clears completed/cancelled records saved by older app versions.
+function getActiveNotificationHistory() {
+  const history = readNotificationHistory();
+  const storedSnapshot = localStorage.getItem(scopedStorageKey(ORDER_SNAPSHOT_KEY));
+  if (storedSnapshot === null) return history;
+  const orderSnapshot = readJsonStorage(ORDER_SNAPSHOT_KEY, {});
+  const seenOrderIds = new Set();
+  const activeHistory = history.filter(notification => {
+    const match = String(notification.id || '').match(/^order-(\d+)-(.+)$/);
+    if (!match) return true;
+
+    const [, orderId, notifiedStatus] = match;
+    const currentStatus = orderSnapshot[String(orderId)];
+    if (!LIVE_ORDER_STATUSES.has(currentStatus) || notifiedStatus !== currentStatus || seenOrderIds.has(orderId)) return false;
+    seenOrderIds.add(orderId);
+    return true;
+  });
+  if (activeHistory.length !== history.length) writeNotificationHistory(activeHistory);
+  return activeHistory;
+}
+
 function readJsonStorage(key, fallback) {
   try {
     const value = JSON.parse(localStorage.getItem(scopedStorageKey(key)));
@@ -284,7 +306,7 @@ function initOnlineOrderNotifications(staff) {
 
   let activeAlertCount = 0;
   const renderPanel = () => {
-    const history = readNotificationHistory();
+    const history = getActiveNotificationHistory();
     panel.innerHTML = `
       <div class="online-order-panel-head"><div><strong>Notifications</strong><span>${activeAlertCount} active ${activeAlertCount === 1 ? 'alert' : 'alerts'}</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">×</button></div>
       <div class="online-order-panel-list">${history.length ? history.map(item => `
@@ -330,8 +352,8 @@ function initOnlineOrderNotifications(staff) {
       const changedIds = [];
       const notifications = [];
 
-      // Compare every returned state before filtering the rail so completed
-      // and cancelled transitions remain visible in notification history.
+      // Only active orders create notification entries. Terminal order states
+      // are deliberately left out of the staff notification feed.
       orders.forEach(order => {
         const previousStatus = previousSnapshot[String(order.id)];
         if (!previousStatus && LIVE_ORDER_STATUSES.has(order.status)) {
@@ -344,7 +366,7 @@ function initOnlineOrderNotifications(staff) {
           };
           if (addNotification(notification) && hadOrderSnapshot) notifications.push(notification);
           if (hadOrderSnapshot) changedIds.push(String(order.id));
-        } else if (previousStatus && previousStatus !== order.status) {
+        } else if (previousStatus && previousStatus !== order.status && LIVE_ORDER_STATUSES.has(order.status)) {
           const notification = {
             id: `order-${order.id}-${order.status}`,
             type: 'status',

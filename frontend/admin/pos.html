@@ -999,13 +999,17 @@
     document.getElementById('customizeNotes').addEventListener('input', updateCustomizeTotals);
     document.getElementById('custSearchInput').addEventListener('input', onCustomerSearchInput);
     document.getElementById('showCustFormBtn').addEventListener('click', () => {
-      document.getElementById('custFormWrap').style.display = 'block';
-      document.getElementById('showCustFormBtn').style.display = 'none';
+      const form = document.getElementById('custFormWrap');
+      if (form.style.display === 'block') {
+        setCustomerFormOpen(false);
+        return;
+      }
+      closeCustomerResults();
+      setCustomerFormOpen(true);
       document.getElementById('custFormName').focus();
     });
     document.getElementById('custFormCancelBtn').addEventListener('click', () => {
-      document.getElementById('custFormWrap').style.display = 'none';
-      document.getElementById('showCustFormBtn').style.display = '';
+      setCustomerFormOpen(false);
       clearCustForm();
     });
     document.getElementById('custFormSaveBtn').addEventListener('click', saveNewCustomer);
@@ -1037,13 +1041,19 @@
     document.getElementById('posOrderType').addEventListener('change', updateOrderTypeView);
 
     document.getElementById('showAllCustomersBtn').addEventListener('click', () => {
+      const results = document.getElementById('custResults');
+      if (results.style.display === 'block' && results.dataset.mode === 'all') {
+        closeCustomerResults();
+        return;
+      }
+      setCustomerFormOpen(false);
       document.getElementById('custSearchInput').value = '';
       searchCustomers('', true);
     });
 
     document.addEventListener('click', (e) => {
       const wrap = document.getElementById('custSearchWrap');
-      if (wrap && !wrap.contains(e.target)) document.getElementById('custResults').style.display = 'none';
+      if (wrap && !wrap.contains(e.target)) closeCustomerResults();
     });
 
     // Payment screen event listeners
@@ -1721,8 +1731,22 @@
   function onCustomerSearchInput(e) {
     const q = e.target.value.trim();
     clearTimeout(custSearchDebounce);
-    if (q.length < 2) { document.getElementById('custResults').style.display = 'none'; return; }
+    if (q.length < 2) { closeCustomerResults(); return; }
     custSearchDebounce = setTimeout(() => searchCustomers(q), 250);
+  }
+
+  function setCustomerFormOpen(open) {
+    const form = document.getElementById('custFormWrap');
+    const button = document.getElementById('showCustFormBtn');
+    form.style.display = open ? 'block' : 'none';
+    button.textContent = open ? 'Close Add Customer' : '+ Add Customer';
+  }
+
+  function closeCustomerResults() {
+    const results = document.getElementById('custResults');
+    results.style.display = 'none';
+    results.dataset.mode = '';
+    document.getElementById('showAllCustomersBtn').textContent = 'All Customers';
   }
 
   async function searchCustomers(q, showAll = false) {
@@ -1743,12 +1767,15 @@
             </div>`).join('')
         : `<div class="cust-empty-hint">No matching customers.</div>`;
       resultsEl.style.display = 'block';
+      resultsEl.dataset.mode = showAll ? 'all' : 'search';
+      document.getElementById('showAllCustomersBtn').textContent = showAll ? 'Close Customers' : 'All Customers';
       resultsEl.querySelectorAll('.cust-result-row[data-id]').forEach(row => {
         row.addEventListener('click', () => selectCustomer(row.dataset.id, row.dataset.name, row.dataset.email, row.dataset.phone, row.dataset.address));
       });
     } catch (err) {
       resultsEl.innerHTML = `<div class="cust-empty-hint">⚠ ${err.message}</div>`;
       resultsEl.style.display = 'block';
+      resultsEl.dataset.mode = showAll ? 'all' : 'search';
     }
   }
 
@@ -1764,7 +1791,7 @@
 
   function selectCustomer(id, name, email, phone, address) {
     selectedCustomer = { id, name, email, phone, address };
-    document.getElementById('custResults').style.display = 'none';
+    closeCustomerResults();
     document.getElementById('custSearchInput').value = '';
     document.getElementById('custSearchWrap').style.display = 'none';
     const selectedWrap = document.getElementById('custSelectedWrap');
@@ -1817,10 +1844,9 @@
     };
 
     clearCustForm();
-    document.getElementById('custFormWrap').style.display = 'none';
-    document.getElementById('showCustFormBtn').style.display = '';
+    setCustomerFormOpen(false);
 
-    document.getElementById('custResults').style.display = 'none';
+    closeCustomerResults();
     document.getElementById('custSearchInput').value = '';
     document.getElementById('custSearchWrap').style.display = 'none';
     const selectedWrap = document.getElementById('custSelectedWrap');
