@@ -164,11 +164,31 @@ model InventoryItem {
 
   addonInventory AddonInventory[]
   inventoryLogs InventoryLog[]
+  incidents     InventoryIncident[]
   // NEW — back-relation for StockIn.inventoryItem below (purchases can now
   // restock a raw ingredient directly, not only a finished menu item).
   stockIns       StockIn[]
 
   @@map("inventory_items")
+}
+
+model InventoryIncident {
+  id              Int      @id @default(autoincrement())
+  inventoryId     Int      @map("inventory_id")
+  staffId         Int?     @map("staff_id")
+  incidentType    String   @map("incident_type") @db.VarChar(20)
+  quantity        Decimal  @db.Decimal(10, 2)
+  occurredAt      DateTime @default(now()) @map("occurred_at")
+  description     String
+  location        String?  @db.VarChar(150)
+  referenceNumber String?  @map("reference_number") @db.VarChar(100)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  inventoryItem InventoryItem @relation(fields: [inventoryId], references: [id])
+  staff         Staff?        @relation(fields: [staffId], references: [id])
+
+  @@index([occurredAt], map: "inventory_incidents_occurred_at_idx")
+  @@map("inventory_incidents")
 }
 
 model InventoryLog {
@@ -345,6 +365,7 @@ model Staff {
   ordersCreated         Order[]               @relation("OrderCreator")
   ordersHandled         Order[]               @relation("OrderHandler")
   inventoryLogs         InventoryLog[]
+  inventoryIncidents    InventoryIncident[]
   stockIns              StockIn[]
   cashTransactions      CashTransaction[]
   dailyReconciliations  DailyReconciliation[]

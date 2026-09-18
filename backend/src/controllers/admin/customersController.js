@@ -3,14 +3,16 @@ import pool from '../../config/db.js';
 
 export async function searchCustomers(req, res, next) {
   try {
-    const { q } = req.query;
+    const { q, all } = req.query;
     if (!q || q.trim().length < 2) {
-      // Return all customers (limit 50) when query is empty or too short
+      // The POS "All Customers" picker needs a complete, scrollable list.
+      // Keep the normal empty search bounded so it stays fast as the list grows.
+      const limitClause = all === 'true' ? '' : 'LIMIT 50';
       const { rows } = await pool.query(
         `SELECT id, name, email, phone, address
          FROM customers
          ORDER BY name ASC
-         LIMIT 50`
+         ${limitClause}`
       );
       return res.json({ customers: rows });
     }

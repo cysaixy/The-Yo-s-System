@@ -316,6 +316,112 @@ export async function createAdjustment(req, res, next) {
   }
 }
 
+// POST /api/admin/inventory/incidents
+// Records a loss event and deducts the affected stock atomically.
+export async function createIncident(req, res, next) {
+  const client = await pool.connect();
+  try {
+    const { inventory_id, incident_type, quantity, occurred_at, description, location, reference_number } = req.body || {};
+    const inventoryId = Number(inventory_id);
+    const lossQuantity = Number(quantity);
+    const type = String(incident_type || '').toLowerCase();
+
+    if (!Number.isInteger(inventoryId) || inventoryId <= 0 || !Number.isFinite(lossQuantity) || lossQuantity <= 0) {
+      return res.status(400).json({ error: 'A valid inventory item and positive quantity are required.' });
+    }
+    if (!['spoilage', 'theft'].includes(type)) {
+      return res.status(400).json({ error: 'Incident type must be spoilage or theft.' });
+    }
+    if (!String(description || '').trim()) {
+      return res.status(400).json({ error: 'Please describe what happened.' });
+    }
+
+    const occurredAt = occurred_at ? new Date(occurred_at) : new Date();
+    if (Number.isNaN(occurredAt.getTime())) {
+      return res.status(400).json({ error: 'Incident date and time is invalid.' });
+    }
+
+    await client.query('BEGIN');
+    const { rows: itemRows } = await client.query(
+      'SELECT id, name, stock_quantity, reorder_level FROM inventory_items WHERE id = $1 FOR UPDATE',
+      [inventoryId]
+    );
+    if (!itemRows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Inventory item not found.' });
+    }
+
+    const item = itemRows[0];
+    const newStock = Number(item.stock_quantity) - lossQuantity;
+    if (newStock < 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: `Reported quantity exceeds available stock (${item.stock_quantity}).` });
+    }
+
+    let status = 'in_stock';
+    if (newStock <= 0) status = 'out_of_stock';
+    else if (newStock <= Number(item.reorder_level)) status = 'below_reorder';
+    else if (newStock <= Number(item.reorder_level) * 1.5) status = 'low_stock';
+
+    await client.query(
+      'UPDATE inventory_items SET stock_quantity = $1, status = $2 WHERE id = $3',
+      [newStock, status, inventoryId]
+    );
+
+    const staffId = req.staff?.id || null;
+    const { rows: incidentRows } = await client.query(
+      `INSERT INTO inventory_incidents
+         (inventory_id, staff_id, incident_type, quantity, occurred_at, description, location, reference_number)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [inventoryId, staffId, type, lossQuantity, occurredAt, description.trim(), location?.trim() || null, reference_number?.trim() || null]
+    );
+
+    const summary = `${type === 'theft' ? 'Theft' : 'Spoilage'} incident #${incidentRows[0].id}: ${description.trim()}`;
+    await client.query(
+      `INSERT INTO inventory_log (inventory_id, staff_id, transaction_type, quantity_change, remarks)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [inventoryId, staffId, type, -lossQuantity, summary]
+    );
+
+    await client.query('COMMIT');
+    res.status(201).json({ incident: incidentRows[0], new_stock_quantity: newStock });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
+  }
+}
+
+// GET /api/admin/inventory/incidents
+export async function incidents(req, res, next) {
+  try {
+    const { incident_type, inventory_id, from, to } = req.query;
+    const conditions = [];
+    const params = [];
+    if (incident_type) { params.push(incident_type); conditions.push(`ii.incident_type = $${params.length}`); }
+    if (inventory_id) { params.push(inventory_id); conditions.push(`ii.inventory_id = $${params.length}`); }
+    if (from) { params.push(from); conditions.push(`ii.occurred_at::date >= $${params.length}`); }
+    if (to) { params.push(to); conditions.push(`ii.occurred_at::date <= $${params.length}`); }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const { rows } = await pool.query(
+      `SELECT ii.id, ii.incident_type, ii.quantity, ii.occurred_at, ii.description, ii.location, ii.reference_number,
+              i.name AS item_name, i.unit, s.name AS reported_by
+       FROM inventory_incidents ii
+       JOIN inventory_items i ON i.id = ii.inventory_id
+       LEFT JOIN staff s ON s.id = ii.staff_id
+       ${where}
+       ORDER BY ii.occurred_at DESC, ii.id DESC`,
+      params
+    );
+    res.json({ incidents: rows });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // GET /api/admin/inventory/log
 export async function log(req, res, next) {
   try {

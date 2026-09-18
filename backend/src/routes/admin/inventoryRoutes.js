@@ -1,5 +1,5 @@
 import express from 'express';
-import { overview, log, createAdjustment, createItem, updateItem, deleteItem } from '../../controllers/admin/inventoryController.js';
+import { overview, log, createAdjustment, createItem, updateItem, deleteItem, createIncident, incidents } from '../../controllers/admin/inventoryController.js';
 import { requireStaffAuth } from '../../middlewares/auth.middleware.js';
 import { requirePermission } from '../../middlewares/role.middleware.js';
 import { validateInventoryUnits } from '../../middlewares/unitValidation.middleware.js';
@@ -14,5 +14,7 @@ inventoryRouter.patch('/items/:id', validateInventoryUnits, updateItem);
 inventoryRouter.delete('/items/:id', deleteItem);
 inventoryRouter.get('/log', log);
 inventoryRouter.post('/adjustments', createAdjustment);
+inventoryRouter.get('/incidents', incidents);
+inventoryRouter.post('/incidents', createIncident);
 
 export default inventoryRouter;

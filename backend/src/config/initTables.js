@@ -21,6 +21,23 @@ export async function initTables() {
       );
     `);
 
+    // Loss reports are kept separately from the movement log for accountability.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS inventory_incidents (
+        id SERIAL PRIMARY KEY,
+        inventory_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
+        staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL,
+        incident_type VARCHAR(20) NOT NULL CHECK (incident_type IN ('spoilage', 'theft')),
+        quantity NUMERIC(10,2) NOT NULL CHECK (quantity > 0),
+        occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        description TEXT NOT NULL,
+        location VARCHAR(150),
+        reference_number VARCHAR(100),
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS inventory_incidents_occurred_at_idx ON inventory_incidents(occurred_at DESC)');
+
     // 2. add_ons
     await pool.query(`
       CREATE TABLE IF NOT EXISTS add_ons (
@@ -138,22 +155,16 @@ export async function initTables() {
     await pool.query('ALTER TABLE orders DROP COLUMN IF EXISTS delivery_city');
     await pool.query('ALTER TABLE orders DROP COLUMN IF EXISTS delivery_landmark');
 
-    // Backend/database-layer validation for the ₱20.00 – ₱150.00 range.
-    // 0 is allowed (no fee on dine-in/pickup, or a delivery order whose fee
-    // hasn't been assigned yet); every other value must be inside the range.
-    // NOT VALID so legacy rows aren't re-scanned (all current ones are 0).
+    // Delivery fees are set by staff in the POS and may be any non-negative
+    // amount. Keep the database rule aligned with the POS input (which allows
+    // values such as ₱10.00), rather than rejecting valid orders at checkout.
     await pool.query(`
       DO $$
       BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint
-          WHERE conname = 'orders_delivery_fee_range' AND conrelid = 'orders'::regclass
-        ) THEN
-          ALTER TABLE orders
-            ADD CONSTRAINT orders_delivery_fee_range
-            CHECK (delivery_fee = 0 OR (delivery_fee >= 20 AND delivery_fee <= 150))
-            NOT VALID;
-        END IF;
+        ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_delivery_fee_range;
+        ALTER TABLE orders
+          ADD CONSTRAINT orders_delivery_fee_range
+          CHECK (delivery_fee >= 0) NOT VALID;
       END
       $$;
     `);

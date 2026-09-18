@@ -78,6 +78,7 @@ export async function createPosOrder(req, res, next) {
       payments,
       customer_name,
       customer_phone,
+      customer_email,
       delivery_address,
       status: requestedStatus
     } = req.body;
@@ -92,6 +93,9 @@ export async function createPosOrder(req, res, next) {
 
     if (!VALID_ORDER_TYPES.includes(order_type)) {
       return res.status(400).json({ error: `order_type must be one of: ${VALID_ORDER_TYPES.join(', ')}` });
+    }
+    if (!Number.isFinite(deliveryFee) || deliveryFee < 0) {
+      return res.status(400).json({ error: 'delivery_fee must be a non-negative number.' });
     }
     if (order_type === 'delivery' && (!delivery_address || !String(delivery_address).trim())) {
       return res.status(400).json({ error: 'Delivery address is required for delivery orders.' });
@@ -244,6 +248,7 @@ export async function createPosOrder(req, res, next) {
     let resolvedCustomerId = customer_id;
     let resolvedCustomerName = customer_name ? String(customer_name).trim() : null;
     let resolvedCustomerPhone = customer_phone ? String(customer_phone).trim() : null;
+    let resolvedCustomerEmail = customer_email ? String(customer_email).trim().toLowerCase() : null;
     const cleanAddress = delivery_address ? String(delivery_address).trim() : null;
 
     if (!resolvedCustomerId && (resolvedCustomerName || resolvedCustomerPhone)) {
@@ -261,11 +266,15 @@ export async function createPosOrder(req, res, next) {
         }
       }
       if (!resolvedCustomerId && resolvedCustomerName) {
+        // Customer email is optional in the POS. The database still needs a
+        // unique value, so use an internal address only when one was not given.
+        const fallbackEmail = `pos-${(resolvedCustomerPhone || Date.now()).replace(/\D/g, '') || Date.now()}-${Date.now()}@theyos.local`;
+        resolvedCustomerEmail = resolvedCustomerEmail || fallbackEmail;
         const { rows: newCust } = await client.query(
-          `INSERT INTO customers (name, phone, address)
-           VALUES ($1, $2, $3)
+          `INSERT INTO customers (name, phone, address, email)
+           VALUES ($1, $2, $3, $4)
            RETURNING id`,
-          [resolvedCustomerName, resolvedCustomerPhone || null, cleanAddress || null]
+          [resolvedCustomerName, resolvedCustomerPhone || null, cleanAddress || null, resolvedCustomerEmail]
         );
         resolvedCustomerId = newCust[0].id;
       }

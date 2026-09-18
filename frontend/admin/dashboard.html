@@ -167,6 +167,17 @@
   }
   .live-orders-viewport { overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth; }
   .live-orders-viewport::-webkit-scrollbar { display: none; }
+  .rail-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .rail-nav-btn {
+    width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%;
+    display: grid; place-items: center; cursor: pointer;
+    background: var(--stone); border: 1px solid var(--line); color: var(--ink);
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  }
+  .rail-nav-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .rail-nav-btn:hover:not(:disabled) { background: var(--brass-dark); border-color: var(--brass-dark); color: #fff; transform: translateY(-1px); }
+  .rail-nav-btn:disabled { opacity: 0.35; cursor: default; }
+  @media (max-width: 600px) { .rail-nav { display: none; } }
   .live-orders-rail { display: flex; gap: 14px; width: max-content; min-width: 100%; padding: 2px; }
   .order-ticket {
     width: 292px; min-height: 212px; flex: 0 0 292px;
@@ -496,7 +507,15 @@
             <span class="live-indicator" aria-hidden="true"></span>
             <div><h2 id="liveOrdersHeading">Live Orders</h2><p>Pending, preparing, and ready now · updates automatically</p></div>
           </div>
-          <span class="live-orders-count" id="liveOrdersCount">Connecting…</span>
+          <div class="rail-nav">
+            <span class="live-orders-count" id="liveOrdersCount">Connecting…</span>
+            <button type="button" class="rail-nav-btn" id="railPrevBtn" aria-label="Scroll left" disabled>
+              <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button type="button" class="rail-nav-btn" id="railNextBtn" aria-label="Scroll right" disabled>
+              <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
         </div>
         <div class="live-orders-viewport" id="liveOrdersViewport" tabindex="0" aria-label="Orders currently in progress">
           <div class="live-orders-rail" id="liveOrdersRail">
@@ -691,6 +710,37 @@
     if (Array.isArray(window.__adminLiveOrders)) renderLiveOrderRail(window.__adminLiveOrders);
     window.clearInterval(liveElapsedTimer);
     liveElapsedTimer = window.setInterval(updateElapsedLabels, 30000);
+    setupRailNavButtons();
+  }
+
+  function setupRailNavButtons() {
+    const viewport = document.getElementById('liveOrdersViewport');
+    const rail = document.getElementById('liveOrdersRail');
+    const prevBtn = document.getElementById('railPrevBtn');
+    const nextBtn = document.getElementById('railNextBtn');
+    if (!viewport || !rail || !prevBtn || !nextBtn) return;
+
+    const scrollByCard = (dir) => {
+      const card = rail.querySelector('.order-ticket');
+      const step = (card ? card.offsetWidth + 14 : viewport.clientWidth * 0.8) * dir;
+      viewport.scrollBy({ left: step, behavior: 'smooth' });
+    };
+
+    const refreshNavState = () => {
+      const scrollable = viewport.scrollWidth > viewport.clientWidth + 1;
+      prevBtn.disabled = !scrollable || viewport.scrollLeft <= 1;
+      nextBtn.disabled = !scrollable || viewport.scrollLeft + viewport.clientWidth >= viewport.scrollWidth - 1;
+    };
+
+    prevBtn.addEventListener('click', () => scrollByCard(-1));
+    nextBtn.addEventListener('click', () => scrollByCard(1));
+    viewport.addEventListener('scroll', refreshNavState, { passive: true });
+    window.addEventListener('resize', refreshNavState);
+
+    // Rail content is re-rendered on live updates, so re-check state whenever
+    // it changes (new orders arriving can shrink/grow the scrollable range).
+    new MutationObserver(refreshNavState).observe(rail, { childList: true });
+    refreshNavState();
   }
 
   /* ========== 1. Sales overview ========== */

@@ -499,6 +499,7 @@ function buildPageHTML() {
   <div class="inv-header-row">
     <h2>Inventory</h2>
     <div class="inv-header-actions">
+      <button class="inv-btn inv-btn-ghost" id="openIncidentBtn">Report Incident</button>
       <button class="inv-add-btn" id="openAddBtn">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         Add Item
@@ -512,6 +513,7 @@ function buildPageHTML() {
     <button class="inv-tab"        data-tab="audits"       role="tab">Audits</button>
     <button class="inv-tab"        data-tab="usage"        role="tab">Usage</button>
     <button class="inv-tab"        data-tab="adjustments"  role="tab">Adjustments</button>
+    <button class="inv-tab"        data-tab="incidents"    role="tab">Incident Reports</button>
   </div>
 
   <!-- ===== OVERVIEW PANEL ===== -->
@@ -617,6 +619,17 @@ function buildPageHTML() {
     <div class="inv-table-wrap" id="adjustmentsWrap"><div class="admin-loading">Loading adjustments…</div></div>
   </div>
 
+  <div class="inv-panel" id="panel-incidents">
+    <div style="margin-bottom:18px; display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+      <div>
+        <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Incident Reports</div>
+        <div style="font-size:0.80rem; color:var(--ink-muted); margin-top:2px;">Recorded spoilage and theft, including the resulting stock loss.</div>
+      </div>
+      <button class="inv-btn inv-btn-gold" id="openIncidentTabBtn">Report Incident</button>
+    </div>
+    <div class="inv-table-wrap" id="incidentsWrap"><div class="admin-loading">Loading incident reports…</div></div>
+  </div>
+
 </div><!-- /inv-page -->
 
 <!-- ================================================================
@@ -683,6 +696,29 @@ function buildPageHTML() {
       <button class="inv-btn inv-btn-ghost" id="itemCancelBtn">Cancel</button>
       <button class="inv-btn inv-btn-gold"  id="itemSaveBtn">Save Item</button>
     </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     INCIDENT REPORT MODAL
+     ================================================================ -->
+<div class="inv-modal-backdrop" id="incidentModal">
+  <div class="inv-modal wide">
+    <div class="inv-modal-head">
+      <h2>Report Inventory Incident</h2>
+      <button class="close-btn" id="incidentCloseBtn"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="inv-form-grid">
+      <div class="inv-form-field span2"><label>Inventory Item *</label><select id="incidentItem"></select></div>
+      <div class="inv-form-field"><label>Incident Type *</label><select id="incidentType"><option value="spoilage">Spoilage</option><option value="theft">Theft</option></select></div>
+      <div class="inv-form-field"><label>Quantity Lost *</label><input type="number" id="incidentQty" min="0.01" step="0.01" placeholder="e.g. 2"></div>
+      <div class="inv-form-field span2"><label>Occurred At *</label><input type="datetime-local" id="incidentOccurredAt"></div>
+      <div class="inv-form-field span2"><label>Description *</label><textarea id="incidentDescription" placeholder="Describe what happened and any relevant details…"></textarea></div>
+      <div class="inv-form-field"><label>Location</label><input type="text" id="incidentLocation" placeholder="e.g. Storage room"></div>
+      <div class="inv-form-field"><label>Reference No.</label><input type="text" id="incidentReference" placeholder="Optional report/CCTV ref."></div>
+    </div>
+    <div class="inv-error-msg" id="incidentError"></div>
+    <div class="inv-modal-footer"><button class="inv-btn inv-btn-ghost" id="incidentCancelBtn">Cancel</button><button class="inv-btn inv-btn-danger" id="incidentSaveBtn">Submit Report</button></div>
   </div>
 </div>
 
@@ -789,6 +825,8 @@ function bindAll() {
 
   // Open Add modal
   document.getElementById('openAddBtn').addEventListener('click', () => openItemModal());
+  document.getElementById('openIncidentBtn').addEventListener('click', openIncidentModal);
+  document.getElementById('openIncidentTabBtn').addEventListener('click', openIncidentModal);
 
   // Item modal controls
   document.getElementById('itemCloseBtn').addEventListener('click', () => closeModal('itemModal'));
@@ -799,6 +837,11 @@ function bindAll() {
   document.getElementById('adjustCloseBtn').addEventListener('click', () => closeModal('adjustModal'));
   document.getElementById('adjCancelBtn').addEventListener('click',    () => closeModal('adjustModal'));
   document.getElementById('adjSaveBtn').addEventListener('click', saveAdjustment);
+
+  // Incident report modal controls
+  document.getElementById('incidentCloseBtn').addEventListener('click', () => closeModal('incidentModal'));
+  document.getElementById('incidentCancelBtn').addEventListener('click', () => closeModal('incidentModal'));
+  document.getElementById('incidentSaveBtn').addEventListener('click', saveIncident);
 
   // Delete modal controls
   document.getElementById('delCloseBtn').addEventListener('click',   () => closeModal('deleteModal'));
@@ -826,6 +869,7 @@ function switchTab(tab) {
   if (tab === 'audits')      loadAudits();
   if (tab === 'usage')       loadUsage();
   if (tab === 'adjustments') loadAdjustmentsLog();
+  if (tab === 'incidents')   loadIncidents();
 }
 
 /* ================================================================
@@ -1149,6 +1193,92 @@ async function saveAdjustment() {
     errEl.classList.add('show');
   } finally {
     saveBtn.disabled = false; saveBtn.textContent = 'Save Adjustment';
+  }
+}
+
+/* ================================================================
+   INCIDENT REPORTS
+   ================================================================ */
+function toLocalDateTimeValue(date = new Date()) {
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+function openIncidentModal() {
+  const select = document.getElementById('incidentItem');
+  select.innerHTML = '<option value="">Select inventory item…</option>' + allItems.map(item =>
+    `<option value="${item.id}">${escapeHtml(item.name)} — ${item.stock_quantity} ${escapeHtml(item.unit || 'pcs')} available</option>`
+  ).join('');
+  document.getElementById('incidentType').value = 'spoilage';
+  document.getElementById('incidentQty').value = '';
+  document.getElementById('incidentOccurredAt').value = toLocalDateTimeValue();
+  document.getElementById('incidentDescription').value = '';
+  document.getElementById('incidentLocation').value = '';
+  document.getElementById('incidentReference').value = '';
+  document.getElementById('incidentError').classList.remove('show');
+  openModal('incidentModal');
+}
+
+async function saveIncident() {
+  const inventoryId = Number(document.getElementById('incidentItem').value);
+  const quantity = Number(document.getElementById('incidentQty').value);
+  const description = document.getElementById('incidentDescription').value.trim();
+  const errEl = document.getElementById('incidentError');
+  if (!inventoryId) { errEl.textContent = 'Select the affected inventory item.'; errEl.classList.add('show'); return; }
+  if (!Number.isFinite(quantity) || quantity <= 0) { errEl.textContent = 'Enter a positive quantity lost.'; errEl.classList.add('show'); return; }
+  if (!description) { errEl.textContent = 'Describe what happened.'; errEl.classList.add('show'); return; }
+
+  const saveBtn = document.getElementById('incidentSaveBtn');
+  saveBtn.disabled = true; saveBtn.textContent = 'Submitting…';
+  try {
+    const res = await adminFetch('/api/admin/inventory/incidents', {
+      method: 'POST',
+      body: JSON.stringify({
+        inventory_id: inventoryId,
+        incident_type: document.getElementById('incidentType').value,
+        quantity,
+        occurred_at: document.getElementById('incidentOccurredAt').value,
+        description,
+        location: document.getElementById('incidentLocation').value.trim() || null,
+        reference_number: document.getElementById('incidentReference').value.trim() || null,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not submit the incident report.');
+    closeModal('incidentModal');
+    await Promise.all([loadStock(), loadIncidents()]);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  } finally {
+    saveBtn.disabled = false; saveBtn.textContent = 'Submit Report';
+  }
+}
+
+async function loadIncidents() {
+  const wrap = document.getElementById('incidentsWrap');
+  wrap.innerHTML = '<div class="admin-loading">Loading incident reports…</div>';
+  try {
+    const res = await adminFetch('/api/admin/inventory/incidents');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not load incident reports.');
+    const reports = data.incidents || [];
+    if (!reports.length) {
+      wrap.innerHTML = '<div class="inv-empty"><p>No spoilage or theft incidents have been reported.</p></div>';
+      return;
+    }
+    wrap.innerHTML = `<table class="inv-table"><thead><tr><th>Occurred</th><th>Type</th><th>Item</th><th class="right">Lost</th><th>Description</th><th>Location / Ref.</th><th>Reported By</th></tr></thead><tbody>${reports.map(report => `
+      <tr>
+        <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(report.occurred_at)}</td>
+        <td><span class="pill ${report.incident_type === 'theft' ? 'pill-danger' : 'pill-neutral'}">${escapeHtml(report.incident_type)}</span></td>
+        <td style="font-weight:600;">${escapeHtml(report.item_name)}</td>
+        <td class="right" style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; color:var(--danger);">-${report.quantity} ${escapeHtml(report.unit || '')}</td>
+        <td style="font-size:0.78rem; color:var(--ink-muted);">${escapeHtml(report.description)}</td>
+        <td style="font-size:0.78rem; color:var(--ink-muted);">${escapeHtml([report.location, report.reference_number].filter(Boolean).join(' · ') || '—')}</td>
+        <td>${escapeHtml(report.reported_by || '—')}</td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch (err) {
+    wrap.innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
   }
 }
 
