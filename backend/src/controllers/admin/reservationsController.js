@@ -125,6 +125,14 @@ export async function createReservationAdmin(req, res, next) {
       return res.status(400).json({ error: 'customer_id, reservation_date, reservation_time, and guests are required.' });
     }
 
+    if (order_status && !VALID_ORDER_STATUSES.includes(order_status)) {
+      return res.status(400).json({ error: `order_status must be one of: ${VALID_ORDER_STATUSES.join(', ')}` });
+    }
+
+    if (reservation_status && !VALID_RESERVATION_STATUSES.includes(reservation_status)) {
+      return res.status(400).json({ error: `reservation_status must be one of: ${VALID_RESERVATION_STATUSES.join(', ')}` });
+    }
+
     const guestsNum = Number(guests);
 
     // Validate capacity for the time slot

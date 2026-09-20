@@ -247,7 +247,7 @@ export async function createPosOrder(req, res, next) {
 
     let resolvedCustomerId = customer_id;
     let resolvedCustomerName = customer_name ? String(customer_name).trim() : null;
-    let resolvedCustomerPhone = customer_phone ? String(customer_phone).trim() : null;
+    const resolvedCustomerPhone = customer_phone ? String(customer_phone).trim() : null;
     let resolvedCustomerEmail = customer_email ? String(customer_email).trim().toLowerCase() : null;
     const cleanAddress = delivery_address ? String(delivery_address).trim() : null;
 

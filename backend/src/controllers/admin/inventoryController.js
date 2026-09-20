@@ -35,7 +35,7 @@ async function ensureIncidentTable() {
 // GET /api/admin/inventory
 export async function overview(req, res, next) {
   try {
-    let { rows } = await pool.query(
+    const { rows } = await pool.query(
       `SELECT id, name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, notes,
                CASE
                  WHEN stock_quantity <= 0 THEN 'out_of_stock'
@@ -54,47 +54,47 @@ export async function overview(req, res, next) {
 }
 
 const CATEGORY_PREFIX_MAP = {
-  "Coffee & Espresso": "COF",
-  "Milk & Dairy": "MLK",
-  "Non-Dairy & Plant-Based": "NDP",
-  "Tea & Matcha": "TEA",
-  "Syrups & Flavorings": "SYR",
-  "Powders & Blends": "POW",
-  "Sauces & Toppings": "SAU",
-  "Sweeteners": "SWT",
-  "Fruits & Fresh Ingredients": "FRU",
-  "Rice, Grains & Noodles": "RGN",
-  "Meat & Protein": "MEA",
-  "Vegetables": "VEG",
-  "Bread & Bakery": "BAK",
-  "Condiments": "CND",
-  "Packaging": "PKG",
-  "Cleaning & Sanitation": "CLN",
-  "Other Supplies": "OTH"
+  'Coffee & Espresso': 'COF',
+  'Milk & Dairy': 'MLK',
+  'Non-Dairy & Plant-Based': 'NDP',
+  'Tea & Matcha': 'TEA',
+  'Syrups & Flavorings': 'SYR',
+  'Powders & Blends': 'POW',
+  'Sauces & Toppings': 'SAU',
+  'Sweeteners': 'SWT',
+  'Fruits & Fresh Ingredients': 'FRU',
+  'Rice, Grains & Noodles': 'RGN',
+  'Meat & Protein': 'MEA',
+  'Vegetables': 'VEG',
+  'Bread & Bakery': 'BAK',
+  'Condiments': 'CND',
+  'Packaging': 'PKG',
+  'Cleaning & Sanitation': 'CLN',
+  'Other Supplies': 'OTH'
 };
 
 function getCategoryPrefix(category) {
   if (CATEGORY_PREFIX_MAP[category]) return CATEGORY_PREFIX_MAP[category];
-  const clean = (category || "ITEM").replace(/[^a-zA-Z0-9 ]/g, "").trim();
+  const clean = (category || 'ITEM').replace(/[^a-zA-Z0-9 ]/g, '').trim();
   const words = clean.split(/\s+/).filter(Boolean);
   if (words.length >= 3) {
     return (words[0][0] + words[1][0] + words[2][0]).toUpperCase();
   } else if (words.length === 2) {
     return (words[0].slice(0, 2) + words[1][0]).toUpperCase();
   } else {
-    return (clean.slice(0, 3) || "ITM").toUpperCase().padEnd(3, "X");
+    return (clean.slice(0, 3) || 'ITM').toUpperCase().padEnd(3, 'X');
   }
 }
 
 export async function generateUniqueSku(category, client = pool) {
   const prefix = getCategoryPrefix(category);
   const { rows } = await client.query(
-    "SELECT sku FROM inventory_items WHERE sku ILIKE $1",
-    [prefix + "%"]
+    'SELECT sku FROM inventory_items WHERE sku ILIKE $1',
+    [prefix + '%']
   );
   let maxNum = 0;
   const existingSet = new Set();
-  const pattern = new RegExp("^" + prefix + "[-_]?([0-9]+)$", "i");
+  const pattern = new RegExp('^' + prefix + '[-_]?([0-9]+)$', 'i');
   rows.forEach(r => {
     if (!r.sku) return;
     existingSet.add(r.sku.toUpperCase());
@@ -105,10 +105,10 @@ export async function generateUniqueSku(category, client = pool) {
     }
   });
   let nextNum = maxNum + 1;
-  let candidate = prefix + "-" + String(nextNum).padStart(3, "0");
+  let candidate = prefix + '-' + String(nextNum).padStart(3, '0');
   while (existingSet.has(candidate.toUpperCase())) {
     nextNum++;
-    candidate = prefix + "-" + String(nextNum).padStart(3, "0");
+    candidate = prefix + '-' + String(nextNum).padStart(3, '0');
   }
   return candidate;
 }

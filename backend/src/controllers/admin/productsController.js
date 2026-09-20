@@ -1,6 +1,6 @@
 // src/controllers/admin/productsController.js
 import pool from '../../config/db.js';
-import { calculateItemCapacity, calculateBulkCapacity, getCapacityBreakdown } from '../../services/capacityService.js';
+import { calculateBulkCapacity, getCapacityBreakdown } from '../../services/capacityService.js';
 
 // --- Categories ---
 
@@ -297,7 +297,7 @@ export const deleteMenuItem = async (req, res, next) => {
 
 export const listAddons = async (req, res, next) => {
   try {
-    let { rows: addons } = await pool.query(
+    const { rows: addons } = await pool.query(
       'SELECT id, name, description, price, cost, category, status, created_at FROM add_ons ORDER BY name ASC'
     );
 

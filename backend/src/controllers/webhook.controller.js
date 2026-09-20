@@ -107,7 +107,7 @@ export async function handlePaymongoWebhook(req, res) {
       }
     } else if (eventType === 'payment.failed') {
       const payment = eventData.attributes;
-      console.warn(`❌ Payment Failed for reference: ${eventData.id}`);
+      console.warn(`❌ Payment Failed for reference: ${eventData.id}`, payment?.failed_message || '');
     }
 
     // Always respond with 200 OK so PayMongo acknowledges receipt

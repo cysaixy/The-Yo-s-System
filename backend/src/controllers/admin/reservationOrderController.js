@@ -426,7 +426,7 @@ export async function upsertReservationOrder(req, res, next) {
 export async function updateReservationStatus(req, res, next) {
   try {
     const { id } = req.params;
-    const { reservation_status, contact_notes } = req.body;
+    const { reservation_status } = req.body;
 
     if (!VALID_RESERVATION_STATUSES.includes(reservation_status)) {
       return res.status(400).json({ error: 'Invalid reservation status.' });
@@ -442,7 +442,6 @@ export async function updateReservationStatus(req, res, next) {
     }
 
     const reservation = resv.rows[0];
-    const updates = { reservation_status };
     const setClauses = ['reservation_status = $1'];
     const params = [reservation_status];
     let paramIndex = 2;

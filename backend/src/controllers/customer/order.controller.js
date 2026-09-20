@@ -239,9 +239,9 @@ export async function createOrder(req, res, next) {
     }
 
     const orderResult = await client.query(
-      `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, delivery_fee, delivery_address, notes, customer_name, customer_phone, payment_method, datetime_ordered)
-       VALUES ($1, NULL, $2, $3, 'pending', $4, $5, $6, $7, $8, $9, $10, NOW())
-       RETURNING id, customer_id, reservation_id, order_type, status, total_amount, delivery_fee, delivery_address, notes, customer_name, customer_phone, payment_method, datetime_ordered`,
+      `INSERT INTO orders (customer_id, staff_id, reservation_id, order_type, status, total_amount, delivery_fee, delivery_address, notes, customer_name, customer_phone, payment_method, delivery_fee_status, datetime_ordered)
+       VALUES ($1, NULL, $2, $3, 'pending', $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+       RETURNING id, customer_id, reservation_id, order_type, status, total_amount, delivery_fee, delivery_address, notes, customer_name, customer_phone, payment_method, delivery_fee_status, datetime_ordered`,
       [
         customer_id,
         reservation_id || null,
@@ -253,6 +253,7 @@ export async function createOrder(req, res, next) {
         customer_name || null,
         customer_phone || null,
         payment_method || null,
+        deliveryFeeStatus,
       ]
     );
     const order = orderResult.rows[0];

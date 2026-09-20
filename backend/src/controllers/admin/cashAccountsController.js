@@ -44,7 +44,7 @@ export async function updateAccount(req, res, next) {
 
       if (is_default_drawer === true) {
         await client.query(
-          `UPDATE cash_accounts SET is_default_drawer = FALSE WHERE is_default_drawer = TRUE`
+          'UPDATE cash_accounts SET is_default_drawer = FALSE WHERE is_default_drawer = TRUE'
         );
       }
 
@@ -81,7 +81,7 @@ export async function deleteAccount(req, res, next) {
     await client.query('BEGIN');
 
     const { rows: account } = await client.query(
-      `SELECT is_default_drawer FROM cash_accounts WHERE id = $1`,
+      'SELECT is_default_drawer FROM cash_accounts WHERE id = $1',
       [req.params.id]
     );
     if (!account[0]) {
@@ -210,7 +210,7 @@ export async function closeReconciliation(req, res, next) {
     await client.query('COMMIT');
 
     const { rows: updated } = await client.query(
-      `SELECT * FROM daily_reconciliations WHERE id = $1`,
+      'SELECT * FROM daily_reconciliations WHERE id = $1',
       [rows[0].id]
     );
 
