@@ -656,6 +656,13 @@
 <script type="module">
   import { renderAdminShell, showAlert } from "./admin-shell.js";
   import { adminFetch, peso, escapeHtml } from "./admin-api.js";
+  import {
+    printerManager,
+    normalizeOrderData,
+    openReceiptModal,
+    printReceiptSystem,
+    openPrinterSettingsModal
+  } from "./receipt-printer.js";
 
   const session = renderAdminShell({ active: 'pos', title: 'Point of Sale' });
   if (session) init();
@@ -680,8 +687,9 @@
   let splitRows = [];    // [{ method, amount }]
   let splitMode = false;
 
-  // ---- Cached order params for final submit ----
+  // Cached order params & last receipt for printing
   let pendingOrderParams = null;
+  let lastCompletedReceiptData = null;
 
   /* ================================================================
      INIT
@@ -694,8 +702,12 @@
         <!-- LEFT: Product Area -->
         <div class="pos-left">
           <div class="pos-left-toolbar">
-            <div class="pos-search-row">
-              <input type="text" id="posSearch" placeholder="Search by product name…">
+            <div class="pos-search-row" style="display:flex; gap:10px; align-items:center;">
+              <input type="text" id="posSearch" placeholder="Search by product name…" style="flex:1;">
+              <button id="posPrinterBtn" class="btn btn-outline small" type="button" title="Receipt Printer Settings & Bluetooth" style="display:flex; align-items:center; gap:6px; white-space:nowrap; padding:9px 12px; font-size:0.78rem;">
+                <span id="posPrinterDot" style="width:8px; height:8px; border-radius:50%; background:#c0392b; display:inline-block;"></span>
+                <span id="posPrinterLabel">XP-58 Printer</span>
+              </button>
             </div>
             <div class="pos-cat-pills" id="catPillsWrap">
               <button class="pos-cat-pill active" data-cat="all">All</button>
@@ -973,6 +985,24 @@
               <h3>Payment Successful</h3>
               <div class="txn-id" id="paySuccessTxnId">Transaction #—</div>
               <table class="pay-receipt-table" id="payReceiptTable"></table>
+
+              <!-- Thermal Receipt Quick Actions -->
+              <div class="pay-receipt-actions" style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
+                <div id="payBtStatusNotice" style="font-size:0.75rem; text-align:center; color:var(--ink-muted);"></div>
+                <div style="display:flex; gap:8px;">
+                  <button type="button" class="btn" id="payPrintBtBtn" style="flex:1; background:#2e7d4f; border-color:#2e7d4f; font-size:0.8rem; padding:9px 8px; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/></svg>
+                    Print Bluetooth
+                  </button>
+                  <button type="button" class="btn btn-outline" id="payPrintSysBtn" style="flex:1; font-size:0.8rem; padding:9px 8px; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    System Print
+                  </button>
+                </div>
+                <button type="button" class="btn btn-outline" id="payPreviewReceiptBtn" style="font-size:0.75rem; padding:6px 10px; width:100%;">
+                  👁️ View 58mm Thermal Preview / Settings
+                </button>
+              </div>
             </div>
 
           </div><!-- end pay-card-body -->
@@ -989,6 +1019,36 @@
 
     // POS event listeners
     document.getElementById('posSearch').addEventListener('input', (e) => { searchTerm = e.target.value.toLowerCase(); renderList(); });
+
+    // Printer toolbar UI & events
+    function updatePrinterToolbarUI(status) {
+      const dot = document.getElementById('posPrinterDot');
+      const label = document.getElementById('posPrinterLabel');
+      if (!dot || !label) return;
+      if (status.isConnected) {
+        dot.style.background = '#2e7d4f';
+        dot.style.boxShadow = '0 0 0 2px rgba(46,125,79,0.2)';
+        label.textContent = status.deviceName || 'XP-58 Ready';
+      } else {
+        dot.style.background = '#c0392b';
+        dot.style.boxShadow = 'none';
+        label.textContent = 'XP-58 Offline';
+      }
+    }
+    printerManager.onStatusChange(updatePrinterToolbarUI);
+    updatePrinterToolbarUI({
+      isConnected: printerManager.isConnected(),
+      deviceName: printerManager.getDeviceName(),
+    });
+    document.getElementById('posPrinterBtn').addEventListener('click', () => {
+      openPrinterSettingsModal(() => {
+        updatePrinterToolbarUI({
+          isConnected: printerManager.isConnected(),
+          deviceName: printerManager.getDeviceName(),
+        });
+      });
+    });
+
     document.getElementById('deliveryFeeInput').addEventListener('input', renderCart);
     document.getElementById('clearOrderBtn').addEventListener('click', clearOrder);
     document.getElementById('submitOrderBtn').addEventListener('click', openPaymentScreen);
@@ -1682,7 +1742,46 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not place order.');
 
-      showSuccessScreen(data.order, received, completedPaymentMethod);
+      // Prepare receipt data before clearing cart
+      let staffName = 'Staff';
+      try {
+        const staffObj = JSON.parse(localStorage.getItem('staffInfo') || '{}');
+        staffName = staffObj.name || staffObj.username || 'Staff';
+      } catch (e) {}
+
+      const receiptCartCopy = cart.map(c => ({
+        name: c.name,
+        price: c.price,
+        quantity: c.qty,
+        notes: c.notes,
+        add_ons: (c.add_ons || []).map(a => ({
+          name: a.name,
+          quantity: a.qty,
+          price: a.price,
+          subtotal: (a.price || 0) * (a.qty || 1),
+        })),
+        subtotal: lineTotal(c),
+      }));
+
+      const receiptData = normalizeOrderData(data.order || {}, {
+        orderId: data.order?.id,
+        orderType: pendingOrderParams?.order_type,
+        customerName: pendingOrderParams?.customer_name || selectedCustomer?.name || 'Walk-in',
+        customerPhone: pendingOrderParams?.customer_phone || selectedCustomer?.phone || '',
+        deliveryAddress: pendingOrderParams?.delivery_address || '',
+        staffName: staffName,
+        subtotal: paymentGrandTotal - (Number(pendingOrderParams?.delivery_fee) || 0),
+        deliveryFee: Number(pendingOrderParams?.delivery_fee) || 0,
+        totalAmount: paymentGrandTotal,
+        amountReceived: received,
+        change: Math.max(0, completedPaymentMethod === 'split' ? 0 : received - paymentGrandTotal),
+        paymentMethod: completedPaymentMethod,
+        splitPayments: splitMode ? splitRows : null,
+      });
+      receiptData.items = receiptCartCopy;
+      lastCompletedReceiptData = receiptData;
+
+      showSuccessScreen(data.order, received, completedPaymentMethod, receiptData);
       clearOrder();
       loadMenu();
       loadAddons();
@@ -1696,7 +1795,7 @@
     }
   }
 
-  function showSuccessScreen(order, amountReceived, completedPaymentMethod) {
+  function showSuccessScreen(order, amountReceived, completedPaymentMethod, receiptData) {
     const change = completedPaymentMethod === 'split' ? 0 : amountReceived - paymentGrandTotal;
     const orderId = order ? order.id : '—';
     const orderTotal = order ? Number(order.total_amount) : paymentGrandTotal;
@@ -1712,6 +1811,68 @@
       <tr class="change-row"><td style="color:var(--ink-muted)">Change</td><td>${peso(Math.max(0, change))}</td></tr>
       <tr><td style="color:var(--ink-muted)">Payment Method</td><td>${methodLabel[completedPaymentMethod] || completedPaymentMethod}</td></tr>
     `;
+
+    // Thermal receipt action handlers
+    const activeReceipt = receiptData || lastCompletedReceiptData;
+    const printBtBtn = document.getElementById('payPrintBtBtn');
+    const printSysBtn = document.getElementById('payPrintSysBtn');
+    const previewBtn = document.getElementById('payPreviewReceiptBtn');
+    const noticeEl = document.getElementById('payBtStatusNotice');
+
+    const updateNotice = () => {
+      if (!noticeEl) return;
+      if (printerManager.isConnected()) {
+        noticeEl.innerHTML = `<span style="color:#2e7d4f;">● Connected to <b>${escapeHtml(printerManager.getDeviceName())}</b></span>`;
+      } else {
+        noticeEl.innerHTML = `<span>Printer offline · <a href="#" id="payNoticeConnectLink" style="color:var(--brass-dark); text-decoration:underline;">Connect XP-58</a></span>`;
+        const link = document.getElementById('payNoticeConnectLink');
+        if (link) {
+          link.onclick = (e) => {
+            e.preventDefault();
+            printerManager.connect().then(() => updateNotice()).catch((e) => alert(e.message));
+          };
+        }
+      }
+    };
+    updateNotice();
+
+    if (printBtBtn && activeReceipt) {
+      printBtBtn.onclick = async () => {
+        try {
+          printBtBtn.disabled = true;
+          printBtBtn.textContent = 'Printing…';
+          await printerManager.printReceiptBluetooth(activeReceipt);
+          printBtBtn.textContent = '✓ Sent to XP-58';
+          setTimeout(() => {
+            printBtBtn.disabled = false;
+            printBtBtn.textContent = 'Print Bluetooth';
+          }, 3000);
+        } catch (err) {
+          alert('Bluetooth print error: ' + err.message);
+          printBtBtn.disabled = false;
+          printBtBtn.textContent = 'Print Bluetooth';
+        }
+      };
+    }
+
+    if (printSysBtn && activeReceipt) {
+      printSysBtn.onclick = () => {
+        printReceiptSystem(activeReceipt);
+      };
+    }
+
+    if (previewBtn && activeReceipt) {
+      previewBtn.onclick = () => {
+        openReceiptModal(activeReceipt);
+      };
+    }
+
+    // Auto-print if enabled and printer is connected
+    if (printerManager.settings.autoPrintPos && printerManager.isConnected() && activeReceipt) {
+      printerManager.printReceiptBluetooth(activeReceipt).catch((err) => {
+        console.warn('Auto-print error:', err);
+      });
+    }
 
     document.getElementById('paySuccess').classList.add('active');
     document.getElementById('payCardBody').scrollTop = 0;
