@@ -92,8 +92,13 @@ class ReceiptPrinterManager {
    */
   async connect() {
     if (!this.isBluetoothSupported()) {
+      if (isAppleDevice()) {
+        throw new Error(
+          'Apple iOS/iPadOS blocks Web Bluetooth in Safari and Chrome. To connect directly via Bluetooth on an iPad or iPhone, open this system in the Bluefy app (free Web Bluetooth browser on the App Store). Alternatively, use the "System Print (58mm)" button.'
+        );
+      }
       throw new Error(
-        'Web Bluetooth is not supported in this browser. Please use Google Chrome or Microsoft Edge on Windows/Android, or use System Print.'
+        'Web Bluetooth is not supported in this browser. Please use Google Chrome or Microsoft Edge on Windows/Android tablets, or use System Print.'
       );
     }
 
@@ -456,6 +461,13 @@ function orderTypeLabel(type) {
   return 'Dine-In';
 }
 
+function isAppleDevice() {
+  return typeof navigator !== 'undefined' && (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
 function escapeHtml(str) {
   return String(str || '')
     .replace(/&/g, '&amp;')
@@ -578,6 +590,11 @@ export function openReceiptModal(receiptData) {
             <button class="thermal-sm-btn" id="thermalSettingsBtn">Settings</button>
           </div>
         </div>
+
+        ${!isBTConnected && isAppleDevice() ? `
+          <div class="thermal-ios-tip" style="background:#fef7e7; border:1px solid #f9e2af; padding:8px 12px; border-radius:8px; font-size:0.76rem; line-height:1.45; color:#7d5700; margin-bottom:12px;">
+            <b>📱 iPad / iPhone Notice:</b> Apple blocks Web Bluetooth in Safari. To connect Bluetooth directly on an iPad, open this site in <b>Bluefy</b> (free Web BLE browser on the App Store). Or tap <b>System Print (58mm)</b> below.
+          </div>` : ''}
 
         <div id="thermalBtAlert" class="thermal-alert" style="display:none;"></div>
 
@@ -711,6 +728,10 @@ export function openPrinterSettingsModal(onSave) {
             </div>
           </div>
           <div id="tsAlert" class="thermal-alert" style="display:none; margin-top:8px;"></div>
+          ${!isBTConnected && isAppleDevice() ? `
+            <div style="background:#fef7e7; border:1px solid #f9e2af; padding:8px 12px; border-radius:8px; font-size:0.75rem; line-height:1.45; color:#7d5700; margin-top:8px;">
+              <b>📱 iPad / iPhone Notice:</b> Apple restricts Bluetooth in Safari. For direct Bluetooth on iPad, open this web app in the <b>Bluefy</b> app (free from the App Store), or use <b>System Print (58mm)</b>. On <b>Android tablets</b>, it works natively in Google Chrome.
+            </div>` : ''}
         </div>
 
         <div class="thermal-form-group">
