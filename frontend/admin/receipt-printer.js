@@ -592,8 +592,14 @@ export function openReceiptModal(receiptData) {
         </div>
 
         ${!isBTConnected && isAppleDevice() ? `
-          <div class="thermal-ios-tip" style="background:#fef7e7; border:1px solid #f9e2af; padding:8px 12px; border-radius:8px; font-size:0.76rem; line-height:1.45; color:#7d5700; margin-bottom:12px;">
-            <b>📱 iPad / iPhone Notice:</b> Apple blocks Web Bluetooth in Safari. To connect Bluetooth directly on an iPad, open this site in <b>Bluefy</b> (free Web BLE browser on the App Store). Or tap <b>System Print (58mm)</b> below.
+          <div class="thermal-ios-tip" style="background:#fef7e7; border:1px solid #f9e2af; padding:8px 12px; border-radius:8px; font-size:0.76rem; line-height:1.45; color:#7d5700; margin-bottom:12px; display:flex; align-items:flex-start; gap:8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+              <line x1="12" y1="18" x2="12.01" y2="18"/>
+            </svg>
+            <div>
+              <b>iPad / iPhone Notice:</b> Apple blocks Web Bluetooth in Safari. To connect Bluetooth directly on an iPad, open this site in <b>Bluefy</b> (free Web BLE browser on the App Store). Or tap <b>System Print (58mm)</b> below.
+            </div>
           </div>` : ''}
 
         <div id="thermalBtAlert" class="thermal-alert" style="display:none;"></div>
@@ -729,8 +735,14 @@ export function openPrinterSettingsModal(onSave) {
           </div>
           <div id="tsAlert" class="thermal-alert" style="display:none; margin-top:8px;"></div>
           ${!isBTConnected && isAppleDevice() ? `
-            <div style="background:#fef7e7; border:1px solid #f9e2af; padding:8px 12px; border-radius:8px; font-size:0.75rem; line-height:1.45; color:#7d5700; margin-top:8px;">
-              <b>📱 iPad / iPhone Notice:</b> Apple restricts Bluetooth in Safari. For direct Bluetooth on iPad, open this web app in the <b>Bluefy</b> app (free from the App Store), or use <b>System Print (58mm)</b>. On <b>Android tablets</b>, it works natively in Google Chrome.
+            <div style="background:#fef7e7; border:1px solid #f9e2af; padding:8px 12px; border-radius:8px; font-size:0.75rem; line-height:1.45; color:#7d5700; margin-top:8px; display:flex; align-items:flex-start; gap:8px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                <line x1="12" y1="18" x2="12.01" y2="18"/>
+              </svg>
+              <div>
+                <b>iPad / iPhone Notice:</b> Apple restricts Bluetooth in Safari. For direct Bluetooth on iPad, open this web app in the <b>Bluefy</b> app (free from the App Store), or use <b>System Print (58mm)</b>. On <b>Android tablets</b>, it works natively in Google Chrome.
+              </div>
             </div>` : ''}
         </div>
 

@@ -999,8 +999,12 @@
                     System Print
                   </button>
                 </div>
-                <button type="button" class="btn btn-outline" id="payPreviewReceiptBtn" style="font-size:0.75rem; padding:6px 10px; width:100%;">
-                  👁️ View 58mm Thermal Preview / Settings
+                <button type="button" class="btn btn-outline" id="payPreviewReceiptBtn" style="font-size:0.75rem; padding:6px 10px; width:100%; display:flex; align-items:center; justify-content:center; gap:6px;">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <span>View 58mm Thermal Preview / Settings</span>
                 </button>
               </div>
             </div>
@@ -1842,15 +1846,30 @@
           printBtBtn.disabled = true;
           printBtBtn.textContent = 'Printing…';
           await printerManager.printReceiptBluetooth(activeReceipt);
-          printBtBtn.textContent = '✓ Sent to XP-58';
+          printBtBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Sent to XP-58
+          `;
           setTimeout(() => {
             printBtBtn.disabled = false;
-            printBtBtn.textContent = 'Print Bluetooth';
+            printBtBtn.innerHTML = `
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline>
+              </svg>
+              Print Bluetooth
+            `;
           }, 3000);
         } catch (err) {
           alert('Bluetooth print error: ' + err.message);
           printBtBtn.disabled = false;
-          printBtBtn.textContent = 'Print Bluetooth';
+          printBtBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline>
+            </svg>
+            Print Bluetooth
+          `;
         }
       };
     }
