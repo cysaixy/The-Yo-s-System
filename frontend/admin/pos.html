@@ -704,9 +704,9 @@
           <div class="pos-left-toolbar">
             <div class="pos-search-row" style="display:flex; gap:10px; align-items:center;">
               <input type="text" id="posSearch" placeholder="Search by product name…" style="flex:1;">
-              <button id="posPrinterBtn" class="btn btn-outline small" type="button" title="Receipt Printer Settings & Bluetooth" style="display:flex; align-items:center; gap:6px; white-space:nowrap; padding:9px 12px; font-size:0.78rem;">
+              <button id="posPrinterBtn" class="btn btn-outline small" type="button" title="Receipt & Kitchen Printer Settings" style="display:flex; align-items:center; gap:6px; white-space:nowrap; padding:9px 12px; font-size:0.78rem;">
                 <span id="posPrinterDot" style="width:8px; height:8px; border-radius:50%; background:#c0392b; display:inline-block;"></span>
-                <span id="posPrinterLabel">XP-58 Printer</span>
+                <span id="posPrinterLabel">Printers</span>
               </button>
             </div>
             <div class="pos-cat-pills" id="catPillsWrap">
@@ -989,22 +989,32 @@
               <!-- Thermal Receipt Quick Actions -->
               <div class="pay-receipt-actions" style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
                 <div id="payBtStatusNotice" style="font-size:0.75rem; text-align:center; color:var(--ink-muted);"></div>
-                <div style="display:flex; gap:8px;">
-                  <button type="button" class="btn" id="payPrintBtBtn" style="flex:1; background:#2e7d4f; border-color:#2e7d4f; font-size:0.8rem; padding:9px 8px; display:flex; align-items:center; justify-content:center; gap:6px;">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/></svg>
-                    Print Bluetooth
+
+                <!-- Primary: Print Both (Counter + Kitchen) -->
+                <button type="button" class="btn" id="payPrintBothBtn" style="background:#2e7d4f; border-color:#2e7d4f; font-size:0.82rem; padding:10px 8px; display:flex; align-items:center; justify-content:center; gap:6px; width:100%;">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/></svg>
+                  Print Both (Counter + Kitchen)
+                </button>
+
+                <!-- Specific Target Print Buttons -->
+                <div style="display:flex; gap:6px;">
+                  <button type="button" class="btn btn-outline" id="payPrintCounterBtn" style="flex:1; font-size:0.75rem; padding:8px 6px;">
+                    Counter Only
                   </button>
-                  <button type="button" class="btn btn-outline" id="payPrintSysBtn" style="flex:1; font-size:0.8rem; padding:9px 8px; display:flex; align-items:center; justify-content:center; gap:6px;">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                  <button type="button" class="btn btn-outline" id="payPrintKitchenBtn" style="flex:1; font-size:0.75rem; padding:8px 6px;">
+                    Kitchen Only
+                  </button>
+                  <button type="button" class="btn btn-outline" id="payPrintSysBtn" style="flex:1; font-size:0.75rem; padding:8px 6px;">
                     System Print
                   </button>
                 </div>
+
                 <button type="button" class="btn btn-outline" id="payPreviewReceiptBtn" style="font-size:0.75rem; padding:6px 10px; width:100%; display:flex; align-items:center; justify-content:center; gap:6px;">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                     <circle cx="12" cy="12" r="3"></circle>
                   </svg>
-                  <span>View 58mm Thermal Preview / Settings</span>
+                  <span>Preview & Printer Settings</span>
                 </button>
               </div>
             </div>
@@ -1029,26 +1039,34 @@
       const dot = document.getElementById('posPrinterDot');
       const label = document.getElementById('posPrinterLabel');
       if (!dot || !label) return;
-      if (status.isConnected) {
+      if (status.counterConnected && status.kitchenConnected) {
         dot.style.background = '#2e7d4f';
-        dot.style.boxShadow = '0 0 0 2px rgba(46,125,79,0.2)';
-        label.textContent = status.deviceName || 'XP-58 Ready';
+        dot.style.boxShadow = '0 0 0 2px rgba(46,125,79,0.25)';
+        label.textContent = '2 Printers Ready';
+      } else if (status.counterConnected) {
+        dot.style.background = '#2e7d4f';
+        dot.style.boxShadow = 'none';
+        label.textContent = 'Counter Ready';
+      } else if (status.kitchenConnected) {
+        dot.style.background = '#2e7d4f';
+        dot.style.boxShadow = 'none';
+        label.textContent = 'Kitchen Ready';
       } else {
         dot.style.background = '#c0392b';
         dot.style.boxShadow = 'none';
-        label.textContent = 'XP-58 Offline';
+        label.textContent = 'Printers Offline';
       }
     }
     printerManager.onStatusChange(updatePrinterToolbarUI);
     updatePrinterToolbarUI({
-      isConnected: printerManager.isConnected(),
-      deviceName: printerManager.getDeviceName(),
+      counterConnected: printerManager.isConnected('counter'),
+      kitchenConnected: printerManager.isConnected('kitchen'),
     });
     document.getElementById('posPrinterBtn').addEventListener('click', () => {
       openPrinterSettingsModal(() => {
         updatePrinterToolbarUI({
-          isConnected: printerManager.isConnected(),
-          deviceName: printerManager.getDeviceName(),
+          counterConnected: printerManager.isConnected('counter'),
+          kitchenConnected: printerManager.isConnected('kitchen'),
         });
       });
     });
@@ -1818,65 +1836,96 @@
 
     // Thermal receipt action handlers
     const activeReceipt = receiptData || lastCompletedReceiptData;
-    const printBtBtn = document.getElementById('payPrintBtBtn');
+    const printBothBtn = document.getElementById('payPrintBothBtn');
+    const printCounterBtn = document.getElementById('payPrintCounterBtn');
+    const printKitchenBtn = document.getElementById('payPrintKitchenBtn');
     const printSysBtn = document.getElementById('payPrintSysBtn');
     const previewBtn = document.getElementById('payPreviewReceiptBtn');
     const noticeEl = document.getElementById('payBtStatusNotice');
 
     const updateNotice = () => {
       if (!noticeEl) return;
-      if (printerManager.isConnected()) {
-        noticeEl.innerHTML = `<span style="color:#2e7d4f;">● Connected to <b>${escapeHtml(printerManager.getDeviceName())}</b></span>`;
+      const counterConn = printerManager.isConnected('counter');
+      const kitchenConn = printerManager.isConnected('kitchen');
+      if (counterConn && kitchenConn) {
+        noticeEl.innerHTML = `<span style="color:#2e7d4f;">● Counter: <b>${escapeHtml(printerManager.getDeviceName('counter'))}</b> · Kitchen: <b>${escapeHtml(printerManager.getDeviceName('kitchen'))}</b></span>`;
+      } else if (counterConn) {
+        noticeEl.innerHTML = `<span style="color:#2e7d4f;">● Counter: <b>${escapeHtml(printerManager.getDeviceName('counter'))}</b> · Kitchen: Offline</span>`;
+      } else if (kitchenConn) {
+        noticeEl.innerHTML = `<span style="color:#2e7d4f;">● Kitchen: <b>${escapeHtml(printerManager.getDeviceName('kitchen'))}</b> · Counter: Offline</span>`;
       } else {
-        noticeEl.innerHTML = `<span>Printer offline · <a href="#" id="payNoticeConnectLink" style="color:var(--brass-dark); text-decoration:underline;">Connect XP-58</a></span>`;
+        noticeEl.innerHTML = `<span>Printers offline · <a href="#" id="payNoticeConnectLink" style="color:var(--brass-dark); text-decoration:underline;">Pair Printers</a></span>`;
         const link = document.getElementById('payNoticeConnectLink');
         if (link) {
           link.onclick = (e) => {
             e.preventDefault();
-            printerManager.connect().then(() => updateNotice()).catch((e) => alert(e.message));
+            openPrinterSettingsModal(updateNotice);
           };
         }
       }
     };
     updateNotice();
 
-    if (printBtBtn && activeReceipt) {
-      printBtBtn.onclick = async () => {
+    if (printBothBtn && activeReceipt) {
+      printBothBtn.onclick = async () => {
         try {
-          printBtBtn.disabled = true;
-          printBtBtn.textContent = 'Printing…';
-          await printerManager.printReceiptBluetooth(activeReceipt);
-          printBtBtn.innerHTML = `
+          printBothBtn.disabled = true;
+          printBothBtn.textContent = 'Printing Both…';
+          await printerManager.printReceiptBluetooth(activeReceipt, 'both');
+          printBothBtn.innerHTML = `
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
-            Sent to XP-58
+            Both Copies Sent!
           `;
           setTimeout(() => {
-            printBtBtn.disabled = false;
-            printBtBtn.innerHTML = `
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline>
-              </svg>
-              Print Bluetooth
+            printBothBtn.disabled = false;
+            printBothBtn.innerHTML = `
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/></svg>
+              Print Both (Counter + Kitchen)
             `;
           }, 3000);
         } catch (err) {
-          alert('Bluetooth print error: ' + err.message);
-          printBtBtn.disabled = false;
-          printBtBtn.innerHTML = `
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline>
-            </svg>
-            Print Bluetooth
-          `;
+          alert('Print error: ' + err.message);
+          printBothBtn.disabled = false;
+          printBothBtn.innerHTML = `Print Both (Counter + Kitchen)`;
+        }
+      };
+    }
+
+    if (printCounterBtn && activeReceipt) {
+      printCounterBtn.onclick = async () => {
+        try {
+          printCounterBtn.disabled = true;
+          await printerManager.printReceiptBluetooth(activeReceipt, 'counter');
+          printCounterBtn.textContent = 'Sent Counter';
+          setTimeout(() => { printCounterBtn.disabled = false; printCounterBtn.textContent = 'Counter Only'; }, 2500);
+        } catch (err) {
+          alert('Counter print error: ' + err.message);
+          printCounterBtn.disabled = false;
+          printCounterBtn.textContent = 'Counter Only';
+        }
+      };
+    }
+
+    if (printKitchenBtn && activeReceipt) {
+      printKitchenBtn.onclick = async () => {
+        try {
+          printKitchenBtn.disabled = true;
+          await printerManager.printReceiptBluetooth(activeReceipt, 'kitchen');
+          printKitchenBtn.textContent = 'Sent Kitchen';
+          setTimeout(() => { printKitchenBtn.disabled = false; printKitchenBtn.textContent = 'Kitchen Only'; }, 2500);
+        } catch (err) {
+          alert('Kitchen print error: ' + err.message);
+          printKitchenBtn.disabled = false;
+          printKitchenBtn.textContent = 'Kitchen Only';
         }
       };
     }
 
     if (printSysBtn && activeReceipt) {
       printSysBtn.onclick = () => {
-        printReceiptSystem(activeReceipt);
+        printReceiptSystem(activeReceipt, 'CUSTOMER RECEIPT');
       };
     }
 
@@ -1886,9 +1935,10 @@
       };
     }
 
-    // Auto-print if enabled and printer is connected
-    if (printerManager.settings.autoPrintPos && printerManager.isConnected() && activeReceipt) {
-      printerManager.printReceiptBluetooth(activeReceipt).catch((err) => {
+    // Auto-print if enabled and any printer is connected
+    if (printerManager.settings.autoPrintPos && printerManager.isAnyConnected() && activeReceipt) {
+      const target = printerManager.settings.autoPrintTarget || 'both';
+      printerManager.printReceiptBluetooth(activeReceipt, target).catch((err) => {
         console.warn('Auto-print error:', err);
       });
     }

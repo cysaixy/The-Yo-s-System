@@ -1,5 +1,6 @@
-// receipt-printer.js — Bluetooth & 58mm Thermal Receipt Printer Manager for The Yo's POS
-// Specially tailored for Xprinter XP-58IIH and ESC/POS compatible thermal receipt printers.
+// receipt-printer.js — Dual Bluetooth & 58mm Thermal Receipt Printer Manager for The Yo's POS
+// Supports 2 separate printers (Counter Printer + Kitchen Printer) or 2 copies on a single printer.
+// Specially tailored for Xprinter XP-58IIH and ESC/POS compatible thermal printers.
 
 const STORAGE_KEY_SETTINGS = 'theyos_receipt_settings';
 const DEFAULT_SETTINGS = {
@@ -9,6 +10,8 @@ const DEFAULT_SETTINGS = {
   phone: '0912 345 6789',
   footerNote: 'Thank you for your visit!\nPlease come again.',
   autoPrintPos: false,
+  autoPrintTarget: 'both', // 'both', 'counter', 'kitchen'
+  printDoubleIfSingle: true, // If only 1 printer is connected, print 2 copies (Customer + Kitchen)
   paperWidth: 58, // 58mm = 32 columns
 };
 
@@ -24,15 +27,16 @@ const PRINTER_SERVICES = [
 
 class ReceiptPrinterManager {
   constructor() {
-    this.device = null;
-    this.server = null;
-    this.characteristic = null;
+    this.printers = {
+      counter: { device: null, server: null, characteristic: null },
+      kitchen: { device: null, server: null, characteristic: null },
+    };
     this.statusListeners = new Set();
     this.settings = this.loadSettings();
 
-    // Auto-reconnect if supported & previously granted
+    // Auto-reconnect listeners if supported
     if (typeof navigator !== 'undefined' && 'bluetooth' in navigator) {
-      navigator.bluetooth.addEventListener?.('availabilitychanged', (e) => {
+      navigator.bluetooth.addEventListener?.('availabilitychanged', () => {
         this.notifyStatus();
       });
     }
@@ -62,12 +66,18 @@ class ReceiptPrinterManager {
     return typeof navigator !== 'undefined' && !!navigator.bluetooth;
   }
 
-  isConnected() {
-    return !!(this.device && this.device.gatt && this.device.gatt.connected && this.characteristic);
+  isConnected(slot = 'counter') {
+    const p = this.printers[slot];
+    return !!(p && p.device && p.device.gatt && p.device.gatt.connected && p.characteristic);
   }
 
-  getDeviceName() {
-    return this.device?.name || 'Bluetooth Receipt Printer';
+  isAnyConnected() {
+    return this.isConnected('counter') || this.isConnected('kitchen');
+  }
+
+  getDeviceName(slot = 'counter') {
+    const p = this.printers[slot];
+    return p?.device?.name || (slot === 'kitchen' ? 'Kitchen Printer' : 'Counter Printer');
   }
 
   onStatusChange(callback) {
@@ -78,9 +88,13 @@ class ReceiptPrinterManager {
   notifyStatus() {
     const status = {
       isSupported: this.isBluetoothSupported(),
-      isConnected: this.isConnected(),
-      deviceName: this.isConnected() ? this.getDeviceName() : null,
+      counterConnected: this.isConnected('counter'),
+      counterName: this.isConnected('counter') ? this.getDeviceName('counter') : null,
+      kitchenConnected: this.isConnected('kitchen'),
+      kitchenName: this.isConnected('kitchen') ? this.getDeviceName('kitchen') : null,
+      isAnyConnected: this.isAnyConnected(),
       autoPrint: this.settings.autoPrintPos,
+      autoPrintTarget: this.settings.autoPrintTarget || 'both',
     };
     this.statusListeners.forEach((cb) => {
       try { cb(status); } catch (e) { console.error(e); }
@@ -88,9 +102,9 @@ class ReceiptPrinterManager {
   }
 
   /**
-   * Connect to Bluetooth Printer via Web Bluetooth dialog
+   * Connect to a Bluetooth Printer slot ('counter' or 'kitchen')
    */
-  async connect() {
+  async connect(slot = 'counter') {
     if (!this.isBluetoothSupported()) {
       if (isAppleDevice()) {
         throw new Error(
@@ -103,25 +117,23 @@ class ReceiptPrinterManager {
     }
 
     try {
-      // Prompt user to select their Bluetooth thermal printer
       const device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: PRINTER_SERVICES,
       });
 
-      this.device = device;
-      this.device.addEventListener('gattserverdisconnected', () => {
-        this.characteristic = null;
-        this.server = null;
+      const slotObj = this.printers[slot] || this.printers.counter;
+      slotObj.device = device;
+      device.addEventListener('gattserverdisconnected', () => {
+        slotObj.characteristic = null;
+        slotObj.server = null;
         this.notifyStatus();
       });
 
       const server = await device.gatt.connect();
-      this.server = server;
+      slotObj.server = server;
 
-      // Find writable characteristic across primary services
       let writeChar = null;
-
       for (const serviceUuid of PRINTER_SERVICES) {
         try {
           const service = await server.getPrimaryService(serviceUuid);
@@ -133,12 +145,9 @@ class ReceiptPrinterManager {
             }
           }
           if (writeChar) break;
-        } catch (e) {
-          // Keep looking in other services
-        }
+        } catch (e) {}
       }
 
-      // Fallback: check all available services
       if (!writeChar) {
         try {
           const allServices = await server.getPrimaryServices();
@@ -159,13 +168,13 @@ class ReceiptPrinterManager {
 
       if (!writeChar) {
         throw new Error(
-          'Connected to device, but no writable printer characteristic was found. Ensure this is an ESC/POS Bluetooth printer.'
+          `Connected to ${device.name || 'device'}, but no writable printer characteristic was found. Ensure this is an ESC/POS Bluetooth printer.`
         );
       }
 
-      this.characteristic = writeChar;
+      slotObj.characteristic = writeChar;
       this.notifyStatus();
-      return { success: true, deviceName: this.getDeviceName() };
+      return { success: true, slot, deviceName: this.getDeviceName(slot) };
     } catch (err) {
       this.notifyStatus();
       if (err.name === 'NotFoundError') {
@@ -175,61 +184,111 @@ class ReceiptPrinterManager {
     }
   }
 
-  async disconnect() {
-    if (this.device && this.device.gatt && this.device.gatt.connected) {
+  async disconnect(slot = 'counter') {
+    const slotObj = this.printers[slot];
+    if (slotObj && slotObj.device && slotObj.device.gatt && slotObj.device.gatt.connected) {
       try {
-        this.device.gatt.disconnect();
+        slotObj.device.gatt.disconnect();
       } catch (e) {
-        console.warn('Error disconnecting Bluetooth printer:', e);
+        console.warn('Error disconnecting printer:', e);
       }
     }
-    this.device = null;
-    this.server = null;
-    this.characteristic = null;
+    if (slotObj) {
+      slotObj.device = null;
+      slotObj.server = null;
+      slotObj.characteristic = null;
+    }
     this.notifyStatus();
   }
 
   /**
-   * Send raw byte buffer to Bluetooth printer in safe MTU chunks
+   * Send raw byte buffer to a specific printer slot ('counter' or 'kitchen')
    */
-  async sendBytes(bytes) {
-    if (!this.isConnected()) {
-      throw new Error('Bluetooth printer is not connected.');
+  async sendBytes(slot, bytes) {
+    const p = this.printers[slot];
+    if (!this.isConnected(slot)) {
+      throw new Error(`${slot === 'kitchen' ? 'Kitchen' : 'Counter'} printer is not connected.`);
     }
 
     const CHUNK_SIZE = 60; // 60 bytes per packet fits safely within BLE MTU
     for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
       const chunk = bytes.slice(i, i + CHUNK_SIZE);
-      if (this.characteristic.properties.writeWithoutResponse) {
-        await this.characteristic.writeValueWithoutResponse(chunk);
+      if (p.characteristic.properties.writeWithoutResponse) {
+        await p.characteristic.writeValueWithoutResponse(chunk);
       } else {
-        await this.characteristic.writeValue(chunk);
+        await p.characteristic.writeValue(chunk);
       }
-      // Small pause to prevent buffer overrun on XP-58IIH
       await new Promise((r) => setTimeout(r, 25));
     }
   }
 
   /**
-   * Formats a receipt for 58mm (32 characters per line) and prints to Bluetooth
+   * Prints receipt(s). Supports target: 'both' | 'counter' | 'kitchen'.
+   * Both Counter and Kitchen receipts have identical item pricing and totals.
    */
-  async printReceiptBluetooth(receiptData) {
-    if (!this.isConnected()) {
-      // Attempt connect first
-      await this.connect();
+  async printReceiptBluetooth(receiptData, target = 'both') {
+    const counterConn = this.isConnected('counter');
+    const kitchenConn = this.isConnected('kitchen');
+
+    if (!counterConn && !kitchenConn) {
+      // Neither connected, prompt for counter printer
+      await this.connect('counter');
     }
-    const bytes = this.generateEscPosBytes(receiptData);
-    await this.sendBytes(bytes);
-    return true;
+
+    const counterBytes = this.generateEscPosBytes(receiptData, 'CUSTOMER RECEIPT');
+    const kitchenBytes = this.generateEscPosBytes(receiptData, 'KITCHEN COPY');
+
+    if (target === 'counter') {
+      if (!this.isConnected('counter')) await this.connect('counter');
+      await this.sendBytes('counter', counterBytes);
+      return { counter: true };
+    }
+
+    if (target === 'kitchen') {
+      if (!this.isConnected('kitchen')) await this.connect('kitchen');
+      await this.sendBytes('kitchen', kitchenBytes);
+      return { kitchen: true };
+    }
+
+    // target === 'both'
+    const results = {};
+    if (this.isConnected('counter') && this.isConnected('kitchen')) {
+      // 2 separate printers connected: send to both!
+      await this.sendBytes('counter', counterBytes);
+      results.counter = true;
+      await this.sendBytes('kitchen', kitchenBytes);
+      results.kitchen = true;
+    } else if (this.isConnected('counter')) {
+      // Only Counter printer connected
+      await this.sendBytes('counter', counterBytes);
+      results.counter = true;
+      if (this.settings.printDoubleIfSingle) {
+        await new Promise((r) => setTimeout(r, 600)); // Brief pause between slips
+        await this.sendBytes('counter', kitchenBytes);
+        results.kitchen = true;
+      }
+    } else if (this.isConnected('kitchen')) {
+      // Only Kitchen printer connected
+      await this.sendBytes('kitchen', kitchenBytes);
+      results.kitchen = true;
+      if (this.settings.printDoubleIfSingle) {
+        await new Promise((r) => setTimeout(r, 600));
+        await this.sendBytes('kitchen', counterBytes);
+        results.counter = true;
+      }
+    }
+
+    return results;
   }
 
   /**
-   * Sends a test receipt to verify Bluetooth printer connection
+   * Test print for a specific slot ('counter' or 'kitchen')
    */
-  async testPrint() {
-    if (!this.isConnected()) {
-      await this.connect();
+  async testPrint(slot = 'counter') {
+    if (!this.isConnected(slot)) {
+      await this.connect(slot);
     }
+    const isKitchen = slot === 'kitchen';
     const testData = {
       orderId: 'TEST-001',
       date: new Date(),
@@ -237,26 +296,27 @@ class ReceiptPrinterManager {
       customerName: 'Test Customer',
       staffName: 'Admin',
       items: [
-        { name: 'Xprinter XP-58IIH Test', quantity: 1, price: 0, subtotal: 0 },
-        { name: 'Paper Width: 58mm (32 Cols)', quantity: 1, price: 0, subtotal: 0 },
-        { name: 'Bluetooth Connection: OK', quantity: 1, price: 0, subtotal: 0 },
+        { name: `${isKitchen ? 'Kitchen' : 'Counter'} Printer Test`, quantity: 1, price: 120.0, subtotal: 120.0 },
+        { name: 'Xprinter XP-58IIH (58mm)', quantity: 1, price: 0, subtotal: 0 },
+        { name: 'Connection: OK', quantity: 1, price: 0, subtotal: 0 },
       ],
-      subtotal: 0,
+      subtotal: 120.0,
       deliveryFee: 0,
-      totalAmount: 0,
-      amountReceived: 0,
-      change: 0,
-      paymentMethod: 'Test OK',
+      totalAmount: 120.0,
+      amountReceived: 150.0,
+      change: 30.0,
+      paymentMethod: 'Cash',
     };
-    const bytes = this.generateEscPosBytes(testData);
-    await this.sendBytes(bytes);
+    const bytes = this.generateEscPosBytes(testData, isKitchen ? 'KITCHEN COPY' : 'CUSTOMER RECEIPT');
+    await this.sendBytes(slot, bytes);
     return true;
   }
 
   /**
    * ESC/POS Byte Generator for 58mm (32 columns)
+   * Both Counter and Kitchen receipts include full price breakdown.
    */
-  generateEscPosBytes(data) {
+  generateEscPosBytes(data, copyType = 'CUSTOMER RECEIPT') {
     const s = this.settings;
     const COLS = 32; // Standard 58mm character width (Font A)
 
@@ -310,6 +370,15 @@ class ReceiptPrinterManager {
     // Separator
     pushLine('='.repeat(COLS));
 
+    // Copy Type Header (e.g. *** CUSTOMER RECEIPT *** or *** KITCHEN COPY ***)
+    if (copyType) {
+      pushBytes(0x1b, 0x61, 0x01); // Center
+      pushBytes(0x1b, 0x45, 0x01); // Bold ON
+      pushLine(`*** ${copyType} ***`);
+      pushBytes(0x1b, 0x45, 0x00); // Bold OFF
+      pushLine('-'.repeat(COLS));
+    }
+
     // Order Info (Left align)
     pushBytes(0x1b, 0x61, 0x00); // Left align
     const dateStr = formatDateTime(data.date || new Date());
@@ -332,7 +401,7 @@ class ReceiptPrinterManager {
     pushBytes(0x1b, 0x45, 0x00); // Bold OFF
     pushLine('-'.repeat(COLS));
 
-    // Items list
+    // Items list (with quantities, add-ons, notes, AND unit/total prices)
     (data.items || []).forEach((item) => {
       const qtyStr = `${item.quantity || 1}x `;
       const priceStr = formatAmount(item.subtotal != null ? item.subtotal : (item.price * item.quantity));
@@ -360,7 +429,7 @@ class ReceiptPrinterManager {
         });
       }
 
-      // Notes
+      // Preparation Notes (prominently shown on both counter & kitchen)
       if (item.notes) {
         pushLine(`   Note: ${item.notes}`);
       }
@@ -409,7 +478,7 @@ class ReceiptPrinterManager {
       const footerLines = s.footerNote.split('\n');
       footerLines.forEach((l) => pushLine(l.trim()));
     }
-    pushLine('*** THE YO\'S POS ***');
+    pushLine(`*** THE YO'S POS · ${copyType} ***`);
 
     // Feed lines & cut
     pushLine('\n\n\n\n');
@@ -529,7 +598,7 @@ export function normalizeOrderData(raw, extra = {}) {
 /**
  * Triggers browser system print configured for 58mm thermal receipt
  */
-export function printReceiptSystem(receiptData) {
+export function printReceiptSystem(receiptData, copyType = 'CUSTOMER RECEIPT') {
   ensureReceiptStyles();
   let container = document.getElementById('thermalReceiptPrintWrapper');
   if (!container) {
@@ -538,14 +607,14 @@ export function printReceiptSystem(receiptData) {
     document.body.appendChild(container);
   }
 
-  container.innerHTML = renderThermalReceiptHtml(receiptData, printerManager.settings);
+  container.innerHTML = renderThermalReceiptHtml(receiptData, printerManager.settings, copyType);
 
   // Trigger print
   window.print();
 }
 
 /**
- * Opens a receipt modal preview with Bluetooth & System Print buttons
+ * Opens a receipt modal preview with Dual Printer & System Print buttons
  */
 export function openReceiptModal(receiptData) {
   ensureReceiptStyles();
@@ -558,144 +627,181 @@ export function openReceiptModal(receiptData) {
   }
 
   const s = printerManager.settings;
-  const isBTConnected = printerManager.isConnected();
-  const btName = printerManager.getDeviceName();
+  const counterConn = printerManager.isConnected('counter');
+  const kitchenConn = printerManager.isConnected('kitchen');
+  const isAnyConn = printerManager.isAnyConnected();
 
-  modal.innerHTML = `
-    <div class="thermal-modal-dialog">
-      <div class="thermal-modal-header">
-        <div class="thermal-modal-title">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 6 2 18 2 18 9"/>
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-            <rect x="6" y="14" width="12" height="8"/>
-          </svg>
-          Receipt Preview (58mm Thermal)
-        </div>
-        <button class="thermal-close-btn" id="thermalModalCloseBtn" aria-label="Close">&times;</button>
-      </div>
+  let activePreviewCopy = 'CUSTOMER RECEIPT'; // or 'KITCHEN COPY'
 
-      <div class="thermal-modal-body">
-        <!-- Status Bar -->
-        <div class="thermal-bt-bar">
-          <div class="thermal-bt-status">
-            <span class="thermal-status-dot ${isBTConnected ? 'online' : 'offline'}"></span>
-            <span>${isBTConnected ? `Connected: <b>${escapeHtml(btName)}</b>` : 'Bluetooth Printer: Not Connected'}</span>
-          </div>
-          <div class="thermal-bt-actions">
-            ${isBTConnected
-              ? `<button class="thermal-sm-btn" id="thermalBtDisconnectBtn">Disconnect</button>`
-              : `<button class="thermal-sm-btn primary" id="thermalBtConnectBtn">Connect Bluetooth</button>`
-            }
-            <button class="thermal-sm-btn" id="thermalSettingsBtn">Settings</button>
-          </div>
-        </div>
-
-        ${!isBTConnected && isAppleDevice() ? `
-          <div class="thermal-ios-tip" style="background:#fef7e7; border:1px solid #f9e2af; padding:8px 12px; border-radius:8px; font-size:0.76rem; line-height:1.45; color:#7d5700; margin-bottom:12px; display:flex; align-items:flex-start; gap:8px;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
-              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-              <line x1="12" y1="18" x2="12.01" y2="18"/>
+  const renderModalContent = () => {
+    modal.innerHTML = `
+      <div class="thermal-modal-dialog">
+        <div class="thermal-modal-header">
+          <div class="thermal-modal-title">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"/>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+              <rect x="6" y="14" width="12" height="8"/>
             </svg>
-            <div>
-              <b>iPad / iPhone Notice:</b> Apple blocks Web Bluetooth in Safari. To connect Bluetooth directly on an iPad, open this site in <b>Bluefy</b> (free Web BLE browser on the App Store). Or tap <b>System Print (58mm)</b> below.
+            Receipt Preview (58mm Thermal)
+          </div>
+          <button class="thermal-close-btn" id="thermalModalCloseBtn" aria-label="Close">&times;</button>
+        </div>
+
+        <div class="thermal-modal-body">
+          <!-- Dual Printer Status Bar -->
+          <div class="thermal-bt-bar" style="display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+              <div style="display:flex; gap:12px; font-size:0.8rem;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span class="thermal-status-dot ${counterConn ? 'online' : 'offline'}"></span>
+                  <span>Counter: <b>${counterConn ? escapeHtml(printerManager.getDeviceName('counter')) : 'Offline'}</b></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span class="thermal-status-dot ${kitchenConn ? 'online' : 'offline'}"></span>
+                  <span>Kitchen: <b>${kitchenConn ? escapeHtml(printerManager.getDeviceName('kitchen')) : 'Offline'}</b></span>
+                </div>
+              </div>
+              <button class="thermal-sm-btn" id="thermalSettingsBtn">Printers & Settings</button>
             </div>
-          </div>` : ''}
+          </div>
 
-        <div id="thermalBtAlert" class="thermal-alert" style="display:none;"></div>
+          ${!isAnyConn && isAppleDevice() ? `
+            <div class="thermal-ios-tip" style="background:#fef7e7; border:1px solid #f9e2af; padding:8px 12px; border-radius:8px; font-size:0.76rem; line-height:1.45; color:#7d5700; margin-bottom:12px; display:flex; align-items:flex-start; gap:8px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                <line x1="12" y1="18" x2="12.01" y2="18"/>
+              </svg>
+              <div>
+                <b>iPad / iPhone Notice:</b> Apple blocks Web Bluetooth in Safari. To connect Bluetooth directly on an iPad, open this site in <b>Bluefy</b> (free Web BLE browser on the App Store). Or tap <b>System Print (58mm)</b> below.
+              </div>
+            </div>` : ''}
 
-        <!-- Authentic 58mm Paper Ticket Container -->
-        <div class="thermal-ticket-wrap">
-          <div class="thermal-ticket">
-            ${renderThermalReceiptHtml(receiptData, s)}
+          <div id="thermalBtAlert" class="thermal-alert" style="display:none;"></div>
+
+          <!-- Preview Copy Switcher -->
+          <div style="display:flex; justify-content:center; gap:8px; margin-bottom:10px;">
+            <button class="thermal-sm-btn ${activePreviewCopy === 'CUSTOMER RECEIPT' ? 'primary' : ''}" id="thermalSwitchCustomer">
+              Customer Receipt Preview
+            </button>
+            <button class="thermal-sm-btn ${activePreviewCopy === 'KITCHEN COPY' ? 'primary' : ''}" id="thermalSwitchKitchen">
+              Kitchen Copy Preview
+            </button>
+          </div>
+
+          <!-- Authentic 58mm Paper Ticket Container -->
+          <div class="thermal-ticket-wrap">
+            <div class="thermal-ticket">
+              ${renderThermalReceiptHtml(receiptData, s, activePreviewCopy)}
+            </div>
+          </div>
+        </div>
+
+        <div class="thermal-modal-footer" style="flex-wrap:wrap; gap:8px; justify-content:space-between;">
+          <button class="btn btn-outline" id="thermalSystemPrintBtn" style="font-size:0.8rem; padding:8px 12px;">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;">
+              <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            System Print
+          </button>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-outline" id="thermalPrintCounterBtn" style="font-size:0.8rem; padding:8px 10px;">
+              Print Counter
+            </button>
+            <button class="btn btn-outline" id="thermalPrintKitchenBtn" style="font-size:0.8rem; padding:8px 10px;">
+              Print Kitchen
+            </button>
+            <button class="btn" id="thermalBtPrintBothBtn" style="background:#2e7d4f; border-color:#2e7d4f; font-size:0.8rem; padding:8px 12px;">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;">
+                <polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/>
+              </svg>
+              Print Both (Counter + Kitchen)
+            </button>
           </div>
         </div>
       </div>
+    `;
 
-      <div class="thermal-modal-footer">
-        <button class="btn btn-outline" id="thermalSystemPrintBtn">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;">
-            <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
-          </svg>
-          System Print (58mm)
-        </button>
-        <button class="btn" id="thermalBtPrintBtn" style="background:#2e7d4f; border-color:#2e7d4f;">
+    modal.classList.add('active');
+
+    const closeModal = () => modal.classList.remove('active');
+    modal.querySelector('#thermalModalCloseBtn').onclick = closeModal;
+    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+    const alertEl = modal.querySelector('#thermalBtAlert');
+    const showAlert = (msg, isError = false) => {
+      alertEl.style.display = 'block';
+      alertEl.className = 'thermal-alert ' + (isError ? 'error' : 'success');
+      alertEl.textContent = msg;
+    };
+
+    modal.querySelector('#thermalSwitchCustomer').onclick = () => {
+      activePreviewCopy = 'CUSTOMER RECEIPT';
+      renderModalContent();
+    };
+    modal.querySelector('#thermalSwitchKitchen').onclick = () => {
+      activePreviewCopy = 'KITCHEN COPY';
+      renderModalContent();
+    };
+
+    modal.querySelector('#thermalSettingsBtn').onclick = () => {
+      openPrinterSettingsModal(() => openReceiptModal(receiptData));
+    };
+
+    modal.querySelector('#thermalSystemPrintBtn').onclick = () => {
+      printReceiptSystem(receiptData, activePreviewCopy);
+    };
+
+    // Print Counter
+    modal.querySelector('#thermalPrintCounterBtn').onclick = async () => {
+      try {
+        showAlert('Sending Customer Receipt to Counter printer…', false);
+        await printerManager.printReceiptBluetooth(receiptData, 'counter');
+        showAlert('Printed Customer Receipt to Counter printer!', false);
+      } catch (e) {
+        showAlert(e.message, true);
+      }
+    };
+
+    // Print Kitchen
+    modal.querySelector('#thermalPrintKitchenBtn').onclick = async () => {
+      try {
+        showAlert('Sending Kitchen Copy to Kitchen printer…', false);
+        await printerManager.printReceiptBluetooth(receiptData, 'kitchen');
+        showAlert('Printed Kitchen Copy to Kitchen printer!', false);
+      } catch (e) {
+        showAlert(e.message, true);
+      }
+    };
+
+    // Print Both
+    const bothBtn = modal.querySelector('#thermalBtPrintBothBtn');
+    bothBtn.onclick = async () => {
+      try {
+        bothBtn.disabled = true;
+        bothBtn.textContent = 'Printing Both…';
+        await printerManager.printReceiptBluetooth(receiptData, 'both');
+        showAlert('Successfully printed Counter & Kitchen copies!', false);
+        bothBtn.disabled = false;
+        bothBtn.innerHTML = `
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;">
             <polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/>
           </svg>
-          Print via Bluetooth (XP-58)
-        </button>
-      </div>
-    </div>
-  `;
-
-  modal.classList.add('active');
-
-  // Event handlers
-  const closeModal = () => modal.classList.remove('active');
-  modal.querySelector('#thermalModalCloseBtn').addEventListener('click', closeModal);
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal();
-  });
-
-  const alertEl = modal.querySelector('#thermalBtAlert');
-  const showAlert = (msg, isError = false) => {
-    alertEl.style.display = 'block';
-    alertEl.className = 'thermal-alert ' + (isError ? 'error' : 'success');
-    alertEl.textContent = msg;
+          Print Both (Counter + Kitchen)
+        `;
+      } catch (e) {
+        showAlert(e.message, true);
+        bothBtn.disabled = false;
+        bothBtn.innerHTML = `Print Both (Counter + Kitchen)`;
+      }
+    };
   };
 
-  const connectBtn = modal.querySelector('#thermalBtConnectBtn');
-  if (connectBtn) {
-    connectBtn.addEventListener('click', async () => {
-      try {
-        connectBtn.disabled = true;
-        connectBtn.textContent = 'Connecting…';
-        await printerManager.connect();
-        openReceiptModal(receiptData); // re-render with connected status
-      } catch (err) {
-        showAlert(err.message, true);
-        connectBtn.disabled = false;
-        connectBtn.textContent = 'Connect Bluetooth';
-      }
-    });
-  }
-
-  const disconnectBtn = modal.querySelector('#thermalBtDisconnectBtn');
-  if (disconnectBtn) {
-    disconnectBtn.addEventListener('click', async () => {
-      await printerManager.disconnect();
-      openReceiptModal(receiptData);
-    });
-  }
-
-  modal.querySelector('#thermalSettingsBtn').addEventListener('click', () => {
-    openPrinterSettingsModal(() => openReceiptModal(receiptData));
-  });
-
-  modal.querySelector('#thermalSystemPrintBtn').addEventListener('click', () => {
-    printReceiptSystem(receiptData);
-  });
-
-  const btPrintBtn = modal.querySelector('#thermalBtPrintBtn');
-  btPrintBtn.addEventListener('click', async () => {
-    try {
-      btPrintBtn.disabled = true;
-      btPrintBtn.textContent = 'Sending to XP-58…';
-      await printerManager.printReceiptBluetooth(receiptData);
-      showAlert('Receipt successfully printed to Bluetooth printer!', false);
-      btPrintBtn.textContent = 'Print via Bluetooth (XP-58)';
-      btPrintBtn.disabled = false;
-    } catch (err) {
-      showAlert(err.message, true);
-      btPrintBtn.textContent = 'Print via Bluetooth (XP-58)';
-      btPrintBtn.disabled = false;
-    }
-  });
+  renderModalContent();
 }
 
 /**
- * Opens settings modal to configure store info, contact, and auto-print
+ * Opens Dual Printer settings modal (Counter + Kitchen)
  */
 export function openPrinterSettingsModal(onSave) {
   ensureReceiptStyles();
@@ -708,49 +814,103 @@ export function openPrinterSettingsModal(onSave) {
   }
 
   const s = printerManager.settings;
-  const isBTConnected = printerManager.isConnected();
-  const btName = printerManager.getDeviceName();
+  const counterConn = printerManager.isConnected('counter');
+  const kitchenConn = printerManager.isConnected('kitchen');
+  const counterName = printerManager.getDeviceName('counter');
+  const kitchenName = printerManager.getDeviceName('kitchen');
 
   modal.innerHTML = `
-    <div class="thermal-modal-dialog" style="max-width:440px;">
+    <div class="thermal-modal-dialog" style="max-width:520px;">
       <div class="thermal-modal-header">
-        <div class="thermal-modal-title">Receipt Printer Settings</div>
+        <div class="thermal-modal-title">Receipt & Kitchen Printer Settings</div>
         <button class="thermal-close-btn" id="thermalSettingsCloseBtn">&times;</button>
       </div>
       <div class="thermal-modal-body" style="padding:16px 20px;">
+
+        <!-- 1. Counter Printer -->
         <div class="thermal-form-group">
-          <label>Bluetooth Printer (Xprinter XP-58IIH)</label>
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Printer 1: Counter Printer (Customer Receipt)</span>
+            <span class="thermal-status-dot ${counterConn ? 'online' : 'offline'}"></span>
+          </label>
           <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bone); padding:10px 12px; border-radius:8px; border:1px solid var(--line);">
             <div>
-              <div style="font-weight:700; font-size:0.85rem;">${isBTConnected ? escapeHtml(btName) : 'Not Connected'}</div>
-              <div style="font-size:0.75rem; color:var(--ink-muted);">${isBTConnected ? 'Ready to print' : 'Pair via Web Bluetooth'}</div>
+              <div style="font-weight:700; font-size:0.85rem;">${counterConn ? escapeHtml(counterName) : 'Not Connected'}</div>
+              <div style="font-size:0.75rem; color:var(--ink-muted);">${counterConn ? 'Ready for customer receipts' : 'Pair Counter Bluetooth Printer'}</div>
             </div>
             <div style="display:flex; gap:6px;">
-              ${isBTConnected
-                ? `<button class="thermal-sm-btn" id="tsDisconnectBtn">Disconnect</button>`
-                : `<button class="thermal-sm-btn primary" id="tsConnectBtn">Connect</button>`
+              ${counterConn
+                ? `<button class="thermal-sm-btn" id="tsCounterDisBtn">Disconnect</button>`
+                : `<button class="thermal-sm-btn primary" id="tsCounterConnBtn">Connect</button>`
               }
-              <button class="thermal-sm-btn" id="tsTestPrintBtn" ${!isBTConnected ? 'disabled' : ''}>Test Print</button>
+              <button class="thermal-sm-btn" id="tsCounterTestBtn" ${!counterConn ? 'disabled' : ''}>Test Print</button>
             </div>
           </div>
-          <div id="tsAlert" class="thermal-alert" style="display:none; margin-top:8px;"></div>
-          ${!isBTConnected && isAppleDevice() ? `
-            <div style="background:#fef7e7; border:1px solid #f9e2af; padding:8px 12px; border-radius:8px; font-size:0.75rem; line-height:1.45; color:#7d5700; margin-top:8px; display:flex; align-items:flex-start; gap:8px;">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
-                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                <line x1="12" y1="18" x2="12.01" y2="18"/>
-              </svg>
-              <div>
-                <b>iPad / iPhone Notice:</b> Apple restricts Bluetooth in Safari. For direct Bluetooth on iPad, open this web app in the <b>Bluefy</b> app (free from the App Store), or use <b>System Print (58mm)</b>. On <b>Android tablets</b>, it works natively in Google Chrome.
-              </div>
-            </div>` : ''}
         </div>
 
+        <!-- 2. Kitchen Printer -->
         <div class="thermal-form-group">
-          <label>Auto-Print on POS Checkout</label>
-          <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer; font-size:0.85rem;">
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Printer 2: Kitchen Printer (Kitchen Copy)</span>
+            <span class="thermal-status-dot ${kitchenConn ? 'online' : 'offline'}"></span>
+          </label>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bone); padding:10px 12px; border-radius:8px; border:1px solid var(--line);">
+            <div>
+              <div style="font-weight:700; font-size:0.85rem;">${kitchenConn ? escapeHtml(kitchenName) : 'Not Connected'}</div>
+              <div style="font-size:0.75rem; color:var(--ink-muted);">${kitchenConn ? 'Ready for kitchen copies' : 'Pair Kitchen Bluetooth Printer'}</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              ${kitchenConn
+                ? `<button class="thermal-sm-btn" id="tsKitchenDisBtn">Disconnect</button>`
+                : `<button class="thermal-sm-btn primary" id="tsKitchenConnBtn">Connect</button>`
+              }
+              <button class="thermal-sm-btn" id="tsKitchenTestBtn" ${!kitchenConn ? 'disabled' : ''}>Test Print</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="tsAlert" class="thermal-alert" style="display:none; margin-top:8px;"></div>
+
+        ${!counterConn && !kitchenConn && isAppleDevice() ? `
+          <div style="background:#fef7e7; border:1px solid #f9e2af; padding:8px 12px; border-radius:8px; font-size:0.75rem; line-height:1.45; color:#7d5700; margin-bottom:12px; display:flex; align-items:flex-start; gap:8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+              <line x1="12" y1="18" x2="12.01" y2="18"/>
+            </svg>
+            <div>
+              <b>iPad / iPhone Notice:</b> Apple restricts Bluetooth in Safari. For direct Bluetooth on iPad, open this web app in the <b>Bluefy</b> app (free from the App Store), or use <b>System Print (58mm)</b>. On <b>Android tablets</b>, it works natively in Google Chrome.
+            </div>
+          </div>` : ''}
+
+        <!-- Dual Printing Rules -->
+        <div class="thermal-form-group" style="background:#fff; border:1px solid var(--line); padding:12px; border-radius:8px;">
+          <label style="margin-bottom:8px;">Printing Preferences</label>
+          <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer; font-size:0.83rem; margin-bottom:8px;">
             <input type="checkbox" id="tsAutoPrint" ${s.autoPrintPos ? 'checked' : ''}>
-            Automatically print receipt when order payment is confirmed
+            <span>Automatically print receipts upon confirming payment in POS</span>
+          </label>
+
+          <div style="margin-left:22px; margin-bottom:10px; font-size:0.8rem;">
+            <label style="display:block; margin-bottom:4px; font-weight:600;">Auto-print routing:</label>
+            <div style="display:flex; gap:14px;">
+              <label style="display:flex; align-items:center; gap:5px; font-weight:normal; cursor:pointer;">
+                <input type="radio" name="autoPrintTarget" value="both" ${s.autoPrintTarget === 'both' ? 'checked' : ''}>
+                Both (Counter + Kitchen)
+              </label>
+              <label style="display:flex; align-items:center; gap:5px; font-weight:normal; cursor:pointer;">
+                <input type="radio" name="autoPrintTarget" value="counter" ${s.autoPrintTarget === 'counter' ? 'checked' : ''}>
+                Counter only
+              </label>
+              <label style="display:flex; align-items:center; gap:5px; font-weight:normal; cursor:pointer;">
+                <input type="radio" name="autoPrintTarget" value="kitchen" ${s.autoPrintTarget === 'kitchen' ? 'checked' : ''}>
+                Kitchen only
+              </label>
+            </div>
+          </div>
+
+          <label style="display:flex; align-items:center; gap:8px; font-weight:normal; cursor:pointer; font-size:0.83rem;">
+            <input type="checkbox" id="tsSingleDoubleCopy" ${s.printDoubleIfSingle ? 'checked' : ''}>
+            <span><b>Single-Printer Dual Copy:</b> If only 1 printer is connected, print 2 copies on it (Customer + Kitchen copy)</span>
           </label>
         </div>
 
@@ -789,8 +949,8 @@ export function openPrinterSettingsModal(onSave) {
   modal.classList.add('active');
 
   const closeModal = () => modal.classList.remove('active');
-  modal.querySelector('#thermalSettingsCloseBtn').addEventListener('click', closeModal);
-  modal.querySelector('#tsCancelBtn').addEventListener('click', closeModal);
+  modal.querySelector('#thermalSettingsCloseBtn').onclick = closeModal;
+  modal.querySelector('#tsCancelBtn').onclick = closeModal;
 
   const alertEl = modal.querySelector('#tsAlert');
   const showAlert = (msg, isErr = false) => {
@@ -799,49 +959,90 @@ export function openPrinterSettingsModal(onSave) {
     alertEl.textContent = msg;
   };
 
-  const connBtn = modal.querySelector('#tsConnectBtn');
-  if (connBtn) {
-    connBtn.addEventListener('click', async () => {
+  // Counter connect / disconnect / test
+  const counterConnBtn = modal.querySelector('#tsCounterConnBtn');
+  if (counterConnBtn) {
+    counterConnBtn.onclick = async () => {
       try {
-        connBtn.disabled = true;
-        connBtn.textContent = 'Connecting…';
-        await printerManager.connect();
+        counterConnBtn.disabled = true;
+        counterConnBtn.textContent = 'Pairing…';
+        await printerManager.connect('counter');
         openPrinterSettingsModal(onSave);
       } catch (e) {
         showAlert(e.message, true);
-        connBtn.disabled = false;
-        connBtn.textContent = 'Connect';
+        counterConnBtn.disabled = false;
+        counterConnBtn.textContent = 'Connect';
       }
-    });
+    };
   }
-
-  const disBtn = modal.querySelector('#tsDisconnectBtn');
-  if (disBtn) {
-    disBtn.addEventListener('click', async () => {
-      await printerManager.disconnect();
+  const counterDisBtn = modal.querySelector('#tsCounterDisBtn');
+  if (counterDisBtn) {
+    counterDisBtn.onclick = async () => {
+      await printerManager.disconnect('counter');
       openPrinterSettingsModal(onSave);
-    });
+    };
   }
-
-  const testBtn = modal.querySelector('#tsTestPrintBtn');
-  if (testBtn) {
-    testBtn.addEventListener('click', async () => {
+  const counterTestBtn = modal.querySelector('#tsCounterTestBtn');
+  if (counterTestBtn) {
+    counterTestBtn.onclick = async () => {
       try {
-        testBtn.disabled = true;
-        testBtn.textContent = 'Printing…';
-        await printerManager.testPrint();
-        showAlert('Test receipt sent to printer successfully!', false);
-        testBtn.disabled = false;
-        testBtn.textContent = 'Test Print';
+        counterTestBtn.disabled = true;
+        counterTestBtn.textContent = 'Printing…';
+        await printerManager.testPrint('counter');
+        showAlert('Test ticket sent to Counter Printer successfully!', false);
+        counterTestBtn.disabled = false;
+        counterTestBtn.textContent = 'Test Print';
       } catch (e) {
         showAlert(e.message, true);
-        testBtn.disabled = false;
-        testBtn.textContent = 'Test Print';
+        counterTestBtn.disabled = false;
+        counterTestBtn.textContent = 'Test Print';
       }
-    });
+    };
   }
 
-  modal.querySelector('#tsSaveBtn').addEventListener('click', () => {
+  // Kitchen connect / disconnect / test
+  const kitchenConnBtn = modal.querySelector('#tsKitchenConnBtn');
+  if (kitchenConnBtn) {
+    kitchenConnBtn.onclick = async () => {
+      try {
+        kitchenConnBtn.disabled = true;
+        kitchenConnBtn.textContent = 'Pairing…';
+        await printerManager.connect('kitchen');
+        openPrinterSettingsModal(onSave);
+      } catch (e) {
+        showAlert(e.message, true);
+        kitchenConnBtn.disabled = false;
+        kitchenConnBtn.textContent = 'Connect';
+      }
+    };
+  }
+  const kitchenDisBtn = modal.querySelector('#tsKitchenDisBtn');
+  if (kitchenDisBtn) {
+    kitchenDisBtn.onclick = async () => {
+      await printerManager.disconnect('kitchen');
+      openPrinterSettingsModal(onSave);
+    };
+  }
+  const kitchenTestBtn = modal.querySelector('#tsKitchenTestBtn');
+  if (kitchenTestBtn) {
+    kitchenTestBtn.onclick = async () => {
+      try {
+        kitchenTestBtn.disabled = true;
+        kitchenTestBtn.textContent = 'Printing…';
+        await printerManager.testPrint('kitchen');
+        showAlert('Test ticket sent to Kitchen Printer successfully!', false);
+        kitchenTestBtn.disabled = false;
+        kitchenTestBtn.textContent = 'Test Print';
+      } catch (e) {
+        showAlert(e.message, true);
+        kitchenTestBtn.disabled = false;
+        kitchenTestBtn.textContent = 'Test Print';
+      }
+    };
+  }
+
+  modal.querySelector('#tsSaveBtn').onclick = () => {
+    const autoPrintTargetRadio = modal.querySelector('input[name="autoPrintTarget"]:checked');
     printerManager.saveSettings({
       storeName: modal.querySelector('#tsStoreName').value.trim(),
       tagline: modal.querySelector('#tsTagline').value.trim(),
@@ -849,16 +1050,19 @@ export function openPrinterSettingsModal(onSave) {
       phone: modal.querySelector('#tsPhone').value.trim(),
       footerNote: modal.querySelector('#tsFooterNote').value.trim(),
       autoPrintPos: modal.querySelector('#tsAutoPrint').checked,
+      autoPrintTarget: autoPrintTargetRadio ? autoPrintTargetRadio.value : 'both',
+      printDoubleIfSingle: modal.querySelector('#tsSingleDoubleCopy').checked,
     });
     closeModal();
     if (onSave) onSave();
-  });
+  };
 }
 
 /**
- * Generates the clean 58mm HTML receipt representation
+ * Generates the clean 58mm HTML receipt representation.
+ * Both Customer and Kitchen copies have full pricing, items, notes, and totals.
  */
-function renderThermalReceiptHtml(data, settings) {
+function renderThermalReceiptHtml(data, settings, copyType = 'CUSTOMER RECEIPT') {
   const s = settings || DEFAULT_SETTINGS;
   const dateStr = formatDateTime(data.date || new Date());
   const typeLabel = orderTypeLabel(data.orderType);
@@ -923,6 +1127,12 @@ function renderThermalReceiptHtml(data, settings) {
       </div>
 
       <div class="tr-divider-double"></div>
+
+      <div style="text-align:center; font-weight:800; font-size:12px; margin:4px 0; letter-spacing:0.05em;">
+        *** ${escapeHtml(copyType)} ***
+      </div>
+
+      <div class="tr-divider"></div>
 
       <div class="tr-meta">
         <div class="tr-row">
@@ -1008,7 +1218,7 @@ function renderThermalReceiptHtml(data, settings) {
 
       <div class="tr-footer">
         ${s.footerNote ? s.footerNote.split('\n').map((l) => `<div>${escapeHtml(l)}</div>`).join('') : ''}
-        <div class="tr-power">*** THE YO'S POS SYSTEM ***</div>
+        <div class="tr-power">*** THE YO'S POS · ${escapeHtml(copyType)} ***</div>
       </div>
 
       <div class="tr-cut-guide">
@@ -1034,7 +1244,7 @@ function ensureReceiptStyles() {
     }
     .thermal-modal-backdrop.active { display: flex; }
     .thermal-modal-dialog {
-      background: #ffffff; border-radius: 14px; width: 100%; max-width: 460px;
+      background: #ffffff; border-radius: 14px; width: 100%; max-width: 480px;
       box-shadow: 0 20px 50px rgba(0,0,0,0.3); max-height: 92vh; display: flex; flex-direction: column;
       overflow: hidden; animation: trModalIn 0.2s ease-out;
     }
@@ -1063,15 +1273,12 @@ function ensureReceiptStyles() {
 
     /* Bluetooth Status Bar */
     .thermal-bt-bar {
-      display: flex; justify-content: space-between; align-items: center;
       background: #fff; border: 1px solid var(--line, #e4ddd0); border-radius: 10px;
       padding: 10px 14px; margin-bottom: 14px; font-size: 0.82rem;
     }
-    .thermal-bt-status { display: flex; align-items: center; gap: 8px; }
     .thermal-status-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
     .thermal-status-dot.online { background: #2e7d4f; box-shadow: 0 0 0 3px rgba(46,125,79,0.2); }
     .thermal-status-dot.offline { background: #c0392b; box-shadow: 0 0 0 3px rgba(192,57,43,0.15); }
-    .thermal-bt-actions { display: flex; gap: 6px; }
     .thermal-sm-btn {
       padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line, #e4ddd0);
       background: #fff; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.12s;
