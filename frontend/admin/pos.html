@@ -236,6 +236,26 @@
 .cust-totals { background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 16px 0; }
 .cust-totals .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.84rem; }
 .cust-totals .row.grand { font-weight: 700; border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 10px; font-size: 0.95rem; }
+/* Flavor section */
+.cust-flavor-section { margin-bottom: 16px; }
+.cust-section-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase; opacity: 0.65; display: block; margin-bottom: 8px; }
+.cust-flavor-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.cust-flavor-pill {
+  padding: 7px 18px; border-radius: 20px; border: 2px solid var(--line, #333);
+  background: transparent; color: var(--ink, #f0f0f0); font-size: 0.83rem; font-family: inherit;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.cust-flavor-pill:hover { border-color: var(--brass-dark, #b8932a); color: var(--brass-dark, #b8932a); }
+.cust-flavor-pill.selected {
+  background: var(--brass-dark, #b8932a); border-color: var(--brass-dark, #b8932a);
+  color: #fff; font-weight: 700;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-5px); }
+  40%,80% { transform: translateX(5px); }
+}
+
 
 /* ================================================================
    PAYMENT SCREEN — full overlay on the admin content area
@@ -844,6 +864,12 @@
             </div>
           </div>
 
+          <!-- Flavor Selection (shown only for products with flavors) -->
+          <div class="cust-flavor-section" id="custFlavorWrap" style="display:none;">
+            <label class="cust-section-label">Choose Flavor <span style="color:var(--danger,#c0392b);">*</span></label>
+            <div class="cust-flavor-pills" id="custFlavorList"></div>
+          </div>
+
           <div class="cust-addon-section" id="custAddonsWrap">
             <label>Add-Ons</label>
             <div class="cust-addon-list" id="custAddonList"></div>
@@ -1282,12 +1308,17 @@
      ================================================================ */
   function openCustomizeModal(menuId, name, price, line = null) {
     editingUniqueId = line ? line.uniqueId : null;
+    const menuItem = menuItems.find(i => String(i.id) === String(menuId));
+    const itemFlavors = (menuItem && Array.isArray(menuItem.flavors) && menuItem.flavors.length)
+      ? menuItem.flavors : [];
     customize = {
       menu_id: menuId, name,
       base_price: Number(price),
       qty: line ? line.qty : 1,
       notes: line ? (line.notes || '') : '',
       selected: new Map(),
+      flavors: itemFlavors,
+      selectedFlavor: line ? (line.flavor || null) : null,
     };
     if (line) {
       (line.add_ons || []).forEach(a => customize.selected.set(String(a.addon_id), a.qty));
@@ -1295,9 +1326,26 @@
     document.getElementById('customizeModalTitle').textContent = `Customize — ${name}`;
     document.getElementById('customizeNotes').value = customize.notes;
     document.getElementById('customizeAddBtn').textContent = line ? 'Update Item' : 'Add to Order';
+    renderFlavorPicker();
     renderAddonList();
     updateCustomizeTotals();
     toggleModal(true);
+  }
+
+  function renderFlavorPicker() {
+    const wrap = document.getElementById('custFlavorWrap');
+    const list = document.getElementById('custFlavorList');
+    if (!customize.flavors.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    list.innerHTML = customize.flavors.map(f => `
+      <button type="button" class="cust-flavor-pill ${customize.selectedFlavor === f ? 'selected' : ''}" data-flavor="${escapeHtml(f)}">${escapeHtml(f)}</button>
+    `).join('');
+    list.querySelectorAll('.cust-flavor-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        customize.selectedFlavor = btn.dataset.flavor;
+        list.querySelectorAll('.cust-flavor-pill').forEach(b => b.classList.toggle('selected', b === btn));
+      });
+    });
   }
 
   function renderAddonList() {
@@ -1379,7 +1427,7 @@
     const addonKey = (c.add_ons || []).slice()
       .sort((x, y) => x.addon_id - y.addon_id)
       .map(a => `${a.addon_id}x${a.qty}`).join(',');
-    return `${c.menu_id}|${addonKey}|${c.notes || ''}`;
+    return `${c.menu_id}|${c.flavor || ''}|${addonKey}|${c.notes || ''}`;
   }
 
   function lineTotal(c) {
@@ -1389,12 +1437,28 @@
 
   function confirmAddToCart() {
     if (!customize) return;
-    const notes = document.getElementById('customizeNotes').value.trim() || null;
+    // Validate flavor selection
+    if (customize.flavors.length > 0 && !customize.selectedFlavor) {
+      const list = document.getElementById('custFlavorList');
+      list.style.animation = 'none';
+      list.offsetHeight; // reflow
+      list.style.animation = 'shake 0.3s ease';
+      showAlert('Please choose a flavor before adding to the order.', 'warning');
+      return;
+    }
+    const notesRaw = document.getElementById('customizeNotes').value.trim() || null;
+    // Prepend flavor to notes so it shows on kitchen ticket & receipt
+    const notes = customize.selectedFlavor
+      ? (notesRaw ? `${customize.selectedFlavor} | ${notesRaw}` : customize.selectedFlavor)
+      : notesRaw;
     const addOns = [...customize.selected.entries()].map(([id, q]) => {
       const a = addons.find(x => String(x.id) === String(id));
       return { addon_id: Number(id), name: a ? a.name : 'Add-On', price: a ? Number(a.price) : 0, qty: q };
     });
-    const line = { menu_id: customize.menu_id, name: customize.name, price: customize.base_price, qty: customize.qty, notes, add_ons: addOns };
+    const line = {
+      menu_id: customize.menu_id, name: customize.name, price: customize.base_price,
+      qty: customize.qty, notes, flavor: customize.selectedFlavor || null, add_ons: addOns,
+    };
 
     if (editingUniqueId) {
       const idx = cart.findIndex(c => c.uniqueId === editingUniqueId);
@@ -1446,15 +1510,22 @@
       emptyState.style.display = 'block';
     } else {
       emptyState.style.display = 'none';
-      rowsWrap.innerHTML = cart.map(c => `
+      rowsWrap.innerHTML = cart.map(c => {
+        const flavorBadge = c.flavor
+          ? `<span style="display:inline-block;background:var(--brass-dark,#b8932a);color:#fff;border-radius:20px;padding:1px 9px;font-size:0.7rem;font-weight:700;margin-left:2px;">${escapeHtml(c.flavor)}</span>`
+          : '';
+        const displayNotes = c.flavor && c.notes && c.notes.startsWith(c.flavor)
+          ? c.notes.slice(c.flavor.length).replace(/^\s*\|\s*/, '').trim()
+          : (c.notes || '');
+        return `
         <div class="pos-cart-row">
           <div>
             <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
-              <span class="item-name">${escapeHtml(c.name)}</span>
+              <span class="item-name">${escapeHtml(c.name)}</span>${flavorBadge}
               <button class="edit-line-btn" data-id="${c.uniqueId}" title="Customize">✎</button>
             </div>
-            ${c.notes ? `<span class="item-notes">${escapeHtml(c.notes)}</span>` : ''}
-            ${(c.add_ons || []).length ? `<span class="item-notes addon-notes">+ ${c.add_ons.map(a => `${escapeHtml(a.name)} ×${a.qty} (${peso(a.price * a.qty)})`).join(', ')}</span>` : ''}
+            ${displayNotes ? `<span class="item-notes">${escapeHtml(displayNotes)}</span>` : ''}
+            ${(c.add_ons || []).length ? `<span class="item-notes addon-notes">+ ${c.add_ons.map(a => `${escapeHtml(a.name)} \u00d7${a.qty} (${peso(a.price * a.qty)})`).join(', ')}</span>` : ''}
             <button class="remove-line-btn" data-id="${c.uniqueId}">✕ Remove</button>
           </div>
           <div class="unit-price">${peso(c.price)}</div>
@@ -1464,7 +1535,8 @@
             <button data-id="${c.uniqueId}" data-delta="1" class="qty-btn">+</button>
           </div>
           <div class="line-total">${peso(lineTotal(c))}</div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
 
       rowsWrap.querySelectorAll('.qty-btn').forEach(btn => {
         btn.addEventListener('click', () => changeQty(btn.dataset.id, Number(btn.dataset.delta)));

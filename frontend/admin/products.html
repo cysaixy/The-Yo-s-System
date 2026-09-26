@@ -655,6 +655,16 @@ function buildPageHTML() {
         <label>Description (optional)</label>
         <textarea id="itemDesc" placeholder="Short description…"></textarea>
       </div>
+      <!-- Flavor Options -->
+      <div class="prd-form-field span2">
+        <label>Flavor Options <small style="font-weight:400; color:var(--ink-muted);">(optional — e.g. for wings, sauced items)</small></label>
+        <div id="itemFlavorsBox" style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:34px; padding:4px 0;"></div>
+        <div style="display:flex; gap:6px; margin-top:6px;">
+          <input type="text" id="itemFlavorInput" placeholder="e.g. Buffalo, Honey Garlic, BBQ…" style="flex:1; font-size:0.82rem;">
+          <button type="button" class="prd-btn prd-btn-ghost" id="addFlavorBtn" style="white-space:nowrap; font-size:0.78rem; padding:6px 12px;">+ Add</button>
+        </div>
+        <small style="color:var(--ink-muted); margin-top:4px; display:block;">When flavors are set, staff must choose one before adding to an order.</small>
+      </div>
       <!-- Linked Inventory Components (Ingredients) -->
       <div class="prd-form-field span2">
         <label>Consumes Inventory Items (Ingredients)</label>
@@ -1210,9 +1220,42 @@ function openItemModal(item = null) {
     addItemInvRow();
   }
 
+  // Render flavor tags
+  renderFlavorTags(item?.flavors || []);
+  document.getElementById('itemFlavorInput').value = '';
+
   document.getElementById('itemError').classList.remove('show');
   openModal('itemModal');
 }
+
+// ---- Flavor Tag Helpers ----
+function renderFlavorTags(flavorsArr) {
+  const box = document.getElementById('itemFlavorsBox');
+  box.innerHTML = flavorsArr.map(f => `
+    <span style="display:inline-flex;align-items:center;gap:4px;background:var(--gold,#b8932a);color:#fff;border-radius:20px;padding:3px 10px 3px 12px;font-size:0.78rem;font-weight:600;">
+      ${escapeHtml(f)}
+      <button type="button" onclick="removeFlavor(this)" data-flavor="${escapeHtml(f)}" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;line-height:1;padding:0 2px;opacity:0.8;" title="Remove">×</button>
+    </span>`).join('');
+}
+function removeFlavor(btn) {
+  const f = btn.dataset.flavor;
+  const current = getFlavorTags();
+  renderFlavorTags(current.filter(x => x !== f));
+}
+function getFlavorTags() {
+  return [...document.querySelectorAll('#itemFlavorsBox span')].map(s => s.querySelector('button').dataset.flavor);
+}
+function addFlavorFromInput() {
+  const inp = document.getElementById('itemFlavorInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  const current = getFlavorTags();
+  if (!current.includes(val)) renderFlavorTags([...current, val]);
+  inp.value = '';
+  inp.focus();
+}
+document.getElementById('addFlavorBtn').addEventListener('click', addFlavorFromInput);
+document.getElementById('itemFlavorInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addFlavorFromInput(); } });
 
 function addItemInvRow(invId = '', qty = '', unit = 'g') {
   const box = document.getElementById('itemInvBox');
@@ -1316,6 +1359,7 @@ async function saveItem() {
     const url = id ? `/api/admin/products/menuitems/${id}` : '/api/admin/products/menuitems';
     const method = id ? 'PATCH' : 'POST';
 
+    const flavors = getFlavorTags();
     const res = await adminFetch(url, {
       method,
       body: JSON.stringify({
@@ -1327,7 +1371,8 @@ async function saveItem() {
         status,
         description: desc,
         image_url: imageUrl || null,
-        inventory_components: invComponents
+        inventory_components: invComponents,
+        flavors,
       }),
     });
     const data = await res.json();

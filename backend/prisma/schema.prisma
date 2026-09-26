@@ -229,7 +229,8 @@ model MenuItem {
   //   'recipe' — derived live from linked ingredients (menu_item_inventory)
   //   'direct' — stockQuantity above is authoritative (pre-packaged goods)
   //   'none'   — not stock-tracked at all
-  trackingMode  String  @default("direct") @map("tracking_mode") @db.VarChar(10)
+  trackingMode  String   @default("direct") @map("tracking_mode") @db.VarChar(10)
+  flavors       String[] @default([]) // e.g. ["Buffalo", "Honey Garlic", "BBQ"]
 
   category       Category        @relation(fields: [categoryId], references: [id])
   addonProducts  AddonProduct[]
