@@ -197,6 +197,43 @@ export async function initTables() {
       );
     `);
 
+    // 10. Cash accounts drawer flag and daily reconciliations
+    await pool.query('ALTER TABLE cash_accounts ADD COLUMN IF NOT EXISTS is_default_drawer BOOLEAN NOT NULL DEFAULT FALSE;');
+    await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS cash_accounts_single_default_drawer_idx ON cash_accounts (is_default_drawer) WHERE (is_default_drawer = TRUE);');
+    await pool.query('ALTER TABLE cash_transactions ADD COLUMN IF NOT EXISTS order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL;');
+    await pool.query('CREATE INDEX IF NOT EXISTS cash_transactions_order_id_idx ON cash_transactions(order_id);');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS daily_reconciliations (
+        id SERIAL PRIMARY KEY,
+        cash_account_id INTEGER NOT NULL REFERENCES cash_accounts(id) ON DELETE CASCADE,
+        reconciliation_date DATE NOT NULL,
+        opening_balance NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+        counted_closing_balance NUMERIC(10, 2),
+        closed_by_staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL,
+        closed_at TIMESTAMPTZ,
+        notes TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT daily_reconciliations_account_date_uq UNIQUE (cash_account_id, reconciliation_date)
+      );
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS daily_reconciliations_date_idx ON daily_reconciliations(reconciliation_date);');
+
+    // Ensure a default cash drawer account exists if none has been designated
+    const existingDrawer = await pool.query('SELECT id FROM cash_accounts WHERE is_default_drawer = TRUE');
+    if (existingDrawer.rows.length === 0) {
+      await pool.query(`
+        INSERT INTO cash_accounts (name, account_type, balance, status, is_default_drawer)
+        VALUES ('Cash Drawer', 'cash', 0.00, 'active', TRUE)
+      `);
+    }
+
+    // 11. Menu item flavors and tracking mode
+    await pool.query("ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS flavors TEXT[] NOT NULL DEFAULT '{}';");
+    await pool.query("ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS tracking_mode VARCHAR(10) NOT NULL DEFAULT 'direct';");
+    await pool.query('ALTER TABLE stock_in ADD COLUMN IF NOT EXISTS inventory_id INTEGER REFERENCES inventory_items(id) ON DELETE SET NULL;');
+    await pool.query('ALTER TABLE stock_in ALTER COLUMN menu_id DROP NOT NULL;');
+
     // Drop legacy tables table — table numbers are now free-form text
     // assigned directly by staff on reservation confirm / walk-in.
     await pool.query('DROP TABLE IF EXISTS tables CASCADE;');
