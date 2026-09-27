@@ -54,7 +54,7 @@ import { getFirebaseAuth } from './config/firebase.js';
 
 // Health check — staff-only, hides Firebase credential details from public
 app.get('/api/health', requireStaffAuth, (req, res) => {
-  let fbStatus = 'uninitialized';
+  let fbStatus;
   let fbError = null;
   try {
     const auth = getFirebaseAuth();

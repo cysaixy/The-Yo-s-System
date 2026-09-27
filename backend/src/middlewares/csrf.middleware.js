@@ -1,5 +1,4 @@
 // src/middlewares/csrf.middleware.js
-import cookieParser from 'cookie-parser';
 
 export function csrfMiddleware(req, res, next) {
   // Only apply CSRF protection to state-changing admin routes

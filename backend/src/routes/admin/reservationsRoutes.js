@@ -1,6 +1,6 @@
 import express from 'express';
 const reservationRouter = express.Router();
-import {listAll, getById, updateStatus, confirmReservation, createReservationAdmin} from '../../controllers/admin/reservationsController.js';
+import { listAll, getById, updateStatus, createReservationAdmin } from '../../controllers/admin/reservationsController.js';
 import { getReservationOrder, upsertReservationOrder, updateReservationStatus, adminConfirmReservation, checkOrderEditPermission } from '../../controllers/admin/reservationOrderController.js';
 import { requireStaffAuth } from '../../middlewares/auth.middleware.js';
 

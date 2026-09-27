@@ -89,7 +89,7 @@ function normalizeUnit(unit) {
  * @returns {boolean}
  */
 export function isValidUnit(unit) {
-  return UNIT_CONVERSIONS.hasOwnProperty(normalizeUnit(unit));
+  return Object.prototype.hasOwnProperty.call(UNIT_CONVERSIONS, normalizeUnit(unit));
 }
 
 /**
@@ -246,23 +246,23 @@ export function formatQuantity(quantity, baseUnit) {
   const num = Number(quantity) || 0;
 
   switch (baseUnit) {
-    case 'g':
-      if (num >= 1000) {
-        return `${(num / 1000).toFixed(2)} kg`;
-      }
-      return `${num.toFixed(2)} g`;
+  case 'g':
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(2)} kg`;
+    }
+    return `${num.toFixed(2)} g`;
 
-    case 'ml':
-      if (num >= 1000) {
-        return `${(num / 1000).toFixed(2)} L`;
-      }
-      return `${num.toFixed(2)} ml`;
+  case 'ml':
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(2)} L`;
+    }
+    return `${num.toFixed(2)} ml`;
 
-    case 'pcs':
-      return `${Math.floor(num)} pcs`;
+  case 'pcs':
+    return `${Math.floor(num)} pcs`;
 
-    default:
-      return `${num.toFixed(2)} ${baseUnit}`;
+  default:
+    return `${num.toFixed(2)} ${baseUnit}`;
   }
 }
 

@@ -85,8 +85,8 @@ export async function createPaymongoCheckoutSession({
   successUrl,
   cancelUrl,
   customerEmail,
-  customerName,
-  customerPhone,
+  customerName: _customerName,
+  customerPhone: _customerPhone,
 }) {
   const centavos = Math.round(Number(amount) * 100);
 

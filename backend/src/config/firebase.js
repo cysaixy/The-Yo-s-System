@@ -35,11 +35,13 @@ function normalizePrivateKey(raw) {
         }
         return normalizePrivateKey(parsed.private_key);
       }
-    } catch (_) {}
+    } catch {
+      // Ignore JSON parsing errors and proceed to subsequent key formats
+    }
   }
 
   // Strip wrapping single or double quotes
-  while ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+  while ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith('\'') && key.endsWith('\''))) {
     key = key.slice(1, -1).trim();
   }
 
@@ -50,7 +52,9 @@ function normalizePrivateKey(raw) {
       if (decoded.includes('BEGIN PRIVATE KEY') || decoded.startsWith('{')) {
         return normalizePrivateKey(decoded);
       }
-    } catch (_) {}
+    } catch {
+      // Ignore base64 decoding errors and proceed to subsequent formats
+    }
   }
 
   // Replace literal escaped newlines (both single \n and double \\n)
@@ -86,7 +90,6 @@ function normalizePrivateKey(raw) {
 }
 
 let firebaseAuth = null;
-let firebaseInitializationError = null;
 
 function initFirebase() {
   if (firebaseAuth) return firebaseAuth;
@@ -115,10 +118,8 @@ function initFirebase() {
     }
 
     firebaseAuth = getAuth();
-    firebaseInitializationError = null;
     return firebaseAuth;
   } catch (error) {
-    firebaseInitializationError = error;
     console.error('[firebase.js] Firebase Admin initialization failed:', error.message);
     throw error;
   }
@@ -127,7 +128,9 @@ function initFirebase() {
 // Attempt eager initialization, but don't fail permanently if env vars are loaded later
 try {
   initFirebase();
-} catch (_) {}
+} catch {
+  // Eager initialization failed; will retry on demand when getFirebaseAuth is called
+}
 
 export function getFirebaseAuth() {
   if (firebaseAuth) return firebaseAuth;

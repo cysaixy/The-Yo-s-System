@@ -2,7 +2,7 @@
 // Mounted last in app.js so any next(err) call from a controller lands here
 // instead of crashing the server or leaking a stack trace to the client.
 
-function errorHandler(err, req, res, next) {
+function errorHandler(err, req, res, _next) {
   console.error(err);
 
   // Postgres NOT NULL constraint violation — surface as clean 400

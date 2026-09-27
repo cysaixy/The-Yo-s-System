@@ -1,5 +1,4 @@
 // src/utils/inventoryRestore.js
-import pool from '../config/db.js';
 import { restoreStock } from '../services/stockDeductionService.js';
 
 /**

@@ -124,7 +124,7 @@ export function validateRecipeUnits(req, res, next) {
  * Validate purchase/stock-in units.
  */
 export function validatePurchaseUnits(req, res, next) {
-  const { quantity, unit } = req.body || {};
+  const { unit } = req.body || {};
 
   // For purchases, unit might be omitted if it's a direct menu_id purchase (legacy)
   // Only validate if unit is provided

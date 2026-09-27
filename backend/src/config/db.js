@@ -26,14 +26,14 @@ const pool = connectionString
         ? connectionString
         : !connectionString.includes('-pooler')
           ? (() => {
-              const hostMatch = connectionString.match(/@([^\/]+)/);
-              if (hostMatch) {
-                const host = hostMatch[1];
-                const newHost = host.replace(/\.c-/, '-pooler.c-');
-                return connectionString.replace(host, newHost);
-              }
-              return connectionString;
-            })()
+            const hostMatch = connectionString.match(/@([^/]+)/);
+            if (hostMatch) {
+              const host = hostMatch[1];
+              const newHost = host.replace(/\.c-/, '-pooler.c-');
+              return connectionString.replace(host, newHost);
+            }
+            return connectionString;
+          })()
           : connectionString,
     ssl: isLocal ? false : { rejectUnauthorized: true },
     options: '-c timezone=Asia/Manila',

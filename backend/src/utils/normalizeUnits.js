@@ -2,7 +2,7 @@
 // Utility script to normalize existing inventory units to base units
 
 import pool from '../config/db.js';
-import { validateAndNormalize, formatQuantity } from '../services/unitConversionService.js';
+import { validateAndNormalize } from '../services/unitConversionService.js';
 
 /**
  * Scan and normalize all inventory_items to use base units.
