@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cash Accounts — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=6">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=7">
 </head>
 <body>
 
@@ -111,11 +111,11 @@
             <tr>
               <td>${escapeHtml(a.name)}</td>
               <td><span class="pill pill-neutral">${a.account_type}</span></td>
-              <td style="font-family:'Plus Jakarta Sans'; font-weight:700;">${peso(a.balance)}</td>
+              <td style="font-family:'Hanken Grotesk',sans-serif; font-weight:700;">${peso(a.balance)}</td>
               <td><span class="pill ${a.status === 'active' ? 'pill-success' : 'pill-neutral'}">${a.status}</span></td>
               <td>
                 ${a.is_default_drawer
-                  ? '<span class="pill pill-warning" style="background:var(--brass-light);color:var(--brass-dark);">Default Drawer</span>'
+                  ? '<span class="pill pill-warning" style="background:var(--brass-light);color:var(--ink);">Default Drawer</span>'
                   : (a.account_type === 'cash' && a.status === 'active'
                       ? '<button class="btn small set-drawer-btn" data-id="' + a.id + '">Set as Drawer</button>'
                       : '<span style="color:var(--ink-muted);font-size:0.75rem;">—</span>')}
