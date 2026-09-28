@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — The~Yo's Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
   /* ---------- Section headers ---------- */
   .dash-section { margin-bottom: 30px; }
@@ -14,11 +14,11 @@
     margin: 0 0 14px; padding-left: 10px; border-left: 3px solid var(--brass);
   }
   .dash-section-head h3 {
-    font-family: 'Fraunces', sans-serif; font-weight: 900; text-transform: uppercase;
+    font-family: 'Archivo', sans-serif; font-weight: 900; text-transform: uppercase;
     font-size: 1.02rem; letter-spacing: 0.02em; margin: 0;
   }
   .dash-section-head .dash-sub {
-    font-family: 'Hanken Grotesk', sans-serif; font-size: 0.66rem; text-transform: uppercase;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase;
     opacity: 0.5; letter-spacing: 0.05em;
   }
 
@@ -27,10 +27,10 @@
   /* ---------- Tables ---------- */
   .admin-table-wrap { overflow-x: auto; }
   .admin-table td.r, .admin-table th.r { text-align: right; }
-  .admin-table td.amt { font-family: 'Hanken Grotesk', sans-serif; font-weight: 700; color: var(--brass-dark); white-space: nowrap; }
+  .admin-table td.amt { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; color: var(--brass-dark); white-space: nowrap; }
   .admin-table td.rank { color: var(--brass); font-weight: 800; }
   .admin-table td.muted { opacity: 0.6; }
-  .admin-table td .sub-line { display: block; font-size: 0.72rem; opacity: 0.55; font-family: 'Hanken Grotesk', sans-serif; }
+  .admin-table td .sub-line { display: block; font-size: 0.72rem; opacity: 0.55; font-family: 'Plus Jakarta Sans', sans-serif; }
 
   /* ---------- Sales breakdown ---------- */
   .breakdown-grid { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: center; }
@@ -40,7 +40,7 @@
   .donut-label {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; text-align: center;
-    font-family: 'Fraunces', sans-serif; font-size: 0.82rem; line-height: 1.25; opacity: 0.8;
+    font-family: 'Archivo', sans-serif; font-size: 0.82rem; line-height: 1.25; opacity: 0.8;
   }
   .donut-label strong { font-size: 1.05rem; color: var(--brass-dark); }
   .type-row { padding: 9px 0; border-bottom: 1px solid var(--line); }
@@ -48,9 +48,9 @@
   .type-head { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; flex-wrap: wrap; }
   .type-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .type-name { flex: 1; font-weight: 600; }
-  .type-orders { font-family: 'Hanken Grotesk', sans-serif; font-size: 0.7rem; opacity: 0.55; }
-  .type-amt { font-family: 'Hanken Grotesk', sans-serif; font-weight: 700; color: var(--brass-dark); }
-  .type-pct { font-family: 'Hanken Grotesk', sans-serif; font-size: 0.72rem; opacity: 0.6; width: 40px; text-align: right; }
+  .type-orders { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; opacity: 0.55; }
+  .type-amt { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; color: var(--brass-dark); }
+  .type-pct { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; opacity: 0.6; width: 40px; text-align: right; }
   .type-track { height: 6px; background: var(--stone); border-radius: 4px; margin-top: 6px; overflow: hidden; }
   .type-fill { height: 100%; border-radius: 4px; }
 
@@ -58,8 +58,8 @@
   .target-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .target-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; flex: 1; }
   .target-cell { min-width: 0; }
-  .target-cell .label { font-family: 'Hanken Grotesk', sans-serif; font-size: 0.65rem; text-transform: uppercase; opacity: 0.55; }
-  .target-cell .target-value { font-family: 'Fraunces', sans-serif; font-weight: 900; font-size: 1.35rem; margin-top: 4px; overflow-wrap: anywhere; }
+  .target-cell .label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; text-transform: uppercase; opacity: 0.55; }
+  .target-cell .target-value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.35rem; margin-top: 4px; overflow-wrap: anywhere; }
   .target-cell .target-value.brass { color: var(--brass-dark); }
   .target-cell .target-value .muted { font-size: 0.8rem; opacity: 0.45; font-weight: 600; }
   .target-progress { margin-top: 20px; }
@@ -71,7 +71,7 @@
   }
   .progress-labels {
     display: flex; justify-content: space-between; margin-top: 8px;
-    font-family: 'Hanken Grotesk', sans-serif; font-size: 0.68rem; opacity: 0.6;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.68rem; opacity: 0.6;
     text-transform: uppercase; letter-spacing: 0.03em;
     flex-wrap: wrap; gap: 4px 12px;
   }
@@ -79,7 +79,7 @@
   /* ---------- Charts ---------- */
   .chart-wrap { width: 100%; position: relative; }
   .chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
-  .chart-label { font-family: 'Hanken Grotesk', sans-serif; font-size: 10px; fill: var(--ink-muted); }
+  .chart-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; fill: var(--ink-muted); }
   .chart-grid-line { stroke: var(--line); stroke-width: 1; }
   .chart-baseline { stroke: var(--line-strong); stroke-width: 1.2; }
   .chart-area { transition: opacity var(--transition-base); }
@@ -90,10 +90,10 @@
     filter: drop-shadow(0 4px 10px rgba(47,37,20,0.18));
   }
   .chart-peak-label {
-    font-family: 'Fraunces', sans-serif; font-size: 11.5px; font-weight: 800; fill: #fff;
+    font-family: 'Archivo', sans-serif; font-size: 11.5px; font-weight: 800; fill: #fff;
   }
   .chart-peak-sub {
-    font-family: 'Hanken Grotesk', sans-serif; font-size: 8px; font-weight: 600; fill: rgba(255,255,255,0.75);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 8px; font-weight: 600; fill: rgba(255,255,255,0.75);
     text-transform: uppercase; letter-spacing: 0.04em;
   }
   .chart-legend-row { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
@@ -101,7 +101,7 @@
     display: inline-flex; align-items: center; gap: 7px;
     padding: 5px 12px 5px 9px; border-radius: 999px;
     background: var(--stone); border: 1px solid var(--line);
-    font-family: 'Hanken Grotesk', sans-serif; font-size: 0.7rem; font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; font-weight: 700;
     color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em;
     transition: background var(--transition-fast), border-color var(--transition-fast);
   }
@@ -119,7 +119,7 @@
     position: fixed; z-index: 500; pointer-events: none;
     background: #1b1d22; color: #fff;
     border-radius: 8px; padding: 9px 12px;
-    font-family: 'Hanken Grotesk', sans-serif; font-size: 0.74rem; font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.74rem; font-weight: 600;
     box-shadow: 0 10px 28px rgba(0,0,0,0.28);
     opacity: 0; transform: translate(-50%, calc(-100% - 12px)) translateY(4px);
     transition: opacity 0.12s ease, transform 0.12s ease;
@@ -153,7 +153,7 @@
     gap: 14px; margin-bottom: 16px;
   }
   .live-orders-title { display: flex; align-items: center; gap: 10px; }
-  .live-orders-title h2 { margin: 0; font: 700 1rem 'Hanken Grotesk', sans-serif; color: var(--ink); }
+  .live-orders-title h2 { margin: 0; font: 700 1rem 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
   .live-orders-title p { margin: 2px 0 0; font-size: .72rem; color: var(--ink-muted); }
   .live-indicator {
     width: 9px; height: 9px; border-radius: 50%; background: var(--success);
@@ -259,7 +259,7 @@
     margin-bottom: 12px;
   }
   .loe-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .live-orders-empty .loe-title { margin: 0; font: 700 0.86rem 'Hanken Grotesk', sans-serif; color: var(--ink); }
+  .live-orders-empty .loe-title { margin: 0; font: 700 0.86rem 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
   .live-orders-empty .loe-sub { margin: 3px 0 0; font-size: 0.76rem; color: var(--ink-muted); max-width: 300px; }
 
   @keyframes ticketFlash { 0% { background: #fff5d9; box-shadow: 0 0 0 3px rgba(163,132,74,.22); } 100% { background: #fff; box-shadow: var(--shadow-xs); } }

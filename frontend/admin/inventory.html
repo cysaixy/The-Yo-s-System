@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventory — The~Yo's Admin</title>
 <meta name="description" content="Manage The~Yo's inventory — ingredients, raw materials, packaging, and supplies.">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
 /* ================================================================
    INVENTORY PAGE — Scoped styles (.inv-* namespace)
@@ -21,7 +21,7 @@
   margin-bottom: 24px;
 }
 .inv-tab {
-  padding: 10px 20px; font-family: 'Hanken Grotesk', sans-serif; font-size: 0.84rem;
+  padding: 10px 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.84rem;
   font-weight: 600; color: var(--ink); opacity: 0.55; cursor: pointer;
   border: none; background: none; border-bottom: 2px solid transparent;
   margin-bottom: -2px; transition: all .15s ease; white-space: nowrap;
@@ -68,7 +68,7 @@
 .inv-stat-card .isc-label {
   position: relative; z-index: 1;
   display: flex; align-items: center; gap: 7px;
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 0.63rem; font-weight: 700; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.63rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.08em; color: var(--ink-muted);
 }
 .inv-stat-card .isc-label::before {
@@ -76,11 +76,11 @@
 }
 .inv-stat-card .isc-value {
   position: relative; z-index: 1;
-  font-family: 'Fraunces', sans-serif; font-weight: 900; font-size: 2rem;
+  font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 2rem;
   line-height: 1; color: var(--ink); letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
 }
 .inv-stat-card .isc-value.gold { color: var(--brass-dark); }
-.inv-stat-card .isc-value.sm { font-size: 1.08rem; font-weight: 700; font-family: 'Hanken Grotesk', sans-serif; color: var(--ink); }
+.inv-stat-card .isc-value.sm { font-size: 1.08rem; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
 .inv-stat-card .isc-sub { position: relative; z-index: 1; font-size: 0.76rem; color: var(--ink-muted); margin-top: 2px; }
 
 /* ---- Status strip ---- */
@@ -91,7 +91,7 @@
   box-shadow: var(--shadow-sm);
 }
 .inv-status-strip .strip-label {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 0.62rem; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
   letter-spacing: 0.07em; color: var(--ink-muted); font-weight: 700; margin-right: 4px;
 }
 .inv-status-item {
@@ -109,7 +109,7 @@
 .dot-yellow { background: var(--warning); }
 .dot-blue { background: #2c5fb0; }
 .dot-red { background: var(--danger); }
-.inv-status-item .count { font-family: 'Fraunces', sans-serif; font-weight: 900; }
+.inv-status-item .count { font-family: 'Archivo', sans-serif; font-weight: 900; }
 
 /* ---- Sub-tabs (Stock / Cost / Activities / Bulk Add) ---- */
 .inv-sub-tabs {
@@ -120,7 +120,7 @@
 }
 .inv-sub-tab {
   padding: 7px 16px; border-radius: 6px; border: none; background: none;
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 0.80rem; font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.80rem; font-weight: 600;
   color: var(--ink); opacity: 0.55; cursor: pointer; transition: all .15s ease;
   white-space: nowrap;
 }
@@ -146,7 +146,7 @@
 }
 .inv-search {
   width: 100%; padding: 9px 12px 9px 34px; border: 1px solid var(--line);
-  border-radius: 7px; background: #fff; font-family: 'Hanken Grotesk', sans-serif;
+  border-radius: 7px; background: #fff; font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.84rem; color: var(--ink); outline: none; transition: border-color .15s;
 }
 .inv-search:focus { border-color: var(--brass); }
@@ -154,12 +154,12 @@
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
 .inv-filter-label {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 0.63rem; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.63rem; text-transform: uppercase;
   letter-spacing: 0.06em; opacity: 0.45;
 }
 .inv-select {
   padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px;
-  background: #fff; font-family: 'Hanken Grotesk', sans-serif; font-size: 0.82rem;
+  background: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem;
   color: var(--ink); cursor: pointer; outline: none; transition: border-color .15s;
 }
 .inv-select:focus { border-color: var(--brass); }
@@ -177,7 +177,7 @@
 }
 .inv-table th {
   padding: 11px 16px; text-align: left;
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 0.61rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.61rem;
   text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55;
   font-weight: 700; white-space: nowrap;
 }
@@ -191,21 +191,21 @@
 .inv-table .item-name { font-weight: 600; }
 .inv-table .item-cat { font-size: 0.77rem; opacity: 0.5; margin-top: 2px; }
 .inv-table .stock-qty {
-  font-family: 'Hanken Grotesk', sans-serif; font-weight: 700; font-size: 0.9rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.9rem;
 }
 .inv-table .price-val {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 0.82rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem;
 }
 .inv-table .unit-label {
-  font-size: 0.75rem; opacity: 0.65; font-family: 'Hanken Grotesk', sans-serif;
+  font-size: 0.75rem; opacity: 0.65; font-family: 'Plus Jakarta Sans', sans-serif;
 }
-.inv-table .reorder-val { font-size: 0.78rem; opacity: 0.6; font-family: 'Hanken Grotesk', sans-serif; }
+.inv-table .reorder-val { font-size: 0.78rem; opacity: 0.6; font-family: 'Plus Jakarta Sans', sans-serif; }
 
 /* ---- Status badges ---- */
 .inv-badge {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 10px; border-radius: 20px;
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 0.60rem;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.60rem;
   font-weight: 700; text-transform: uppercase; white-space: nowrap;
 }
 .badge-instock  { background: rgba(46,125,79,0.12);   color: #1e6b41; }
@@ -231,7 +231,7 @@
 .inv-action-dropdown.open { display: block; }
 .inv-action-dropdown button {
   width: 100%; text-align: left; padding: 10px 14px; border: none;
-  background: none; font-family: 'Hanken Grotesk', sans-serif; font-size: 0.82rem;
+  background: none; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem;
   font-weight: 500; cursor: pointer; color: var(--ink);
   display: flex; align-items: center; gap: 9px; transition: background .1s;
 }
@@ -251,7 +251,7 @@
   margin-bottom: 4px;
 }
 .inv-empty-icon svg { width: 30px; height: 30px; fill: none; stroke: var(--brass); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.inv-empty h3 { margin: 0; font-family: 'Fraunces', sans-serif; font-size: 1.05rem; }
+.inv-empty h3 { margin: 0; font-family: 'Archivo', sans-serif; font-size: 1.05rem; }
 .inv-empty p { margin: 0; font-size: 0.84rem; opacity: 0.55; max-width: 280px; line-height: 1.5; }
 
 /* ---- Modals ---- */
@@ -272,7 +272,7 @@
   margin-bottom: 22px;
 }
 .inv-modal-head h2 {
-  margin: 0; font-family: 'Fraunces', sans-serif; font-size: 1.1rem;
+  margin: 0; font-family: 'Archivo', sans-serif; font-size: 1.1rem;
   text-transform: uppercase; letter-spacing: 0.02em;
 }
 .inv-modal-head .close-btn {
@@ -287,12 +287,12 @@
 .inv-form-field { display: flex; flex-direction: column; gap: 5px; }
 .inv-form-field.span2 { grid-column: 1 / -1; }
 .inv-form-field label {
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 0.62rem; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase;
   letter-spacing: 0.06em; opacity: 0.55;
 }
 .inv-form-field input, .inv-form-field select, .inv-form-field textarea {
   padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px;
-  font-family: 'Hanken Grotesk', sans-serif; font-size: 0.84rem; background: var(--bone);
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.84rem; background: var(--bone);
   color: var(--ink); outline: none; transition: border-color .15s;
 }
 .inv-form-field input:focus, .inv-form-field select:focus, .inv-form-field textarea:focus {
@@ -318,7 +318,7 @@
   margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
 }
 .inv-header-row h2 {
-  font-family: 'Fraunces', sans-serif; font-size: 1.4rem; font-weight: 900;
+  font-family: 'Archivo', sans-serif; font-size: 1.4rem; font-weight: 900;
   text-transform: uppercase; letter-spacing: 0.02em; margin: 0;
 }
 .inv-header-actions { display: flex; align-items: center; gap: 10px; }
@@ -327,7 +327,7 @@
 .inv-add-btn {
   display: inline-flex; align-items: center; gap: 7px;
   background: var(--brass); color: #fff; border: 1px solid var(--brass);
-  padding: 9px 16px; border-radius: 7px; font-family: 'Hanken Grotesk', sans-serif;
+  padding: 9px 16px; border-radius: 7px; font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: all .15s;
   white-space: nowrap;
 }
@@ -336,7 +336,7 @@
 
 .inv-btn {
   display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px;
-  border-radius: 7px; font-family: 'Hanken Grotesk', sans-serif; font-size: 0.83rem;
+  border-radius: 7px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.83rem;
   font-weight: 600; cursor: pointer; border: 1px solid; transition: all .15s;
 }
 .inv-btn-gold { background: var(--brass); color: #fff; border-color: var(--brass); }
@@ -595,7 +595,7 @@ function buildPageHTML() {
   <!-- ===== AUDITS PANEL ===== -->
   <div class="inv-panel" id="panel-audits">
     <div style="margin-bottom:18px;">
-      <div style="font-family:'Fraunces',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Inventory Audits</div>
+      <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Inventory Audits</div>
       <div style="font-size:0.80rem; color:var(--ink-muted); margin-top:2px;">Consolidated history of inventory entries and adjustments.</div>
     </div>
     <div class="inv-table-wrap" id="auditsWrap"><div class="admin-loading">Loading audit log…</div></div>
@@ -604,7 +604,7 @@ function buildPageHTML() {
   <!-- ===== USAGE PANEL ===== -->
   <div class="inv-panel" id="panel-usage">
     <div style="margin-bottom:18px;">
-      <div style="font-family:'Fraunces',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Usage History</div>
+      <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Usage History</div>
       <div style="font-size:0.80rem; color:var(--ink-muted); margin-top:2px;">Stock consumed by POS sales, recipes, and add-ons.</div>
     </div>
     <div class="inv-table-wrap" id="usageWrap"><div class="admin-loading">Loading usage data…</div></div>
@@ -613,7 +613,7 @@ function buildPageHTML() {
   <!-- ===== ADJUSTMENTS PANEL ===== -->
   <div class="inv-panel" id="panel-adjustments">
     <div style="margin-bottom:18px;">
-      <div style="font-family:'Fraunces',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Adjustments Log</div>
+      <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Adjustments Log</div>
       <div style="font-size:0.80rem; color:var(--ink-muted); margin-top:2px;">Manual stock quantity changes and corrections.</div>
     </div>
     <div class="inv-table-wrap" id="adjustmentsWrap"><div class="admin-loading">Loading adjustments…</div></div>
@@ -622,7 +622,7 @@ function buildPageHTML() {
   <div class="inv-panel" id="panel-incidents">
     <div style="margin-bottom:18px; display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
       <div>
-        <div style="font-family:'Fraunces',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Incident Reports</div>
+        <div style="font-family:'Archivo',sans-serif; font-weight:900; font-size:1rem; text-transform:uppercase;">Incident Reports</div>
         <div style="font-size:0.80rem; color:var(--ink-muted); margin-top:2px;">Recorded spoilage and theft, including the resulting stock loss.</div>
       </div>
       <button class="inv-btn inv-btn-gold" id="openIncidentTabBtn">Report Incident</button>
@@ -955,7 +955,7 @@ function renderStockTable() {
     <tr data-id="${i.id}">
       <td>
         <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:32px;height:32px;border-radius:7px;background:var(--stone);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',sans-serif;font-weight:900;font-size:0.78rem;color:var(--brass-dark);flex-shrink:0;">${escapeHtml(init)}</div>
+          <div style="width:32px;height:32px;border-radius:7px;background:var(--stone);display:flex;align-items:center;justify-content:center;font-family:'Archivo',sans-serif;font-weight:900;font-size:0.78rem;color:var(--brass-dark);flex-shrink:0;">${escapeHtml(init)}</div>
           <div>
             <div class="item-name">${escapeHtml(i.name)}</div>
             ${i.sku ? `<div class="item-cat">SKU: ${escapeHtml(i.sku)}</div>` : ''}
@@ -1272,7 +1272,7 @@ async function loadIncidents() {
         <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(report.occurred_at)}</td>
         <td><span class="pill ${report.incident_type === 'theft' ? 'pill-danger' : 'pill-neutral'}">${escapeHtml(report.incident_type)}</span></td>
         <td style="font-weight:600;">${escapeHtml(report.item_name)}</td>
-        <td class="right" style="font-family:'Hanken Grotesk',sans-serif; font-weight:700; color:var(--danger);">-${report.quantity} ${escapeHtml(report.unit || '')}</td>
+        <td class="right" style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; color:var(--danger);">-${report.quantity} ${escapeHtml(report.unit || '')}</td>
         <td style="font-size:0.78rem; color:var(--ink-muted);">${escapeHtml(report.description)}</td>
         <td style="font-size:0.78rem; color:var(--ink-muted);">${escapeHtml([report.location, report.reference_number].filter(Boolean).join(' · ') || '—')}</td>
         <td>${escapeHtml(report.reported_by || '—')}</td>
@@ -1379,7 +1379,7 @@ function renderLogTable(wrap, entries) {
           <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(e.log_date)}</td>
           <td><span style="font-weight:600;">${escapeHtml(e.item_name)}</span></td>
           <td><span class="pill pill-neutral">${escapeHtml(e.transaction_type)}</span></td>
-          <td style="font-family:'Hanken Grotesk', sans-serif;font-weight:700;color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'};">
+          <td style="font-family:'Plus Jakarta Sans', sans-serif;font-weight:700;color:${e.quantity_change < 0 ? 'var(--danger)' : 'var(--success)'};">
             ${e.quantity_change > 0 ? '+' : ''}${e.quantity_change}
           </td>
           <td>${escapeHtml(e.staff_name || '—')}</td>
