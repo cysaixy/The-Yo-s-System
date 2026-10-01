@@ -1,6 +1,7 @@
 // src/app.js
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
@@ -8,6 +9,7 @@ dotenv.config({ quiet: true });
 import errorHandler from './middlewares/error.middleware.js';
 import { globalLimiter, authLimiter } from './middlewares/rateLimit.middleware.js';
 import { requireStaffAuth } from './middlewares/auth.middleware.js';
+import { csrfMiddleware } from './middlewares/csrf.middleware.js';
 
 // Customer routes
 import customerMenuRoutes from './routes/customer/menu.routes.js';
@@ -35,12 +37,30 @@ const app = express();
 // Required for express-rate-limit to correctly identify client IP addresses
 app.set('trust proxy', 1);
 
+// Security headers: CSP, X-Frame-Options, HSTS, X-Content-Type-Options, etc.
+app.use(helmet());
+
+// CORS — only accept requests from the explicitly configured origin(s).
+// Multiple origins can be comma-separated in CLIENT_ORIGIN.
+// Falls back to localhost in development; rejects unknown origins in production.
+const _allowedOrigins = process.env.CLIENT_ORIGIN
+  ? process.env.CLIENT_ORIGIN.split(',').map(o => o.trim())
+  : process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://localhost:5173'];
+
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow same-origin / non-browser requests (no Origin header)
+    if (!origin) return callback(null, true);
+    if (_allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin '${origin}' is not allowed`));
+  },
   credentials: true,
 }));
+
+// Body parser — keep limit small; only the image-upload route needs more.
+// Using 100kb for regular JSON API payloads reduces DoS surface.
 app.use(express.json({
-  limit: '7mb',
+  limit: '100kb',
   verify: (req, res, buf) => {
     req.rawBody = buf.toString('utf8');
   }
@@ -78,12 +98,16 @@ app.get('/api/health', requireStaffAuth, (req, res) => {
 
 // --- Customer API ---
 app.use('/api/customer/menu', customerMenuRoutes);
+app.use('/api/customer/auth', authLimiter); // Brute-force protection on customer login/signup
 app.use('/api/customer/auth', customerAuthRoutes);
 app.use('/api/customer/orders', customerOrderRoutes);
 app.use('/api/customer/reservations', customerReservationRoutes);
 
 // --- Admin API ---
 app.use('/api/admin/staff/login', authLimiter); // Stricter limit specifically for admin login
+// CSRF protection for all admin state-changing requests (POST, PUT, PATCH, DELETE).
+// GET/HEAD are skipped inside csrfMiddleware itself.
+app.use('/api/admin', csrfMiddleware);
 app.use('/api/admin/staff', adminStaffRoutes);
 app.use('/api/admin/products', adminProductsRoutes);
 app.use('/api/admin/inventory', adminInventoryRoutes);

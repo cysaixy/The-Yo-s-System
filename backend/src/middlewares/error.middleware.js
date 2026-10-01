@@ -42,11 +42,15 @@ function errorHandler(err, req, res, _next) {
     return res.status(503).json({ error: 'Database service is temporarily unavailable. Please try again in a few seconds.' });
   }
 
+  // For unexpected errors in production, always serve a generic message regardless
+  // of status code, so internal details (table names, column names, etc.) don't leak.
+  // Errors thrown with err.isOperational = true are considered safe to expose.
   const status = err.status || 500;
+  const isProduction = process.env.NODE_ENV === 'production';
   const message =
-    process.env.NODE_ENV === 'production' && status === 500
-      ? 'Something went wrong on our end.'
-      : err.message;
+    !isProduction || err.isOperational
+      ? err.message
+      : 'An unexpected error occurred.';
 
   res.status(status).json({ error: message || 'An unexpected error occurred.' });
 }

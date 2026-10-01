@@ -46,7 +46,14 @@ productrouter.patch('/categories/:id', requireAdmin, updateCategory);
 productrouter.delete('/categories/:id', requireAdmin, deleteCategory);
 
 // --- Admin Only Menu Item Management ---
-productrouter.post('/uploads/product-image', requireAdmin, uploadProductImage);
+// Base64-encoded images can be up to ~7MB on the wire for a 5MB image (base64 adds ~33% overhead).
+// Override the global 100kb body limit for this route only; all other routes stay at 100kb.
+productrouter.post(
+  '/uploads/product-image',
+  express.json({ limit: '7mb' }),
+  requireAdmin,
+  uploadProductImage
+);
 productrouter.post('/menuitems', requireAdmin, validateRecipeUnits, createMenuItem);
 productrouter.patch('/menuitems/:id', requireAdmin, validateRecipeUnits, updateMenuItem);
 productrouter.delete('/menuitems/:id', requireAdmin, deleteMenuItem);

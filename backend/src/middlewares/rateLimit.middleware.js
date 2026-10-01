@@ -28,9 +28,13 @@ function createLimiter({ windowMs, max, prefix, keyGenerator, skip, handler }) {
       const key = keyGenerator ? keyGenerator(req) : req.ip;
       const { success, limit, remaining, reset } = await ratelimit.limit(key);
 
-      res.setHeader('X-RateLimit-Limit', limit);
-      res.setHeader('X-RateLimit-Remaining', remaining);
-      res.setHeader('X-RateLimit-Reset', new Date(reset).toISOString());
+      // Only expose rate-limit headers in development; hiding them in production
+      // prevents attackers from timing requests precisely around the window.
+      if (process.env.NODE_ENV !== 'production') {
+        res.setHeader('X-RateLimit-Limit', limit);
+        res.setHeader('X-RateLimit-Remaining', remaining);
+        res.setHeader('X-RateLimit-Reset', new Date(reset).toISOString());
+      }
 
       if (!success) {
         if (handler) return handler(req, res);

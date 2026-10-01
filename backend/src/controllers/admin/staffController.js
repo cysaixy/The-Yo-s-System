@@ -5,6 +5,17 @@ import pool from '../../config/db.js';
 import { generateStaffToken } from '../../utils/generateToken.js';
 
 const COOKIE_NAME = 'staff_token';
+
+/**
+ * Shared password strength validator.
+ * Returns an error string if invalid, or null if the password is acceptable.
+ */
+function validatePassword(password) {
+  if (typeof password !== 'string' || password.length < 10) {
+    return 'Password must be at least 10 characters.';
+  }
+  return null;
+}
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
@@ -138,6 +149,8 @@ export async function createStaff(req, res, next) {
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'name, email, and password are required.' });
     }
+    const passwordError = validatePassword(password);
+    if (passwordError) return res.status(400).json({ error: passwordError });
 
     // The database permission columns are NOT NULL and have no defaults.
     // Omitted permissions start disabled; explicit false values stay false.
@@ -240,9 +253,8 @@ export async function changePassword(req, res, next) {
     if (!current_password || !new_password) {
       return res.status(400).json({ error: 'Current and new passwords are required.' });
     }
-    if (typeof new_password !== 'string' || new_password.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters.' });
-    }
+    const passwordError = validatePassword(new_password);
+    if (passwordError) return res.status(400).json({ error: passwordError });
 
     const { rows } = await pool.query(
       'SELECT id, password FROM staff WHERE id = $1',
