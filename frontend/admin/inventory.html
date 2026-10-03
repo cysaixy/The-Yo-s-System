@@ -951,7 +951,7 @@ function applyFilters() {
 function renderStockTable() {
   const tbody = document.getElementById('stockTbody');
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="inv-empty"><p>No inventory items found.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="inv-empty"><p>No inventory items found.</p></div></td></tr>`;
     return;
   }
 
@@ -979,6 +979,7 @@ function renderStockTable() {
       <td class="right"><span class="price-val" style="color:var(--brass-dark);font-weight:700;">${peso(val)}</span></td>
       <td><span class="inv-badge ${s.cls}">${s.label}</span></td>
       <td><span class="reorder-val">${i.reorder_level} ${escapeHtml(i.unit || 'pcs')}</span></td>
+      <td style="font-size:0.75rem; color:var(--ink-muted);">${i.pack_size || ''} ${escapeHtml(i.unit || 'pcs')}</td>
       <td>
         <div class="inv-action-wrap">
           <button class="inv-action-btn action-toggle" data-id="${i.id}" title="Actions">
