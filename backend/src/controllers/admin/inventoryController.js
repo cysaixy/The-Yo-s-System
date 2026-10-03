@@ -53,7 +53,6 @@ export async function overview(req, res, next) {
     next(err);
   }
 }
-}
 
 const CATEGORY_PREFIX_MAP = {
   'Coffee & Espresso': 'COF',
