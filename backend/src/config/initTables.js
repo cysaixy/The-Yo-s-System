@@ -228,11 +228,14 @@ export async function initTables() {
       `);
     }
 
-    // 11. Menu item flavors and tracking mode
+// 11. Menu item flavors and tracking mode
     await pool.query('ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS flavors TEXT[] NOT NULL DEFAULT \'{}\';');
     await pool.query('ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS tracking_mode VARCHAR(10) NOT NULL DEFAULT \'direct\';');
     await pool.query('ALTER TABLE stock_in ADD COLUMN IF NOT EXISTS inventory_id INTEGER REFERENCES inventory_items(id) ON DELETE SET NULL;');
     await pool.query('ALTER TABLE stock_in ALTER COLUMN menu_id DROP NOT NULL;');
+    // 12. Pack size support
+    await pool.query('ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS pack_size NUMERIC(10,2);');
+    await pool.query('ALTER TABLE stock_in ALTER COLUMN quantity TYPE NUMERIC(10,2);');
 
     // Drop legacy tables table — table numbers are now free-form text
     // assigned directly by staff on reservation confirm / walk-in.

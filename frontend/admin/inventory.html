@@ -666,13 +666,23 @@ function buildPageHTML() {
         <label>Current Stock *</label>
         <input type="number" id="itemStock" min="0" step="0.01" placeholder="0">
       </div>
-      <div class="inv-form-field">
+<div class="inv-form-field">
         <label>Unit *</label>
         <select id="itemUnit">
           ${PREDEFINED_UNITS.map(u => `<option value="${u}">${u}</option>`).join('')}
           <option value="custom">+ Custom Unit</option>
         </select>
-        <input type="text" id="itemUnitCustom" placeholder="Enter unit (e.g. roll)" style="display:none; margin-top:6px;">
+        <input type="text" id="itemUnitCustom" style="display:none; margin-top:6px;">
+      </div>
+      <div class="inv-form-field">
+        <label>Pack size</label>
+        <input type="number" id="itemPackSize" min="0" step="1" placeholder="e.g. 500 for a 500 g pack">
+        <small style="font-size:0.65rem; color:var(--ink-muted);">How many units are in one pack. Leave blank if not bought in packs.</small>
+      </div>
+      <div class="inv-form-field">
+        <label>Price per pack (₱)</label>
+        <input type="number" id="itemPricePerPack" min="0" step="0.01" placeholder="0.00">
+        <small style="font-size:0.65rem; color:var(--ink-muted);" id="pricePerPackResult">₱0.00 per g</small>
       </div>
       <div class="inv-form-field">
         <label>Unit Cost (₱) *</label>
@@ -1045,6 +1055,7 @@ function openItemModal(item = null) {
   document.getElementById('itemReorder').value  = item ? item.reorder_level : '5';
   document.getElementById('itemSupplier').value = item ? (item.supplier || '') : '';
   document.getElementById('itemNotes').value    = item ? (item.notes || '') : '';
+  document.getElementById('itemPackSize').value = item ? item.pack_size || '' : '';
 
   const unitSel = document.getElementById('itemUnit');
   const customInp = document.getElementById('itemUnitCustom');
@@ -1091,6 +1102,13 @@ async function saveItem() {
   if (isNaN(cost) || cost < 0)   { errEl.textContent = 'Enter valid unit cost.'; errEl.classList.add('show'); return; }
   if (isNaN(reorder) || reorder < 0) { errEl.textContent = 'Enter valid reorder level.'; errEl.classList.add('show'); return; }
 
+  // Calculate unit cost from price per pack and pack size
+  const pricePerPack = parseFloat(document.getElementById('itemPricePerPack').value || '0');
+  const packSize = parseFloat(document.getElementById('itemPackSize').value || '1');
+  let calculatedCost = pricePerPack / packSize;
+  if (isNaN(calculatedCost)) calculatedCost = cost;
+  document.getElementById('itemUnitCost').value = calculatedCost.toFixed(2);
+
   let skuVal = document.getElementById('itemSku').value.trim();
   if (!skuVal && cat) {
     skuVal = generateNextSku(cat, id || null);
@@ -1111,6 +1129,7 @@ async function saveItem() {
     sku: skuVal || null,
     stock_quantity: stock,
     unit: unit || 'pcs',
+    pack_size: document.getElementById('itemPackSize').value || null,
     unit_cost: cost,
     reorder_level: reorder,
     supplier: document.getElementById('itemSupplier').value.trim() || null,

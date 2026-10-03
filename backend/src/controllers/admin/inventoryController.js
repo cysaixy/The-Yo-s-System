@@ -36,7 +36,7 @@ async function ensureIncidentTable() {
 export async function overview(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT id, name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, notes,
+      `SELECT id, name, category, sku, stock_quantity, unit, unit_cost, pack_size, reorder_level, supplier, notes,
                CASE
                  WHEN stock_quantity <= 0 THEN 'out_of_stock'
                  WHEN stock_quantity <= reorder_level THEN 'below_reorder'
@@ -47,10 +47,12 @@ export async function overview(req, res, next) {
         ORDER BY name ASC`
     );
 
+
     res.json({ items: rows });
   } catch (err) {
     next(err);
   }
+}
 }
 
 const CATEGORY_PREFIX_MAP = {
@@ -112,17 +114,17 @@ export async function generateUniqueSku(category, client = pool) {
   }
   return candidate;
 }
-
 // POST /api/admin/inventory/items
 export async function createItem(req, res, next) {
   try {
     const {
-      name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, notes
+      name, category, sku, stock_quantity, unit, unit_cost, pack_size, reorder_level, supplier, notes
     } = req.body || {};
 
     if (!name || !category) {
       return res.status(400).json({ error: 'Item name and category are required.' });
     }
+
 
     const toNumber = (value, fallback) => {
       if (value === undefined || value === null || value === '') return fallback;
@@ -131,9 +133,13 @@ export async function createItem(req, res, next) {
     const stock = toNumber(stock_quantity, 0);
     const cost = toNumber(unit_cost, 0);
     const reorder = toNumber(reorder_level, 5);
+    const pack = toNumber(pack_size, null);
 
     if (![stock, cost, reorder].every(Number.isFinite) || stock < 0 || cost < 0 || reorder < 0) {
       return res.status(400).json({ error: 'Stock quantity, unit cost, and reorder level must be non-negative numbers.' });
+    }
+    if (pack !== null && (!Number.isFinite(pack) || pack <= 0)) {
+      return res.status(400).json({ error: 'Pack size must be a positive number.' });
     }
 
     // Auto-generate or validate unique SKU based on category
@@ -157,11 +163,12 @@ export async function createItem(req, res, next) {
     else if (stock <= reorder) status = 'below_reorder';
     else if (stock <= reorder * 1.5) status = 'low_stock';
 
+
     const { rows } = await pool.query(
-      `INSERT INTO inventory_items (name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, status, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO inventory_items (name, category, sku, stock_quantity, unit, unit_cost, pack_size, reorder_level, supplier, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [name, category, finalSku || null, stock, unit || 'pcs', cost, reorder, supplier || null, status, notes || null]
+      [name, category, finalSku || null, stock, unit || 'pcs', cost, pack, reorder, supplier || null, status, notes || null]
     );
 
     res.status(201).json({ item: rows[0] });
@@ -169,7 +176,6 @@ export async function createItem(req, res, next) {
     next(err);
   }
 }
-
 // PATCH /api/admin/inventory/items/:id
 export async function updateItem(req, res, next) {
   try {
@@ -200,6 +206,19 @@ export async function updateItem(req, res, next) {
       }
     }
 
+    // pack_size: omitted = keep current, empty/null = clear it, number = set it
+    let newPack = current.pack_size;
+    if (pack_size !== undefined) {
+      if (pack_size === null || pack_size === '') {
+        newPack = null;
+      } else {
+        newPack = Number(pack_size);
+        if (!Number.isFinite(newPack) || newPack <= 0) {
+          return res.status(400).json({ error: 'Pack size must be a positive number.' });
+        }
+      }
+    }
+
     const newStock = stock_quantity !== undefined ? Number(stock_quantity) : Number(current.stock_quantity);
     const newReorder = reorder_level !== undefined ? Number(reorder_level) : Number(current.reorder_level);
 
@@ -219,10 +238,11 @@ export async function updateItem(req, res, next) {
            reorder_level = $7,
            supplier = COALESCE($8, supplier),
            status = $9,
-           notes = COALESCE($10, notes)
-       WHERE id = $11
+           notes = COALESCE($10, notes),
+           pack_size = $11
+       WHERE id = $12
        RETURNING *`,
-      [name, category, finalSku, newStock, unit, unit_cost, newReorder, supplier, status, notes, id]
+      [name, category, finalSku, newStock, unit, unit_cost, newReorder, supplier, status, notes, newPack, id]
     );
 
     res.json({ item: rows[0] });

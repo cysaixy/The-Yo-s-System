@@ -157,6 +157,7 @@ model InventoryItem {
   unit          String?  @db.VarChar(30)
   unitCost      Decimal  @map("unit_cost") @db.Decimal(10, 2)
   reorderLevel  Decimal? @map("reorder_level") @db.Decimal(10, 2)
+  packSize      Decimal? @map("pack_size") @db.Decimal(10, 2)
   supplier      String?  @db.VarChar(150)
   status        String?  @db.VarChar(30)
   notes         String?
@@ -397,7 +398,7 @@ model StockIn {
   // purchases replenish ingredients, not finished products.
   inventoryId    Int?      @map("inventory_id")
   staffId        Int       @map("staff_id")
-  quantity       Int
+  quantity       Decimal   @db.Decimal(10, 2)
   expirationDate DateTime? @map("expiration_date") @db.Date
   stockinDate    DateTime  @default(now()) @map("stockin_date")
   remarks        String?

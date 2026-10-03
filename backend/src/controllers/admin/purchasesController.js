@@ -62,13 +62,69 @@ export async function list(req, res, next) {
 export async function create(req, res, next) {
   const client = await pool.connect();
   try {
-    const { inventory_id, menu_id, quantity, expiration_date, remarks } = req.body || {};
+    const { inventory_id, menu_id, packs, quantity, expiration_date, remarks } = req.body || {};
 
-    // Support both raw ingredients (inventory_id) and legacy direct products (menu_id)
-    if ((!inventory_id && !menu_id) || !quantity || quantity <= 0) {
+    // Determine the actual quantity: if pack_size is set, quantity = packs * pack_size
+    // Otherwise use quantity directly (legacy behavior)
+    let actualQuantity;
+    let quantityToStore;
+
+    if (packs !== undefined && packs !== null) {
+      // New path: compute quantity from packs and pack_size
+      if (!inventory_id) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'inventory_id is required when specifying packs.',
+        });
+      }
+      
+      // Get the item to find pack_size
+      const { rows: itemRows } = await client.query(
+        'SELECT id, pack_size FROM inventory_items WHERE id = $1',
+        [inventory_id]
+      );
+      
+      if (!itemRows.length) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Inventory item not found.' });
+      }
+
+      const packSize = itemRows[0].pack_size;
+      
+      if (packSize === null) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'This item has no pack size set. Enter total quantity instead.',
+        });
+      }
+
+      if (!Number.isFinite(packs) || packs <= 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'Packs must be a positive number.',
+        });
+      }
+
+      actualQuantity = Number(packs) * Number(packSize);
+      quantityToStore = actualQuantity;
+    } else if (quantity !== undefined && quantity !== null) {
+      // Legacy path: use quantity directly
+      if ((!inventory_id && !menu_id) || quantity <= 0) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'Either inventory_id or menu_id, and a positive quantity are required.',
+        });
+      }
+
+      actualQuantity = Number(quantity);
+      quantityToStore = actualQuantity;
+    } else {
+      await client.query('ROLLBACK');
       return res.status(400).json({
         error: 'Bad Request',
-        message: 'Either inventory_id or menu_id, and a positive quantity are required.',
+        message: 'Either packs or quantity are required.',
       });
     }
 
@@ -91,7 +147,7 @@ export async function create(req, res, next) {
         `INSERT INTO stock_in (inventory_id, menu_id, staff_id, quantity, expiration_date, remarks)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id, inventory_id, menu_id, quantity, expiration_date, stockin_date`,
-        [inventory_id || null, menu_id || null, staffId, Number(quantity), expiration_date || null, remarks || null]
+        [inventory_id || null, menu_id || null, staffId, quantityToStore, expiration_date || null, remarks || null]
       );
       stockIn = stockInRows[0];
 
@@ -99,12 +155,12 @@ export async function create(req, res, next) {
       if (inventory_id) {
         await client.query(
           'UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
-          [Number(quantity), inventory_id]
+          [actualQuantity, inventory_id]
         );
       } else if (menu_id) {
         await client.query(
           'UPDATE menu_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
-          [Number(quantity), menu_id]
+          [actualQuantity, menu_id]
         );
       }
     } else {
@@ -121,20 +177,20 @@ export async function create(req, res, next) {
         `INSERT INTO stock_in (menu_id, staff_id, quantity, expiration_date, remarks)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id, menu_id, quantity, expiration_date, stockin_date`,
-        [menu_id, staffId, Number(quantity), expiration_date || null, remarks || null]
+        [menu_id, staffId, quantityToStore, expiration_date || null, remarks || null]
       );
       stockIn = stockInRows[0];
 
       await client.query(
         'UPDATE menu_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
-        [Number(quantity), menu_id]
+        [actualQuantity, menu_id]
       );
     }
 
     await client.query(
       `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, stock_in_id, transaction_type, quantity_change, remarks)
        VALUES ($1, $2, $3, $4, 'stock_in', $5, $6)`,
-      [inventory_id || null, menu_id || null, staffId, stockIn.id, Number(quantity), remarks || null]
+      [inventory_id || null, menu_id || null, staffId, stockIn.id, actualQuantity, remarks || null]
     );
 
     await client.query('COMMIT');
