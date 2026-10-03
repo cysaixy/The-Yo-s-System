@@ -29,6 +29,29 @@ describe('Critical Bug Fixes - API & Code Verification', () => {
   });
 
   describe('Staff Authentication with httpOnly Cookies', () => {
+    it('should bootstrap and enforce CSRF tokens for staff login', async () => {
+      const missingToken = await request(app)
+        .post('/api/admin/staff/login')
+        .send({});
+      expect(missingToken.status).toBe(403);
+      expect(missingToken.body.error).toBe('CSRF token missing.');
+
+      const csrfResponse = await request(app).get('/api/admin/staff/csrf-token');
+      expect(csrfResponse.status).toBe(200);
+      expect(csrfResponse.body.csrfToken).toMatch(/^[a-f0-9]{64}$/);
+
+      const csrfCookie = csrfResponse.headers['set-cookie']
+        .find(cookie => cookie.startsWith('csrf_token='))
+        .split(';', 1)[0];
+      const loginResponse = await request(app)
+        .post('/api/admin/staff/login')
+        .set('Cookie', csrfCookie)
+        .set('X-CSRF-Token', csrfResponse.body.csrfToken)
+        .send({});
+      expect(loginResponse.status).toBe(400);
+      expect(loginResponse.body.error).toBe('Email and password are required.');
+    });
+
     it('should have POST /api/admin/staff/login endpoint', async () => {
       const res = await request(app).post('/api/admin/staff/login').send({ email: 'test@test.com', password: 'test' });
       expect(res.status).not.toBe(404);

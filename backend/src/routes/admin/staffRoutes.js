@@ -1,11 +1,12 @@
 import express from 'express';
 const staffRouter = express.Router();
-import {login, logout, me, listStaff, getStaffById, createStaff, updateStaff, updatePermissions, changePassword}from '../../controllers/admin/staffController.js';
+import {issueCSRFToken, login, logout, me, listStaff, getStaffById, createStaff, updateStaff, updatePermissions, changePassword}from '../../controllers/admin/staffController.js';
 import { requireStaffAuth } from '../../middlewares/auth.middleware.js';
 import { csrfMiddleware } from '../../middlewares/csrf.middleware.js';
 import { requireAdmin } from '../../middlewares/role.middleware.js';
 
 // POST /api/admin/staff/login — public, no auth required yet
+staffRouter.get('/csrf-token', issueCSRFToken);
 staffRouter.post('/login', login);
 staffRouter.post('/logout', logout);
 

@@ -17,9 +17,11 @@ export const API_BASE_URL = "";
 
 function getCSRFToken() {
   if (typeof document === 'undefined') return '';
-  // Read csrf_token cookie; be tolerant of whitespace and ordering
-  const match = document.cookie.match(/^\s*csrf_token=([^;]*)/);
-  return match ? match[1].trim() : '';
+  const csrfCookie = document.cookie
+    .split(';')
+    .map(cookie => cookie.trim())
+    .find(cookie => cookie.startsWith('csrf_token='));
+  return csrfCookie ? decodeURIComponent(csrfCookie.slice('csrf_token='.length)) : '';
 }
 
 export function clearStaffSession() {

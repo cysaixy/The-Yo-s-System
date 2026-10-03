@@ -24,6 +24,23 @@ const COOKIE_OPTIONS = {
   path: '/',
 };
 
+function setCSRFTokenCookie(res) {
+  const csrfToken = crypto.randomBytes(32).toString('hex');
+  res.cookie('csrf_token', csrfToken, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+  return csrfToken;
+}
+
+export function issueCSRFToken(req, res) {
+  const csrfToken = setCSRFTokenCookie(res);
+  res.json({ csrfToken });
+}
+
 export async function login(req, res, next) {
   try {
     const { email, password } = req.body || {};
@@ -69,14 +86,7 @@ export async function login(req, res, next) {
 
     // Set separate non-httpOnly CSRF token cookie (frontend reads this,
     // sends it back as X-CSRF-Token header on state-changing requests)
-    const csrfToken = crypto.randomBytes(32).toString('hex');
-    res.cookie('csrf_token', csrfToken, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-      path: '/',
-    });
+    const csrfToken = setCSRFTokenCookie(res);
 
     res.json({ staff, csrfToken });
   } catch (err) {
