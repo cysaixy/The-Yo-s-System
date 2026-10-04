@@ -155,7 +155,7 @@ model InventoryItem {
   sku           String?  @db.VarChar(50)
   stockQuantity Decimal  @map("stock_quantity") @db.Decimal(10, 2)
   unit          String?  @db.VarChar(30)
-  unitCost      Decimal  @map("unit_cost") @db.Decimal(10, 2)
+  unitCost      Decimal  @map("unit_cost") @db.Decimal(10, 4)
   reorderLevel  Decimal? @map("reorder_level") @db.Decimal(10, 2)
   packSize      Decimal? @map("pack_size") @db.Decimal(10, 2)
   supplier      String?  @db.VarChar(150)

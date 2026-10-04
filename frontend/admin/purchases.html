@@ -48,8 +48,14 @@
               <label>Item</label>
               <select id="pItemId"></select>
             </div>
-            <div class="form-field">
-              <label>Quantity</label><input type="number" id="pQty" min="1" step="any">
+            <div class="form-field" id="pQtyField">
+              <label id="pQtyLabel">Quantity</label><input type="number" id="pQty" min="0.01" step="any">
+              <a href="#" id="pPacksToggle" style="display:none; font-size:0.75rem; color:var(--ink-muted);">Enter packs instead</a>
+            </div>
+            <div class="form-field" id="pPacksField" style="display:none;">
+              <label>Packs</label><input type="number" id="pPacks" min="0.01" step="any" placeholder="Number of packs">
+              <small id="pPackPreview" style="font-size:0.75rem; color:var(--ink-muted);"></small>
+              <a href="#" id="pTotalQuantityToggle" style="font-size:0.75rem; color:var(--ink-muted);">Enter total quantity instead</a>
             </div>
             <div class="form-field">
               <label>Expiration Date (optional)</label><input type="date" id="pExpiry">
@@ -71,6 +77,21 @@
     document.getElementById('pCancelBtn').addEventListener('click', () => toggleModal(false));
     document.getElementById('pSaveBtn').addEventListener('click', savePurchase);
     document.getElementById('pItemType').addEventListener('change', updateItemDropdown);
+    document.getElementById('pItemId').addEventListener('change', () => {
+      document.getElementById('pQty').value = '';
+      document.getElementById('pPacks').value = '';
+      quantityMode = 'packs';
+      updateQuantityFields();
+    });
+    document.getElementById('pPacks').addEventListener('input', updatePackPreview);
+    document.getElementById('pTotalQuantityToggle').addEventListener('click', event => {
+      event.preventDefault();
+      setQuantityMode('quantity');
+    });
+    document.getElementById('pPacksToggle').addEventListener('click', event => {
+      event.preventDefault();
+      setQuantityMode('packs');
+    });
 
     loadPurchases();
     loadInventoryItems();
@@ -128,6 +149,9 @@
   }
 
   function updateItemDropdown() {
+    quantityMode = 'packs';
+    document.getElementById('pQty').value = '';
+    document.getElementById('pPacks').value = '';
     const itemType = document.getElementById('pItemType').value;
     const itemSelect = document.getElementById('pItemId');
     
@@ -140,6 +164,54 @@
         `<option value="${i.id}">${escapeHtml(i.name)}</option>`
       ).join('');
     }
+    updateQuantityFields();
+  }
+
+  let quantityMode = 'packs';
+
+  function selectedInventoryItem() {
+    const id = document.getElementById('pItemId').value;
+    return inventoryItems.find(item => String(item.id) === String(id));
+  }
+
+  function setQuantityMode(mode) {
+    quantityMode = mode;
+    updateQuantityFields();
+  }
+
+  function updateQuantityFields() {
+    const isInventory = document.getElementById('pItemType').value === 'inventory';
+    const item = isInventory ? selectedInventoryItem() : null;
+    const packSize = Number(item && item.pack_size);
+    const hasPackSize = Number.isFinite(packSize) && packSize > 0;
+    const usePacks = hasPackSize && quantityMode === 'packs';
+
+    document.getElementById('pPacksField').style.display = usePacks ? '' : 'none';
+    document.getElementById('pQtyField').style.display = usePacks ? 'none' : '';
+    document.getElementById('pPacksToggle').style.display = hasPackSize && !usePacks ? 'inline' : 'none';
+    document.getElementById('pQtyLabel').textContent = isInventory && item && item.unit
+      ? `Quantity (${item.unit})`
+      : 'Quantity';
+    if (!hasPackSize) quantityMode = 'quantity';
+    updatePackPreview();
+  }
+
+  function updatePackPreview() {
+    const item = selectedInventoryItem();
+    const packs = Number(document.getElementById('pPacks').value);
+    const packSize = Number(item && item.pack_size);
+    const unit = item && item.unit ? item.unit : 'pcs';
+    const preview = document.getElementById('pPackPreview');
+    if (!preview) return;
+
+    if (!Number.isFinite(packs) || packs <= 0 || !Number.isFinite(packSize) || packSize <= 0) {
+      preview.textContent = '';
+      return;
+    }
+
+    const total = Math.round(packs * packSize * 100) / 100;
+    const numberFormat = new Intl.NumberFormat('en-PH', { maximumFractionDigits: 2 });
+    preview.textContent = `${numberFormat.format(packs)} ${packs === 1 ? 'pack' : 'packs'} × ${numberFormat.format(packSize)} ${unit} = ${numberFormat.format(total)} ${unit}`;
   }
 
   function openModal() {
@@ -157,9 +229,12 @@
     
     updateItemDropdown();
     document.getElementById('pQty').value = '';
+    document.getElementById('pPacks').value = '';
     document.getElementById('pExpiry').value = '';
     document.getElementById('pRemarks').value = '';
     document.getElementById('pError').style.display = 'none';
+    quantityMode = 'packs';
+    updateQuantityFields();
     toggleModal(true);
   }
 
@@ -167,27 +242,29 @@
     const itemType = document.getElementById('pItemType').value;
     const itemId = document.getElementById('pItemId').value;
     const quantity = Number(document.getElementById('pQty').value);
+    const packs = Number(document.getElementById('pPacks').value);
+    const inventoryItem = itemType === 'inventory' ? selectedInventoryItem() : null;
+    const itemPackSize = Number(inventoryItem && inventoryItem.pack_size);
+    const usePacks = Number.isFinite(itemPackSize) && itemPackSize > 0 && quantityMode === 'packs';
     const expiration_date = document.getElementById('pExpiry').value || null;
     const remarks = document.getElementById('pRemarks').value.trim() || null;
     const errEl = document.getElementById('pError');
 
-    if (!itemId || !quantity || quantity <= 0) {
-      errEl.textContent = 'Select an item and enter a positive quantity.';
+    const enteredAmount = usePacks ? packs : quantity;
+    if (!itemId || !Number.isFinite(enteredAmount) || enteredAmount <= 0) {
+      errEl.textContent = `Select an item and enter a positive ${usePacks ? 'number of packs' : 'quantity'}.`;
       errEl.style.display = 'block';
       return;
     }
 
-    const payload = {
-      quantity,
-      expiration_date,
-      remarks
-    };
-
-    if (itemType === 'inventory') {
-      payload.inventory_id = Number(itemId);
-    } else {
-      payload.menu_id = Number(itemId);
-    }
+    const payload = itemType === 'inventory'
+      ? {
+          inventory_id: Number(itemId),
+          ...(usePacks ? { packs } : { quantity }),
+          expiration_date,
+          remarks
+        }
+      : { menu_id: Number(itemId), quantity, expiration_date, remarks };
 
     try {
       console.log('Sending purchase payload:', payload);

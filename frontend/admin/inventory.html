@@ -663,8 +663,9 @@ function buildPageHTML() {
         <div style="font-size:0.70rem; color:var(--ink-muted); margin-top:2px;" id="skuHint">Auto-assigned based on category</div>
       </div>
       <div class="inv-form-field">
-        <label>Current Stock *</label>
+        <label>Current Stock (base units) *</label>
         <input type="number" id="itemStock" min="0" step="0.01" placeholder="0">
+        <small style="font-size:0.65rem; color:var(--ink-muted);" id="stockUnitHint">Enter the total quantity in the selected unit.</small>
       </div>
 <div class="inv-form-field">
         <label>Unit *</label>
@@ -682,7 +683,7 @@ function buildPageHTML() {
       <div class="inv-form-field">
         <label>Price per pack (₱)</label>
         <input type="number" id="itemPricePerPack" min="0" step="0.01" placeholder="0.00">
-        <small style="font-size:0.65rem; color:var(--ink-muted);" id="pricePerPackResult">₱0.00 per g</small>
+        <small style="font-size:0.65rem; color:var(--ink-muted);" id="pricePerPackResult">₱0.00 per pcs</small>
       </div>
       <div class="inv-form-field">
         <label>Unit Cost (₱) *</label>
@@ -803,7 +804,11 @@ function bindAll() {
   document.getElementById('itemUnit').addEventListener('change', e => {
     const customInp = document.getElementById('itemUnitCustom');
     customInp.style.display = e.target.value === 'custom' ? 'block' : 'none';
+    updatePackCostPreview();
   });
+  document.getElementById('itemUnitCustom').addEventListener('input', updatePackCostPreview);
+  document.getElementById('itemPackSize').addEventListener('input', updatePackCostPreview);
+  document.getElementById('itemPricePerPack').addEventListener('input', updatePackCostPreview);
 
   // Auto SKU generation when category changes or when Auto Code button is clicked
   document.getElementById('itemCategory').addEventListener('change', e => {
@@ -1057,6 +1062,9 @@ function openItemModal(item = null) {
   document.getElementById('itemSupplier').value = item ? (item.supplier || '') : '';
   document.getElementById('itemNotes').value    = item ? (item.notes || '') : '';
   document.getElementById('itemPackSize').value = item ? item.pack_size || '' : '';
+  document.getElementById('itemPricePerPack').value = item && item.pack_size
+    ? (Number(item.unit_cost) * Number(item.pack_size)).toFixed(2)
+    : '';
 
   const unitSel = document.getElementById('itemUnit');
   const customInp = document.getElementById('itemUnitCustom');
@@ -1074,6 +1082,7 @@ function openItemModal(item = null) {
     unitSel.value = 'pcs';
     customInp.style.display = 'none';
   }
+  updatePackCostPreview();
 
   const skuHint = document.getElementById('skuHint');
   if (skuHint) {
@@ -1084,12 +1093,38 @@ function openItemModal(item = null) {
   openModal('itemModal');
 }
 
+function updatePackCostPreview() {
+  const unitSelect = document.getElementById('itemUnit');
+  const unit = unitSelect.value === 'custom'
+    ? (document.getElementById('itemUnitCustom').value.trim() || 'pcs')
+    : unitSelect.value;
+  const result = document.getElementById('pricePerPackResult');
+  const stockHint = document.getElementById('stockUnitHint');
+  if (result) {
+    const priceValue = document.getElementById('itemPricePerPack').value;
+    const packSizeValue = document.getElementById('itemPackSize').value;
+    const price = Number(priceValue);
+    const packSize = Number(packSizeValue);
+    const unitCost = priceValue !== '' && Number.isFinite(price) && Number.isFinite(packSize) && packSize > 0
+      ? (price / packSize).toFixed(2)
+      : '0.00';
+    result.textContent = `₱${unitCost} per ${unit}`;
+
+    if (priceValue !== '' && Number.isFinite(price) && Number.isFinite(packSize) && packSize > 0) {
+      document.getElementById('itemUnitCost').value = (price / packSize).toFixed(2);
+    }
+  }
+  if (stockHint) {
+    stockHint.textContent = `Enter the total quantity in ${unit} (for example, 10 packs of 500 ${unit} = 5,000 ${unit}).`;
+  }
+}
+
 async function saveItem() {
   const id     = document.getElementById('itemId').value;
   const name   = document.getElementById('itemName').value.trim();
   const cat    = document.getElementById('itemCategory').value.trim();
   const stock  = parseFloat(document.getElementById('itemStock').value);
-  const cost   = parseFloat(document.getElementById('itemUnitCost').value);
+  let cost   = parseFloat(document.getElementById('itemUnitCost').value);
   const reorder = parseFloat(document.getElementById('itemReorder').value);
   const unitSel = document.getElementById('itemUnit').value;
   const unitCustom = document.getElementById('itemUnitCustom').value.trim();
@@ -1100,15 +1135,27 @@ async function saveItem() {
   if (!name)             { errEl.textContent = 'Item name is required.'; errEl.classList.add('show'); return; }
   if (!cat)              { errEl.textContent = 'Category is required.'; errEl.classList.add('show'); return; }
   if (isNaN(stock) || stock < 0) { errEl.textContent = 'Enter valid stock quantity.'; errEl.classList.add('show'); return; }
-  if (isNaN(cost) || cost < 0)   { errEl.textContent = 'Enter valid unit cost.'; errEl.classList.add('show'); return; }
   if (isNaN(reorder) || reorder < 0) { errEl.textContent = 'Enter valid reorder level.'; errEl.classList.add('show'); return; }
 
-  // Calculate unit cost from price per pack and pack size
-  const pricePerPack = parseFloat(document.getElementById('itemPricePerPack').value || '0');
-  const packSize = parseFloat(document.getElementById('itemPackSize').value || '1');
-  let calculatedCost = pricePerPack / packSize;
-  if (isNaN(calculatedCost)) calculatedCost = cost;
-  document.getElementById('itemUnitCost').value = calculatedCost.toFixed(2);
+  const pricePerPackValue = document.getElementById('itemPricePerPack').value;
+  const packSizeValue = document.getElementById('itemPackSize').value;
+  if (pricePerPackValue !== '') {
+    const pricePerPack = Number(pricePerPackValue);
+    const packSize = Number(packSizeValue);
+    if (!Number.isFinite(pricePerPack) || pricePerPack < 0) {
+      errEl.textContent = 'Enter a valid price per pack.';
+      errEl.classList.add('show');
+      return;
+    }
+    if (!Number.isFinite(packSize) || packSize <= 0) {
+      errEl.textContent = 'Enter a positive pack size to calculate unit cost.';
+      errEl.classList.add('show');
+      return;
+    }
+    cost = Number((pricePerPack / packSize).toFixed(2));
+    document.getElementById('itemUnitCost').value = cost.toFixed(2);
+  }
+  if (isNaN(cost) || cost < 0)   { errEl.textContent = 'Enter valid unit cost.'; errEl.classList.add('show'); return; }
 
   let skuVal = document.getElementById('itemSku').value.trim();
   if (!skuVal && cat) {
@@ -1130,7 +1177,7 @@ async function saveItem() {
     sku: skuVal || null,
     stock_quantity: stock,
     unit: unit || 'pcs',
-    pack_size: document.getElementById('itemPackSize').value || null,
+    pack_size: packSizeValue || null,
     unit_cost: cost,
     reorder_level: reorder,
     supplier: document.getElementById('itemSupplier').value.trim() || null,

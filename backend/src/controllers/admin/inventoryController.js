@@ -180,7 +180,7 @@ export async function updateItem(req, res, next) {
   try {
     const { id } = req.params;
     const {
-      name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, notes
+      name, category, sku, stock_quantity, unit, unit_cost, pack_size, reorder_level, supplier, notes
     } = req.body || {};
 
     const existingRes = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [id]);

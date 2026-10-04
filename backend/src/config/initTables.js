@@ -236,6 +236,9 @@ export async function initTables() {
     // 12. Pack size support
     await pool.query('ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS pack_size NUMERIC(10,2);');
     await pool.query('ALTER TABLE stock_in ALTER COLUMN quantity TYPE NUMERIC(10,2);');
+    // Widen unit_cost to 4 decimal places so per-base-unit costs (e.g. PS0.098/g) are
+    // stored precisely. Existing values are preserved -- idempotent if already NUMERIC(10,4).
+    await pool.query('ALTER TABLE inventory_items ALTER COLUMN unit_cost TYPE NUMERIC(10,4);');
 
     // Drop legacy tables table — table numbers are now free-form text
     // assigned directly by staff on reservation confirm / walk-in.
