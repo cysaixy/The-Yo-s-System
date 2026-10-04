@@ -26,7 +26,6 @@
     "firebase": "^12.17.1",
     "firebase-admin": "^14.2.0",
     "jsonwebtoken": "^9.0.3",
-    "nodemailer": "^9.0.4",
     "pg": "^8.22.0",
     "prisma": "^8.0.0-rc.15"
   },

@@ -74,13 +74,8 @@ export const authLimiter = createLimiter({
   handler: (req, res) => res.status(429).json({ error: 'Too many login attempts. Please try again after 15 minutes.' }),
 });
 
-// OTP send/verify endpoints
-export const otpLimiter = createLimiter({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 30,
-  prefix: 'otp',
-  handler: (req, res) => res.status(429).json({ error: 'Too many verification requests. Please try again in a few minutes.' }),
-});
+
+
 
 // Transactional endpoints (e.g., POS order creation)
 export const posLimiter = createLimiter({
