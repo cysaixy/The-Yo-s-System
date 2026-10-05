@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Order Terminal — The~Yo's</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 <style>
   /* =========================================================
      DESKTOP & BASE ORDER TERMINAL STYLES
@@ -78,14 +78,20 @@
 
   .order-catalog {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    /* min(220px, 45%) ensures 2 columns fit even at narrow mobile widths */
+    grid-template-columns: repeat(auto-fill, minmax(min(220px, 45%), 1fr));
     gap: 16px;
-    max-height: 720px;
-    overflow-y: auto;
-    padding-right: 6px;
   }
-  .order-catalog::-webkit-scrollbar { width: 6px; }
-  .order-catalog::-webkit-scrollbar-thumb { background: var(--brass, #d4af37); border-radius: 3px; }
+  /* Desktop-only scroll */
+  @media(min-width: 769px) {
+    .order-catalog {
+      max-height: 720px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .order-catalog::-webkit-scrollbar { width: 6px; }
+    .order-catalog::-webkit-scrollbar-thumb { background: var(--brass, #d4af37); border-radius: 3px; }
+  }
 
   .catalog-item {
     position: relative;
@@ -97,6 +103,7 @@
     flex-direction: column;
     justify-content: space-between;
     overflow: hidden;
+    min-width: 0; /* Prevent grid blowout */
     box-shadow: 0 4px 18px rgba(0,0,0,0.12);
     cursor: pointer;
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
@@ -990,7 +997,7 @@
       font-size: 0.75rem;
     }
     .order-catalog {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, 1fr) !important;
       gap: 12px;
       max-height: none !important; /* Prevent scroll-trap on mobile */
       overflow-y: visible !important;
@@ -1027,7 +1034,7 @@
 
   @media(max-width: 480px) {
     .order-catalog {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
       gap: 10px;
     }
     .catalog-info h4 {
