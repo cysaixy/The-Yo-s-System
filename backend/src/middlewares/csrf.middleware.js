@@ -6,6 +6,12 @@ export function csrfMiddleware(req, res, next) {
     return next();
   }
 
+  // Exempt authentication endpoints from CSRF check (pre-session login & logout)
+  const path = req.originalUrl || req.path || '';
+  if (path.includes('/staff/login') || path.includes('/staff/logout')) {
+    return next();
+  }
+
   // Check for CSRF token in header
   const headerToken = req.headers['x-csrf-token'];
   const cookieToken = req.cookies?.['csrf_token'];

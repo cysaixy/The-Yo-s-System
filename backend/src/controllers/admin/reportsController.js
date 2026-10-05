@@ -28,7 +28,8 @@ export async function summary(req, res, next) {
         `SELECT o.order_type, COUNT(*)::int AS order_count, COALESCE(SUM(o.total_amount), 0)::numeric AS total_sales
          FROM orders o
          ${where}
-         GROUP BY o.order_type`
+         GROUP BY o.order_type`,
+        params
       ),
       pool.query(
         `SELECT c.name AS category_name, COALESCE(SUM(oi.subtotal), 0)::numeric AS total_sales
@@ -38,7 +39,8 @@ export async function summary(req, res, next) {
          JOIN orders o ON o.id = oi.order_id
          ${where}
          GROUP BY c.id, c.name
-         ORDER BY total_sales DESC`
+         ORDER BY total_sales DESC`,
+        params
       ),
     ]);
 

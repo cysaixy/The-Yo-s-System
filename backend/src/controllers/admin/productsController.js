@@ -616,6 +616,9 @@ export const deleteBundle = async (req, res, next) => {
     if (rowCount === 0) return res.status(404).json({ error: 'Bundle not found.' });
     res.status(204).send();
   } catch (err) {
+    if (err.code === '23503') {
+      return res.status(409).json({ error: 'Cannot delete bundle because it has order history.' });
+    }
     next(err);
   }
 };

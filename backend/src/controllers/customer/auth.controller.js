@@ -4,7 +4,7 @@ import { getFirebaseAuth } from '../../config/firebase.js';
 
 // Returns the currently authenticated customer profile. Called on page load
 // so the frontend can prefill forms and hide/show account-gated sections.
-export async function getMe(req, res) {
+export async function getMe(req, res, next) {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized: User context missing.' });
@@ -22,13 +22,12 @@ export async function getMe(req, res) {
     }
 
     return res.json({ customer: null });
-  } catch (error) {
-    console.error('getMe error:', error);
-    return res.status(500).json({ error: 'Couldn\'t load profile.' });
+  } catch (err) {
+    next(err);
   }
 }
 
-export async function syncCustomerProfile(req, res) {
+export async function syncCustomerProfile(req, res, next) {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized: User context missing.' });
@@ -91,17 +90,13 @@ export async function syncCustomerProfile(req, res) {
       message: 'Customer profile synced successfully.',
       customer,
     });
-  } catch (error) {
-    console.error('Sync Profile Error:', error);
-    return res.status(500).json({
-      error: 'Internal server error during sync.',
-      details: error.message
-    });
+  } catch (err) {
+    next(err);
   }
 }
 
 // --- PASSWORD UPDATE ---
-export async function updatePassword(req, res) {
+export async function updatePassword(req, res, next) {
   try {
     if (!req.user || !req.user.firebaseUid) {
       return res.status(401).json({ error: 'Unauthorized: User context missing.' });
@@ -115,8 +110,20 @@ export async function updatePassword(req, res) {
     await getFirebaseAuth().updateUser(req.user.firebaseUid, { password: newPassword });
 
     return res.status(200).json({ message: 'Password updated successfully.' });
-  } catch (error) {
-    console.error('updatePassword error:', error);
-    return res.status(500).json({ error: 'Couldn\'t update password. Please try again.' });
+  } catch (err) {
+    // Firebase errors are operational — surface a clean message rather than
+    // the raw Firebase SDK object, which can contain internal details.
+    if (err.code?.startsWith('auth/')) {
+      const firebaseMessages = {
+        'auth/invalid-password': 'Password must be at least 6 characters.',
+        'auth/user-not-found': 'User not found.',
+      };
+      const message = firebaseMessages[err.code] || 'Could not update password. Please try again.';
+      const opErr = new Error(message);
+      opErr.status = 400;
+      opErr.isOperational = true;
+      return next(opErr);
+    }
+    next(err);
   }
 }

@@ -28,6 +28,16 @@ function errorHandler(err, req, res, _next) {
     return res.status(400).json({ error: 'Invalid value for one of the fields (violates a database constraint).' });
   }
 
+  // Postgres invalid syntax for type integer/numeric (e.g. invalid ID format in parameters)
+  if (err.code === '22P02') {
+    return res.status(400).json({ error: 'Invalid ID or numerical parameter format.' });
+  }
+
+  // Postgres numeric value out of range
+  if (err.code === '22003') {
+    return res.status(400).json({ error: 'Numeric value out of allowed range.' });
+  }
+
   // Postgres connection timeout or terminated connection — surface as clean 503
   if (
     err.code === '08006' ||

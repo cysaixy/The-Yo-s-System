@@ -668,7 +668,8 @@ export async function updateDeliveryFee(req, res, next) {
     const { delivery_fee } = req.body;
     const newFee = round2(delivery_fee);
 
-    if (delivery_fee === undefined || delivery_fee === null || isNaN(newFee) || newFee < 0) {
+    const rawFee = Number(delivery_fee);
+    if (delivery_fee === undefined || delivery_fee === null || !Number.isFinite(rawFee) || rawFee < 0) {
       return res.status(400).json({ error: 'delivery_fee must be a non-negative number.' });
     }
 
@@ -712,7 +713,11 @@ export async function listPayments(req, res, next) {
 
 export async function updatePaymentStatus(req, res, next) {
   try {
-    const { status } = req.body;
+    const status = String(req.body?.status || '').toLowerCase();
+    const VALID_PAYMENT_STATUSES = ['paid', 'pending', 'failed', 'refunded'];
+    if (!VALID_PAYMENT_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${VALID_PAYMENT_STATUSES.join(', ')}` });
+    }
     const { rows } = await pool.query(
       'UPDATE payments SET status = $1 WHERE id = $2 RETURNING id, order_id, status',
       [status, req.params.id]

@@ -246,6 +246,9 @@ export async function updateItem(req, res, next) {
 
     res.json({ item: rows[0] });
   } catch (err) {
+    if (err.code === '22P02') {
+      return res.status(400).json({ error: 'Invalid inventory item ID format.' });
+    }
     next(err);
   }
 }

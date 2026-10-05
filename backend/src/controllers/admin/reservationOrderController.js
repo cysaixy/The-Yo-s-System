@@ -109,7 +109,7 @@ export async function upsertReservationOrder(req, res, next) {
   try {
     const { id } = req.params;
     const { items, notes, status, custom_order_notes } = req.body;
-    const staff_id = req.user?.staff?.id;
+    const staff_id = req.staff?.id;
 
     // Check reservation exists
     const resv = await pool.query(
@@ -139,7 +139,7 @@ export async function upsertReservationOrder(req, res, next) {
     }
 
     // Check if admin_override is used by authorized admin
-    if (admin_override && req.user?.staff?.role !== 'Admin') {
+    if (admin_override && req.staff?.role !== 'Admin') {
       return res.status(403).json({
         error: 'Only administrators can override the order editing deadline.',
       });
@@ -594,7 +594,7 @@ export async function checkOrderEditPermission(req, res, next) {
     }
 
     const canEdit = (reservation.order_status === 'editable' || reservation.order_status === 'finalized') && !isPastDeadline;
-    const canEditWithOverride = canEdit || (admin_override === 'true' && req.user?.staff?.role === 'Admin');
+    const canEditWithOverride = canEdit || (admin_override === 'true' && req.staff?.role === 'Admin');
 
     res.json({
       can_edit: canEdit,

@@ -69,6 +69,10 @@ export async function createOrder(req, res, next) {
 
     // Re-price and validate menu items (without stock checks - those move inside transaction)
     for (const line of cart) {
+      const menuId = parseInt(line.menu_id, 10);
+      if (isNaN(menuId) || menuId <= 0) {
+        return res.status(400).json({ error: 'Invalid menu item ID in cart.' });
+      }
       const menuQty = Number(line.quantity);
       if (!Number.isInteger(menuQty) || menuQty < 1) {
         return res.status(400).json({ error: 'Line quantities must be positive integers.' });
@@ -76,7 +80,7 @@ export async function createOrder(req, res, next) {
 
       const { rows } = await client.query(
         'SELECT id, name, price, cost, stock_quantity, status FROM menu_items WHERE id = $1',
-        [line.menu_id]
+        [menuId]
       );
       const menuItem = rows[0];
 
@@ -101,6 +105,10 @@ export async function createOrder(req, res, next) {
       const addons = [];
       if (Array.isArray(line.add_ons)) {
         for (const ad of line.add_ons) {
+          const addonId = parseInt(ad.addon_id, 10);
+          if (isNaN(addonId) || addonId <= 0) {
+            return res.status(400).json({ error: 'Invalid add-on ID.' });
+          }
           const aQty = Number(ad.quantity);
           if (!Number.isInteger(aQty) || aQty < 1) {
             return res.status(400).json({ error: 'Add-on quantities must be positive integers.' });
@@ -108,7 +116,7 @@ export async function createOrder(req, res, next) {
 
           const { rows: aRows } = await client.query(
             'SELECT id, name, price, cost, status FROM add_ons WHERE id = $1',
-            [ad.addon_id]
+            [addonId]
           );
           const addon = aRows[0];
           if (!addon) {
@@ -359,7 +367,13 @@ export async function getOrder(req, res, next) {
     if (!rows[0]) return res.status(404).json({ error: 'Order not found.' });
 
     // Customers may only view their own orders.
-    if (req.user?.customer?.id && rows[0].customer_id !== req.user.customer.id) {
+    const customer_id = req.user?.customer?.id;
+    if (!customer_id) {
+      return res.status(400).json({
+        error: 'No customer profile found for this account. Call /api/customer/auth/sync first.',
+      });
+    }
+    if (rows[0].customer_id !== customer_id) {
       return res.status(403).json({ error: 'You don\'t have access to this order.' });
     }
 

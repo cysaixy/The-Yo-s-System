@@ -182,6 +182,12 @@ export async function cancelReservation(req, res, next) {
     const customer_id = req.user?.customer?.id;
     const { id } = req.params;
 
+    if (!customer_id) {
+      return res.status(400).json({
+        error: 'No customer profile found for this account. Call /api/customer/auth/sync first.',
+      });
+    }
+
     const { rows } = await pool.query(
       `UPDATE reservations
        SET status = 'cancelled', reservation_status = 'cancelled'
