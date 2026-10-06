@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gallery — The~Yo's</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 <style>
   
   .gallery-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
@@ -21,7 +21,7 @@
   .filter-tag:hover .filter-icon { stroke: currentColor; }
 
  
-  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 20px; }
   
   .media-box { 
     background: #000; border-radius: 6px; overflow: hidden; position: relative; 
@@ -35,6 +35,18 @@
     position: absolute; bottom: 15px; left: 15px; background: rgba(18,19,21,0.9); 
     color: #fff; padding: 6px 12px; font-family: 'Space Mono', monospace; 
     font-size: 0.75rem; border-radius: 3px; border-left: 3px solid var(--brass); z-index: 5; 
+  }
+  @media (max-width: 640px) {
+    .gallery-filters { flex-wrap: nowrap; overflow-x: auto; margin: 0 -22px 22px; padding: 2px 22px 8px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .gallery-filters::-webkit-scrollbar { display: none; }
+    .filter-tag { flex: 0 0 auto; min-height: 44px; border-radius: 999px; white-space: nowrap; }
+    .gallery-grid { gap: 12px; }
+    .media-box { height: auto; aspect-ratio: 4 / 5; max-height: 460px; }
+    .video-label { left: 10px; bottom: 10px; max-width: calc(100% - 20px); font-size: 0.7rem; }
+    .gallery-section-cta { margin-top: 36px !important; }
+  }
+  @media (max-width: 400px) {
+    .gallery-filters { margin: 0 -16px 22px; padding: 2px 16px 8px; }
   }
 </style>
 </head>
@@ -178,7 +190,7 @@
       </div>
     </div>
 
-    <div style="margin-top: 60px; text-align: center;">
+    <div class="gallery-section-cta" style="margin-top: 60px; text-align: center;">
       <a href="https://www.tiktok.com/@theyos.restaurant" target="_blank" class="btn">Follow Our Stories on TikTok</a>
     </div>
   </div>
