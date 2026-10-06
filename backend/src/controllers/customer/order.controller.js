@@ -6,6 +6,7 @@ import { createPaymongoCheckoutSession } from '../../utils/paymongo.js';
 const VALID_ORDER_TYPES = ['online', 'delivery', 'dine_in', 'pickup'];
 const VALID_PAYMENT_METHODS = ['cash', 'gcash'];
 
+const normalizePhoneNumber = (value) => String(value ?? '').replace(/\D/g, '').slice(0, 11);
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
 export async function createOrder(req, res, next) {
@@ -21,6 +22,7 @@ export async function createOrder(req, res, next) {
       customer_phone,
       payment_method,
     } = req.body;
+    const normalizedPhone = normalizePhoneNumber(customer_phone);
     const customer_id = req.user?.customer?.id;
 
     if (!customer_id) {
@@ -57,8 +59,8 @@ export async function createOrder(req, res, next) {
       if (!delivery_address || !String(delivery_address).trim()) {
         return res.status(400).json({ error: 'Please enter your delivery address.' });
       }
-      if (!customer_phone || !String(customer_phone).trim()) {
-        return res.status(400).json({ error: 'Please enter your contact number.' });
+      if (!normalizedPhone || normalizedPhone.length !== 11) {
+        return res.status(400).json({ error: 'Contact number must be exactly 11 digits.' });
       }
     }
 
@@ -259,7 +261,7 @@ export async function createOrder(req, res, next) {
         delivery_address || null,
         notes || null,
         customer_name || null,
-        customer_phone || null,
+        normalizedPhone || null,
         payment_method || null,
         deliveryFeeStatus,
       ]

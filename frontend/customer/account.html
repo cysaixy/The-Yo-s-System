@@ -242,7 +242,7 @@
           </div>
           <div>
             <label for="caPhone">Mobile Number</label>
-            <input id="caPhone" type="text" inputmode="numeric" required placeholder="09xxxxxxxxx" oninput="this.value = this.value.replace(/[^0-9]/g, '');" autocomplete="tel">
+            <input id="caPhone" type="text" inputmode="numeric" required maxlength="11" minlength="11" placeholder="09xxxxxxxxx" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11);" autocomplete="tel">
           </div>
           <div>
             <label for="caAddress">Address <span style="opacity:.6; text-transform:none;">(optional)</span></label>
@@ -290,7 +290,7 @@
       <form id="panelPhoneGate" onsubmit="return handlePhoneGateSubmit(event)">
         <div>
           <label for="pgPhone">Mobile Number</label>
-          <input id="pgPhone" type="text" inputmode="numeric" required placeholder="09xxxxxxxxx" oninput="this.value = this.value.replace(/[^0-9]/g, '');" autocomplete="tel">
+          <input id="pgPhone" type="text" inputmode="numeric" required maxlength="11" minlength="11" placeholder="09xxxxxxxxx" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11);" autocomplete="tel">
         </div>
         <button type="submit" class="btn account-submit">Save &amp; Continue</button>
         <div class="account-status" id="pgStatus"></div>
@@ -318,7 +318,7 @@
         </div>
         <div>
           <label for="accPhone">Mobile Number</label>
-          <input id="accPhone" type="text" inputmode="numeric" required placeholder="09xxxxxxxxx" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+          <input id="accPhone" type="text" inputmode="numeric" required maxlength="11" minlength="11" placeholder="09xxxxxxxxx" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11);">
         </div>
         <div>
           <label for="accAddress">Delivery Address</label>
@@ -500,8 +500,8 @@
 
   window.handlePhoneGateSubmit = async function (e) {
     e.preventDefault();
-    const phone = document.getElementById('pgPhone').value.trim();
-    if (!pendingGate) return false;
+    const phone = validatePhoneNumber(document.getElementById('pgPhone').value, 'pgStatus');
+    if (!pendingGate || !phone) return false;
 
     setStatus('pgStatus', 'Saving…', 'info');
     try {
@@ -517,6 +517,19 @@
     }
     return false;
   };
+
+  function sanitizePhoneInput(value) {
+    return String(value || '').replace(/\D/g, '').slice(0, 11);
+  }
+
+  function validatePhoneNumber(value, statusElId) {
+    const phone = sanitizePhoneInput(value);
+    if (phone.length !== 11) {
+      if (statusElId) setStatus(statusElId, 'Contact number must be exactly 11 digits.', 'err');
+      return null;
+    }
+    return phone;
+  }
 
   window.handleSignIn = async function (e) {
     e.preventDefault();
@@ -628,10 +641,14 @@
       return false;
     }
     const name = document.getElementById('caName').value.trim();
-    const phone = document.getElementById('caPhone').value.trim();
+    const phone = validatePhoneNumber(document.getElementById('caPhone').value, 'caStatus2');
     const address = document.getElementById('caAddress').value.trim();
     const password = document.getElementById('caPassword').value;
     const confirmPassword = document.getElementById('caConfirmPassword').value;
+
+    if (!phone) {
+      return false;
+    }
 
     if (password !== confirmPassword) {
       setStatus('caStatus2', 'Passwords do not match.', 'err');
@@ -672,8 +689,10 @@
     if (!user) return false;
 
     const name = document.getElementById('accName').value.trim();
-    const phone = document.getElementById('accPhone').value.trim();
+    const phone = validatePhoneNumber(document.getElementById('accPhone').value, 'profileStatus');
     const address = document.getElementById('accAddress').value.trim();
+
+    if (!phone) return false;
 
     setStatus('profileStatus', 'Saving profile changes…', 'info');
     try {

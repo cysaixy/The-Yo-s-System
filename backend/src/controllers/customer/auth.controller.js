@@ -10,6 +10,10 @@ function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
+function normalizePhoneNumber(value) {
+  return String(value ?? '').replace(/\D/g, '').slice(0, 11);
+}
+
 function generateVerificationCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
@@ -75,10 +79,15 @@ export async function syncCustomerProfile(req, res, next) {
 
     const { firebaseUid, email } = req.user;
     const { name, phone, address } = req.body || {};
+    const normalizedPhone = normalizePhoneNumber(phone);
     let customer = req.user.customer;
 
     if (customer) {
       // Existing user: Update details
+      if (normalizedPhone && normalizedPhone.length !== 11) {
+        return res.status(400).json({ error: 'Contact number must be exactly 11 digits.' });
+      }
+
       const updateQuery = `
         UPDATE customers
         SET name = COALESCE($1, name),
@@ -90,7 +99,7 @@ export async function syncCustomerProfile(req, res, next) {
       `;
       const { rows } = await pool.query(updateQuery, [
         name || null,
-        phone || null,
+        normalizedPhone || null,
         address || null,
         email,
         firebaseUid,
@@ -104,9 +113,9 @@ export async function syncCustomerProfile(req, res, next) {
       // gate in account.html normally supplies this before this branch is
       // ever hit; this check exists so the rule holds even if that gate is
       // bypassed or a future auth path forgets to collect it.
-      if (!phone || !String(phone).trim()) {
+      if (!normalizedPhone || normalizedPhone.length !== 11) {
         return res.status(400).json({
-          error: 'A mobile number is required to create your account.',
+          error: 'A valid 11-digit contact number is required to create your account.',
           code: 'PHONE_REQUIRED',
         });
       }
@@ -120,7 +129,7 @@ export async function syncCustomerProfile(req, res, next) {
         firebaseUid,
         email,
         name || 'New Customer',
-        phone || null,
+        normalizedPhone,
         address || null,
       ]);
       customer = rows[0];

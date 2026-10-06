@@ -1354,7 +1354,7 @@
 
         <div class="form-row">
           <div><label for="name">Name</label><input id="name" type="text" required placeholder="Name"></div>
-          <div><label for="phone">Mobile Number</label><input id="phone" type="tel" inputmode="numeric" pattern="[0-9]+" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required placeholder="09xxxxxxxxx"></div>
+          <div><label for="phone">Mobile Number</label><input id="phone" type="tel" inputmode="numeric" pattern="[0-9]+" maxlength="11" minlength="11" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11);" required placeholder="09xxxxxxxxx"></div>
         </div>
 
         <div class="form-row">
@@ -1520,6 +1520,19 @@
   import { auth, onAuthStateChanged, signOut, API_BASE_URL } from "./firebase-init.js";
 
   let currentUser = null;
+
+  function sanitizePhoneInput(value) {
+    return String(value || '').replace(/\D/g, '').slice(0, 11);
+  }
+
+  function validatePhoneNumber(value, errorMessage) {
+    const phone = sanitizePhoneInput(value);
+    if (phone.length !== 11) {
+      if (errorMessage) showStep2Error(errorMessage);
+      return null;
+    }
+    return phone;
+  }
 
   onAuthStateChanged(auth, (user) => {
     currentUser = user;
@@ -2325,7 +2338,7 @@
     }
     if (checkoutStep === 2) {
       const name = document.getElementById('name').value.trim();
-      const phone = document.getElementById('phone').value.trim();
+      const phone = validatePhoneNumber(document.getElementById('phone').value, 'Contact number must be exactly 11 digits.');
       const timeInput = document.getElementById('timeInput').value.trim();
       const orderType = document.getElementById('orderType').value;
       const addrEl = document.getElementById('deliveryAddress');
@@ -2415,6 +2428,11 @@
     const timeFormatted = timeInput.trim() ? `Preferred Time: ${timeInput.trim()}` : '';
     const combinedNotes = [timeFormatted, notesInput].filter(Boolean).join(' · ');
 
+    const customerPhone = validatePhoneNumber(document.getElementById('phone').value, 'Contact number must be exactly 11 digits.');
+    if (!customerPhone) {
+      return false;
+    }
+
     const orderPayload = {
       order_type,
       cart: cartLines,
@@ -2423,7 +2441,7 @@
       notes: combinedNotes || null,
       delivery_address: (order_type === 'online') ? ((addrEl && addrEl.value.trim()) || null) : null,
       customer_name: document.getElementById('name').value.trim() || null,
-      customer_phone: document.getElementById('phone').value.trim() || null,
+      customer_phone: customerPhone,
       payment_method: (paymentChoice || '').toLowerCase() || null
     };
 

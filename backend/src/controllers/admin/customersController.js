@@ -38,7 +38,11 @@ export async function createCustomer(req, res, next) {
       return res.status(400).json({ error: 'Name and phone are required.' });
     }
 
-    const cleanPhone = String(phone).trim();
+    const cleanPhone = String(phone).replace(/\D/g, '').slice(0, 11);
+    if (cleanPhone.length !== 11) {
+      return res.status(400).json({ error: 'Contact number must be exactly 11 digits.' });
+    }
+
     const cleanEmail = email && String(email).trim() ? String(email).trim() : null;
 
     // Check if customer already exists by phone or email
