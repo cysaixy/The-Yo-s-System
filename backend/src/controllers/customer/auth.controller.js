@@ -1,6 +1,46 @@
 // src/controllers/customer/auth.controller.js
+import nodemailer from 'nodemailer';
 import pool from '../../config/db.js';
 import { getFirebaseAuth } from '../../config/firebase.js';
+
+const verificationCodes = new Map();
+const OTP_TTL_MS = 5 * 60 * 1000;
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function generateVerificationCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+async function sendOtpEmail(email, code) {
+  const host = process.env.SMTP_HOST;
+  const port = process.env.SMTP_PORT;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const from = process.env.EMAIL_FROM || user || 'no-reply@theyos.local';
+
+  if (!host || !user || !pass) {
+    return { sent: false, code };
+  }
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port: Number(port || 587),
+    secure: Number(port || 587) === 465,
+    auth: { user, pass },
+  });
+
+  await transporter.sendMail({
+    from,
+    to: email,
+    subject: 'Your The~Yo\'s verification code',
+    text: `Your verification code is ${code}. It expires in 5 minutes.`,
+  });
+
+  return { sent: true, code };
+}
 
 // Returns the currently authenticated customer profile. Called on page load
 // so the frontend can prefill forms and hide/show account-gated sections.
@@ -90,6 +130,54 @@ export async function syncCustomerProfile(req, res, next) {
       message: 'Customer profile synced successfully.',
       customer,
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function sendVerificationCode(req, res, next) {
+  try {
+    const { email } = req.body || {};
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({ error: 'A valid email address is required.' });
+    }
+
+    const code = generateVerificationCode();
+    verificationCodes.set(normalizedEmail, {
+      code,
+      expiresAt: Date.now() + OTP_TTL_MS,
+    });
+
+    const delivery = await sendOtpEmail(normalizedEmail, code);
+
+    return res.status(200).json({
+      message: delivery.sent ? 'Verification code sent.' : 'Verification code generated successfully.',
+      ...(process.env.NODE_ENV !== 'production' && !delivery.sent ? { debugCode: code } : {}),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function verifyVerificationCode(req, res, next) {
+  try {
+    const { email, code } = req.body || {};
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedCode = String(code || '').trim();
+
+    if (!normalizedEmail || !normalizedCode) {
+      return res.status(400).json({ error: 'Email and verification code are required.' });
+    }
+
+    const record = verificationCodes.get(normalizedEmail);
+    if (!record || Date.now() > record.expiresAt || record.code !== normalizedCode) {
+      return res.status(400).json({ error: 'Invalid or expired verification code.', verified: false });
+    }
+
+    verificationCodes.delete(normalizedEmail);
+    return res.status(200).json({ verified: true, message: 'Verification code accepted.' });
   } catch (err) {
     next(err);
   }

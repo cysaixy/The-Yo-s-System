@@ -1,10 +1,12 @@
 // src/routes/customer/auth.routes.js
 import express from 'express';
-import { globalLimiter } from '../../middlewares/rateLimit.middleware.js';
+import { globalLimiter, otpLimiter } from '../../middlewares/rateLimit.middleware.js';
 import { verifyFirebaseToken } from '../../middlewares/auth.middleware.js';
 import {
   getMe,
   syncCustomerProfile,
+  sendVerificationCode,
+  verifyVerificationCode,
   updatePassword,
 } from '../../controllers/customer/auth.controller.js';
 
@@ -15,6 +17,10 @@ router.get('/me', globalLimiter, verifyFirebaseToken, getMe);
 
 // Customer authentication sync endpoint
 router.post('/sync', globalLimiter, verifyFirebaseToken, syncCustomerProfile);
+
+// Email verification flow used by account creation and password change screens
+router.post('/send-code', otpLimiter, sendVerificationCode);
+router.post('/verify-code', otpLimiter, verifyVerificationCode);
 
 // Password update endpoint
 router.post('/update-password', globalLimiter, verifyFirebaseToken, updatePassword);
