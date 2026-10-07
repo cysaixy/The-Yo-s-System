@@ -977,11 +977,10 @@
     return `${viewBtn}`;
   }
 
-  // ---- Confirm modal: table assignment is mandatory ----
+  // ---- Confirm modal — no table assignment needed (staff assigns table on arrival) ----
   function openConfirmModal(id) {
     const r = reservations.find(x => x.id == id);
     if (!r) return;
-    const currentTable = r.table_no || "";
 
     const backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop active";
@@ -990,14 +989,13 @@
         <h3>Confirm Reservation #${r.id}</h3>
         <div class="detail-list" style="margin-bottom:18px;">
           <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
-          <dt>Date & Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : "—"} at ${String(r.reservation_time || "").slice(0, 5)}</dd>
+          <dt>Date &amp; Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : "—"} at ${String(r.reservation_time || "").slice(0, 5)}</dd>
           <dt>Guests</dt><dd><span class="guests-badge">${r.guests} guests</span></dd>
         </div>
-        <div class="form-field" style="margin-top:16px;">
-          <label for="confirmTable">Assign Table *</label>
-          <input type="text" id="confirmTable" placeholder="e.g. Table 1, T-02, Patio A" value="${escapeHtml(currentTable)}" required>
-          <small style="color:var(--ink-muted); font-size:0.70rem; margin-top:3px; display:block;">Enter any table identifier (e.g., Table 1, T-05, Outdoor 2)</small>
-        </div>
+        <p style="font-size:0.82rem; color:var(--ink-muted); margin:0 0 18px; line-height:1.55;">
+          Confirming this reservation will lock the order and notify the customer.
+          The table will be assigned by staff when the guest arrives.
+        </p>
         <div class="modal-error" id="confirmError"></div>
         <div class="modal-close-row">
           <button class="btn btn-outline" id="confirmClose">Back</button>
@@ -1007,47 +1005,41 @@
     `;
     document.body.appendChild(backdrop);
 
-    const input = backdrop.querySelector("#confirmTable");
-
     backdrop.querySelector("#confirmClose").addEventListener("click", close);
     backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
     backdrop.querySelector("#confirmSubmit").addEventListener("click", async () => {
       const btn = backdrop.querySelector("#confirmSubmit");
       const errEl = backdrop.querySelector("#confirmError");
       errEl.classList.remove("show");
-      const tableNo = input.value.trim();
-      if (!tableNo) {
-        errEl.textContent = "Please enter a table number/identifier.";
-        errEl.classList.add("show");
-        return;
-      }
       btn.disabled = true;
+      btn.textContent = 'Confirming…';
       try {
         const res = await adminFetch(`/api/admin/reservations/${id}/confirm`, {
           method: "PATCH",
-          body: JSON.stringify({ table_no: tableNo }),
+          body: JSON.stringify({}),
         });
         const data = await res.json();
         if (!res.ok) {
           errEl.textContent = data.error || "Could not confirm this reservation.";
           errEl.classList.add("show");
           btn.disabled = false;
+          btn.textContent = 'Confirm Reservation';
           return;
         }
         const r0 = reservations.find(x => x.id == id);
-        if (r0) { 
-          r0.status = "confirmed"; 
-          r0.table_no = data.reservation.table_no;
+        if (r0) {
+          r0.status = "confirmed";
           r0.reservation_status = "confirmed";
           r0.order_status = "finalized";
         }
         close();
-        toast(`Confirmed — Table ${data.reservation.table_no} assigned.`, "success");
+        toast('Reservation confirmed! Table will be assigned on arrival.', 'success');
         render();
       } catch (err) {
         errEl.textContent = err.message;
         errEl.classList.add("show");
         btn.disabled = false;
+        btn.textContent = 'Confirm Reservation';
       }
     });
 

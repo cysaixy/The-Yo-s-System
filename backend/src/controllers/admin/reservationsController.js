@@ -39,54 +39,21 @@ export async function getById(req, res, next) {
   }
 }
 
-// The only way a reservation becomes "confirmed". Assigning a table is not
-// optional - a confirmed booking must actually own a seat. Runs three
-// checks before committing:
-// Confirm a reservation by assigning a table number.
-// Validates: non-empty table_no, and no time-slot conflict on the same table.
+// Confirm a reservation — table is assigned by staff on arrival, not at this step.
 export async function confirmReservation(req, res, next) {
   try {
-    const { table_no } = req.body;
-    if (!table_no || !String(table_no).trim()) {
-      return res.status(400).json({
-        error: 'Assign a table before confirming - a confirmed reservation needs a seat.',
-      });
-    }
-
-    const cleanTableNo = String(table_no).trim();
-
     const resv = await pool.query(
       'SELECT * FROM reservations WHERE id = $1',
       [req.params.id]
     );
     if (!resv.rows[0]) return res.status(404).json({ error: 'Reservation not found.' });
-    const reservation = resv.rows[0];
-
-    // Check for time-slot conflict on the same table
-    const conflict = await pool.query(
-      `SELECT r.id, r.table_no, r.reservation_time, r.guests
-       FROM reservations r
-       WHERE r.table_no = $1
-         AND r.reservation_date = $2
-         AND r.status = 'confirmed'
-         AND r.id <> $3
-         AND ABS(EXTRACT(EPOCH FROM (r.reservation_time - $4::time))) / 60 < $5`,
-      [cleanTableNo, reservation.reservation_date, reservation.id,
-        reservation.reservation_time, CONFLICT_WINDOW_MINUTES]
-    );
-    if (conflict.rows[0]) {
-      const other = conflict.rows[0];
-      return res.status(409).json({
-        error: `${cleanTableNo} is already reserved that day at ${String(other.reservation_time).slice(0, 5)} (${other.guests} guests). Pick a different table or time.`,
-      });
-    }
 
     const { rows } = await pool.query(
       `UPDATE reservations
-       SET status = 'confirmed', table_no = $1
-       WHERE id = $2
+       SET status = 'confirmed'
+       WHERE id = $1
        RETURNING id, status, table_no`,
-      [cleanTableNo, reservation.id]
+      [resv.rows[0].id]
     );
 
     res.json({ reservation: rows[0] });
@@ -100,11 +67,6 @@ export async function updateStatus(req, res, next) {
     const { status } = req.body;
     if (!VALID_STATUSES.includes(status)) {
       return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
-    }
-    if (status === 'confirmed') {
-      return res.status(400).json({
-        error: 'Confirming requires a table assignment - use the confirm flow.',
-      });
     }
     const { rows } = await pool.query(
       'UPDATE reservations SET status = $1 WHERE id = $2 RETURNING id, status',
