@@ -318,9 +318,10 @@ export const listAddons = async (req, res, next) => {
 
         // Applicable products
         const { rows: prodList } = await pool.query(
-          `SELECT ap.menu_id, mi.name AS product_name
+          `SELECT ap.menu_id, mi.name AS product_name, mi.category_id, c.name AS category_name
            FROM addon_products ap
            JOIN menu_items mi ON mi.id = ap.menu_id
+           LEFT JOIN categories c ON c.id = mi.category_id
            WHERE ap.addon_id = $1`,
           [addon.id]
         );

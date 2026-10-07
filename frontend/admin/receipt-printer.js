@@ -391,7 +391,8 @@ class ReceiptPrinterManager {
       pushLine(`Customer: ${data.customerName}`);
       if (data.customerPhone) pushLine(`Phone: ${data.customerPhone}`);
     }
-    if (data.deliveryAddress) {
+    const isDeliveryOrder = String(data.orderType || '').toLowerCase() === 'delivery';
+    if (isDeliveryOrder && data.deliveryAddress) {
       pushLine(`Address: ${data.deliveryAddress}`);
     }
 
@@ -572,19 +573,51 @@ export function normalizeOrderData(raw, extra = {}) {
     };
   });
 
+  // Custom order / advance items (from reservations or custom orders)
+  let customList = Array.isArray(raw.custom_items) ? raw.custom_items : [];
+  if (!customList.length && raw.notes && String(raw.notes).includes('---CUSTOM_ITEMS_JSON---')) {
+    try {
+      const marker = '---CUSTOM_ITEMS_JSON---';
+      const rawNotes = String(raw.notes);
+      const rawJson = rawNotes.slice(rawNotes.indexOf(marker) + marker.length).trim();
+      const parsed = JSON.parse(rawJson);
+      if (Array.isArray(parsed)) customList = parsed;
+    } catch (e) {}
+  }
+
+  const customItems = customList.map((ci) => {
+    const qty = Number(ci.quantity || ci.qty || 1);
+    const price = Number(ci.price || 0);
+    const subtotal = ci.subtotal != null ? Number(ci.subtotal) : price * qty;
+    return {
+      name: `[Custom] ${ci.name || ci.product_name || 'Custom Item'}`,
+      quantity: qty,
+      price: price,
+      subtotal: subtotal,
+      notes: ci.notes || '',
+      add_ons: [],
+      isCustom: true,
+    };
+  });
+
+  const allItems = [...items, ...customItems];
+
   const totalAmount = Number(raw.total_amount != null ? raw.total_amount : extra.totalAmount || 0);
   const deliveryFee = Number(raw.delivery_fee != null ? raw.delivery_fee : extra.deliveryFee || 0);
   const subtotal = extra.subtotal != null ? Number(extra.subtotal) : Math.max(0, totalAmount - deliveryFee);
 
+  const orderType = raw.order_type || extra.orderType || 'dine_in';
+  const isDelivery = String(orderType).toLowerCase() === 'delivery';
+
   return {
     orderId: raw.id || extra.orderId || '—',
     date: raw.datetime_ordered ? new Date(raw.datetime_ordered) : new Date(),
-    orderType: raw.order_type || extra.orderType || 'dine_in',
+    orderType: orderType,
     customerName: raw.customer_name || extra.customerName || 'Walk-in',
     customerPhone: raw.customer_phone || raw.customer_mobile || extra.customerPhone || '',
-    deliveryAddress: raw.delivery_address || extra.deliveryAddress || '',
+    deliveryAddress: isDelivery ? (raw.delivery_address || extra.deliveryAddress || '') : '',
     staffName: raw.staff_name || extra.staffName || '',
-    items: items,
+    items: allItems,
     subtotal: subtotal,
     deliveryFee: deliveryFee,
     totalAmount: totalAmount,
@@ -1158,7 +1191,7 @@ function renderThermalReceiptHtml(data, settings, copyType = 'CUSTOMER RECEIPT')
             <span>Phone:</span>
             <span>${escapeHtml(data.customerPhone)}</span>
           </div>` : ''}
-        ${data.deliveryAddress ? `
+        ${(String(data.orderType || '').toLowerCase() === 'delivery' && data.deliveryAddress) ? `
           <div class="tr-address-box">
             <b>Delivery Address:</b><br>${escapeHtml(data.deliveryAddress)}
           </div>` : ''}

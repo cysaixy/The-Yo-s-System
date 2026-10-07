@@ -14,7 +14,7 @@ async function ensureIncidentTable() {
           id SERIAL PRIMARY KEY,
           inventory_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
           staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL,
-          incident_type VARCHAR(20) NOT NULL CHECK (incident_type IN ('spoilage', 'theft')),
+          incident_type VARCHAR(50) NOT NULL,
           quantity NUMERIC(10,2) NOT NULL CHECK (quantity > 0),
           occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
           description TEXT NOT NULL,
@@ -23,7 +23,9 @@ async function ensureIncidentTable() {
           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      await pool.query('CREATE INDEX IF NOT EXISTS inventory_incidents_occurred_at_idx ON inventory_incidents(occurred_at DESC)');
+      await pool.query('ALTER TABLE inventory_incidents DROP CONSTRAINT IF EXISTS inventory_incidents_incident_type_check').catch(() => {});
+      await pool.query('ALTER TABLE inventory_incidents ALTER COLUMN incident_type TYPE VARCHAR(50)').catch(() => {});
+      await pool.query('CREATE INDEX IF NOT EXISTS inventory_incidents_occurred_at_idx ON inventory_incidents(occurred_at DESC)').catch(() => {});
     })().catch(err => {
       incidentTableReady = null;
       throw err;
@@ -378,13 +380,13 @@ export async function createIncident(req, res, next) {
     const { inventory_id, incident_type, quantity, occurred_at, description, location, reference_number } = req.body || {};
     const inventoryId = Number(inventory_id);
     const lossQuantity = Number(quantity);
-    const type = String(incident_type || '').toLowerCase();
+    const type = String(incident_type || '').toLowerCase().trim();
 
     if (!Number.isInteger(inventoryId) || inventoryId <= 0 || !Number.isFinite(lossQuantity) || lossQuantity <= 0) {
       return res.status(400).json({ error: 'A valid inventory item and positive quantity are required.' });
     }
-    if (!['spoilage', 'theft'].includes(type)) {
-      return res.status(400).json({ error: 'Incident type must be spoilage or theft.' });
+    if (!type) {
+      return res.status(400).json({ error: 'Incident type is required.' });
     }
     if (!String(description || '').trim()) {
       return res.status(400).json({ error: 'Please describe what happened.' });
@@ -431,7 +433,8 @@ export async function createIncident(req, res, next) {
       [inventoryId, staffId, type, lossQuantity, occurredAt, description.trim(), location?.trim() || null, reference_number?.trim() || null]
     );
 
-    const summary = `${type === 'theft' ? 'Theft' : 'Spoilage'} incident #${incidentRows[0].id}: ${description.trim()}`;
+    const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+    const summary = `${typeLabel} incident #${incidentRows[0].id}: ${description.trim()}`;
     await client.query(
       `INSERT INTO inventory_log (inventory_id, staff_id, transaction_type, quantity_change, remarks)
        VALUES ($1, $2, $3, $4, $5)`,

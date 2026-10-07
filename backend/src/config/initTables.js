@@ -27,7 +27,7 @@ export async function initTables() {
         id SERIAL PRIMARY KEY,
         inventory_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
         staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL,
-        incident_type VARCHAR(20) NOT NULL CHECK (incident_type IN ('spoilage', 'theft')),
+        incident_type VARCHAR(50) NOT NULL,
         quantity NUMERIC(10,2) NOT NULL CHECK (quantity > 0),
         occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         description TEXT NOT NULL,
@@ -36,7 +36,9 @@ export async function initTables() {
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS inventory_incidents_occurred_at_idx ON inventory_incidents(occurred_at DESC)');
+    await pool.query('ALTER TABLE inventory_incidents DROP CONSTRAINT IF EXISTS inventory_incidents_incident_type_check').catch(() => {});
+    await pool.query('ALTER TABLE inventory_incidents ALTER COLUMN incident_type TYPE VARCHAR(50)').catch(() => {});
+    await pool.query('CREATE INDEX IF NOT EXISTS inventory_incidents_occurred_at_idx ON inventory_incidents(occurred_at DESC)').catch(() => {});
 
     // 2. add_ons
     await pool.query(`

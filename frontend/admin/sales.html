@@ -1351,6 +1351,17 @@
     }
   }
 
+  function parseCustomItemsFromNotes(notesStr) {
+    if (!notesStr) return [];
+    const marker = '---CUSTOM_ITEMS_JSON---';
+    const idx = notesStr.indexOf(marker);
+    if (idx === -1) return [];
+    try {
+      const parsed = JSON.parse(notesStr.slice(idx + marker.length).trim());
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  }
+
   function renderOrderDetail(o) {
     currentModalOrder = o;
     const source = o.source === 'online' ? 'Online (Customer)' : `POS · ${escapeHtml(o.staff_name || 'Staff')}`;
@@ -1378,6 +1389,8 @@
         </div>
       </div>` : '';
 
+    const cleanNotes = (o.clean_notes != null) ? o.clean_notes : (o.notes || '').split('---CUSTOM_ITEMS_JSON---')[0].trim();
+
     const itemsRows = (o.items || []).map(it => `
       <tr>
         <td>
@@ -1393,6 +1406,27 @@
         <td class="right">${peso(Number(it.subtotal) + (it.add_ons || []).reduce((s, a) => s + Number(a.subtotal), 0))}</td>
       </tr>`).join('');
 
+    const customList = (Array.isArray(o.custom_items) && o.custom_items.length)
+      ? o.custom_items
+      : parseCustomItemsFromNotes(o.notes || '');
+
+    const customItemsRows = customList.map(ci => {
+      const qty = Number(ci.quantity || ci.qty || 1);
+      const price = Number(ci.price || 0);
+      const subtotal = qty * price;
+      return `
+        <tr>
+          <td>
+            <span style="display:inline-block; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; padding:2px 6px; border-radius:4px; background:#f0e6d2; color:#8b6b23; margin-right:6px;">Custom</span>
+            <b>${escapeHtml(ci.name || ci.product_name || 'Custom Order Item')}</b>
+            ${ci.notes ? `<div style="font-size:0.72rem; color:var(--ink-muted);">${escapeHtml(ci.notes)}</div>` : ''}
+          </td>
+          <td class="right">${peso(price)}</td>
+          <td class="right">${qty}</td>
+          <td class="right">${peso(subtotal)}</td>
+        </tr>`;
+    }).join('');
+
     const body = document.getElementById('orderModalBody');
     body.innerHTML = `
       <div class="om-meta">
@@ -1403,13 +1437,18 @@
         <div class="row"><span>Payment</span><b>${payment}</b></div>
         <div class="row"><span>Placed</span><b>${formatDate(o.datetime_ordered)}</b></div>
         ${o.reservation_date ? `<div class="row"><span>Reservation Date</span><b>${formatDate(o.reservation_date)} at ${String(o.reservation_time || '').slice(0, 5)}</b></div>` : ''}
+        ${cleanNotes ? `<div class="row" style="grid-column:1/-1;"><span>Order Notes</span><b>${escapeHtml(cleanNotes)}</b></div>` : ''}
       </div>
 
       ${deliveryBlock}
 
       <table class="om-items">
         <thead><tr><th>Item</th><th class="right">Unit Price</th><th class="right">Qty</th><th class="right">Total</th></tr></thead>
-        <tbody>${itemsRows}</tbody>
+        <tbody>
+          ${itemsRows}
+          ${customItemsRows}
+          ${(!itemsRows && !customItemsRows) ? `<tr><td colspan="4" style="text-align:center; color:var(--ink-muted); padding:16px;">No items in this order</td></tr>` : ''}
+        </tbody>
       </table>
 
       <div class="om-totals">

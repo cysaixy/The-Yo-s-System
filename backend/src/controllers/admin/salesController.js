@@ -452,10 +452,10 @@ export async function listOrders(req, res, next) {
       `SELECT o.id,
               COALESCE(o.customer_name, c.name) AS customer_name,
               COALESCE(o.customer_phone, c.phone) AS contact_no,
-              COALESCE(o.delivery_address, c.address) AS address,
+              CASE WHEN o.order_type = 'delivery' THEN COALESCE(o.delivery_address, c.address) ELSE NULL END AS address,
               s.name AS staff_name, o.order_type,
               o.status, o.total_amount, o.delivery_fee, o.datetime_ordered,
-              o.reservation_id,
+              o.reservation_id, o.notes,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
               (SELECT MAX(p.datetime_paid) FROM payments p WHERE p.order_id = o.id) AS sale_date,
               COALESCE(
@@ -473,7 +473,29 @@ export async function listOrders(req, res, next) {
        LIMIT ${rowLimit}`,
       params
     );
-    res.json({ orders: rows });
+
+    const ordersWithCustom = rows.map((o) => {
+      let extraCount = 0;
+      let extraQty = 0;
+      if (o.notes && o.notes.includes('---CUSTOM_ITEMS_JSON---')) {
+        try {
+          const marker = '---CUSTOM_ITEMS_JSON---';
+          const raw = o.notes.slice(o.notes.indexOf(marker) + marker.length).trim();
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            extraCount = parsed.length;
+            extraQty = parsed.reduce((sum, item) => sum + (Number(item.quantity || item.qty) || 1), 0);
+          }
+        } catch (e) {}
+      }
+      return {
+        ...o,
+        item_count: (Number(o.item_count) || 0) + extraCount,
+        quantity_sold: (Number(o.quantity_sold) || 0) + extraQty,
+      };
+    });
+
+    res.json({ orders: ordersWithCustom });
   } catch (err) {
     next(err);
   }
@@ -527,9 +549,9 @@ export async function getOrder(req, res, next) {
               COALESCE(o.customer_name, c.name) AS customer_name,
               c.email AS customer_email,
               COALESCE(o.customer_phone, c.phone) AS customer_phone,
-              COALESCE(o.delivery_address, c.address) AS delivery_address,
+              CASE WHEN o.order_type = 'delivery' THEN COALESCE(o.delivery_address, c.address) ELSE NULL END AS delivery_address,
               s.name AS staff_name,
-              r.reservation_date, r.reservation_time,
+              r.reservation_date, r.reservation_time, r.notes AS reservation_notes,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source
        FROM orders o
        JOIN customers c ON c.id = o.customer_id
@@ -565,6 +587,37 @@ export async function getOrder(req, res, next) {
       return { ...item, add_ons: addons, cogs: round2(cogs), profit: round2(profit) };
     }));
 
+    // Parse custom advance/catering items from order notes or reservation notes
+    let customItems = [];
+    const notesToParse = order.notes || order.reservation_notes || '';
+    if (notesToParse.includes('---CUSTOM_ITEMS_JSON---')) {
+      try {
+        const marker = '---CUSTOM_ITEMS_JSON---';
+        const raw = notesToParse.slice(notesToParse.indexOf(marker) + marker.length).trim();
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          customItems = parsed.map((ci) => {
+            const qty = Number(ci.quantity || ci.qty || 1);
+            const price = round2(ci.price || 0);
+            const cost = round2(ci.cost || 0);
+            return {
+              name: ci.name || ci.product_name || 'Custom Item',
+              product_name: ci.name || ci.product_name || 'Custom Item',
+              quantity: qty,
+              price: price,
+              cost: cost,
+              subtotal: round2(qty * price),
+              is_custom: true,
+              notes: ci.notes || null,
+              add_ons: [],
+            };
+          });
+        }
+      } catch (e) {
+        customItems = [];
+      }
+    }
+
     let { rows: payments } = await pool.query(
       `SELECT id, payment_method, amount, status, datetime_paid, reference_number
        FROM payments WHERE order_id = $1 ORDER BY id`,
@@ -582,15 +635,20 @@ export async function getOrder(req, res, next) {
       }];
     }
 
-    const cogs = itemsWithAddons.reduce((s, it) => s + it.cogs, 0);
+    const customCogs = customItems.reduce((s, ci) => s + (ci.cost * ci.quantity), 0);
+    const cogs = itemsWithAddons.reduce((s, it) => s + it.cogs, 0) + customCogs;
     const revenue = round2(order.total_amount);
     const profit = round2(revenue - cogs - round2(order.delivery_fee || 0));
     const margin = revenue > 0 ? round2((profit / revenue) * 100) : 0;
+    const cleanNotes = (order.notes || '').split('---CUSTOM_ITEMS_JSON---')[0].trim();
 
     res.json({
       order: {
         ...order,
+        delivery_address: order.order_type === 'delivery' ? (order.delivery_address || null) : null,
         items: itemsWithAddons,
+        custom_items: customItems,
+        clean_notes: cleanNotes || null,
         payments,
         cogs: round2(cogs),
         profit,

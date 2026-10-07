@@ -400,6 +400,107 @@ const PREDEFINED_UNITS = [
   "pcs", "kg", "g", "L", "ml", "pack", "box", "bottle", "can", "sachet", "tray", "dozen"
 ];
 
+/* Helper functions for dynamic categories and incident types */
+let customCategories = (() => {
+  try {
+    const s = JSON.parse(localStorage.getItem('custom_inventory_categories') || '[]');
+    return Array.isArray(s) ? s : [];
+  } catch { return []; }
+})();
+
+function getAllCategories() {
+  const set = new Set([...INVENTORY_CATEGORIES, ...customCategories]);
+  (allItems || []).forEach(i => {
+    if (i.category && i.category.trim()) set.add(i.category.trim());
+  });
+  return Array.from(set);
+}
+
+function addCustomCategory(cat) {
+  if (!cat || !cat.trim()) return;
+  const trimmed = cat.trim();
+  if (!customCategories.includes(trimmed)) {
+    customCategories.push(trimmed);
+    try {
+      localStorage.setItem('custom_inventory_categories', JSON.stringify(customCategories));
+    } catch {}
+  }
+  populateCategoryDropdowns(trimmed);
+}
+
+function populateCategoryDropdowns(selectedVal = '') {
+  const cats = getAllCategories();
+
+  const filterSel = document.getElementById('catFilter');
+  if (filterSel) {
+    const prev = filterSel.value;
+    filterSel.innerHTML = `<option value="">All Categories</option>` +
+      cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if (prev && cats.includes(prev)) filterSel.value = prev;
+  }
+
+  const itemSel = document.getElementById('itemCategory');
+  if (itemSel) {
+    const cur = selectedVal || itemSel.value;
+    itemSel.innerHTML = `<option value="">Select category…</option>` +
+      cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('') +
+      `<option value="__new_category__">+ Add new category…</option>`;
+    if (cur && (cats.includes(cur) || cur === '__new_category__')) {
+      itemSel.value = cur;
+    }
+  }
+}
+
+const PREDEFINED_INCIDENT_TYPES = ['spoilage', 'theft', 'damage', 'expired'];
+let customIncidentTypes = (() => {
+  try {
+    const s = JSON.parse(localStorage.getItem('custom_incident_types') || '[]');
+    return Array.isArray(s) ? s : [];
+  } catch { return []; }
+})();
+
+function formatIncidentType(t) {
+  if (!t) return 'Incident';
+  return t.charAt(0).toUpperCase() + t.slice(1).replace(/_/g, ' ');
+}
+
+function getIncidentPillClass(t) {
+  const s = String(t || '').toLowerCase();
+  if (s === 'theft') return 'pill-danger';
+  if (s === 'spoilage') return 'pill-neutral';
+  if (s === 'damage' || s === 'broken') return 'pill-yellow';
+  if (s === 'expired' || s === 'waste') return 'pill-danger';
+  return 'pill-neutral';
+}
+
+function getAllIncidentTypes() {
+  return Array.from(new Set([...PREDEFINED_INCIDENT_TYPES, ...customIncidentTypes]));
+}
+
+function addCustomIncidentType(type) {
+  if (!type || !type.trim()) return;
+  const trimmed = type.trim().toLowerCase();
+  if (!customIncidentTypes.includes(trimmed)) {
+    customIncidentTypes.push(trimmed);
+    try {
+      localStorage.setItem('custom_incident_types', JSON.stringify(customIncidentTypes));
+    } catch {}
+  }
+  populateIncidentTypeDropdown(trimmed);
+}
+
+function populateIncidentTypeDropdown(selectedVal = 'spoilage') {
+  const typeSel = document.getElementById('incidentType');
+  if (!typeSel) return;
+  const types = getAllIncidentTypes();
+  const cur = selectedVal || typeSel.value || 'spoilage';
+  typeSel.innerHTML = types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(formatIncidentType(t))}</option>`).join('') +
+    `<option value="__new_type__">+ Add new incident type…</option>`;
+  if (cur && (types.includes(cur) || cur === '__new_type__')) {
+    typeSel.value = cur;
+  }
+}
+
 const CATEGORY_PREFIX_MAP = {
   "Coffee & Espresso": "COF",
   "Milk & Dairy": "MLK",
@@ -652,7 +753,9 @@ function buildPageHTML() {
         <select id="itemCategory">
           <option value="">Select category…</option>
           ${INVENTORY_CATEGORIES.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+          <option value="__new_category__">+ Add new category…</option>
         </select>
+        <input type="text" id="itemCategoryCustom" placeholder="Enter new category name…" style="display:none; margin-top:6px;" autocomplete="off">
       </div>
       <div class="inv-form-field">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -721,7 +824,17 @@ function buildPageHTML() {
     </div>
     <div class="inv-form-grid">
       <div class="inv-form-field span2"><label>Inventory Item *</label><select id="incidentItem"></select></div>
-      <div class="inv-form-field"><label>Incident Type *</label><select id="incidentType"><option value="spoilage">Spoilage</option><option value="theft">Theft</option></select></div>
+      <div class="inv-form-field">
+        <label>Incident Type *</label>
+        <select id="incidentType">
+          <option value="spoilage">Spoilage</option>
+          <option value="theft">Theft</option>
+          <option value="damage">Damage</option>
+          <option value="expired">Expired</option>
+          <option value="__new_type__">+ Add new incident type…</option>
+        </select>
+        <input type="text" id="incidentTypeCustom" placeholder="e.g. Damage, Expired, Spillage…" style="display:none; margin-top:6px;" autocomplete="off">
+      </div>
       <div class="inv-form-field"><label>Quantity Lost *</label><input type="number" id="incidentQty" min="0.01" step="0.01" placeholder="e.g. 2"></div>
       <div class="inv-form-field span2"><label>Occurred At *</label><input type="datetime-local" id="incidentOccurredAt"></div>
       <div class="inv-form-field span2"><label>Description *</label><textarea id="incidentDescription" placeholder="Describe what happened and any relevant details…"></textarea></div>
@@ -812,30 +925,62 @@ function bindAll() {
 
   // Auto SKU generation when category changes or when Auto Code button is clicked
   document.getElementById('itemCategory').addEventListener('change', e => {
-    const cat = e.target.value;
+    const isNew = e.target.value === '__new_category__';
+    const customInp = document.getElementById('itemCategoryCustom');
+    customInp.style.display = isNew ? 'block' : 'none';
+    if (isNew) {
+      customInp.focus();
+      const hintEl = document.getElementById('skuHint');
+      if (hintEl) hintEl.textContent = 'Auto-assigned based on new category';
+    } else {
+      customInp.value = '';
+      const cat = e.target.value;
+      const skuInp = document.getElementById('itemSku');
+      if (!editingItem || !skuInp.value.trim()) {
+        if (cat) {
+          skuInp.value = generateNextSku(cat, editingItem ? editingItem.id : null);
+          const hintEl = document.getElementById('skuHint');
+          if (hintEl) hintEl.textContent = 'Auto-suggested for ' + cat;
+        } else {
+          const hintEl = document.getElementById('skuHint');
+          if (hintEl) hintEl.textContent = 'Auto-assigned based on category';
+        }
+      }
+    }
+  });
+
+  document.getElementById('itemCategoryCustom').addEventListener('input', e => {
+    const cat = e.target.value.trim();
     const skuInp = document.getElementById('itemSku');
     if (!editingItem || !skuInp.value.trim()) {
       if (cat) {
         skuInp.value = generateNextSku(cat, editingItem ? editingItem.id : null);
         const hintEl = document.getElementById('skuHint');
         if (hintEl) hintEl.textContent = 'Auto-suggested for ' + cat;
-      } else {
-        const hintEl = document.getElementById('skuHint');
-        if (hintEl) hintEl.textContent = 'Auto-assigned based on category';
       }
     }
   });
 
   document.getElementById('itemSkuGenBtn').addEventListener('click', () => {
-    const cat = document.getElementById('itemCategory').value;
+    const catSel = document.getElementById('itemCategory').value;
+    const cat = catSel === '__new_category__' ? document.getElementById('itemCategoryCustom').value.trim() : catSel;
     if (!cat) {
-      alert('Please select a category first to generate a code.');
+      alert('Please select or enter a category first to generate a code.');
       return;
     }
     const nextCode = generateNextSku(cat, editingItem ? editingItem.id : null);
     document.getElementById('itemSku').value = nextCode;
     const hintEl = document.getElementById('skuHint');
     if (hintEl) hintEl.textContent = 'Generated code: ' + nextCode;
+  });
+
+  // Incident type dropdown toggle for custom incident type
+  document.getElementById('incidentType').addEventListener('change', e => {
+    const isNew = e.target.value === '__new_type__';
+    const customInp = document.getElementById('incidentTypeCustom');
+    customInp.style.display = isNew ? 'block' : 'none';
+    if (isNew) customInp.focus();
+    else customInp.value = '';
   });
 
   // Open Add modal
@@ -897,6 +1042,7 @@ async function loadStock() {
     if (!res.ok) throw new Error(data.error || 'Could not load inventory.');
 
     allItems = data.items || [];
+    populateCategoryDropdowns();
     updateSummaryCards();
     applyFilters();
     loadLastAudit();
@@ -1054,7 +1200,12 @@ function openItemModal(item = null) {
   document.getElementById('itemModalTitle').textContent = item ? `Edit — ${item.name}` : 'Add Inventory Item';
   document.getElementById('itemId').value       = item ? item.id : '';
   document.getElementById('itemName').value     = item ? item.name : '';
-  document.getElementById('itemCategory').value = item ? item.category : '';
+  
+  populateCategoryDropdowns(item ? item.category : '');
+  const customCatInp = document.getElementById('itemCategoryCustom');
+  customCatInp.value = '';
+  customCatInp.style.display = 'none';
+
   document.getElementById('itemSku').value      = item ? (item.sku || '') : '';
   document.getElementById('itemStock').value    = item ? item.stock_quantity : '';
   document.getElementById('itemUnitCost').value = item ? item.unit_cost : '';
@@ -1122,7 +1273,9 @@ function updatePackCostPreview() {
 async function saveItem() {
   const id     = document.getElementById('itemId').value;
   const name   = document.getElementById('itemName').value.trim();
-  const cat    = document.getElementById('itemCategory').value.trim();
+  const catSel = document.getElementById('itemCategory').value;
+  const catCustom = document.getElementById('itemCategoryCustom').value.trim();
+  const cat    = catSel === '__new_category__' ? catCustom : catSel.trim();
   const stock  = parseFloat(document.getElementById('itemStock').value);
   let cost   = parseFloat(document.getElementById('itemUnitCost').value);
   const reorder = parseFloat(document.getElementById('itemReorder').value);
@@ -1132,8 +1285,15 @@ async function saveItem() {
 
   const unit = unitSel === 'custom' ? unitCustom : unitSel;
 
-  if (!name)             { errEl.textContent = 'Item name is required.'; errEl.classList.add('show'); return; }
-  if (!cat)              { errEl.textContent = 'Category is required.'; errEl.classList.add('show'); return; }
+  if (!name) { errEl.textContent = 'Item name is required.'; errEl.classList.add('show'); return; }
+  if (!cat)  {
+    errEl.textContent = catSel === '__new_category__' ? 'Please enter a name for the new category.' : 'Category is required.';
+    errEl.classList.add('show');
+    return;
+  }
+  if (catSel === '__new_category__' && cat) {
+    addCustomCategory(cat);
+  }
   if (isNaN(stock) || stock < 0) { errEl.textContent = 'Enter valid stock quantity.'; errEl.classList.add('show'); return; }
   if (isNaN(reorder) || reorder < 0) { errEl.textContent = 'Enter valid reorder level.'; errEl.classList.add('show'); return; }
 
@@ -1276,7 +1436,12 @@ function openIncidentModal() {
   select.innerHTML = '<option value="">Select inventory item…</option>' + allItems.map(item =>
     `<option value="${item.id}">${escapeHtml(item.name)} — ${item.stock_quantity} ${escapeHtml(item.unit || 'pcs')} available</option>`
   ).join('');
-  document.getElementById('incidentType').value = 'spoilage';
+  
+  populateIncidentTypeDropdown('spoilage');
+  const customTypeInp = document.getElementById('incidentTypeCustom');
+  customTypeInp.value = '';
+  customTypeInp.style.display = 'none';
+
   document.getElementById('incidentQty').value = '';
   document.getElementById('incidentOccurredAt').value = toLocalDateTimeValue();
   document.getElementById('incidentDescription').value = '';
@@ -1288,12 +1453,25 @@ function openIncidentModal() {
 
 async function saveIncident() {
   const inventoryId = Number(document.getElementById('incidentItem').value);
+  const typeSel = document.getElementById('incidentType').value;
+  const typeCustom = document.getElementById('incidentTypeCustom').value.trim();
+  const incidentType = typeSel === '__new_type__' ? typeCustom.toLowerCase() : typeSel;
   const quantity = Number(document.getElementById('incidentQty').value);
   const description = document.getElementById('incidentDescription').value.trim();
   const errEl = document.getElementById('incidentError');
+
   if (!inventoryId) { errEl.textContent = 'Select the affected inventory item.'; errEl.classList.add('show'); return; }
+  if (!incidentType) {
+    errEl.textContent = typeSel === '__new_type__' ? 'Please enter a name for the new incident type.' : 'Select an incident type.';
+    errEl.classList.add('show');
+    return;
+  }
   if (!Number.isFinite(quantity) || quantity <= 0) { errEl.textContent = 'Enter a positive quantity lost.'; errEl.classList.add('show'); return; }
   if (!description) { errEl.textContent = 'Describe what happened.'; errEl.classList.add('show'); return; }
+
+  if (typeSel === '__new_type__' && typeCustom) {
+    addCustomIncidentType(typeCustom);
+  }
 
   const saveBtn = document.getElementById('incidentSaveBtn');
   saveBtn.disabled = true; saveBtn.textContent = 'Submitting…';
@@ -1302,7 +1480,7 @@ async function saveIncident() {
       method: 'POST',
       body: JSON.stringify({
         inventory_id: inventoryId,
-        incident_type: document.getElementById('incidentType').value,
+        incident_type: incidentType,
         quantity,
         occurred_at: document.getElementById('incidentOccurredAt').value,
         description,
@@ -1330,14 +1508,20 @@ async function loadIncidents() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not load incident reports.');
     const reports = data.incidents || [];
+
+    // Sync any existing incident types
+    reports.forEach(r => {
+      if (r.incident_type) addCustomIncidentType(r.incident_type);
+    });
+
     if (!reports.length) {
-      wrap.innerHTML = '<div class="inv-empty"><p>No spoilage or theft incidents have been reported.</p></div>';
+      wrap.innerHTML = '<div class="inv-empty"><p>No inventory incidents have been reported.</p></div>';
       return;
     }
     wrap.innerHTML = `<table class="inv-table"><thead><tr><th>Occurred</th><th>Type</th><th>Item</th><th class="right">Lost</th><th>Description</th><th>Location / Ref.</th><th>Reported By</th></tr></thead><tbody>${reports.map(report => `
       <tr>
         <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(report.occurred_at)}</td>
-        <td><span class="pill ${report.incident_type === 'theft' ? 'pill-danger' : 'pill-neutral'}">${escapeHtml(report.incident_type)}</span></td>
+        <td><span class="pill ${getIncidentPillClass(report.incident_type)}">${escapeHtml(formatIncidentType(report.incident_type))}</span></td>
         <td style="font-weight:600;">${escapeHtml(report.item_name)}</td>
         <td class="right" style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; color:var(--danger);">-${report.quantity} ${escapeHtml(report.unit || '')}</td>
         <td style="font-size:0.78rem; color:var(--ink-muted);">${escapeHtml(report.description)}</td>
