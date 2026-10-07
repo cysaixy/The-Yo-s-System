@@ -562,34 +562,31 @@ export async function adminConfirmReservation(req, res, next) {
       });
     }
 
-    if (!table_no || !String(table_no).trim()) {
-      return res.status(400).json({
-        error: 'Assign a table before confirming - a confirmed reservation needs a seat.'
-      });
+    // table_no is optional — table is assigned by staff when the guest arrives
+    const cleanTableNo = table_no ? String(table_no).trim() : null;
+
+    // Only check for table conflicts if a table was provided
+    if (cleanTableNo) {
+      const CONFLICT_WINDOW_MINUTES = 120;
+      const conflict = await pool.query(
+        `SELECT r.id, r.table_no, r.reservation_time, r.guests
+         FROM reservations r
+         WHERE r.table_no = $1
+           AND r.reservation_date = $2
+           AND r.status = 'confirmed'
+           AND r.id <> $3
+           AND ABS(EXTRACT(EPOCH FROM (r.reservation_time - $4::time))) / 60 < $5`,
+        [cleanTableNo, reservation.reservation_date, reservation.id, reservation.reservation_time, CONFLICT_WINDOW_MINUTES]
+      );
+      if (conflict.rows[0]) {
+        const other = conflict.rows[0];
+        return res.status(409).json({
+          error: `${cleanTableNo} is already reserved that day at ${String(other.reservation_time).slice(0, 5)} (${other.guests} guests). Pick a different table or time.`
+        });
+      }
     }
 
-    const cleanTableNo = String(table_no).trim();
-
-    // Check conflicts
-    const CONFLICT_WINDOW_MINUTES = 120;
-    const conflict = await pool.query(
-      `SELECT r.id, r.table_no, r.reservation_time, r.guests
-       FROM reservations r
-       WHERE r.table_no = $1
-         AND r.reservation_date = $2
-         AND r.status = 'confirmed'
-         AND r.id <> $3
-         AND ABS(EXTRACT(EPOCH FROM (r.reservation_time - $4::time))) / 60 < $5`,
-      [cleanTableNo, reservation.reservation_date, reservation.id, reservation.reservation_time, CONFLICT_WINDOW_MINUTES]
-    );
-    if (conflict.rows[0]) {
-      const other = conflict.rows[0];
-      return res.status(409).json({
-        error: `${cleanTableNo} is already reserved that day at ${String(other.reservation_time).slice(0, 5)} (${other.guests} guests). Pick a different table or time.`
-      });
-    }
-
-    // Update reservation
+    // Update reservation — only set table_no if one was provided
     const { rows } = await pool.query(
       `UPDATE reservations
        SET status = 'confirmed', table_no = $1, reservation_status = 'confirmed', confirmed_at = NOW()
