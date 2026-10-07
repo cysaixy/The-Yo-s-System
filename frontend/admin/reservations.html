@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -524,6 +524,93 @@
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.78rem;
     font-weight: 700;
+  }
+
+  /* Custom Advance Items table in order editor */
+  .custom-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-top: 8px;
+  }
+  .custom-items-table th {
+    text-align: left;
+    padding: 6px 8px;
+    background: var(--stone);
+    border-bottom: 1px solid var(--line);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.60rem;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 700;
+  }
+  .custom-items-table td {
+    padding: 4px 6px;
+    border-bottom: 1px dashed var(--line);
+    vertical-align: middle;
+  }
+  .custom-items-table input {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.80rem;
+    color: var(--ink);
+    box-sizing: border-box;
+  }
+  .custom-items-table input:focus {
+    outline: none;
+    border-color: var(--brass);
+    box-shadow: 0 0 0 2px rgba(163,132,74,0.12);
+  }
+  .custom-items-table input[type="number"] {
+    width: 64px;
+    text-align: center;
+  }
+  .custom-items-table .del-custom-row {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.12s;
+  }
+  .custom-items-table .del-custom-row:hover { background: rgba(192,57,43,0.08); }
+  .add-custom-row-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: 1px dashed var(--line-strong);
+    color: var(--brass-dark);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.14s;
+  }
+  .add-custom-row-btn:hover { border-color: var(--brass); background: rgba(163,132,74,0.06); }
+
+  /* Print receipt styles */
+  @media print {
+    body * { visibility: hidden; }
+    #receiptPrintArea, #receiptPrintArea * { visibility: visible; }
+    #receiptPrintArea {
+      position: fixed; top: 0; left: 0;
+      width: 80mm;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #000;
+      padding: 8px;
+    }
   }
 
   /* Toast Notification */
@@ -1192,13 +1279,17 @@
           ${!order ? `
             <button class="btn" id="addOrderBtn" style="flex:1;">+ Add Order Items</button>
           ` : `
+            <button class="btn btn-outline" id="printReceiptBtn" style="display:inline-flex; align-items:center; gap:6px;">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print Receipt
+            </button>
             ${canEdit ? `
               <button class="btn" id="editOrderBtn" style="flex:1;">Edit Order</button>
             ` : ''}
             ${resStatus === 'order_preparing' ? `
               <button class="btn" id="finalizeOrderBtn" style="flex:1; background:var(--success); border-color:var(--success);">Finalize Order</button>
             ` : ''}
-            ${resStatus === 'order_finalized' ? `
+            ${resStatus === 'order_finalized' || r.status === 'confirmed' ? `
               <button class="btn" id="confirmReservationBtn" style="flex:1;">Confirm Reservation</button>
             ` : ''}
             ${isAdmin && isPastDeadline ? `
@@ -1217,6 +1308,9 @@
     const addOrderBtn = backdrop.querySelector('#addOrderBtn');
     if (addOrderBtn) addOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, fetchedMenuItems, false));
 
+    const printReceiptBtn = backdrop.querySelector('#printReceiptBtn');
+    if (printReceiptBtn) printReceiptBtn.addEventListener('click', () => printReservationReceipt(r, order));
+
     const editOrderBtn = backdrop.querySelector('#editOrderBtn');
     if (editOrderBtn) editOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, fetchedMenuItems, true, order));
 
@@ -1228,6 +1322,76 @@
 
     const adminOverrideEditBtn = backdrop.querySelector('#adminOverrideEditBtn');
     if (adminOverrideEditBtn) adminOverrideEditBtn.addEventListener('click', () => openOrderEditorModal(id, r, fetchedMenuItems, true, order, true));
+  }
+
+  // ---- Custom advance items state ----
+  let customAdvanceItems = []; // [{name, qty, price}]
+
+  function parseCustomItemsFromNotes(notesStr) {
+    if (!notesStr) return [];
+    const marker = '---CUSTOM_ITEMS_JSON---';
+    const idx = notesStr.indexOf(marker);
+    if (idx === -1) return [];
+    try {
+      return JSON.parse(notesStr.slice(idx + marker.length).trim());
+    } catch { return []; }
+  }
+
+  function buildNotesWithCustomItems(baseNotes, items) {
+    const marker = '---CUSTOM_ITEMS_JSON---';
+    // Strip any existing custom items block
+    const clean = baseNotes ? baseNotes.split(marker)[0].trim() : '';
+    if (!items || items.length === 0) return clean || null;
+    const validItems = items.filter(i => i.name && i.name.trim());
+    if (validItems.length === 0) return clean || null;
+    return (clean ? clean + '\n' : '') + marker + JSON.stringify(validItems);
+  }
+
+  function renderCustomItemsSection(backdrop) {
+    const wrap = backdrop.querySelector('#customItemsWrap');
+    if (!wrap) return;
+    let html = `
+      <table class="custom-items-table">
+        <thead><tr>
+          <th style="width:48%;">Item / Description</th>
+          <th style="width:15%; text-align:center;">Qty</th>
+          <th style="width:22%;">Unit Price (₱)</th>
+          <th style="width:10%;"></th>
+        </tr></thead>
+        <tbody id="customItemsBody">
+    `;
+    customAdvanceItems.forEach((row, i) => {
+      html += `
+        <tr>
+          <td><input type="text" class="ci-name" data-i="${i}" placeholder="e.g. Spaghetti Pack" value="${escapeHtml(row.name || '')}"></td>
+          <td><input type="number" class="ci-qty" data-i="${i}" min="0.01" step="0.01" placeholder="1" value="${row.qty || ''}"></td>
+          <td><input type="number" class="ci-price" data-i="${i}" min="0" step="0.01" placeholder="0.00" value="${row.price || ''}"></td>
+          <td><button type="button" class="del-custom-row" data-i="${i}" title="Remove row">×</button></td>
+        </tr>`;
+    });
+    html += `</tbody></table>
+    <button type="button" class="add-custom-row-btn" id="addCustomRowBtn">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Add custom item
+    </button>`;
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('.ci-name').forEach(el => {
+      el.addEventListener('input', () => { customAdvanceItems[+el.dataset.i].name = el.value; updateCurrentOrderDisplay(backdrop); });
+    });
+    wrap.querySelectorAll('.ci-qty').forEach(el => {
+      el.addEventListener('input', () => { customAdvanceItems[+el.dataset.i].qty = parseFloat(el.value) || 0; updateCurrentOrderDisplay(backdrop); });
+    });
+    wrap.querySelectorAll('.ci-price').forEach(el => {
+      el.addEventListener('input', () => { customAdvanceItems[+el.dataset.i].price = parseFloat(el.value) || 0; updateCurrentOrderDisplay(backdrop); });
+    });
+    wrap.querySelectorAll('.del-custom-row').forEach(el => {
+      el.addEventListener('click', () => { customAdvanceItems.splice(+el.dataset.i, 1); renderCustomItemsSection(backdrop); updateCurrentOrderDisplay(backdrop); });
+    });
+    wrap.querySelector('#addCustomRowBtn').addEventListener('click', () => {
+      customAdvanceItems.push({ name: '', qty: 1, price: 0 });
+      renderCustomItemsSection(backdrop);
+    });
   }
 
   // Order Editor Modal
@@ -1242,6 +1406,7 @@
     });
 
     orderEditorState.selectedItems.clear();
+    // Restore existing menu items
     if (existingOrder?.items) {
       existingOrder.items.forEach(item => {
         const key = `${item.menu_id}||`;
@@ -1253,6 +1418,8 @@
         });
       });
     }
+    // Restore existing custom advance items from order notes
+    customAdvanceItems = parseCustomItemsFromNotes(existingOrder?.notes || '');
 
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop active';
@@ -1271,9 +1438,18 @@
 
         <div id="orderEditorContent"></div>
 
+        <!-- Custom / Advance Items -->
+        <div style="margin-top:18px; border-top:2px dashed var(--line); padding-top:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.82rem; margin:0;">Custom / Advance Order Items</h4>
+            <span style="font-family:'Plus Jakarta Sans',sans-serif; font-size:0.68rem; color:var(--ink-muted); background:var(--stone); border-radius:4px; padding:2px 7px;">e.g. 20 packs spaghetti • set your own price</span>
+          </div>
+          <div id="customItemsWrap"></div>
+        </div>
+
         <div style="margin-top:16px; border-top:1px solid var(--line); padding-top:14px;">
-          <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.82rem; margin:0 0 10px;">Selected Order Items</h4>
-          <div id="currentOrderItems" style="max-height:180px; overflow-y:auto;"></div>
+          <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.82rem; margin:0 0 10px;">Order Summary</h4>
+          <div id="currentOrderItems" style="max-height:200px; overflow-y:auto;"></div>
           <div class="order-total-row" id="orderTotalRow" style="display:none;">
             <span>Total:</span>
             <span id="orderTotalDisplay">₱0.00</span>
@@ -1295,6 +1471,7 @@
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
 
     renderOrderEditorCategories(backdrop, categories);
+    renderCustomItemsSection(backdrop);
 
     backdrop.querySelector('#orderEditorSaveBtn').addEventListener('click', async () => {
       await saveOrderFromEditor(reservationId, backdrop, adminOverride);
@@ -1426,32 +1603,53 @@
     const totalRow = backdrop.querySelector('#orderTotalRow');
     const totalDisplay = backdrop.querySelector('#orderTotalDisplay');
 
-    if (orderEditorState.selectedItems.size === 0) {
+    const hasMenuItems = orderEditorState.selectedItems.size > 0;
+    const validCustom = customAdvanceItems.filter(i => i.name && i.name.trim() && (i.qty || 0) > 0);
+    const hasCustom = validCustom.length > 0;
+
+    if (!hasMenuItems && !hasCustom) {
       container.innerHTML = '<div style="padding:12px; color:var(--ink-muted); text-align:center; font-size:0.80rem;">No items selected yet.</div>';
       totalRow.style.display = 'none';
       return;
     }
 
     let total = 0;
-    container.innerHTML = Array.from(orderEditorState.selectedItems.entries()).map(([key, data]) => {
+    let rows = '';
+
+    // Menu items
+    Array.from(orderEditorState.selectedItems.entries()).forEach(([key, data]) => {
       const subtotal = data.menuItem.price * data.quantity;
       total += subtotal;
       const addonTotal = Array.from(data.addons.values()).reduce((sum, a) => sum + a.price * a.quantity, 0);
       total += addonTotal;
-
-      return `
+      rows += `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--line); font-size:0.82rem;">
           <div>
             <strong>${escapeHtml(data.menuItem.name)}</strong>
-            <span style="font-family:'Plus Jakarta Sans', sans-serif; color:var(--brass-dark); margin-left:6px;">× ${data.quantity}</span>
+            <span style="font-family:'Plus Jakarta Sans',sans-serif; color:var(--brass-dark); margin-left:6px;">× ${data.quantity}</span>
           </div>
-          <span style="font-family:'Plus Jakarta Sans', sans-serif; font-weight:700; color:var(--brass-dark);">
-            ₱${(subtotal + addonTotal).toFixed(2)}
-          </span>
-        </div>
-      `;
-    }).join('');
+          <span style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; color:var(--brass-dark);">₱${(subtotal + addonTotal).toFixed(2)}</span>
+        </div>`;
+    });
 
+    // Custom advance items
+    if (hasCustom) {
+      rows += `<div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:0.65rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-muted); padding:8px 0 4px; border-bottom:1px dashed var(--line);">Custom / Advance Items</div>`;
+      validCustom.forEach(ci => {
+        const subtotal = (ci.price || 0) * (ci.qty || 1);
+        total += subtotal;
+        rows += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--line); font-size:0.82rem;">
+            <div>
+              <strong>${escapeHtml(ci.name)}</strong>
+              <span style="font-family:'Plus Jakarta Sans',sans-serif; color:var(--brass-dark); margin-left:6px;">× ${ci.qty}</span>
+            </div>
+            <span style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; color:var(--brass-dark);">₱${subtotal.toFixed(2)}</span>
+          </div>`;
+      });
+    }
+
+    container.innerHTML = rows;
     totalDisplay.textContent = `₱${total.toFixed(2)}`;
     totalRow.style.display = 'flex';
   }
@@ -1460,8 +1658,10 @@
     const errEl = backdrop.querySelector('#orderEditorError');
     const saveBtn = backdrop.querySelector('#orderEditorSaveBtn');
 
-    if (orderEditorState.selectedItems.size === 0) {
-      errEl.textContent = 'Please add at least one item to the order.';
+    const validCustom = customAdvanceItems.filter(i => i.name && i.name.trim() && (i.qty || 0) > 0);
+
+    if (orderEditorState.selectedItems.size === 0 && validCustom.length === 0) {
+      errEl.textContent = 'Please add at least one menu item or custom advance item to the order.';
       errEl.classList.add('show');
       return;
     }
@@ -1476,6 +1676,9 @@
       }))
     }));
 
+    // Encode custom items into notes
+    const notesWithCustom = buildNotesWithCustomItems('', validCustom);
+
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving…';
     errEl.classList.remove('show');
@@ -1485,6 +1688,7 @@
         method: 'POST',
         body: JSON.stringify({ 
           items, 
+          notes: notesWithCustom,
           status: 'editable',
           admin_override: adminOverride
         }),
@@ -1526,6 +1730,92 @@
 
   function closeModals() {
     document.querySelectorAll('.modal-backdrop').forEach(m => m.remove());
+  }
+
+  // ---- Print Reservation Receipt ----
+  function printReservationReceipt(reservation, order) {
+    if (!order) return;
+    const customItems = parseCustomItemsFromNotes(order.notes || '');
+    const menuItems = order.items || [];
+
+    let menuTotal = 0;
+    let menuRows = menuItems.map(item => {
+      const sub = Number(item.subtotal) || (Number(item.price) * Number(item.quantity));
+      menuTotal += sub;
+      let addOnLines = '';
+      if (item.add_ons?.length) {
+        item.add_ons.forEach(a => {
+          addOnLines += `<tr><td style="padding-left:16px; color:#555;">  + ${escapeHtml(a.name)} ×${a.quantity}</td><td style="text-align:right; color:#555;">₱${(Number(a.price)*Number(a.quantity)).toFixed(2)}</td></tr>`;
+          menuTotal += Number(a.price) * Number(a.quantity);
+        });
+      }
+      return `<tr><td>${escapeHtml(item.name || item.item_name)} ×${item.quantity}</td><td style="text-align:right;">₱${sub.toFixed(2)}</td></tr>${addOnLines}`;
+    }).join('');
+
+    let customTotal = 0;
+    let customRows = '';
+    if (customItems.length > 0) {
+      customRows = `<tr><td colspan="2" style="padding-top:10px; padding-bottom:4px; font-weight:700; font-size:10px; text-transform:uppercase; letter-spacing:0.05em; border-top:1px dashed #000;">Custom / Advance Order Items</td></tr>`;
+      customItems.forEach(ci => {
+        if (!ci.name) return;
+        const sub = (ci.price || 0) * (ci.qty || 1);
+        customTotal += sub;
+        customRows += `<tr><td>${escapeHtml(ci.name)} ×${ci.qty}</td><td style="text-align:right;">₱${sub.toFixed(2)}</td></tr>`;
+      });
+    }
+
+    const grandTotal = menuTotal + customTotal;
+    const resDate = reservation.reservation_date ? fmtDate(reservation.reservation_date) : '—';
+    const resTime = String(reservation.reservation_time || '').slice(0, 5);
+    const now = new Date().toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    const win = window.open('', '_blank', 'width=420,height=680');
+    win.document.write(`<!DOCTYPE html><html><head>
+      <title>Reservation Receipt #${reservation.id}</title>
+      <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'Courier New', monospace; font-size: 12px; color: #000; padding: 12px; width: 320px; }
+        h1 { font-size: 16px; text-align: center; margin-bottom: 2px; font-family: sans-serif; }
+        .sub { font-size: 11px; text-align: center; margin-bottom: 8px; color: #444; }
+        .divider { border: none; border-top: 1px dashed #000; margin: 8px 0; }
+        .divider-solid { border: none; border-top: 2px solid #000; margin: 8px 0; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 3px 2px; vertical-align: top; }
+        .total-row td { font-weight: bold; font-size: 14px; padding-top: 8px; border-top: 2px solid #000; }
+        .badge { display: inline-block; background: #000; color: #fff; padding: 2px 7px; border-radius: 3px; font-size: 10px; margin: 4px 0; }
+        .footer { text-align: center; margin-top: 12px; font-size: 10px; color: #555; }
+        @media print { body { width: 80mm; } }
+      </style>
+    </head><body>
+      <h1>The~Yo's</h1>
+      <div class="sub">Reservation Receipt</div>
+      <hr class="divider-solid">
+      <table>
+        <tr><td><b>Reservation #</b></td><td style="text-align:right;">${reservation.id}</td></tr>
+        <tr><td><b>Customer</b></td><td style="text-align:right;">${escapeHtml(reservation.customer_name)}</td></tr>
+        <tr><td><b>Date &amp; Time</b></td><td style="text-align:right;">${resDate} ${resTime}</td></tr>
+        <tr><td><b>Guests</b></td><td style="text-align:right;">${reservation.guests}</td></tr>
+        ${reservation.table_no ? `<tr><td><b>Table</b></td><td style="text-align:right;">${escapeHtml(reservation.table_no)}</td></tr>` : ''}
+        <tr><td><b>Status</b></td><td style="text-align:right;">${(reservation.reservation_status || reservation.status || '').replace(/_/g,' ')}</td></tr>
+      </table>
+      <hr class="divider">
+      <table>
+        <tr><td colspan="2" style="font-weight:700; font-size:10px; text-transform:uppercase; letter-spacing:0.05em; padding-bottom:4px;">Order Items</td></tr>
+        ${menuRows || '<tr><td colspan="2" style="color:#888;">— No menu items —</td></tr>'}
+        ${customRows}
+        <tr class="total-row">
+          <td>TOTAL</td>
+          <td style="text-align:right;">₱${grandTotal.toFixed(2)}</td>
+        </tr>
+      </table>
+      <div class="footer">
+        <div>Printed: ${now}</div>
+        <div style="margin-top:6px;">Thank you for choosing The~Yo's!</div>
+      </div>
+    </body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
   }
 
   // ---- Customer details modal ----
