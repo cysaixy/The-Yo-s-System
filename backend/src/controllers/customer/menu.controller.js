@@ -4,7 +4,7 @@ import { calculateBulkCapacity } from '../../services/capacityService.js';
 
 export async function getMenu(req, res, next) {
   try {
-    const [categoriesRes, itemsRes, addonsRes, linksRes] = await Promise.all([
+    const [categoriesRes, itemsRes, addonsRes, linksRes, addonInvRes] = await Promise.all([
       pool.query('SELECT * FROM categories ORDER BY name ASC'),
       // Fetch items with their tracking mode - we'll calculate real capacity below
       pool.query(`
@@ -18,6 +18,12 @@ export async function getMenu(req, res, next) {
         'SELECT id, name, description, price, category FROM add_ons WHERE status = \'available\' ORDER BY name ASC'
       ),
       pool.query('SELECT addon_id, menu_id FROM addon_products'),
+      // Fetch inventory components for all add-ons so we can filter out-of-stock ones
+      pool.query(`
+        SELECT ai.addon_id, ai.quantity AS required, ii.stock_quantity AS available
+        FROM addon_inventory ai
+        JOIN inventory_items ii ON ii.id = ai.inventory_id
+      `),
     ]);
 
     // Calculate real-time capacity for all menu items
@@ -26,6 +32,32 @@ export async function getMenu(req, res, next) {
       ? await calculateBulkCapacity(menuIds) 
       : {};
 
+    // ---------- Add-on stock check ----------
+    // Group inventory components by addon_id
+    const addonInvMap = new Map(); // addon_id -> [{ required, available }]
+    addonInvRes.rows.forEach(row => {
+      if (!addonInvMap.has(row.addon_id)) addonInvMap.set(row.addon_id, []);
+      addonInvMap.get(row.addon_id).push({
+        required: Number(row.required),
+        available: Number(row.available),
+      });
+    });
+
+    // Determine which add-ons are actually in stock
+    const addonInStock = new Set();
+    addonsRes.rows.forEach(addon => {
+      const components = addonInvMap.get(addon.id);
+      if (!components || components.length === 0) {
+        // No inventory links → treat as always available (not ingredient-tracked)
+        addonInStock.add(addon.id);
+        return;
+      }
+      // All linked inventory items must have sufficient stock
+      const allAvailable = components.every(c => c.available >= c.required);
+      if (allAvailable) addonInStock.add(addon.id);
+    });
+
+    // ---------- Product link map ----------
     // Add-ons are sold on every menu item unless a product link restricts
     // them. Same rule the POS uses: an add-on with NO addon_products rows is
     // global; otherwise it's only offered on the linked items.
@@ -58,7 +90,11 @@ export async function getMenu(req, res, next) {
           tracking_mode: item.tracking_mode,
           add_ons: addonsRes.rows
             .filter(
-              (a) => !linkedAddonIds.has(a.id) || linked.get(item.id)?.has(a.id)
+              (a) =>
+                // Must be in-stock (passes inventory check)
+                addonInStock.has(a.id) &&
+                // Must be applicable to this product (global or linked)
+                (!linkedAddonIds.has(a.id) || linked.get(item.id)?.has(a.id))
             )
             .map((a) => ({
               id: a.id,

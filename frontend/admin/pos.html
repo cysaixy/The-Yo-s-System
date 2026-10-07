@@ -1255,6 +1255,8 @@
 
   function getAddonsForProduct(menuId) {
     return addons.filter(a => {
+      // Exclude add-ons that are unavailable or out of stock
+      if (a.status !== 'available') return false;
       if (!a.products || a.products.length === 0) return true;
       return a.products.some(p => String(p.menu_id) === String(menuId));
     });
