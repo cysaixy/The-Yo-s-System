@@ -882,6 +882,7 @@
     const tag = !terminal && diff === 0 ? '<span class="urgency-tag today">Today</span>'
               : !terminal && diff < 0 ? '<span class="urgency-tag overdue">Overdue</span>' : '';
     const notes = r.notes || '';
+    const dispNotes = notes ? formatNotesForDisplay(notes) : '';
     
     // Order deadline display
     const deadline = r.order_editing_deadline ? fmtDate(r.order_editing_deadline) : '—';
@@ -922,7 +923,7 @@
         <td><span class="res-status-pill ${STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></td>
         <td><span class="order-status-pill ${ORDER_STATUS_PILL[orderStatusLabel] || 'order-status-no_order'}">${escapeHtml(orderStatusLabel.replace(/_/g, ' '))}</span></td>
         <td><span class="deadline-value ${deadlineClass}">${deadline}</span></td>
-        <td><div class="notes-cell${notes ? '' : ' empty'}" title="${escapeHtml(notes)}">${notes ? escapeHtml(notes) : '—'}</div></td>
+        <td><div class="notes-cell${dispNotes ? '' : ' empty'}" title="${escapeHtml(dispNotes)}">${dispNotes ? escapeHtml(dispNotes) : '—'}</div></td>
         <td style="text-align:right;"><div class="res-actions-wrap" style="justify-content:flex-end;">${actionButtons(r)}</div></td>
       </tr>
     `;
@@ -1194,7 +1195,7 @@
 
   // ---- Manage Reservation Order Modal ----
   async function openManageModal(id) {
-    const r = reservations.find(x => x.id == id);
+    let r = reservations.find(x => x.id == id);
     if (!r) return;
 
     let orderData = null;
@@ -1205,16 +1206,131 @@
       console.error('Failed to load order:', err);
     }
 
-    const resStatus = r.reservation_status || r.status;
+    if (orderData?.reservation) {
+      Object.assign(r, orderData.reservation);
+    }
+
+    const resStatus = r.reservation_status || r.status || 'pending';
     const orderStatus = r.order_status || 'no_order';
     const today = startOfDay(new Date());
     const deadline = r.order_editing_deadline ? new Date(r.order_editing_deadline) : null;
     const isPastDeadline = deadline && today > deadline;
-    const canEdit = (orderStatus === 'editable' || orderStatus === 'finalized') && !isPastDeadline;
     const isAdmin = session?.staff?.role === 'Admin';
+    const canEdit = !isPastDeadline || isAdmin;
 
     const order = orderData?.order;
     const fetchedMenuItems = orderData?.menu_items || menuItems || [];
+
+    // Custom items from order or reservation
+    const customItems = (order?.custom_items && order.custom_items.length)
+      ? order.custom_items
+      : (parseCustomItemsFromNotes(order?.notes || '') || parseCustomItemsFromNotes(r?.notes || ''));
+    const menuItemsList = order?.items || [];
+    const hasMenuItems = menuItemsList.length > 0;
+    const hasCustomItems = customItems && customItems.length > 0;
+    const hasAnyItems = hasMenuItems || hasCustomItems;
+
+    let itemsContentHtml = '';
+    let calculatedGrandTotal = 0;
+
+    if (hasAnyItems) {
+      let menuTableHtml = '';
+      if (hasMenuItems) {
+        menuTableHtml = `
+          <div style="margin-bottom:14px;">
+            <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.82rem; margin:0 0 8px; color:var(--ink);">Menu Items</h4>
+            <table class="order-items-table">
+              <thead><tr>
+                <th style="width:40%;">Item</th>
+                <th class="item-qty">Qty</th>
+                <th class="item-price">Price</th>
+                <th class="item-subtotal">Subtotal</th>
+              </tr></thead>
+              <tbody>
+                ${menuItemsList.map(item => {
+                  const itemSub = Number(item.subtotal) || (Number(item.price) * Number(item.quantity));
+                  calculatedGrandTotal += itemSub;
+                  let addonSubtotalSum = 0;
+                  const addonRows = (item.add_ons || []).map(a => {
+                    const asub = Number(a.price) * Number(a.quantity);
+                    addonSubtotalSum += asub;
+                    return `<div class="addon-row">+ ${escapeHtml(a.name)} × ${a.quantity} (${peso(asub)})</div>`;
+                  }).join('');
+                  calculatedGrandTotal += addonSubtotalSum;
+                  return `
+                    <tr>
+                      <td>
+                        <div class="item-name">${escapeHtml(item.name || item.item_name)}</div>
+                        ${addonRows}
+                        ${item.notes ? `<div class="item-notes">${escapeHtml(item.notes)}</div>` : ''}
+                      </td>
+                      <td class="item-qty">${item.quantity}</td>
+                      <td class="item-price">${peso(item.price)}</td>
+                      <td class="item-subtotal">${peso(itemSub + addonSubtotalSum)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      let customTableHtml = '';
+      if (hasCustomItems) {
+        customTableHtml = `
+          <div style="margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.82rem; margin:0; color:var(--ink);">Custom / Advance Order Items</h4>
+              <span style="font-family:'Plus Jakarta Sans',sans-serif; font-size:0.68rem; color:var(--ink-muted); background:var(--stone); border-radius:4px; padding:2px 7px;">Special order</span>
+            </div>
+            <table class="order-items-table">
+              <thead><tr>
+                <th style="width:40%;">Item / Description</th>
+                <th class="item-qty">Qty</th>
+                <th class="item-price">Price</th>
+                <th class="item-subtotal">Subtotal</th>
+              </tr></thead>
+              <tbody>
+                ${customItems.map(ci => {
+                  const qty = Number(ci.qty) || 1;
+                  const price = Number(ci.price) || 0;
+                  const sub = qty * price;
+                  calculatedGrandTotal += sub;
+                  return `
+                    <tr>
+                      <td><div class="item-name">${escapeHtml(ci.name)}</div></td>
+                      <td class="item-qty">${qty}</td>
+                      <td class="item-price">${peso(price)}</td>
+                      <td class="item-subtotal">${peso(sub)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      const totalToShow = (order && Number(order.total_amount) > 0) ? Math.max(Number(order.total_amount), calculatedGrandTotal) : calculatedGrandTotal;
+
+      itemsContentHtml = `
+        <div style="border-top:1px solid var(--line); padding-top:14px;">
+          ${menuTableHtml}
+          ${customTableHtml}
+          <div class="order-total-row">
+            <span>Grand Total:</span>
+            <span>${peso(totalToShow)}</span>
+          </div>
+        </div>
+      `;
+    } else {
+      itemsContentHtml = `
+        <div style="border-top:1px solid var(--line); padding:24px 10px; text-align:center; color:var(--ink-muted);">
+          No menu or custom order items attached to this reservation yet.
+        </div>
+      `;
+    }
 
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop active';
@@ -1239,44 +1355,10 @@
           </dd>
         </div>
 
-        ${order && order.items && order.items.length ? `
-        <div style="border-top:1px solid var(--line); padding-top:14px;">
-          <h4 style="font-family:'Archivo',sans-serif; text-transform:uppercase; font-size:0.85rem; margin:0 0 10px;">Order Items</h4>
-          <table class="order-items-table">
-            <thead><tr>
-              <th style="width:40%;">Item</th>
-              <th class="item-qty">Qty</th>
-              <th class="item-price">Price</th>
-              <th class="item-subtotal">Subtotal</th>
-            </tr></thead>
-            <tbody>
-              ${order.items.map(item => `
-                <tr>
-                  <td>
-                    <div class="item-name">${escapeHtml(item.name || item.item_name)}</div>
-                    ${item.add_ons?.length ? item.add_ons.map(a => `<div class="addon-row">+ ${escapeHtml(a.name)} × ${a.quantity}</div>`).join('') : ''}
-                    ${item.notes ? `<div class="item-notes">${escapeHtml(item.notes)}</div>` : ''}
-                  </td>
-                  <td class="item-qty">${item.quantity}</td>
-                  <td class="item-price">${peso(item.price)}</td>
-                  <td class="item-subtotal">${peso(item.subtotal)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div class="order-total-row">
-            <span>Total:</span>
-            <span>${peso(order.total_amount)}</span>
-          </div>
-        </div>
-        ` : `
-        <div style="border-top:1px solid var(--line); padding:24px 10px; text-align:center; color:var(--ink-muted);">
-          No menu order attached to this reservation yet.
-        </div>
-        `}
+        ${itemsContentHtml}
 
         <div style="margin-top:22px; display:flex; gap:10px; flex-wrap:wrap;">
-          ${!order ? `
+          ${!hasAnyItems ? `
             <button class="btn" id="addOrderBtn" style="flex:1;">+ Add Order Items</button>
           ` : `
             <button class="btn btn-outline" id="printReceiptBtn" style="display:inline-flex; align-items:center; gap:6px;">
@@ -1284,7 +1366,7 @@
               Print Receipt
             </button>
             ${canEdit ? `
-              <button class="btn" id="editOrderBtn" style="flex:1;">Edit Order</button>
+              <button class="btn" id="editOrderBtn" style="flex:1;">Edit / Add More Items</button>
             ` : ''}
             ${resStatus === 'order_preparing' ? `
               <button class="btn" id="finalizeOrderBtn" style="flex:1; background:var(--success); border-color:var(--success);">Finalize Order</button>
@@ -1306,10 +1388,10 @@
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
 
     const addOrderBtn = backdrop.querySelector('#addOrderBtn');
-    if (addOrderBtn) addOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, fetchedMenuItems, false));
+    if (addOrderBtn) addOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, fetchedMenuItems, false, order));
 
     const printReceiptBtn = backdrop.querySelector('#printReceiptBtn');
-    if (printReceiptBtn) printReceiptBtn.addEventListener('click', () => printReservationReceipt(r, order));
+    if (printReceiptBtn) printReceiptBtn.addEventListener('click', () => printReservationReceipt(r, order || { items: [], custom_items: customItems }));
 
     const editOrderBtn = backdrop.querySelector('#editOrderBtn');
     if (editOrderBtn) editOrderBtn.addEventListener('click', () => openOrderEditorModal(id, r, fetchedMenuItems, true, order));
@@ -1326,6 +1408,7 @@
 
   // ---- Custom advance items state ----
   let customAdvanceItems = []; // [{name, qty, price}]
+  let currentOrderBaseNotes = '';
 
   function parseCustomItemsFromNotes(notesStr) {
     if (!notesStr) return [];
@@ -1333,7 +1416,8 @@
     const idx = notesStr.indexOf(marker);
     if (idx === -1) return [];
     try {
-      return JSON.parse(notesStr.slice(idx + marker.length).trim());
+      const parsed = JSON.parse(notesStr.slice(idx + marker.length).trim());
+      return Array.isArray(parsed) ? parsed : [];
     } catch { return []; }
   }
 
@@ -1345,6 +1429,42 @@
     const validItems = items.filter(i => i.name && i.name.trim());
     if (validItems.length === 0) return clean || null;
     return (clean ? clean + '\n' : '') + marker + JSON.stringify(validItems);
+  }
+
+  function formatNotesForDisplay(notesStr) {
+    if (!notesStr) return '—';
+    const marker = '---CUSTOM_ITEMS_JSON---';
+    const parts = notesStr.split(marker);
+    const textNote = parts[0].trim();
+    let customSummary = '';
+    if (parts[1]) {
+      try {
+        const items = JSON.parse(parts[1].trim());
+        if (Array.isArray(items) && items.length > 0) {
+          customSummary = '\n\nCustom Advance Items:\n' + items.map(i => `• ${i.name} (Qty: ${i.qty || 1}, ₱${Number(i.price || 0).toFixed(2)})`).join('\n');
+        }
+      } catch (e) {}
+    }
+    const combined = [textNote, customSummary].filter(Boolean).join('');
+    return combined || '—';
+  }
+
+  function syncCustomItemsFromDOM(backdrop) {
+    const wrap = backdrop.querySelector('#customItemsWrap');
+    if (!wrap) return;
+    const names = wrap.querySelectorAll('.ci-name');
+    const qtys = wrap.querySelectorAll('.ci-qty');
+    const prices = wrap.querySelectorAll('.ci-price');
+    const synced = [];
+    names.forEach((nameEl, idx) => {
+      const name = nameEl.value.trim();
+      const qty = parseFloat(qtys[idx]?.value) || 0;
+      const price = parseFloat(prices[idx]?.value) || 0;
+      if (name) {
+        synced.push({ name, qty: qty > 0 ? qty : 1, price: price >= 0 ? price : 0 });
+      }
+    });
+    customAdvanceItems = synced;
   }
 
   function renderCustomItemsSection(backdrop) {
@@ -1360,37 +1480,62 @@
         </tr></thead>
         <tbody id="customItemsBody">
     `;
-    customAdvanceItems.forEach((row, i) => {
-      html += `
-        <tr>
-          <td><input type="text" class="ci-name" data-i="${i}" placeholder="e.g. Spaghetti Pack" value="${escapeHtml(row.name || '')}"></td>
-          <td><input type="number" class="ci-qty" data-i="${i}" min="0.01" step="0.01" placeholder="1" value="${row.qty || ''}"></td>
-          <td><input type="number" class="ci-price" data-i="${i}" min="0" step="0.01" placeholder="0.00" value="${row.price || ''}"></td>
-          <td><button type="button" class="del-custom-row" data-i="${i}" title="Remove row">×</button></td>
-        </tr>`;
-    });
+    if (customAdvanceItems.length === 0) {
+      html += `<tr><td colspan="4" style="text-align:center; color:var(--ink-muted); padding:10px; font-size:0.75rem;">No custom advance items added yet. Click "+ Add custom item" below.</td></tr>`;
+    } else {
+      customAdvanceItems.forEach((row, i) => {
+        html += `
+          <tr>
+            <td><input type="text" class="ci-name" data-i="${i}" placeholder="e.g. Spaghetti Pack" value="${escapeHtml(row.name || '')}"></td>
+            <td><input type="number" class="ci-qty" data-i="${i}" min="0.01" step="0.01" placeholder="1" value="${row.qty ?? 1}"></td>
+            <td><input type="number" class="ci-price" data-i="${i}" min="0" step="0.01" placeholder="0.00" value="${row.price ?? 0}"></td>
+            <td><button type="button" class="del-custom-row" data-i="${i}" title="Remove row">×</button></td>
+          </tr>`;
+      });
+    }
     html += `</tbody></table>
-    <button type="button" class="add-custom-row-btn" id="addCustomRowBtn">
+    <button type="button" class="add-custom-row-btn" id="addCustomRowBtn" style="margin-top:8px;">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
       Add custom item
     </button>`;
     wrap.innerHTML = html;
 
-    wrap.querySelectorAll('.ci-name').forEach(el => {
-      el.addEventListener('input', () => { customAdvanceItems[+el.dataset.i].name = el.value; updateCurrentOrderDisplay(backdrop); });
+    const syncAndRefresh = () => {
+      wrap.querySelectorAll('.ci-name').forEach(el => {
+        const i = +el.dataset.i;
+        if (customAdvanceItems[i]) customAdvanceItems[i].name = el.value;
+      });
+      wrap.querySelectorAll('.ci-qty').forEach(el => {
+        const i = +el.dataset.i;
+        if (customAdvanceItems[i]) customAdvanceItems[i].qty = parseFloat(el.value) || 0;
+      });
+      wrap.querySelectorAll('.ci-price').forEach(el => {
+        const i = +el.dataset.i;
+        if (customAdvanceItems[i]) customAdvanceItems[i].price = parseFloat(el.value) || 0;
+      });
+      updateCurrentOrderDisplay(backdrop);
+    };
+
+    wrap.querySelectorAll('.ci-name, .ci-qty, .ci-price').forEach(el => {
+      el.addEventListener('input', syncAndRefresh);
+      el.addEventListener('change', syncAndRefresh);
     });
-    wrap.querySelectorAll('.ci-qty').forEach(el => {
-      el.addEventListener('input', () => { customAdvanceItems[+el.dataset.i].qty = parseFloat(el.value) || 0; updateCurrentOrderDisplay(backdrop); });
-    });
-    wrap.querySelectorAll('.ci-price').forEach(el => {
-      el.addEventListener('input', () => { customAdvanceItems[+el.dataset.i].price = parseFloat(el.value) || 0; updateCurrentOrderDisplay(backdrop); });
-    });
+
     wrap.querySelectorAll('.del-custom-row').forEach(el => {
-      el.addEventListener('click', () => { customAdvanceItems.splice(+el.dataset.i, 1); renderCustomItemsSection(backdrop); updateCurrentOrderDisplay(backdrop); });
+      el.addEventListener('click', () => {
+        customAdvanceItems.splice(+el.dataset.i, 1);
+        renderCustomItemsSection(backdrop);
+        updateCurrentOrderDisplay(backdrop);
+      });
     });
+
     wrap.querySelector('#addCustomRowBtn').addEventListener('click', () => {
+      syncAndRefresh();
       customAdvanceItems.push({ name: '', qty: 1, price: 0 });
       renderCustomItemsSection(backdrop);
+      updateCurrentOrderDisplay(backdrop);
+      const allNames = wrap.querySelectorAll('.ci-name');
+      if (allNames.length > 0) allNames[allNames.length - 1].focus();
     });
   }
 
@@ -1418,8 +1563,21 @@
         });
       });
     }
-    // Restore existing custom advance items from order notes
-    customAdvanceItems = parseCustomItemsFromNotes(existingOrder?.notes || '');
+
+    // Extract base notes (without custom items json)
+    const rawNotes = existingOrder?.notes || reservation?.notes || '';
+    currentOrderBaseNotes = rawNotes.split('---CUSTOM_ITEMS_JSON---')[0].trim();
+
+    // Restore existing custom advance items from custom_items or notes
+    if (existingOrder?.custom_items && existingOrder.custom_items.length) {
+      customAdvanceItems = existingOrder.custom_items.map(ci => ({
+        name: ci.name || '',
+        qty: parseFloat(ci.qty) || 1,
+        price: parseFloat(ci.price) || 0
+      }));
+    } else {
+      customAdvanceItems = parseCustomItemsFromNotes(rawNotes);
+    }
 
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop active';
@@ -1658,6 +1816,7 @@
     const errEl = backdrop.querySelector('#orderEditorError');
     const saveBtn = backdrop.querySelector('#orderEditorSaveBtn');
 
+    syncCustomItemsFromDOM(backdrop);
     const validCustom = customAdvanceItems.filter(i => i.name && i.name.trim() && (i.qty || 0) > 0);
 
     if (orderEditorState.selectedItems.size === 0 && validCustom.length === 0) {
@@ -1676,8 +1835,8 @@
       }))
     }));
 
-    // Encode custom items into notes
-    const notesWithCustom = buildNotesWithCustomItems('', validCustom);
+    // Encode custom items into notes while preserving base notes
+    const notesWithCustom = buildNotesWithCustomItems(currentOrderBaseNotes, validCustom);
 
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving…';
@@ -1697,6 +1856,7 @@
       if (!res.ok) throw new Error(data.error || 'Could not save order.');
 
       toast('Order saved successfully.', 'success');
+      await load();
       closeModals();
       openManageModal(reservationId);
     } catch (err) {
@@ -1735,7 +1895,9 @@
   // ---- Print Reservation Receipt ----
   function printReservationReceipt(reservation, order) {
     if (!order) return;
-    const customItems = parseCustomItemsFromNotes(order.notes || '');
+    const customItems = (order.custom_items && order.custom_items.length)
+      ? order.custom_items
+      : (parseCustomItemsFromNotes(order.notes || '') || parseCustomItemsFromNotes(reservation.notes || ''));
     const menuItems = order.items || [];
 
     let menuTotal = 0;
@@ -1843,7 +2005,7 @@
           <dt>Table</dt><dd>${r.table_no ? `<span class="table-badge">${escapeHtml(r.table_no)}</span>` : '<span class="table-badge-empty">Not yet assigned</span>'}</dd>
           <dt>Status</dt><dd><span class="res-status-pill ${STATUS_PILL[resStatusLabel] || 'res-status-pending'}">${escapeHtml(resStatusLabel.replace(/_/g, ' '))}</span></dd>
           <dt>Requested</dt><dd style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.74rem;">${formatDate(r.datetime_reserved)}</dd>
-          <dt>Notes</dt><dd style="white-space:pre-wrap; font-size:0.82rem;">${r.notes ? escapeHtml(r.notes) : '—'}</dd>
+          <dt>Notes</dt><dd style="white-space:pre-wrap; font-size:0.82rem;">${r.notes ? escapeHtml(formatNotesForDisplay(r.notes)) : '—'}</dd>
         </div>
         <div class="modal-close-row"><button class="btn" id="detailsClose">Close</button></div>
       </div>

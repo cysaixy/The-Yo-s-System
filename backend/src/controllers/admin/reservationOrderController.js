@@ -52,6 +52,20 @@ export async function getReservationOrder(req, res, next) {
       }
     }
 
+    // Parse custom advance items from notes if present
+    let customItems = [];
+    const notesToParse = order?.notes || reservation.notes || '';
+    if (notesToParse.includes('---CUSTOM_ITEMS_JSON---')) {
+      try {
+        const marker = '---CUSTOM_ITEMS_JSON---';
+        const raw = notesToParse.slice(notesToParse.indexOf(marker) + marker.length).trim();
+        customItems = JSON.parse(raw);
+        if (!Array.isArray(customItems)) customItems = [];
+      } catch (e) {
+        customItems = [];
+      }
+    }
+
     // Calculate order editing deadline status
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -84,7 +98,16 @@ export async function getReservationOrder(req, res, next) {
         notes: order.notes,
         datetime_ordered: order.datetime_ordered,
         items: orderItems,
-      } : null,
+        custom_items: customItems,
+      } : (customItems.length > 0 ? {
+        id: null,
+        status: 'pending',
+        total_amount: customItems.reduce((acc, ci) => acc + (parseFloat(ci.qty) || 1) * (parseFloat(ci.price) || 0), 0),
+        notes: reservation.notes,
+        datetime_ordered: null,
+        items: [],
+        custom_items: customItems,
+      } : null),
       menu_items: await getAvailableMenuItems(),
     });
   } catch (err) {
@@ -352,6 +375,28 @@ export async function upsertReservationOrder(req, res, next) {
         }
       }
 
+      // Parse custom advance items from notes to include in order total
+      let customItemsTotal = 0;
+      let parsedCustomItems = [];
+      if (combinedNotes && combinedNotes.includes('---CUSTOM_ITEMS_JSON---')) {
+        try {
+          const marker = '---CUSTOM_ITEMS_JSON---';
+          const raw = combinedNotes.slice(combinedNotes.indexOf(marker) + marker.length).trim();
+          parsedCustomItems = JSON.parse(raw);
+          if (Array.isArray(parsedCustomItems)) {
+            for (const ci of parsedCustomItems) {
+              const q = parseFloat(ci.qty) || 0;
+              const p = parseFloat(ci.price) || 0;
+              customItemsTotal += (q * p);
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to parse custom items JSON in upsert:', e);
+        }
+      }
+
+      totalAmount += customItemsTotal;
+
       // Update order total
       await client.query(
         'UPDATE orders SET total_amount = $1 WHERE id = $2',
@@ -361,7 +406,7 @@ export async function upsertReservationOrder(req, res, next) {
 
       // Update reservation order_status and reservation_status
       let newReservationStatus = reservation.reservation_status;
-      if (newOrderStatus === 'editable' && newReservationStatus === 'pending') {
+      if (newOrderStatus === 'editable' && (newReservationStatus === 'pending' || newReservationStatus === 'contact_customer')) {
         newReservationStatus = 'order_preparing';
       } else if (newOrderStatus === 'finalized' && newReservationStatus === 'order_preparing') {
         newReservationStatus = 'order_finalized';
@@ -405,6 +450,7 @@ export async function upsertReservationOrder(req, res, next) {
           notes: updatedOrderRes.rows[0].notes,
           datetime_ordered: updatedOrderRes.rows[0].datetime_ordered,
           items: orderItems,
+          custom_items: parsedCustomItems,
         },
         reservation: {
           order_status: newOrderStatus,
