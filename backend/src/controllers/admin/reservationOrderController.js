@@ -500,9 +500,15 @@ export async function updateReservationStatus(req, res, next) {
     }
 
     // Track order finalization
-    if (reservation_status === 'order_finalized' && !reservation.order_finalized_at) {
-      setClauses.push(`order_finalized_at = $${paramIndex}`);
-      params.push(new Date());
+    if (reservation_status === 'order_finalized') {
+      if (!reservation.order_finalized_at) {
+        setClauses.push(`order_finalized_at = $${paramIndex}`);
+        params.push(new Date());
+        paramIndex++;
+      }
+      // Also mark order_status as finalized so adminConfirmReservation check passes
+      setClauses.push(`order_status = $${paramIndex}`);
+      params.push('finalized');
       paramIndex++;
     }
 
