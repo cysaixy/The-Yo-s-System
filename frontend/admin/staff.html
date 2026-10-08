@@ -45,6 +45,7 @@
   const session = renderAdminShell({ active: 'staff', title: 'Staff' });
   if (session) init();
 
+  const SUPERADMIN_EMAIL = 'admin@theyos.com';
   let staffList = [];
 
   function init() {
@@ -143,19 +144,32 @@
       <table class="admin-table">
         <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
         <tbody>
-          ${staffList.map(s => `
+          ${staffList.map(s => {
+            const isProtected = s.email.toLowerCase() === SUPERADMIN_EMAIL;
+            return `
             <tr>
               <td>${escapeHtml(s.name)}</td>
               <td>${escapeHtml(s.email)}</td>
-              <td><span class="pill pill-brass">${s.role}</span></td>
-              <td><span class="pill ${s.status === 'active' ? 'pill-success' : 'pill-neutral'}">${s.status}</span></td>
+              <td>
+                <span class="pill pill-brass">${escapeHtml(s.role)}</span>
+                ${isProtected ? `<span class="pill" style="margin-left:4px; background:rgba(163,132,74,0.12); color:var(--brass); border:1px solid rgba(163,132,74,0.35); font-size:0.65rem; letter-spacing:0.06em;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:-1px; margin-right:3px;"><rect x="5" y="10" width="14" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Protected
+                </span>` : ''}
+              </td>
+              <td><span class="pill ${s.status === 'active' ? 'pill-success' : 'pill-neutral'}">${escapeHtml(s.status)}</span></td>
               <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(s.created_at, { dateStyle: 'medium' })}</td>
-              <td><div class="row-actions">
-                <button class="edit-staff-btn" data-id="${s.id}">Edit</button>
-                <button class="perm-btn" data-id="${s.id}"
-                        data-inv="${s.can_access_inventory}" data-stock="${s.can_access_stock_in}" data-rep="${s.can_access_reports}">Permissions</button>
-              </div></td>
-            </tr>`).join('')}
+              <td>
+                ${isProtected
+                  ? `<span style="font-size:0.75rem; color:var(--ink-muted); font-style:italic;">Owner account — locked</span>`
+                  : `<div class="row-actions">
+                      <button class="edit-staff-btn" data-id="${s.id}">Edit</button>
+                      <button class="perm-btn" data-id="${s.id}"
+                              data-inv="${s.can_access_inventory}" data-stock="${s.can_access_stock_in}" data-rep="${s.can_access_reports}">Permissions</button>
+                    </div>`
+                }
+              </td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>
     `;
@@ -165,6 +179,11 @@
 
   function openStaffModal(id) {
     const staff = id ? staffList.find(s => s.id == id) : null;
+
+    // Safety net — the Edit button is already hidden in render(), but block
+    // programmatic calls too so the modal never opens for the owner account.
+    if (staff && staff.email.toLowerCase() === SUPERADMIN_EMAIL) return;
+
     document.getElementById('staffModalTitle').textContent = staff ? `Edit — ${staff.name}` : 'New Staff';
     document.getElementById('staffId').value = id || '';
     document.getElementById('staffName').value = staff?.name || '';

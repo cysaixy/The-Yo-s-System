@@ -6,6 +6,12 @@ import { generateStaffToken } from '../../utils/generateToken.js';
 
 const COOKIE_NAME = 'staff_token';
 
+// This account is the permanent owner-level admin.
+// Its role, status, and permissions can never be changed by anyone — not
+// even by another Admin — through the API. Password changes are still
+// allowed (only by the account itself, verified via current password).
+const SUPERADMIN_EMAIL = 'admin@theyos.com';
+
 /**
  * Shared password strength validator.
  * Returns an error string if invalid, or null if the password is acceptable.
@@ -210,6 +216,20 @@ export async function createStaff(req, res, next) {
 export async function updateStaff(req, res, next) {
   try {
     const { name, role, status } = req.body;
+
+    // Fetch the target account's email first so we can apply the superadmin guard.
+    const { rows: target } = await pool.query(
+      'SELECT email FROM staff WHERE id = $1',
+      [req.params.id]
+    );
+    if (!target[0]) return res.status(404).json({ error: 'Staff member not found.' });
+
+    if (target[0].email.toLowerCase() === SUPERADMIN_EMAIL) {
+      return res.status(403).json({
+        error: 'This account is protected and cannot be modified.',
+      });
+    }
+
     const { rows } = await pool.query(
       `UPDATE staff SET
          name = COALESCE($1, name),
@@ -291,6 +311,20 @@ export async function updateProfile(req, res, next) {
 export async function updatePermissions(req, res, next) {
   try {
     const { can_access_inventory, can_access_stock_in, can_access_reports } = req.body;
+
+    // Superadmin permissions are fixed — no changes allowed.
+    const { rows: target } = await pool.query(
+      'SELECT email FROM staff WHERE id = $1',
+      [req.params.id]
+    );
+    if (!target[0]) return res.status(404).json({ error: 'Staff member not found.' });
+
+    if (target[0].email.toLowerCase() === SUPERADMIN_EMAIL) {
+      return res.status(403).json({
+        error: 'This account is protected and cannot be modified.',
+      });
+    }
+
     const { rows } = await pool.query(
       `UPDATE staff_permissions
        SET can_access_inventory = $2, can_access_stock_in = $3, can_access_reports = $4, updated_at = NOW()
