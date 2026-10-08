@@ -7,18 +7,121 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
+  /* ── Password show/hide toggle ───────────────────────────── */
   .password-wrap { position: relative; }
   .password-wrap input { padding-right: 44px; }
   .password-toggle {
     position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
     background: none; border: none; padding: 6px; cursor: pointer;
-    color: var(--ink); opacity: 0.5; display: flex; align-items: center; justify-content: center;
+    color: var(--ink); opacity: 0.5;
+    display: flex; align-items: center; justify-content: center;
     transition: opacity .2s ease;
   }
   .password-toggle:hover { opacity: 1; }
   .password-toggle .eye-closed { display: none; }
-  .password-toggle.shown .eye-open { display: none; }
+  .password-toggle.shown .eye-open  { display: none; }
   .password-toggle.shown .eye-closed { display: block; }
+
+  /* ── Settings layout ─────────────────────────────────────── */
+  .settings-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 560px;
+  }
+
+  /* ── Admin-only badge on the email field label ───────────── */
+  .admin-only-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--brass);
+    background: rgba(163,132,74,0.1);
+    border: 1px solid rgba(163,132,74,0.3);
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  /* ── Account info card (admin-only) ─────────────────────── */
+  .account-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+  }
+  .account-info-item label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin-bottom: 3px;
+  }
+  .account-info-item span {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  /* ── Status message (success / error) ───────────────────── */
+  .settings-status {
+    display: none;
+    margin-top: 10px;
+    padding: 9px 13px;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .settings-status.ok {
+    background: rgba(46,125,79,0.1);
+    border: 1px solid rgba(46,125,79,0.3);
+    color: var(--success);
+  }
+  .settings-status.err {
+    background: rgba(192,57,43,0.1);
+    border: 1px solid rgba(192,57,43,0.3);
+    color: var(--danger);
+  }
+
+  /* ── Divider between sections ────────────────────────────── */
+  .settings-divider {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 4px 0;
+  }
+
+  /* ── Password strength meter ─────────────────────────────── */
+  .pw-strength-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .pw-strength-bar {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--line);
+    transition: background 0.25s ease;
+  }
+  .pw-strength-bar.weak   { background: var(--danger); }
+  .pw-strength-bar.medium { background: var(--warning); }
+  .pw-strength-bar.strong { background: var(--success); }
+  .pw-strength-label {
+    font-size: 0.72rem;
+    color: var(--ink-muted);
+    margin-top: 4px;
+    min-height: 1em;
+  }
+
+  @media (max-width: 560px) {
+    .account-info-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -26,9 +129,10 @@
 <div id="adminShell"></div>
 
 <script type="module">
-  import { renderAdminShell } from "./admin-shell.js";
-  import { adminFetch } from "./admin-api.js";
+  import { renderAdminShell } from './admin-shell.js';
+  import { adminFetch, escapeHtml } from './admin-api.js';
 
+  /* ─── Password show/hide toggle (delegated) ──────────────── */
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-toggle-pw]');
     if (!btn) return;
@@ -40,159 +144,310 @@
     btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
   });
 
+  /* ─── Password strength scorer ──────────────────────────── */
+  function passwordStrength(pw) {
+    if (!pw) return 0;
+    let score = 0;
+    if (pw.length >= 10) score++;
+    if (pw.length >= 14) score++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+    if (/\d/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    return Math.min(score, 3); // 1 = weak, 2 = medium, 3 = strong
+  }
+
+  function updateStrengthMeter(value) {
+    const bars  = document.querySelectorAll('.pw-strength-bar');
+    const label = document.getElementById('pwStrengthLabel');
+    if (!bars.length || !label) return;
+
+    const s = passwordStrength(value);
+    const levels = ['', 'weak', 'medium', 'strong'];
+    const names  = ['', 'Too weak', 'Getting there', 'Strong'];
+
+    bars.forEach((bar, i) => {
+      bar.className = 'pw-strength-bar';
+      if (i < s) bar.classList.add(levels[s]);
+    });
+    label.textContent = value ? names[s] : '';
+  }
+
+  /* ─── Eye icon SVG helper ────────────────────────────────── */
+  const EYE_OPEN   = `<svg class="eye-open"   width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  const EYE_CLOSED = `<svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+  function pwToggleBtn(id) {
+    return `<button type="button" class="password-toggle" data-toggle-pw="${id}" aria-label="Show password">${EYE_OPEN}${EYE_CLOSED}</button>`;
+  }
+
+  function pwField(id, label, autocomplete, extra = '') {
+    return `
+      <div class="form-field" style="grid-column:1/-1;">
+        <label for="${id}">${label}</label>
+        <div class="password-wrap">
+          <input type="password" id="${id}" autocomplete="${autocomplete}" ${extra}>
+          ${pwToggleBtn(id)}
+        </div>
+      </div>`;
+  }
+
+  /* ─── Status helper ─────────────────────────────────────── */
+  function setStatus(elId, type, msg) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.className = `settings-status ${type}`;
+    el.textContent = msg;
+    el.style.display = 'block';
+    if (type === 'ok') window.setTimeout(() => { el.style.display = 'none'; }, 4000);
+  }
+
+  function clearStatus(elId) {
+    const el = document.getElementById(elId);
+    if (el) el.style.display = 'none';
+  }
+
+  /* ─── Boot ───────────────────────────────────────────────── */
   const session = renderAdminShell({ active: 'settings', title: 'Settings' });
   if (session) init(session);
 
-  function init(session) {
+  function init({ staff }) {
+    const isAdmin = staff.role === 'Admin';
     const content = document.getElementById('adminContent');
+
+    // Format the joined date nicely
+    const joined = staff.created_at
+      ? new Date(staff.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })
+      : '—';
+
     content.innerHTML = `
-      <div class="admin-panel" style="max-width:520px;">
-        <div class="admin-panel-head"><h3>My Profile</h3></div>
-        <div class="admin-panel-body">
-          <div class="form-grid">
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Name</label>
-              <input type="text" id="profName" value="${session.staff.name || ''}">
-            </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Email</label>
-              <input type="email" value="${session.staff.email || ''}" disabled>
-            </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Role</label>
-              <input type="text" value="${session.staff.role || ''}" disabled>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn" id="saveProfileBtn">Save Changes</button>
-          </div>
-          <div class="admin-error" id="profileStatus" style="display:none; margin-top:10px;"></div>
-        </div>
-      </div>
+      <div class="settings-wrap">
 
-      <div class="admin-panel" style="max-width:520px;">
-        <div class="admin-panel-head"><h3>Change Password</h3></div>
-        <div class="admin-panel-body">
-          <div class="form-grid">
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Current Password</label>
-              <div class="password-wrap"><input type="password" id="pwCurrent" autocomplete="current-password"><button type="button" class="password-toggle" data-toggle-pw="pwCurrent" aria-label="Show password">
-                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              </button></div>
-            </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>New Password</label>
-              <div class="password-wrap"><input type="password" id="pwNew" autocomplete="new-password"><button type="button" class="password-toggle" data-toggle-pw="pwNew" aria-label="Show password">
-                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              </button></div>
-            </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Confirm New Password</label>
-              <div class="password-wrap"><input type="password" id="pwConfirm" autocomplete="new-password"><button type="button" class="password-toggle" data-toggle-pw="pwConfirm" aria-label="Show password">
-                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              </button></div>
-            </div>
+        <!-- ══ 1. MY PROFILE ══════════════════════════════════ -->
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <h3>My Profile</h3>
           </div>
-          <div class="form-actions">
-            <button class="btn" id="changePwBtn">Update Password</button>
-          </div>
-          <div class="admin-error" id="pwStatus" style="display:none; margin-top:10px;"></div>
-        </div>
-      </div>
+          <div class="admin-panel-body">
+            <div class="form-grid">
 
-      <p style="color:var(--ink-muted); font-size:0.8rem; max-width:520px; margin-top:16px;">
-        Note: this only updates your display name. Staff permissions and
-        roles live under
-        <a href="staff.html" style="color:var(--brass);">Staff</a> — only
-        Admin-role accounts can manage other staff there.
-      </p>
+              <div class="form-field" style="grid-column:1/-1;">
+                <label for="profName">Display Name</label>
+                <input type="text" id="profName" value="${escapeHtml(staff.name || '')}" autocomplete="name" placeholder="Your full name">
+              </div>
+
+              ${isAdmin ? `
+              <div class="form-field" style="grid-column:1/-1;">
+                <label for="profEmail">
+                  Email Address
+                  <span class="admin-only-badge">Admin only</span>
+                </label>
+                <input type="email" id="profEmail" value="${escapeHtml(staff.email || '')}" autocomplete="email" placeholder="admin@example.com">
+                <span class="form-hint">This is your login email. Changing it takes effect on your next login.</span>
+              </div>
+              ` : `
+              <div class="form-field" style="grid-column:1/-1;">
+                <label>Email Address</label>
+                <input type="email" value="${escapeHtml(staff.email || '')}" disabled>
+                <span class="form-hint">Email changes are restricted to Admin accounts.</span>
+              </div>
+              `}
+
+              <div class="form-field" style="grid-column:1/-1;">
+                <label>Role</label>
+                <input type="text" value="${escapeHtml(staff.role || '')}" disabled>
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+              <button class="btn" id="saveProfileBtn">Save Profile</button>
+            </div>
+            <div class="settings-status" id="profileStatus"></div>
+          </div>
+        </div>
+
+        <!-- ══ 2. CHANGE PASSWORD ═════════════════════════════ -->
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <h3>Change Password</h3>
+          </div>
+          <div class="admin-panel-body">
+            <div class="form-grid">
+              ${pwField('pwCurrent', 'Current Password', 'current-password')}
+              ${pwField('pwNew',     'New Password',     'new-password')}
+              <div class="form-field" style="grid-column:1/-1; margin-top:-10px;">
+                <div class="pw-strength-row">
+                  <div class="pw-strength-bar" aria-hidden="true"></div>
+                  <div class="pw-strength-bar" aria-hidden="true"></div>
+                  <div class="pw-strength-bar" aria-hidden="true"></div>
+                </div>
+                <div class="pw-strength-label" id="pwStrengthLabel"></div>
+              </div>
+              ${pwField('pwConfirm', 'Confirm New Password', 'new-password')}
+            </div>
+            <div class="form-hint" style="margin-bottom:14px;">Minimum 10 characters.</div>
+            <div class="form-actions">
+              <button class="btn" id="changePwBtn">Update Password</button>
+            </div>
+            <div class="settings-status" id="pwStatus"></div>
+          </div>
+        </div>
+
+        <!-- ══ 3. ACCOUNT INFO (Admin only) ══════════════════ -->
+        ${isAdmin ? `
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <h3>Account Info <span class="admin-only-badge">Admin only</span></h3>
+          </div>
+          <div class="admin-panel-body">
+            <div class="account-info-grid">
+              <div class="account-info-item">
+                <label>Account ID</label>
+                <span>#${escapeHtml(String(staff.id))}</span>
+              </div>
+              <div class="account-info-item">
+                <label>Role</label>
+                <span>${escapeHtml(staff.role || '—')}</span>
+              </div>
+              <div class="account-info-item">
+                <label>Status</label>
+                <span>${escapeHtml(staff.status || '—')}</span>
+              </div>
+              <div class="account-info-item">
+                <label>Member Since</label>
+                <span>${escapeHtml(joined)}</span>
+              </div>
+            </div>
+            <hr class="settings-divider" style="margin-top:18px;">
+            <p style="font-size:0.8rem; color:var(--ink-muted); margin:14px 0 0; line-height:1.55;">
+              To manage other staff accounts, roles, and permissions, go to
+              <a href="staff.html" style="color:var(--brass); font-weight:600;">Staff Management →</a>
+            </p>
+          </div>
+        </div>
+        ` : `
+        <p style="color:var(--ink-muted); font-size:0.8rem; max-width:520px; margin:0;">
+          To request a role or permission change, ask your Admin to update it in
+          <a href="staff.html" style="color:var(--brass);">Staff Management</a>.
+        </p>
+        `}
+
+      </div>
     `;
 
-    document.getElementById('saveProfileBtn').addEventListener('click', () => saveProfile(session));
-    document.getElementById('changePwBtn').addEventListener('click', () => changePassword(session));
+    /* ── Wire up strength meter ─────────────────────────── */
+    document.getElementById('pwNew')?.addEventListener('input', (e) => {
+      updateStrengthMeter(e.target.value);
+    });
+
+    /* ── Wire up buttons ────────────────────────────────── */
+    document.getElementById('saveProfileBtn').addEventListener('click', () => saveProfile(staff));
+    document.getElementById('changePwBtn').addEventListener('click', () => changePassword(staff));
   }
 
-  async function saveProfile(session) {
-    const statusEl = document.getElementById('profileStatus');
-    const name = document.getElementById('profName').value.trim();
+  /* ─── Save Profile ──────────────────────────────────────── */
+  async function saveProfile(staff) {
+    clearStatus('profileStatus');
+    const isAdmin = staff.role === 'Admin';
+
+    const name  = document.getElementById('profName')?.value.trim();
+    const email = isAdmin ? document.getElementById('profEmail')?.value.trim() : null;
+
     if (!name) {
-      statusEl.className = 'admin-error';
-      statusEl.textContent = 'Name cannot be empty.';
-      statusEl.style.display = 'block';
+      setStatus('profileStatus', 'err', 'Display name cannot be empty.');
+      return;
+    }
+    if (isAdmin && email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setStatus('profileStatus', 'err', 'Please enter a valid email address.');
       return;
     }
 
+    const body = { name };
+    if (isAdmin && email && email !== staff.email) body.email = email;
+
     try {
-      const res = await adminFetch(`/api/admin/staff/${session.staff.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ name }),
+      const btn = document.getElementById('saveProfileBtn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      const res  = await adminFetch(`/api/admin/staff/${staff.id}/profile`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not update profile.');
 
-      // Keep the cached session in sync so the header updates immediately.
-      const updated = { ...session.staff, name: data.staff.name };
+      // Sync cached session so the sidebar header refreshes immediately.
+      const updated = { ...staff, name: data.staff.name, email: data.staff.email };
       localStorage.setItem('staffInfo', JSON.stringify(updated));
 
-      statusEl.className = 'admin-success';
-      statusEl.textContent = 'Saved.';
-      statusEl.style.display = 'block';
+      // Reflect the saved values back into the inputs.
+      const nameInput  = document.getElementById('profName');
+      const emailInput = document.getElementById('profEmail');
+      if (nameInput)  nameInput.value  = data.staff.name  || '';
+      if (emailInput) emailInput.value = data.staff.email || '';
+
+      setStatus('profileStatus', 'ok', 'Profile saved.');
+
+      // Refresh the sidebar avatar/name without a full page reload.
+      const avatarEls = document.querySelectorAll('.sidebar-user-avatar, .avatar');
+      const nameEls   = document.querySelectorAll('.sidebar-user-info strong, .who strong');
+      const initial   = (data.staff.name || data.staff.email || '?').charAt(0).toUpperCase();
+      avatarEls.forEach(el => { el.textContent = initial; });
+      nameEls.forEach(el   => { el.textContent = data.staff.name || data.staff.email; });
+
     } catch (err) {
-      statusEl.className = 'admin-error';
-      statusEl.textContent = err.message;
-      statusEl.style.display = 'block';
+      setStatus('profileStatus', 'err', err.message);
+    } finally {
+      const btn = document.getElementById('saveProfileBtn');
+      if (btn) { btn.disabled = false; btn.textContent = 'Save Profile'; }
     }
   }
 
-  async function changePassword(session) {
-    const statusEl = document.getElementById('pwStatus');
-    const currentPassword = document.getElementById('pwCurrent').value;
-    const newPassword = document.getElementById('pwNew').value;
-    const confirmPassword = document.getElementById('pwConfirm').value;
+  /* ─── Change Password ───────────────────────────────────── */
+  async function changePassword(staff) {
+    clearStatus('pwStatus');
 
-    if (!currentPassword) {
-      statusEl.className = 'admin-error';
-      statusEl.textContent = 'Enter your current password.';
-      statusEl.style.display = 'block';
-      return;
-    }
-    if (newPassword.length < 6) {
-      statusEl.className = 'admin-error';
-      statusEl.textContent = 'New password must be at least 6 characters.';
-      statusEl.style.display = 'block';
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      statusEl.className = 'admin-error';
-      statusEl.textContent = 'New passwords do not match.';
-      statusEl.style.display = 'block';
-      return;
-    }
+    const current  = document.getElementById('pwCurrent').value;
+    const next     = document.getElementById('pwNew').value;
+    const confirm  = document.getElementById('pwConfirm').value;
 
-    statusEl.className = 'admin-error';
-    statusEl.style.display = 'none';
+    if (!current) {
+      setStatus('pwStatus', 'err', 'Enter your current password.');
+      return;
+    }
+    if (next.length < 10) {
+      setStatus('pwStatus', 'err', 'New password must be at least 10 characters.');
+      return;
+    }
+    if (next !== confirm) {
+      setStatus('pwStatus', 'err', 'New passwords do not match.');
+      return;
+    }
 
     try {
-      const res = await adminFetch(`/api/admin/staff/${session.staff.id}/password`, {
+      const btn = document.getElementById('changePwBtn');
+      btn.disabled = true;
+      btn.textContent = 'Updating…';
+
+      const res  = await adminFetch(`/api/admin/staff/${staff.id}/password`, {
         method: 'PUT',
-        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+        body: JSON.stringify({ current_password: current, new_password: next }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not change password.');
 
       document.getElementById('pwCurrent').value = '';
-      document.getElementById('pwNew').value = '';
+      document.getElementById('pwNew').value     = '';
       document.getElementById('pwConfirm').value = '';
-      statusEl.className = 'admin-success';
-      statusEl.textContent = 'Password updated.';
-      statusEl.style.display = 'block';
+      updateStrengthMeter('');
+      setStatus('pwStatus', 'ok', 'Password updated successfully.');
+
     } catch (err) {
-      statusEl.className = 'admin-error';
-      statusEl.textContent = err.message;
-      statusEl.style.display = 'block';
+      setStatus('pwStatus', 'err', err.message);
+    } finally {
+      const btn = document.getElementById('changePwBtn');
+      if (btn) { btn.disabled = false; btn.textContent = 'Update Password'; }
     }
   }
 </script>

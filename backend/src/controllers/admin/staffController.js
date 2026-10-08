@@ -226,6 +226,68 @@ export async function updateStaff(req, res, next) {
   }
 }
 
+// PUT/PATCH /api/admin/staff/:id/profile
+// Any logged-in staff can update their own name.
+// Admin can also update their own email (email is unique — checked here).
+// No other role or status changes — use updateStaff for those.
+export async function updateProfile(req, res, next) {
+  try {
+    const targetId = Number(req.params.id);
+    const requesterId = Number(req.staff.id);
+
+    // Staff can only edit their own profile. Admins can edit any profile,
+    // but in practice settings.html only ever calls this for self.
+    if (requesterId !== targetId && req.staff.role !== 'Admin') {
+      return res.status(403).json({ error: 'You can only update your own profile.' });
+    }
+
+    const { name, email } = req.body;
+
+    if (name !== undefined && (typeof name !== 'string' || !name.trim())) {
+      return res.status(400).json({ error: 'Name cannot be empty.' });
+    }
+
+    // Email changes are Admin-only — prevents privilege abuse through email swap.
+    if (email !== undefined && req.staff.role !== 'Admin') {
+      return res.status(403).json({ error: 'Only an Admin can change their email address.' });
+    }
+
+    if (email !== undefined) {
+      const cleanEmail = email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        return res.status(400).json({ error: 'Please enter a valid email address.' });
+      }
+      // Check uniqueness — exclude the current staff member's own row.
+      const { rows: existing } = await pool.query(
+        'SELECT id FROM staff WHERE LOWER(email) = $1 AND id != $2',
+        [cleanEmail, targetId]
+      );
+      if (existing.length > 0) {
+        return res.status(409).json({ error: 'That email address is already in use.' });
+      }
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE staff SET
+         name  = COALESCE($1, name),
+         email = COALESCE($2, email)
+       WHERE id = $3
+       RETURNING id, name, email, role, status`,
+      [
+        name ? name.trim() : null,
+        email ? email.trim().toLowerCase() : null,
+        targetId,
+      ]
+    );
+
+    if (!rows[0]) return res.status(404).json({ error: 'Staff member not found.' });
+
+    res.json({ staff: rows[0] });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function updatePermissions(req, res, next) {
   try {
     const { can_access_inventory, can_access_stock_in, can_access_reports } = req.body;

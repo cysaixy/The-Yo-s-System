@@ -1,6 +1,6 @@
 import express from 'express';
 const staffRouter = express.Router();
-import {issueCSRFToken, login, logout, me, listStaff, getStaffById, createStaff, updateStaff, updatePermissions, changePassword}from '../../controllers/admin/staffController.js';
+import {issueCSRFToken, login, logout, me, listStaff, getStaffById, createStaff, updateStaff, updateProfile, updatePermissions, changePassword}from '../../controllers/admin/staffController.js';
 import { requireStaffAuth } from '../../middlewares/auth.middleware.js';
 import { csrfMiddleware } from '../../middlewares/csrf.middleware.js';
 import { requireAdmin } from '../../middlewares/role.middleware.js';
@@ -16,6 +16,10 @@ staffRouter.use(csrfMiddleware);
 
 // GET /api/admin/staff/me — any logged-in staff can see their own info
 staffRouter.get('/me', me);
+
+// PUT/PATCH /api/admin/staff/:id/profile — self-service profile update (name for all; email for Admin only)
+staffRouter.put('/:id/profile', updateProfile);
+staffRouter.patch('/:id/profile', updateProfile);
 
 // Everything below is Admin-only
 staffRouter.get('/', requireAdmin, listStaff);
