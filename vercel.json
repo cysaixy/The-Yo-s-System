@@ -1,14 +1,32 @@
 {
   "devCommand": "cd backend && npm run dev",
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "redirects": [
-    { "source": "/admin", "destination": "/admin/dashboard", "permanent": false }
-  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api" },
     { "source": "/pics&vids/:path*", "destination": "/frontend/pics&vids/:path*" },
+
+    { "source": "/admin", "destination": "/frontend/admin/home.html" },
+    { "source": "/admin/dashboard", "destination": "/frontend/admin/dashboard.html" },
+    { "source": "/admin/pos", "destination": "/frontend/admin/pos.html" },
+    { "source": "/admin/sales", "destination": "/frontend/admin/sales.html" },
+    { "source": "/admin/reservations", "destination": "/frontend/admin/reservations.html" },
+    { "source": "/admin/inventory", "destination": "/frontend/admin/inventory.html" },
+    { "source": "/admin/products", "destination": "/frontend/admin/products.html" },
+    { "source": "/admin/purchases", "destination": "/frontend/admin/purchases.html" },
+    { "source": "/admin/cash-transactions", "destination": "/frontend/admin/cash-transactions.html" },
+    { "source": "/admin/cash-accounts", "destination": "/frontend/admin/cash-accounts.html" },
+    { "source": "/admin/staff", "destination": "/frontend/admin/staff.html" },
+    { "source": "/admin/settings", "destination": "/frontend/admin/settings.html" },
+    { "source": "/admin/login", "destination": "/frontend/admin/login.html" },
     { "source": "/admin/:path*", "destination": "/frontend/admin/:path*" },
+
+    { "source": "/about", "destination": "/frontend/customer/about.html" },
+    { "source": "/menu", "destination": "/frontend/customer/menu.html" },
+    { "source": "/gallery", "destination": "/frontend/customer/gallery.html" },
+    { "source": "/order", "destination": "/frontend/customer/order.html" },
+    { "source": "/reservations", "destination": "/frontend/customer/reservations.html" },
+    { "source": "/my-orders", "destination": "/frontend/customer/my-orders.html" },
+    { "source": "/account", "destination": "/frontend/customer/account.html" },
+
     { "source": "/", "destination": "/frontend/customer/index.html" },
     { "source": "/:path*", "destination": "/frontend/customer/:path*" }
   ]
