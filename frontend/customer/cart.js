@@ -197,7 +197,7 @@
         <div id="quickCartLines" class="qc-lines"></div>
         <div class="qc-foot">
           <div class="qc-total-row"><span>Subtotal</span><strong id="quickCartTotal">₱0</strong></div>
-          <a href="order.html" class="btn qc-checkout" id="quickCartCheckout" style="width:100%; justify-content:center;">Checkout on Order Page</a>
+          <a href="order" class="btn qc-checkout" id="quickCartCheckout" style="width:100%; justify-content:center;">Checkout on Order Page</a>
           <p class="qc-hint">Your picks carry over automatically — just confirm them in the tray.</p>
         </div>
       </aside>

@@ -67,7 +67,7 @@ export async function adminFetch(path, options = {}) {
   if (res.status === 401) {
     // Session expired / not logged in - bounce back to login.
     clearStaffSession();
-    window.location.href = 'login.html';
+    window.location.href = 'login';
     throw new Error('Session expired. Redirecting to login…');
   }
 

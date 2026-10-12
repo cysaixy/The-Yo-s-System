@@ -21,12 +21,12 @@ onAuthStateChanged(auth, (user) => {
     const label = user.displayName || user.email || "My Account";
     const shortName = label.split(" ")[0].split("@")[0];
     link.title = `My Account (${shortName})`;
-    link.href = "account.html";
+    link.href = "account";
     link.classList.add("is-logged-in");
     if (signOutItem) signOutItem.style.display = "";
   } else {
     link.title = "Sign In / My Account";
-    link.href = "account.html";
+    link.href = "account";
     link.classList.remove("is-logged-in");
     if (signOutItem) signOutItem.style.display = "none";
   }

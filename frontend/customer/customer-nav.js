@@ -6,12 +6,12 @@
 import { auth, onAuthStateChanged, signOut } from "./firebase-init.js";
 
 const NAV_LINKS = [
-  { key: 'about', label: 'About', href: 'about.html' },
-  { key: 'menu', label: 'Menu', href: 'menu.html' },
-  { key: 'gallery', label: 'Gallery', href: 'gallery.html' },
-  { key: 'reviews', label: 'Reviews', href: 'order.html#feedback' },
-  { key: 'reservations', label: 'Reserve', href: 'reservations.html' },
-  { key: 'my-orders', label: 'My Orders', href: 'my-orders.html' },
+  { key: 'about', label: 'About', href: 'about' },
+  { key: 'menu', label: 'Menu', href: 'menu' },
+  { key: 'gallery', label: 'Gallery', href: 'gallery' },
+  { key: 'reviews', label: 'Reviews', href: 'order#feedback' },
+  { key: 'reservations', label: 'Reserve', href: 'reservations' },
+  { key: 'my-orders', label: 'My Orders', href: 'my-orders' },
 ];
 
 const USER_ICON_SVG = `
@@ -30,7 +30,7 @@ const ACCOUNT_ICON_SVG = `
 
 function detectActiveKey() {
   const path = window.location.pathname.toLowerCase();
-  const file = path.split('/').pop() || 'index.html';
+  const file = path.split('/').pop() || 'index';
   if (file.includes('about')) return 'about';
   if (file.includes('menu')) return 'menu';
   if (file.includes('gallery')) return 'gallery';
@@ -55,7 +55,7 @@ export function renderCustomerNav({ active = '' } = {}) {
   header.id = 'siteHeader';
 
   header.innerHTML = `
-    <a href="index.html" class="logo-link">
+    <a href="index" class="logo-link">
       <img src="../pics&vids/the-yo's_logo.jpg" alt="The~Yo's Logo" class="logo-img">
       <span class="logo-text">The~Yo's</span>
     </a>
@@ -69,13 +69,13 @@ export function renderCustomerNav({ active = '' } = {}) {
           </li>
         `).join('')}
         <li>
-          <a href="account.html" class="nav-account-btn ${activeKey === 'account' ? 'active' : ''}" id="navAccountLink" title="My Account">
+          <a href="account" class="nav-account-btn ${activeKey === 'account' ? 'active' : ''}" id="navAccountLink" title="My Account">
             ${ACCOUNT_ICON_SVG}
             <span class="nav-account-label" id="navAccountLabel"></span>
           </a>
         </li>
         <li id="navSignOutItem" style="display:none;"><a href="#" id="navSignOutLink">Sign Out</a></li>
-        <li><a href="order.html" class="nav-btn ${activeKey === 'order' ? 'active' : ''}">Order Now</a></li>
+        <li><a href="order" class="nav-btn ${activeKey === 'order' ? 'active' : ''}">Order Now</a></li>
       </ul>
     </nav>
     <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
@@ -147,12 +147,12 @@ export function renderCustomerNav({ active = '' } = {}) {
       const shortName = label.split(" ")[0].split("@")[0];
       accountLink.title = `My Account (${shortName})`;
       accountLink.classList.add('is-logged-in');
-      accountLink.href = "account.html";
+      accountLink.href = "account";
       if (signOutItem) signOutItem.style.display = "";
     } else {
       accountLink.title = "Sign In / My Account";
       accountLink.classList.remove('is-logged-in');
-      accountLink.href = "account.html";
+      accountLink.href = "account";
       if (signOutItem) signOutItem.style.display = "none";
     }
   });

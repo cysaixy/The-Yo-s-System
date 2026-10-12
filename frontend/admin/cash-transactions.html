@@ -149,7 +149,12 @@
     if (!t.order_id) return '<span style="color:var(--ink-muted);font-size:0.75rem;">—</span>';
     const typeLabel = t.category === 'POS Sale' ? 'Sale' : (t.category === 'POS Refund' ? 'Refund' : 'Order');
     const typeClass = t.category === 'POS Sale' ? 'pill-success' : (t.category === 'POS Refund' ? 'pill-danger' : 'pill-neutral');
-    return `<a href="sales.html" class="pill ${typeClass}" style="text-decoration:none;font-size:0.7rem;padding:2px 8px;" data-order-id="${t.order_id}">#${t.order_id} ${typeLabel}</a>`;
+    return `<a 
+        $m = $args[0]
+        $base = $m.Groups[1].Value
+        $hash = $m.Groups[2].Value
+        "href=`"$base$hash`""
+     class="pill ${typeClass}" style="text-decoration:none;font-size:0.7rem;padding:2px 8px;" data-order-id="${t.order_id}">#${t.order_id} ${typeLabel}</a>`;
   }
 
   function renderSummary(rows) {
