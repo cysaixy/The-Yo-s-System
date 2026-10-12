@@ -681,12 +681,7 @@
         ? '—'
         : owner.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
       return `
-        <a class="order-ticket status-${escapeHtml(order.status)}${changed.has(String(order.id)) ? ' live-updated' : ''}" 
-        $m = $args[0]
-        $base = $m.Groups[1].Value
-        $hash = $m.Groups[2].Value
-        "href=`"$base$hash`""
-     aria-label="Open order ${escapeHtml(order.id)}">
+        <a class="order-ticket status-${escapeHtml(order.status)}${changed.has(String(order.id)) ? ' live-updated' : ''}"  href="aria-label="Open order ${escapeHtml(order.id)}">
           <div class="ticket-top">
             <span class="ticket-number">Order #${escapeHtml(order.id)}</span>
             <span class="ticket-status">${escapeHtml(liveStatusLabel(order.status))}</span>
@@ -970,12 +965,7 @@
           <div class="panel-empty">
             <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.4;"><path d="M21 12V7H5"/><path d="M3 5v14h18"/><path d="M18 12a2 2 0 0 0 0-4 2 2 0 0 0 0 4"/></svg>
             <p class="loe-title">No Default Drawer Configured</p>
-            <p class="loe-sub">Create a cash account and set it as the default drawer in <a 
-        $m = $args[0]
-        $base = $m.Groups[1].Value
-        $hash = $m.Groups[2].Value
-        "href=`"$base$hash`""
-     style="color:var(--brass);">Cash Accounts</a> to track daily cash.</p>
+            <p class="loe-sub">Create a cash account and set it as the default drawer in <a  href="style="color:var(--brass);">Cash Accounts</a> to track daily cash.</p>
           </div>`;
         return;
       }
