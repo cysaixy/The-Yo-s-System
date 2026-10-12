@@ -7,36 +7,173 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css?v=6">
 <style>
-  :root {
-    --login-card-w: 400px;
-  }
+  /* =====================================================================
+     ADMIN LOGIN — Redesigned split layout
+     Left: deep green branding panel  |  Right: white form card
+  ===================================================================== */
 
   body {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: 20px;
+    padding: 28px 20px;
   }
 
+  /* ---- Outer wrapper ---- */
   .login-wrap {
     width: 100%;
-    max-width: var(--login-card-w);
-    display: flex;
-    flex-direction: column;
-    gap: 0;
+    max-width: 860px;
   }
 
-  /* ---- Card ---- */
-  .login-card {
-    background: #fff;
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 38px 36px 32px;
+  /* ---- Split card ---- */
+  .login-split {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    border-radius: 20px;
+    overflow: hidden;
     box-shadow:
-      0 4px 24px rgba(47,37,20,0.08),
-      0 1px 4px rgba(47,37,20,0.04),
-      0 0 0 1px rgba(255,255,255,0.6) inset;
+      0 24px 60px rgba(0,0,0,0.18),
+      0 4px 16px rgba(0,0,0,0.08);
+  }
+  @media (max-width: 760px) {
+    .login-split { grid-template-columns: 1fr; }
+  }
+
+  /* ===== LEFT — dark brass branding panel ===== */
+  .login-art-col {
+    position: relative;
+    background: radial-gradient(130% 100% at 75% 0%, #c79a55 0%, #8a6d3a 45%, #241a10 100%);
+    color: #f4efe6;
+    padding: 52px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 32px;
+    overflow: hidden;
+    min-height: 480px;
+  }
+  .login-art-col::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 70% at 85% -10%, rgba(255,255,255,.18), transparent 60%);
+    pointer-events: none;
+  }
+  .login-art-col::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: -60px;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    pointer-events: none;
+  }
+  @media (max-width: 760px) {
+    .login-art-col { min-height: 240px; padding: 36px 28px; gap: 24px; }
+  }
+
+  .art-eyebrow {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.63rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    position: relative; z-index: 1;
+  }
+
+  .art-headline { position: relative; z-index: 1; }
+  .art-title {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    line-height: 1.08;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .art-sub {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    opacity: 0.72;
+    max-width: 260px;
+  }
+
+  .art-access-card {
+    position: relative; z-index: 1;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 14px;
+    padding: 18px 20px;
+    backdrop-filter: blur(4px);
+  }
+  .art-access-card h4 {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: rgba(255,255,255,0.88);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .art-access-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.81rem;
+    opacity: 0.78;
+    padding: 5px 0;
+  }
+  .art-access-item + .art-access-item { border-top: 1px solid rgba(255,255,255,0.07); }
+  .access-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.45);
+    flex-shrink: 0;
+  }
+
+  .art-footer {
+    position: relative; z-index: 1;
+    display: flex;
+    gap: 26px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255,255,255,0.10);
+  }
+  .art-footer div strong {
+    display: block;
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900;
+    font-size: 1.05rem;
+    color: #fff;
+  }
+  .art-footer div span {
+    display: block;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    opacity: 0.52;
+    margin-top: 3px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  /* ===== RIGHT — form panel ===== */
+  .login-card {
+    background: var(--bone);
+    padding: 52px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  @media (max-width: 760px) {
+    .login-card { padding: 40px 28px; }
+  }
+  @media (max-width: 480px) {
+    .login-card { padding: 32px 20px; }
   }
 
   /* ---- Brand ---- */
@@ -44,22 +181,22 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    margin-bottom: 30px;
+    margin-bottom: 28px;
   }
   .login-brand .brand-mark {
-    width: 48px; height: 48px;
-    border-radius: 14px;
+    width: 46px; height: 46px;
+    border-radius: 13px;
     background: linear-gradient(140deg, #c9a86c 0%, #8a6d3a 100%);
     color: #fff;
     display: flex; align-items: center; justify-content: center;
     font-family: 'Archivo', sans-serif;
-    font-weight: 900; font-size: 1.1rem;
+    font-weight: 900; font-size: 1rem;
     flex-shrink: 0;
     box-shadow: 0 6px 18px rgba(138,109,58,0.32);
   }
   .login-brand-text h1 {
     font-family: 'Archivo', sans-serif;
-    font-weight: 900; font-size: 1.25rem;
+    font-weight: 900; font-size: 1.2rem;
     text-transform: uppercase;
     letter-spacing: -0.01em;
     margin: 0; color: var(--ink);
@@ -67,17 +204,30 @@
   .login-brand-text span {
     display: block;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.62rem;
-    opacity: 0.45;
+    font-size: 0.60rem;
+    color: var(--ink-muted);
+    opacity: 0.55;
     text-transform: uppercase;
     letter-spacing: 0.10em;
     margin-top: 2px;
   }
 
+  /* ---- Page title ---- */
+  .login-page-heading { margin-bottom: 24px; }
+  .login-page-heading h2 {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: var(--ink);
+    margin-bottom: 4px;
+    line-height: 1.1;
+  }
+  .login-page-heading p { font-size: 0.855rem; color: var(--ink-muted); }
+
   /* ---- Divider ---- */
   .login-divider {
     display: flex; align-items: center; gap: 12px;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
   }
   .login-divider::before,
   .login-divider::after {
@@ -91,7 +241,7 @@
   }
 
   /* ---- Fields ---- */
-  .login-field { margin-bottom: 15px; }
+  .login-field { margin-bottom: 14px; }
   .login-field label {
     display: block;
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -99,6 +249,7 @@
     text-transform: uppercase;
     letter-spacing: 0.07em;
     color: var(--ink-muted);
+    font-weight: 600;
     margin-bottom: 7px;
   }
   .login-field input {
@@ -107,13 +258,13 @@
     border-radius: 9px;
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.9rem;
-    background: var(--bone);
+    background: var(--stone);
     color: var(--ink);
     transition: border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    outline: none;
   }
   .login-field input:hover { border-color: var(--line-strong); }
   .login-field input:focus {
-    outline: none;
     border-color: var(--brass);
     background: #fff;
     box-shadow: 0 0 0 3px rgba(163,132,74,0.14);
@@ -140,18 +291,32 @@
   .login-submit {
     width: 100%;
     justify-content: center;
-    padding: 12px 18px;
+    padding: 13px 18px;
     border-radius: 9px;
-    margin-top: 8px;
-    font-size: 0.88rem;
+    margin-top: 6px;
+    font-size: 0.86rem;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
+    background: var(--brass);
+    border: 1px solid var(--brass);
+    color: #fff;
+    display: flex; align-items: center;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.12s ease;
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
+  .login-submit:hover:not(:disabled) {
+    background: var(--brass-dark);
+    border-color: var(--brass-dark);
+    transform: translateY(-1px);
+  }
+  .login-submit:active { transform: translateY(0); }
+  .login-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
   /* ---- Status message ---- */
   .login-status {
-    margin-top: 13px;
-    font-size: 0.80rem;
+    margin-top: 11px;
+    font-size: 0.79rem;
     text-align: center;
     font-family: 'Plus Jakarta Sans', sans-serif;
     min-height: 18px;
@@ -163,6 +328,7 @@
     padding: 8px 12px;
     border-radius: 7px;
     border: 1px solid rgba(192,57,43,0.18);
+    text-align: left;
   }
   .login-status.ok { color: var(--success); }
 
@@ -171,14 +337,15 @@
     display: none;
     align-items: center;
     gap: 10px;
-    background: rgba(184,134,11,0.10);
-    border: 1px solid rgba(184,134,11,0.28);
+    background: rgba(184,134,11,0.08);
+    border: 1px solid rgba(184,134,11,0.25);
     border-radius: 9px;
     padding: 11px 14px;
-    margin-bottom: 20px;
-    font-size: 0.82rem;
+    margin-bottom: 18px;
+    font-size: 0.81rem;
     color: var(--warning);
     font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
   .login-expired-notice.show { display: flex; }
   .login-expired-notice svg {
@@ -186,65 +353,80 @@
     fill: none; stroke: currentColor; stroke-width: 2;
     stroke-linecap: round; stroke-linejoin: round;
   }
-
-  /* ---- Footer branding ---- */
-  .login-footer {
-    text-align: center;
-    margin-top: 18px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.60rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--ink-muted);
-    opacity: 0.5;
-  }
-
-  @media (max-width: 480px) {
-    .login-card { padding: 28px 22px 24px; border-radius: 14px; }
-    :root { --login-card-w: 100%; }
-  }
 </style>
 </head>
 <body>
 
 <div class="login-wrap">
-  <div class="login-card">
-    <div class="login-brand">
-      <div class="brand-mark">TY</div>
-      <div class="login-brand-text">
-        <h1>The~Yo's</h1>
-        <span>Staff &amp; Admin Panel</span>
+  <div class="login-split">
+
+    <!-- LEFT — green branding panel -->
+    <div class="login-art-col">
+      <p class="art-eyebrow">The~Yo's Restaurant</p>
+
+      <div class="art-headline">
+        <h2 class="art-title">Staff &amp;<br>Admin Portal.</h2>
+        <p class="art-sub">Manage orders, reservations, inventory, and your team — all in one place.</p>
+      </div>
+
+      <div class="art-access-card">
+        <h4>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Secure Staff Access
+        </h4>
+        <div class="art-access-item"><div class="access-dot"></div>Order &amp; Reservation Management</div>
+        <div class="art-access-item"><div class="access-dot"></div>Inventory &amp; Recipe Tracking</div>
+        <div class="art-access-item"><div class="access-dot"></div>Sales Reports &amp; Analytics</div>
+      </div>
+
+      <div class="art-footer">
+        <div><strong>8AM–8PM</strong><span>Operating Hours</span></div>
+        <div><strong>2nd Flr</strong><span>DKB Building</span></div>
+        <div><strong>Baggao</strong><span>Cagayan</span></div>
       </div>
     </div>
 
-    <div class="login-expired-notice" id="expiredNotice">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-      Your session expired. Please sign in again.
-    </div>
-
-    <div class="login-divider"><span>Sign in to continue</span></div>
-
-    <form id="loginForm">
-      <div class="login-field">
-        <label for="staffEmail">Email address</label>
-        <input id="staffEmail" type="email" required placeholder="staff@theyos.com" autocomplete="username">
-      </div>
-      <div class="login-field">
-        <label for="staffPassword">Password</label>
-        <div class="password-wrap">
-          <input id="staffPassword" type="password" required placeholder="••••••••" autocomplete="current-password">
-          <button type="button" class="password-toggle" data-toggle-pw="staffPassword" aria-label="Show password">
-            <svg class="eye-open" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-            <svg class="eye-closed" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-          </button>
+    <!-- RIGHT — form panel -->
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="brand-mark">TY</div>
+        <div class="login-brand-text">
+          <h1>The~Yo's</h1>
+          <span>Staff &amp; Admin Panel</span>
         </div>
       </div>
-      <button type="submit" class="btn login-submit" id="loginBtn">Sign In</button>
-      <div class="login-status" id="loginStatus"></div>
-    </form>
-  </div>
 
-  <div class="login-footer">The~Yo's Restaurant &mdash; Staff Portal</div>
+      <div class="login-page-heading">
+        <h2>Sign in to continue</h2>
+        <p>Enter your staff credentials to access the admin panel.</p>
+      </div>
+
+      <div class="login-expired-notice" id="expiredNotice">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Your session expired. Please sign in again.
+      </div>
+
+      <form id="loginForm">
+        <div class="login-field">
+          <label for="staffEmail">Email address</label>
+          <input id="staffEmail" type="email" required placeholder="staff@theyos.com" autocomplete="username">
+        </div>
+        <div class="login-field">
+          <label for="staffPassword">Password</label>
+          <div class="password-wrap">
+            <input id="staffPassword" type="password" required placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="password-toggle" data-toggle-pw="staffPassword" aria-label="Show password">
+              <svg class="eye-open" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-closed" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="login-submit" id="loginBtn">Sign In</button>
+        <div class="login-status" id="loginStatus"></div>
+      </form>
+    </div>
+
+  </div>
 </div>
 
 <script type="module">

@@ -111,7 +111,9 @@ export function renderCustomerNav({ active = '' } = {}) {
     document.body.style.overflow = '';
   }
 
-  if (navToggle && siteNav) {
+  if (navToggle && siteNav && !navToggle.dataset.bound) {
+    navToggle.dataset.bound = '1';
+
     navToggle.addEventListener('click', (e) => {
       e.stopPropagation();
       siteNav.classList.contains('open') ? closeNav() : openNav();

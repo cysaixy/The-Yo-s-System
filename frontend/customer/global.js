@@ -1,4 +1,30 @@
-// The customer pages share one coffee theme controller and stylesheet.
+// global.js — runs on every customer page
+
+// ─── STEP 1: Apply saved dark mode BEFORE any stylesheet loads ───────────────
+// This inline-style block runs synchronously so the body already has
+// coffee-night before the first paint — no dark flash on navigation.
+try {
+  if (localStorage.getItem('theYosTheme') === 'dark') {
+    document.documentElement.classList.add('coffee-night-pending');
+    // Use a <style> tag so it wins even before theme.css loads
+    const s = document.createElement('style');
+    s.textContent = 'body{--bone:#160f0b;--stone:#2a1a12;--ink:#f5ead8;--component-bg:#25170f;--line:rgba(245,234,216,.17);--header-bg:rgba(24,15,10,.97);background:#160f0b!important;color:#f5ead8!important}';
+    document.head.appendChild(s);
+    // Once body exists, swap to the proper class so theme.css takes over
+    const applyClass = () => {
+      document.body.classList.add('coffee-night');
+      s.remove();
+      document.documentElement.classList.remove('coffee-night-pending');
+    };
+    if (document.body) {
+      applyClass();
+    } else {
+      document.addEventListener('DOMContentLoaded', applyClass, { once: true });
+    }
+  }
+} catch (e) {}
+
+// ─── STEP 2: Load theme.css and theme.js ─────────────────────────────────────
 if (!document.querySelector('link[href="theme.css"]')) {
   const themeStyles = document.createElement('link');
   themeStyles.rel = 'stylesheet';
@@ -11,15 +37,18 @@ if (!document.querySelector('script[src="theme.js"]')) {
   document.head.appendChild(themeScript);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  // --- EXISTING HOOKS ---
+document.addEventListener('DOMContentLoaded', () => {
+  // Year
   const yElement = document.getElementById('year');
   if (yElement) yElement.textContent = new Date().getFullYear();
 
+  // ─── Mobile nav toggle — guarded against double-binding ────────────────────
   const navToggle = document.getElementById('navToggle');
   const siteNav = document.getElementById('siteNav');
-  
-  if (navToggle && siteNav) {
+
+  if (navToggle && siteNav && !navToggle.dataset.bound) {
+    navToggle.dataset.bound = '1';
+
     if (!navToggle.querySelector('svg')) {
       navToggle.innerHTML = `
         <svg class="nav-toggle-icon nav-icon-menu" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
@@ -74,51 +103,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Scroll reveal
   const revealEls = document.querySelectorAll('.reveal');
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
   }, { threshold: 0.1 });
   revealEls.forEach(el => io.observe(el));
-
-  // --- THEME ENGINE DISABLED FOR NOW ---
-  // initThemeEngine();
 });
-
-function initThemeEngine() {
-  const body = document.body;
-  const isMenuPage = body.classList.contains('menu-page-theme');
-  const savedTheme = localStorage.getItem('theme-preference');
-
-  const SUN_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg>';
-  const MOON_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/></svg>';
-
-  const activeThemeIsDark = savedTheme
-    ? savedTheme === 'dark'
-    : isMenuPage;
-
-  const toggleBtn = document.getElementById('themeToggleBtn');
-  if (toggleBtn) {
-    toggleBtn.innerHTML = activeThemeIsDark ? `${SUN_ICON}<span>Light</span>` : `${MOON_ICON}<span>Dark</span>`;
-
-    toggleBtn.addEventListener('click', () => {
-      let activeDark;
-      if (isMenuPage) {
-        body.classList.toggle('light-theme');
-        activeDark = !body.classList.contains('light-theme');
-      } else {
-        body.classList.toggle('dark-theme');
-        activeDark = body.classList.contains('dark-theme');
-      }
-      localStorage.setItem('theme-preference', activeDark ? 'dark' : 'light');
-      toggleBtn.innerHTML = activeDark ? `${SUN_ICON}<span>Light</span>` : `${MOON_ICON}<span>Dark</span>`;
-    });
-  }
-
-  if (savedTheme === 'dark') {
-    if (!isMenuPage) body.classList.add('dark-theme');
-    else body.classList.remove('light-theme');
-  } else if (savedTheme === 'light') {
-    if (isMenuPage) body.classList.add('light-theme');
-    else body.classList.remove('dark-theme');
-  }
-}

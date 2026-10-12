@@ -1,5 +1,6 @@
 {
   "devCommand": "cd backend && npm run dev",
+  "cleanUrls": true,
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api" },
     { "source": "/pics&vids/:path*", "destination": "/frontend/pics&vids/:path*" },

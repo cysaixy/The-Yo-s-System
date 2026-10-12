@@ -455,3 +455,12 @@ a, button { -webkit-tap-highlight-color: rgba(163,132,74,.18); }
   .stepper button { flex: 0 0 52px; }
   .stepper input { flex: 1 1 auto; width: auto; min-width: 0; }
 }
+
+/* ---- Mid-range desktop squeeze (1081px–1320px) ----
+   Prevents nav overflow when the coffee toggle is present alongside
+   6 links + account icon + Order Now. */
+@media (min-width: 1081px) and (max-width: 1320px) {
+  nav ul { gap: 14px; }
+  nav a { font-size: 12px; letter-spacing: .5px; }
+  header { padding: 18px 28px; }
+}

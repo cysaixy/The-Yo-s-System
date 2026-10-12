@@ -163,8 +163,8 @@
                   ? `<span style="font-size:0.75rem; color:var(--ink-muted); font-style:italic;">Owner account — locked</span>`
                   : `<div class="row-actions">
                       <button class="edit-staff-btn" data-id="${s.id}">Edit</button>
-                      <button class="perm-btn" data-id="${s.id}"
-                              data-inv="${s.can_access_inventory}" data-stock="${s.can_access_stock_in}" data-rep="${s.can_access_reports}">Permissions</button>
+                      ${s.role !== 'Admin' ? `<button class="perm-btn" data-id="${s.id}"
+                              data-inv="${s.can_access_inventory}" data-stock="${s.can_access_stock_in}" data-rep="${s.can_access_reports}">Permissions</button>` : ''}
                     </div>`
                 }
               </td>

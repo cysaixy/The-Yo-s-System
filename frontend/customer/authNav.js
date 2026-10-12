@@ -30,8 +30,6 @@ onAuthStateChanged(auth, (user) => {
     link.classList.remove("is-logged-in");
     if (signOutItem) signOutItem.style.display = "none";
   }
-
-  link.style.visibility = "visible";
 });
 
 const signOutLink = document.getElementById("navSignOutLink");
