@@ -1,4 +1,4 @@
-// admin-api.js
+﻿// admin-api.js
 // Shared fetch wrapper + formatting helpers for every admin page.
 // Uses httpOnly cookie for authentication (set by /api/admin/staff/login).
 // No localStorage token storage — cookies are sent automatically with credentials: 'include'.
@@ -67,7 +67,7 @@ export async function adminFetch(path, options = {}) {
   if (res.status === 401) {
     // Session expired / not logged in - bounce back to login.
     clearStaffSession();
-    window.location.href = 'login.html';
+    window.location.href = 'login';
     throw new Error('Session expired. Redirecting to login…');
   }
 

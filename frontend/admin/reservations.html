@@ -1,6 +1,6 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
-<head>
+<head><base href="/admin/">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reservations — The~Yo's Admin</title>
@@ -1924,7 +1924,7 @@
     const now = new Date().toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     const win = window.open('', '_blank', 'width=420,height=680');
-    win.document.write(`<!DOCTYPE html><html><head>
+    win.document.write(`<!DOCTYPE html><html><head><base href="/admin/">
       <title>Reservation Receipt #${reservation.id}</title>
       <style>
         * { margin:0; padding:0; box-sizing:border-box; }
