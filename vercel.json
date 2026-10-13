@@ -1,6 +1,5 @@
 {
   "devCommand": "cd backend && npm run dev",
-  "cleanUrls": true,
   "redirects": [
     { "source": "/index", "destination": "/", "permanent": true },
     { "source": "/index.html", "destination": "/", "permanent": true }
