@@ -1,10 +1,16 @@
 {
   "devCommand": "cd backend && npm run dev",
+  "cleanUrls": true,
+  "redirects": [
+    { "source": "/index", "destination": "/", "permanent": true },
+    { "source": "/index.html", "destination": "/", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api" },
     { "source": "/pics&vids/:path*", "destination": "/frontend/pics&vids/:path*" },
 
     { "source": "/admin", "destination": "/frontend/admin/home.html" },
+    { "source": "/admin/home", "destination": "/frontend/admin/home.html" },
     { "source": "/admin/dashboard", "destination": "/frontend/admin/dashboard.html" },
     { "source": "/admin/pos", "destination": "/frontend/admin/pos.html" },
     { "source": "/admin/sales", "destination": "/frontend/admin/sales.html" },
@@ -27,6 +33,8 @@
     { "source": "/my-orders", "destination": "/frontend/customer/my-orders.html" },
     { "source": "/account", "destination": "/frontend/customer/account.html" },
 
+    { "source": "/index", "destination": "/frontend/customer/index.html" },
+    { "source": "/index.html", "destination": "/frontend/customer/index.html" },
     { "source": "/", "destination": "/frontend/customer/index.html" },
     { "source": "/:path*", "destination": "/frontend/customer/:path*" }
   ]

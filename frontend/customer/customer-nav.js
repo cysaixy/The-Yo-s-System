@@ -1,4 +1,4 @@
-﻿// customer-nav.js
+// customer-nav.js
 // Shared top navigation component for all customer-facing pages.
 // Renders the brand logo, responsive navigation links, profile SVG icon,
 // Firebase auth state (logged-in badge / sign out), and mobile drawer menu.
@@ -55,7 +55,7 @@ export function renderCustomerNav({ active = '' } = {}) {
   header.id = 'siteHeader';
 
   header.innerHTML = `
-    <a href="index" class="logo-link">
+    <a href="/" class="logo-link">
       <img src="../pics&vids/the-yo's_logo.jpg" alt="The~Yo's Logo" class="logo-img">
       <span class="logo-text">The~Yo's</span>
     </a>
