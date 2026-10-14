@@ -2,8 +2,8 @@
 import pool from '../config/db.js';
 
 export const CONFLICT_WINDOW_MINUTES = 120; // ±2 hours seating window
-export const OPENING_MINUTES = 9 * 60;      // 9:00 AM (540 mins)
-export const CLOSING_MINUTES = 21 * 60;     // 9:00 PM (1260 mins)
+export const OPENING_MINUTES = 8 * 60;      // 8:00 AM (480 mins)
+export const CLOSING_MINUTES = 20 * 60;     // 8:00 PM (1200 mins)
 export const MAX_CAPACITY_PER_SLOT = 20;    // 20 guests max per time slot window
 
 /**
@@ -70,7 +70,7 @@ export async function checkTimeSlotCapacity(reservationDate, reservationTime, re
     };
   }
 
-  // Generate candidate time slots within operating hours (every 1 hour from 9:00 to 21:00)
+  // Generate candidate time slots within operating hours (every 1 hour from 8:00 to 20:00)
   const [reqH, reqM] = String(reservationTime).split(':').map(Number);
   const reqTotalMinutes = (isNaN(reqH) ? 12 : reqH) * 60 + (isNaN(reqM) ? 0 : reqM);
 

@@ -4,8 +4,8 @@ import { checkTimeSlotCapacity, checkCustomerExistingReservation, getMaxRoomCapa
 
 // Restaurant rules the booking form must respect (mirrored on the client).
 const MAX_GUESTS = 20;
-const OPENING_MINUTES = 9 * 60;   // 9:00 AM
-const CLOSING_MINUTES = 21 * 60;  // 9:00 PM
+const OPENING_MINUTES = 8 * 60;   // 8:00 AM
+const CLOSING_MINUTES = 20 * 60;  // 8:00 PM
 const MAX_NOTES_LENGTH = 500;
 const MIN_ADVANCE_DAYS = 4;       // Reservations must be made at least 4 days in advance
 
@@ -81,7 +81,7 @@ export async function createReservation(req, res, next) {
     const timeMinutes = timeHours * 60 + timeMins;
     if (timeMinutes < OPENING_MINUTES || timeMinutes > CLOSING_MINUTES) {
       return res.status(400).json({
-        error: 'We\'re open from 9:00 AM to 9:00 PM. Please pick a time within those hours.',
+        error: 'We\'re open from 8:00 AM to 8:00 PM. Please pick a time within those hours.',
       });
     }
 

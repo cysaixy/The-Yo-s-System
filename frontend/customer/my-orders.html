@@ -285,7 +285,7 @@
             <option value="online">Delivery</option>
           </select>
         </div>
-        <div><label for="detailTime">Preferred Time</label><input id="detailTime" type="text"></div>
+        <div><label for="detailTime">Preferred Time</label><input id="detailTime" type="time" min="08:00" max="20:00"></div>
       </div>
       <div class="form-row">
         <div>
@@ -610,7 +610,22 @@
 
     setVal('detailName', order.customer_name);
     setVal('detailPhone', order.customer_phone);
-    setVal('detailTime', parsedNotes.prefTime || order.requested_time || '');
+    // Convert stored "2:00 PM" → "14:00" for the time picker
+    (function() {
+      const raw = parsedNotes.prefTime || order.requested_time || '';
+      const match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (match) {
+        let h = parseInt(match[1], 10);
+        const m = match[2];
+        const period = match[3].toUpperCase();
+        if (period === 'AM' && h === 12) h = 0;
+        if (period === 'PM' && h !== 12) h += 12;
+        document.getElementById('detailTime').value = `${String(h).padStart(2,'0')}:${m}`;
+      } else {
+        // Already in HH:MM or empty — set as-is
+        document.getElementById('detailTime').value = raw.slice(0, 5);
+      }
+    })();
     setVal('detailAddress', order.delivery_address);
     setVal('detailNotes', parsedNotes.cleanNotes);
     setSelect('detailService', order.order_type);
@@ -751,10 +766,25 @@
     btn.textContent = 'Saving…';
 
     const timeVal = document.getElementById('detailTime').value.trim();
+    if (timeVal && (timeVal < '08:00' || timeVal > '20:00')) {
+      alert("The shop is open from 8:00 AM to 8:00 PM. Please select a time within opening hours.");
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+      return;
+    }
     const cleanNotesVal = document.getElementById('detailNotes').value.trim();
     const { rawCustomJson } = parseOrderNotesAndCustomItems(order);
 
-    let combinedNotes = [timeVal ? `Preferred Time: ${timeVal}` : '', cleanNotesVal].filter(Boolean).join(' · ');
+    // Convert HH:MM (24h) → "H:MM AM/PM" for storage
+    function format24hTo12h(val) {
+      if (!val) return '';
+      const [h, m] = val.split(':').map(Number);
+      const period = h >= 12 ? 'PM' : 'AM';
+      const hour = h % 12 || 12;
+      return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+    }
+    const timeDisplay = format24hTo12h(timeVal);
+    let combinedNotes = [timeDisplay ? `Preferred Time: ${timeDisplay}` : '', cleanNotesVal].filter(Boolean).join(' · ');
     if (rawCustomJson) {
       combinedNotes = (combinedNotes ? combinedNotes + '\n' : '') + rawCustomJson;
     }

@@ -176,7 +176,7 @@
               <label for="resDate">Date <span style="opacity:.65; font-size:0.75rem; text-transform:none; font-weight:normal;">(at least 4 days before event)</span></label>
               <input id="resDate" type="date" required>
             </div>
-            <div><label for="resTime">Time</label><input id="resTime" type="time" min="09:00" max="21:00" required></div>
+            <div><label for="resTime">Time</label><input id="resTime" type="time" min="08:00" max="20:00" required></div>
           </div>
           <div class="form-row">
             <div>
@@ -227,9 +227,9 @@
   completed: 'Completed', 
   cancelled: 'Cancelled' 
 };
-  // Mirrors the server: the room is open 9:00 AM - 9:00 PM.
-  const OPENING_MINUTES = 9 * 60;
-  const CLOSING_MINUTES = 21 * 60;
+  // Mirrors the server: the restaurant is open 8:00 AM - 8:00 PM.
+  const OPENING_MINUTES = 8 * 60;
+  const CLOSING_MINUTES = 20 * 60;
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -343,7 +343,7 @@
       const [hh, mmm] = timeVal.split(':').map(Number);
       const minutes = hh * 60 + mmm;
       if (minutes < OPENING_MINUTES || minutes > CLOSING_MINUTES) {
-        msg.push("We're open from 9:00 AM to 9:00 PM. Please pick a time within those hours.");
+        msg.push("We're open from 8:00 AM to 8:00 PM. Please pick a time within those hours.");
       }
     }
 
@@ -461,6 +461,15 @@
     }
     if (blockedDates.has(dateVal)) {
       status.textContent = `Sorry — we're fully booked on that date. Please pick another day.`;
+      status.className = 'reserve-status err';
+      return;
+    }
+
+    // Check operating hours (8:00 AM - 8:00 PM)
+    const [hh, mmm] = timeVal.split(':').map(Number);
+    const timeMins = hh * 60 + mmm;
+    if (timeMins < OPENING_MINUTES || timeMins > CLOSING_MINUTES) {
+      status.textContent = "We're open from 8:00 AM to 8:00 PM. Please pick a time within opening hours (8:00 AM – 8:00 PM).";
       status.className = 'reserve-status err';
       return;
     }

@@ -6,6 +6,22 @@ import { createPaymongoCheckoutSession } from '../../utils/paymongo.js';
 const VALID_ORDER_TYPES = ['online', 'delivery', 'dine_in', 'pickup'];
 const VALID_PAYMENT_METHODS = ['cash', 'gcash'];
 
+const OPENING_MINUTES = 8 * 60;   // 8:00 AM (480 mins)
+const CLOSING_MINUTES = 20 * 60;  // 8:00 PM (1200 mins)
+
+function validatePreferredTimeInNotes(notes) {
+  if (!notes || typeof notes !== 'string') return true;
+  const match = notes.match(/Preferred Time:\s*(\d{1,2}):(\d{2})(?:\s*(AM|PM))?/i);
+  if (!match) return true;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const period = match[3] ? match[3].toUpperCase() : null;
+  if (period === 'PM' && hours < 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  const totalMinutes = hours * 60 + minutes;
+  return totalMinutes >= OPENING_MINUTES && totalMinutes <= CLOSING_MINUTES;
+}
+
 const normalizePhoneNumber = (value) => String(value ?? '').replace(/\D/g, '').slice(0, 11);
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
@@ -41,6 +57,12 @@ export async function createOrder(req, res, next) {
     if (payment_method && !VALID_PAYMENT_METHODS.includes(payment_method)) {
       return res.status(400).json({
         error: `payment_method must be one of: ${VALID_PAYMENT_METHODS.join(', ')}`,
+      });
+    }
+
+    if (!validatePreferredTimeInNotes(notes)) {
+      return res.status(400).json({
+        error: "The shop is open from 8:00 AM to 8:00 PM. Please select a preferred time within business hours.",
       });
     }
 
@@ -536,6 +558,11 @@ export async function updateOrder(req, res, next) {
     const fields = { order_type, customer_name, customer_phone, delivery_address, payment_method, notes };
 
     if (notes !== undefined) {
+      if (!validatePreferredTimeInNotes(notes)) {
+        return res.status(400).json({
+          error: "The shop is open from 8:00 AM to 8:00 PM. Please select a preferred time within business hours.",
+        });
+      }
       const existingRes = await pool.query(
         'SELECT notes FROM orders WHERE id = $1 AND customer_id = $2',
         [id, customer_id]

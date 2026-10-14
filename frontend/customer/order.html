@@ -1383,7 +1383,7 @@
         </div>
         <p class="field-error" id="step2Error" style="display:none;"></p>
         <div class="form-row">
-          <div><label for="timeInput">Preferred Time</label><input id="timeInput" type="text" required placeholder="e.g. 2:30 PM"></div>
+          <div><label for="timeInput">Preferred Time</label><input id="timeInput" type="time" min="08:00" max="20:00" required></div>
         </div>
 
         <div><label for="notes">Overall Special Prep Instructions</label><textarea id="notes" placeholder="General instructions for the whole order..."></textarea></div>
@@ -2360,6 +2360,10 @@
         showStep2Error('Please fill in your name, mobile number, and preferred time before continuing.');
         return;
       }
+      if (timeInput < '08:00' || timeInput > '20:00') {
+        showStep2Error('Our shop is open from 8:00 AM to 8:00 PM. Please select a preferred time between 8:00 AM and 8:00 PM.');
+        return;
+      }
       if (orderType === 'Delivery' && !addr) {
         showStep2Error('Please enter your delivery address before continuing.');
         return;
@@ -2401,6 +2405,10 @@
     const serviceType = document.getElementById('orderType').value;
     const paymentChoice = document.querySelector('input[name="paymentChoice"]:checked')?.value || 'Cash';
     const timeInput = document.getElementById('timeInput').value;
+    if (timeInput && (timeInput < '08:00' || timeInput > '20:00')) {
+      alert("Our shop is open from 8:00 AM to 8:00 PM. Please select a preferred time within opening hours.");
+      return false;
+    }
     const notesInput = document.getElementById('notes').value.trim();
 
     // Backend's orders.order_type column only accepts these three values -
@@ -2436,7 +2444,15 @@
       addrEl.value = sessionStorage.getItem('yo-customer-address') || '';
     }
 
-    const timeFormatted = timeInput.trim() ? `Preferred Time: ${timeInput.trim()}` : '';
+    function format24hTo12h(val) {
+      if (!val) return '';
+      const [h, m] = val.split(':').map(Number);
+      const period = h >= 12 ? 'PM' : 'AM';
+      const hour = h % 12 || 12;
+      return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+    }
+    const timeDisplay = format24hTo12h(timeInput.trim());
+    const timeFormatted = timeDisplay ? `Preferred Time: ${timeDisplay}` : '';
     const combinedNotes = [timeFormatted, notesInput].filter(Boolean).join(' · ');
 
     const customerPhone = validatePhoneNumber(document.getElementById('phone').value, 'Contact number must be exactly 11 digits.');
