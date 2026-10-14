@@ -1,8 +1,12 @@
-// src/config/db.js
 import pkg from 'pg';
-const { Pool } = pkg;
+const { Pool, types } = pkg;
 import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
+
+// Type 1114 is TIMESTAMP without time zone.
+// Since the database session uses Asia/Manila timezone, timestamps are saved in Manila local time.
+// Appending +08:00 ensures JS Date correctly interprets the time without an extra 8-hour shift.
+types.setTypeParser(1114, (str) => (str ? new Date(str.replace(' ', 'T') + '+08:00') : null));
 
 let connectionString =
   process.env.POSTGRES_URL_DATABASE_URL ||

@@ -113,7 +113,10 @@ export async function createReservationAdmin(req, res, next) {
     const resDate = new Date(y, m - 1, d);
     const deadline = new Date(resDate);
     deadline.setDate(deadline.getDate() - 2);
-    const deadlineStr = deadline.toISOString().split('T')[0];
+    const dlY = deadline.getFullYear();
+    const dlM = String(deadline.getMonth() + 1).padStart(2, '0');
+    const dlD = String(deadline.getDate()).padStart(2, '0');
+    const deadlineStr = `${dlY}-${dlM}-${dlD}`;
 
     const { rows } = await pool.query(
       `INSERT INTO reservations (customer_id, reservation_date, reservation_time, guests, notes, status, datetime_reserved, order_status, order_editing_deadline, reservation_status)

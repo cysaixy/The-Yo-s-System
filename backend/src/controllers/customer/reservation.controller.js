@@ -36,17 +36,23 @@ export async function createReservation(req, res, next) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Enforce 4-day advance booking rule (both frontend and backend)
-    const minDate = new Date(today);
+    // Enforce 4-day advance booking rule based on Asia/Manila timezone
+    const manilaTodayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date());
+    const [ty, tm, td] = manilaTodayStr.split('-').map(Number);
+    const todayManila = new Date(ty, tm - 1, td);
+    todayManila.setHours(0, 0, 0, 0);
+
+    const minDate = new Date(todayManila);
     minDate.setDate(minDate.getDate() + MIN_ADVANCE_DAYS);
     if (date < minDate) {
+      const minDateStr = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')}`;
       return res.status(400).json({
-        error: `Reservations must be made at least ${MIN_ADVANCE_DAYS} days in advance. Please select a later date.`,
+        error: `Reservations must be made at least ${MIN_ADVANCE_DAYS} days in advance (earliest available date: ${minDateStr}). Please select a later date.`,
       });
     }
 
     // Also reject past dates (redundant but safe)
-    if (date < today) {
+    if (date < todayManila) {
       return res.status(400).json({ error: 'Reservation date can\'t be in the past.' });
     }
 
@@ -102,7 +108,10 @@ export async function createReservation(req, res, next) {
     // Calculate order editing deadline (2 days before reservation date)
     const orderEditingDeadline = new Date(date);
     orderEditingDeadline.setDate(orderEditingDeadline.getDate() - 2);
-    const deadlineStr = orderEditingDeadline.toISOString().split('T')[0];
+    const dlY = orderEditingDeadline.getFullYear();
+    const dlM = String(orderEditingDeadline.getMonth() + 1).padStart(2, '0');
+    const dlD = String(orderEditingDeadline.getDate()).padStart(2, '0');
+    const deadlineStr = `${dlY}-${dlM}-${dlD}`;
 
     const { rows } = await pool.query(
       `INSERT INTO reservations (customer_id, reservation_date, reservation_time, guests, notes, status, datetime_reserved, order_status, order_editing_deadline, reservation_status)

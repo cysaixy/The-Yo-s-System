@@ -168,10 +168,14 @@
 
         <form id="reservationForm">
           <div class="workflow-note">
+            <strong>Advance Booking Policy:</strong> Reservations must be booked at least <strong>4 days before the event</strong>.<br>
             <strong>How it works:</strong> Submit your request → Our staff will contact you to discuss your order → We'll confirm your reservation once the order is finalized.
           </div>
           <div class="form-row">
-            <div><label for="resDate">Date</label><input id="resDate" type="date" required></div>
+            <div>
+              <label for="resDate">Date <span style="opacity:.65; font-size:0.75rem; text-transform:none; font-weight:normal;">(at least 4 days before event)</span></label>
+              <input id="resDate" type="date" required>
+            </div>
             <div><label for="resTime">Time</label><input id="resTime" type="time" min="09:00" max="21:00" required></div>
           </div>
           <div class="form-row">
@@ -281,13 +285,20 @@
     if (next >= 1 && next <= 20) input.value = next;
   };
 
+  function toDateInputValue(d) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   // Prevent picking dates less than 4 days in advance - the server enforces this too.
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const minDate = new Date(today);
-  minDate.setDate(minDate.getDate() + 4); // 4-day advance booking rule
+  minDate.setDate(minDate.getDate() + 4); // 4-day advance booking rule (e.g. today Oct 14 -> earliest Oct 18)
   const dateInput = document.getElementById('resDate');
-  if (dateInput) dateInput.min = minDate.toISOString().split('T')[0];
+  if (dateInput) dateInput.min = toDateInputValue(minDate);
 
   // Dates (next 90 days) that are already fully booked - the server computes
   // and enforces this; here it just stops the picker from letting you keep
@@ -321,7 +332,10 @@
       const diffDays = Math.round((selected - today) / 86400000);
       if (blockedDates.has(dateVal)) msg.push("Sorry — we're fully booked on that date. Please pick another day.");
       else if (diffDays < 0) msg.push('That date is in the past.');
-      else if (diffDays < 4) msg.push(`Reservations must be made at least 4 days in advance. Please select a later date.`);
+      else if (diffDays < 4) {
+        const earliestStr = minDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        msg.push(`Reservations must be booked at least 4 days in advance. Earliest available date is ${earliestStr}.`);
+      }
     }
 
     const timeVal = document.getElementById('resTime').value;
@@ -440,7 +454,8 @@
     today.setHours(0, 0, 0, 0);
     const diffDays = Math.round((selected - today) / 86400000);
     if (diffDays < 4) {
-      status.textContent = `Reservations must be made at least 4 days in advance. Please select a later date.`;
+      const earliestStr = minDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      status.textContent = `Reservations must be booked at least 4 days in advance. Earliest available date is ${earliestStr}.`;
       status.className = 'reserve-status err';
       return;
     }

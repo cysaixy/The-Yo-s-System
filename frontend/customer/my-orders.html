@@ -480,9 +480,13 @@
     let html = '';
     if (t.delivery) {
       if (t.feePending) {
-        html += `<div class="delivery-note"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; vertical-align:-0.18em; margin-right:6px;"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg><span><strong>Delivery Notice:</strong> Your food is confirmed! Our staff will assign the delivery fee for your address shortly. The delivery fee will be paid in cash directly to your rider.</span></div>`;
+        const isPending = t.status === 'pending';
+        const msg = isPending
+          ? 'Your order has been received and is awaiting staff confirmation. Our staff will assign the delivery fee for your address shortly. The delivery fee will be paid in cash directly to your rider.'
+          : 'Your order is confirmed! Our staff will assign the delivery fee for your address shortly. The delivery fee will be paid in cash directly to your rider.';
+        html += `<div class="delivery-note"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; vertical-align:-0.18em; margin-right:6px;"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg><span><strong>Delivery Notice:</strong> ${msg}</span></div>`;
       } else {
-        html += `<div class="delivery-note" style="border-left-color:#27ae60; background:rgba(39,174,96,0.08);"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; vertical-align:-0.18em; margin-right:6px;"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg><span><strong>Delivery Fee: ${peso(t.deliveryFee)}</strong> — Please prepare cash to pay directly to the rider upon delivery.</span></div>`;
+        html += `<div class="delivery-note" style="border-left-color:#27ae60; background:rgba(39,174,96,0.08);"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; vertical-align:-0.18em; margin-right:6px;"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg><span><strong>Delivery Fee: ${peso(t.deliveryFee)}</strong> — Please prepare cash to pay directly to the rider upon delivery.</span></div>`;
       }
     }
 
@@ -840,6 +844,7 @@
     const date = order.datetime_ordered
       ? new Date(order.datetime_ordered).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
       : '';
+    const parsedNotes = parseOrderNotesAndCustomItems(order);
     const items = getOrderItems(order);
     const t = totalsFor(order);
 
@@ -847,7 +852,8 @@
       <div class="order-card-head">
         <div>
           <div class="order-id">Order #${order.id}</div>
-          <div class="order-meta">${date} · ${(order.order_type || '').replace('_', ' ')}</div>
+          <div class="order-meta">Placed: ${date} · ${(order.order_type || '').replace('_', ' ')}</div>
+          ${parsedNotes.prefTime ? `<div class="order-meta" style="color:var(--brass); font-weight:600; margin-top:2px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Preferred Time: ${esc(parsedNotes.prefTime)}</div>` : ''}
           ${(order.order_type === 'online' && order.delivery_address) ? `<div class="order-meta">Deliver to: ${order.delivery_address}</div>` : ''}
         </div>
         <div class="order-total">
