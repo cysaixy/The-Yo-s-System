@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head><base href="/admin/">
 <meta charset="UTF-8">
@@ -1049,12 +1049,14 @@
   function openWalkinModal() {
     const minDate = new Date();
     minDate.setDate(minDate.getDate() + 4);
-    const minDateStr = minDate.toISOString().split('T')[0];
+    const minDateStr = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')}`;
+
+    let walkinCustomItems = []; // [{ name: '', qty: 1, price: 0 }]
 
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop active';
     backdrop.innerHTML = `
-      <div class="modal-box" style="max-width:540px;">
+      <div class="modal-box" style="max-width:620px; max-height:90vh; overflow-y:auto;">
         <h3>Add Walk-in Reservation</h3>
         <p style="font-size:0.80rem; color:var(--ink-muted); margin:0 0 16px;">Record a reservation for a customer visiting the store in-person.</p>
         <div class="form-grid" style="margin-bottom:14px;">
@@ -1078,7 +1080,7 @@
           </div>
           <div class="form-field">
             <label for="walkinTime">Time *</label>
-            <input type="time" id="walkinTime" min="09:00" max="21:00" value="18:00" required>
+            <input type="time" id="walkinTime" min="08:00" max="20:00" value="18:00" required>
           </div>
           <div class="form-field">
             <label for="walkinGuests">Number of Guests *</label>
@@ -1089,11 +1091,17 @@
           <label for="walkinNotes">Notes / Special Requests</label>
           <textarea id="walkinNotes" placeholder="Birthday celebration, high chair, dietary needs, etc."></textarea>
         </div>
+
         <div class="form-field" style="margin-bottom:14px;">
-          <label for="walkinCustomOrder">Custom Advance Order Details</label>
-          <textarea id="walkinCustomOrder" placeholder="e.g. 360 pcs wings, 20 packs spaghetti, 50 pcs burger steak...&#10;Each line: quantity + item name"></textarea>
-          <small style="color:var(--ink-muted); font-size:0.70rem; margin-top:3px; display:block;">Enter preliminary food items for kitchen pre-order preparation.</small>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <label style="margin-bottom:0;">Custom Advance Order Details</label>
+            <span id="walkinTotalBadge" style="font-family:'Plus Jakarta Sans',sans-serif; font-size:0.75rem; font-weight:700; color:var(--brass-dark); display:none;">Total: ₱0.00</span>
+          </div>
+          <small style="color:var(--ink-muted); font-size:0.70rem; margin-bottom:8px; display:block;">Add preliminary food items, quantity, and unit price for kitchen pre-order preparation.</small>
+
+          <div id="walkinCustomItemsWrap"></div>
         </div>
+
         <div class="modal-error" id="walkinError"></div>
         <div class="modal-close-row">
           <button class="btn btn-outline" id="walkinClose">Cancel</button>
@@ -1102,6 +1110,121 @@
       </div>
     `;
     document.body.appendChild(backdrop);
+
+    function syncWalkinFromDOM() {
+      const wrap = backdrop.querySelector('#walkinCustomItemsWrap');
+      if (!wrap) return;
+      wrap.querySelectorAll('.wci-name').forEach(el => {
+        const i = +el.dataset.i;
+        if (walkinCustomItems[i]) walkinCustomItems[i].name = el.value;
+      });
+      wrap.querySelectorAll('.wci-qty').forEach(el => {
+        const i = +el.dataset.i;
+        if (walkinCustomItems[i]) walkinCustomItems[i].qty = parseFloat(el.value) || 1;
+      });
+      wrap.querySelectorAll('.wci-price').forEach(el => {
+        const i = +el.dataset.i;
+        if (walkinCustomItems[i]) walkinCustomItems[i].price = parseFloat(el.value) || 0;
+      });
+    }
+
+    function updateWalkinTotal() {
+      const totalBadge = backdrop.querySelector('#walkinTotalBadge');
+      const countEl = backdrop.querySelector('#walkinItemCount');
+      let total = 0;
+      let count = 0;
+      walkinCustomItems.forEach(ci => {
+        if (ci.name && ci.name.trim()) {
+          const q = parseFloat(ci.qty) || 1;
+          const p = parseFloat(ci.price) || 0;
+          total += (q * p);
+          count++;
+        }
+      });
+      if (totalBadge) {
+        if (count > 0) {
+          totalBadge.textContent = `Advance Order Total: ₱${total.toFixed(2)}`;
+          totalBadge.style.display = 'inline-block';
+        } else {
+          totalBadge.style.display = 'none';
+        }
+      }
+      if (countEl) {
+        countEl.textContent = count > 0 ? `${count} item${count > 1 ? 's' : ''}` : '';
+      }
+    }
+
+    function renderWalkinItems() {
+      const wrap = backdrop.querySelector('#walkinCustomItemsWrap');
+      if (!wrap) return;
+
+      let html = `
+        <table class="custom-items-table">
+          <thead><tr>
+            <th style="width:48%;">Item / Description</th>
+            <th style="width:16%; text-align:center;">Qty</th>
+            <th style="width:24%;">Price (₱)</th>
+            <th style="width:12%; text-align:center;"></th>
+          </tr></thead>
+          <tbody>
+      `;
+
+      if (walkinCustomItems.length === 0) {
+        html += `<tr><td colspan="4" style="text-align:center; color:var(--ink-muted); padding:10px; font-size:0.75rem;">No advance order items added yet. Click "+ Add Item" below.</td></tr>`;
+      } else {
+        walkinCustomItems.forEach((row, i) => {
+          html += `
+            <tr>
+              <td><input type="text" class="wci-name" data-i="${i}" placeholder="e.g. 360 pcs wings" value="${escapeHtml(row.name || '')}"></td>
+              <td><input type="number" class="wci-qty" data-i="${i}" min="1" step="1" placeholder="1" value="${row.qty ?? 1}"></td>
+              <td><input type="number" class="wci-price" data-i="${i}" min="0" step="0.01" placeholder="0.00" value="${row.price ?? 0}"></td>
+              <td style="text-align:center;"><button type="button" class="del-custom-row wci-del" data-i="${i}" title="Remove item">×</button></td>
+            </tr>`;
+        });
+      }
+
+      html += `</tbody></table>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+        <button type="button" class="add-custom-row-btn" id="walkinAddRowBtn">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Add Item
+        </button>
+        <span id="walkinItemCount" style="font-size:0.72rem; color:var(--ink-muted);"></span>
+      </div>`;
+
+      wrap.innerHTML = html;
+
+      updateWalkinTotal();
+
+      wrap.querySelectorAll('.wci-name, .wci-qty, .wci-price').forEach(el => {
+        el.addEventListener('input', () => {
+          syncWalkinFromDOM();
+          updateWalkinTotal();
+        });
+        el.addEventListener('change', () => {
+          syncWalkinFromDOM();
+          updateWalkinTotal();
+        });
+      });
+
+      wrap.querySelectorAll('.wci-del').forEach(el => {
+        el.addEventListener('click', () => {
+          syncWalkinFromDOM();
+          walkinCustomItems.splice(+el.dataset.i, 1);
+          renderWalkinItems();
+        });
+      });
+
+      wrap.querySelector('#walkinAddRowBtn').addEventListener('click', () => {
+        syncWalkinFromDOM();
+        walkinCustomItems.push({ name: '', qty: 1, price: 0 });
+        renderWalkinItems();
+        const inputs = wrap.querySelectorAll('.wci-name');
+        if (inputs.length > 0) inputs[inputs.length - 1].focus();
+      });
+    }
+
+    renderWalkinItems();
 
     const close = () => backdrop.remove();
     backdrop.querySelector('#walkinClose').addEventListener('click', close);
@@ -1117,10 +1240,24 @@
       const time = document.getElementById('walkinTime').value;
       const guests = parseInt(document.getElementById('walkinGuests').value) || 1;
       const notes = document.getElementById('walkinNotes').value.trim();
-      const customOrder = document.getElementById('walkinCustomOrder').value.trim();
+
+      syncWalkinFromDOM();
+      const validCustom = walkinCustomItems
+        .map(ci => ({
+          name: (ci.name || '').trim(),
+          qty: parseFloat(ci.qty) || 1,
+          price: parseFloat(ci.price) || 0,
+        }))
+        .filter(ci => ci.name);
 
       if (!name || !phone || !date || !time) {
         errEl.textContent = 'Name, phone, date, and time are required.';
+        errEl.classList.add('show');
+        return;
+      }
+
+      if (time < '08:00' || time > '20:00') {
+        errEl.textContent = 'Shop is open 8:00 AM to 8:00 PM. Please select a time within opening hours.';
         errEl.classList.add('show');
         return;
       }
@@ -1140,7 +1277,9 @@
         const customerData = await customerRes.json();
         const customerId = customerData.customer.id;
 
-        const combinedNotes = [notes, customOrder].filter(Boolean).join('\n\n--- CUSTOM ORDER ---\n');
+        const finalNotes = buildNotesWithCustomItems(notes, validCustom);
+        const hasCustomOrder = validCustom.length > 0;
+
         const res = await adminFetch('/api/admin/reservations', {
           method: 'POST',
           body: JSON.stringify({
@@ -1148,10 +1287,10 @@
             reservation_date: date,
             reservation_time: time,
             guests,
-            notes: combinedNotes || null,
+            notes: finalNotes || null,
             status: 'pending',
-            reservation_status: 'pending',
-            order_status: 'no_order',
+            reservation_status: hasCustomOrder ? 'order_preparing' : 'pending',
+            order_status: hasCustomOrder ? 'editable' : 'no_order',
           }),
         });
         const data = await res.json();
@@ -1168,6 +1307,22 @@
             return;
           }
           throw new Error(data.error || 'Could not create reservation.');
+        }
+
+        // When custom advance order items are present, also save the order so it is linked to the reservation in the database
+        if (hasCustomOrder && data.reservation?.id) {
+          try {
+            await adminFetch(`/api/admin/reservations/${data.reservation.id}/order`, {
+              method: 'POST',
+              body: JSON.stringify({
+                items: [],
+                notes: finalNotes,
+                status: 'editable',
+              }),
+            });
+          } catch (orderErr) {
+            console.warn('Note: order link will be saved via reservation notes:', orderErr);
+          }
         }
 
         close();
