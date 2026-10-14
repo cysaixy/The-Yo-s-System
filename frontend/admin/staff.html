@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head><base href="/admin/">
 <meta charset="UTF-8">
@@ -109,6 +109,46 @@
           <div class="admin-error" id="permError" style="display:none; padding:10px 0 0; text-align:left;"></div>
         </div>
       </div>
+
+      <div class="modal-backdrop" id="resetPwModal">
+        <div class="modal-box">
+          <h3>Reset Staff Password</h3>
+          <input type="hidden" id="resetPwStaffId">
+          <p style="font-size:0.83rem; color:var(--ink-muted); margin-bottom:14px; line-height:1.5;">
+            Assign a new password for <strong id="resetPwStaffName" style="color:var(--ink);"></strong>. They will use this password to sign in immediately.
+          </p>
+          <div class="form-grid">
+            <div class="form-field" style="grid-column:1/-1;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label style="margin:0;">New Password (min. 10 chars)</label>
+                <button type="button" class="btn small btn-outline" id="generatePwBtn" style="font-size:0.72rem; padding:2px 8px; font-weight:600;">⚡ Generate Random</button>
+              </div>
+              <div class="password-wrap">
+                <input type="password" id="resetPwInput" placeholder="••••••••••" autocomplete="new-password">
+                <button type="button" class="password-toggle" data-toggle-pw="resetPwInput" aria-label="Show password">
+                  <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="form-field" style="grid-column:1/-1;">
+              <label>Confirm Password</label>
+              <div class="password-wrap">
+                <input type="password" id="resetPwConfirm" placeholder="••••••••••" autocomplete="new-password">
+                <button type="button" class="password-toggle" data-toggle-pw="resetPwConfirm" aria-label="Show password">
+                  <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="resetPwCancelBtn">Cancel</button>
+            <button class="btn" id="resetPwSaveBtn">Save Password</button>
+          </div>
+          <div class="admin-error" id="resetPwError" style="display:none; padding:10px 0 0; text-align:left;"></div>
+        </div>
+      </div>
     `;
 
     document.getElementById('newStaffBtn').addEventListener('click', () => openStaffModal());
@@ -116,6 +156,9 @@
     document.getElementById('staffSaveBtn').addEventListener('click', saveStaff);
     document.getElementById('permCancelBtn').addEventListener('click', () => toggleModal('permModal', false));
     document.getElementById('permSaveBtn').addEventListener('click', savePermissions);
+    document.getElementById('resetPwCancelBtn').addEventListener('click', () => toggleModal('resetPwModal', false));
+    document.getElementById('resetPwSaveBtn').addEventListener('click', saveResetPassword);
+    document.getElementById('generatePwBtn').addEventListener('click', generateRandomPassword);
 
     loadStaff();
   }
@@ -163,6 +206,7 @@
                   ? `<span style="font-size:0.75rem; color:var(--ink-muted); font-style:italic;">Owner account — locked</span>`
                   : `<div class="row-actions">
                       <button class="edit-staff-btn" data-id="${s.id}">Edit</button>
+                      <button class="reset-pw-btn" data-id="${s.id}">Reset Password</button>
                       ${s.role !== 'Admin' ? `<button class="perm-btn" data-id="${s.id}"
                               data-inv="${s.can_access_inventory}" data-stock="${s.can_access_stock_in}" data-rep="${s.can_access_reports}">Permissions</button>` : ''}
                     </div>`
@@ -174,6 +218,7 @@
       </table>
     `;
     wrap.querySelectorAll('.edit-staff-btn').forEach(btn => btn.addEventListener('click', () => openStaffModal(btn.dataset.id)));
+    wrap.querySelectorAll('.reset-pw-btn').forEach(btn => btn.addEventListener('click', () => openResetPwModal(btn.dataset.id)));
     wrap.querySelectorAll('.perm-btn').forEach(btn => btn.addEventListener('click', () => openPermModal(btn)));
   }
 
@@ -199,6 +244,84 @@
 
     document.getElementById('staffError').style.display = 'none';
     toggleModal('staffModal', true);
+  }
+
+  function openResetPwModal(id) {
+    const staff = staffList.find(s => s.id == id);
+    if (!staff) return;
+    if (staff.email.toLowerCase() === SUPERADMIN_EMAIL) return;
+
+    document.getElementById('resetPwStaffId').value = id;
+    document.getElementById('resetPwStaffName').textContent = `${staff.name} (${staff.email})`;
+    document.getElementById('resetPwInput').value = '';
+    document.getElementById('resetPwConfirm').value = '';
+    document.getElementById('resetPwInput').type = 'password';
+    document.getElementById('resetPwConfirm').type = 'password';
+    document.querySelectorAll('#resetPwModal [data-toggle-pw]').forEach(btn => btn.classList.remove('shown'));
+    document.getElementById('resetPwError').style.display = 'none';
+    toggleModal('resetPwModal', true);
+  }
+
+  function generateRandomPassword() {
+    const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
+    let rand = '';
+    for (let i = 0; i < 6; i++) {
+      rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const generated = `TheYos#${rand}`;
+    const inp1 = document.getElementById('resetPwInput');
+    const inp2 = document.getElementById('resetPwConfirm');
+    inp1.value = generated;
+    inp2.value = generated;
+    inp1.type = 'text';
+    inp2.type = 'text';
+    document.querySelectorAll('#resetPwModal [data-toggle-pw]').forEach(btn => btn.classList.add('shown'));
+  }
+
+  async function saveResetPassword() {
+    const id = document.getElementById('resetPwStaffId').value;
+    const pw = document.getElementById('resetPwInput').value;
+    const confirm = document.getElementById('resetPwConfirm').value;
+    const errEl = document.getElementById('resetPwError');
+    const btn = document.getElementById('resetPwSaveBtn');
+
+    errEl.style.display = 'none';
+
+    if (!pw) {
+      errEl.textContent = 'Please enter a new password.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (pw.length < 10) {
+      errEl.textContent = 'Password must be at least 10 characters.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (pw !== confirm) {
+      errEl.textContent = 'Passwords do not match.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      const res = await adminFetch(`/api/admin/staff/${id}/reset-password`, {
+        method: 'PUT',
+        body: JSON.stringify({ new_password: pw }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not reset password.');
+
+      alert('Password has been reset successfully! The staff member can now log in with the new password.');
+      toggleModal('resetPwModal', false);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save Password';
+    }
   }
 
   async function saveStaff() {

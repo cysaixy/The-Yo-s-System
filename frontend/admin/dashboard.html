@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head><base href="/admin/">
 <meta charset="UTF-8">
@@ -614,9 +614,10 @@
       { key: 'pending', label: 'Pending' },
       { key: 'confirmed', label: 'Confirm' },
       { key: 'preparing', label: 'Preparing' },
+      { key: 'ready', label: 'Ready' },
       { key: 'completed', label: 'Completed' },
     ];
-    const currentIndex = ({ pending: 0, confirmed: 1, preparing: 2, ready: 2, completed: 3 })[status] ?? 0;
+    const currentIndex = ({ pending: 0, confirmed: 1, preparing: 2, ready: 3, completed: 4 })[status] ?? 0;
     return `<ol class="ticket-trail" aria-label="Order progress">
       ${stages.map((stage, index) => {
         const state = index < currentIndex ? 'done' : (index === currentIndex ? 'current' : 'upcoming');

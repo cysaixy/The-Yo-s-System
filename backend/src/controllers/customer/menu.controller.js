@@ -43,18 +43,27 @@ export async function getMenu(req, res, next) {
       });
     });
 
-    // Determine which add-ons are actually in stock
+    // Determine which add-ons are actually in stock, and compute max_quantity
     const addonInStock = new Set();
+    const addonMaxQty = new Map(); // addon_id -> max servings available
     addonsRes.rows.forEach(addon => {
       const components = addonInvMap.get(addon.id);
       if (!components || components.length === 0) {
         // No inventory links → treat as always available (not ingredient-tracked)
         addonInStock.add(addon.id);
+        addonMaxQty.set(addon.id, 99); // effectively unlimited
         return;
       }
       // All linked inventory items must have sufficient stock
       const allAvailable = components.every(c => c.available >= c.required);
-      if (allAvailable) addonInStock.add(addon.id);
+      if (allAvailable) {
+        addonInStock.add(addon.id);
+        // max_quantity = minimum floor of (available / required) across all components
+        const maxServings = Math.floor(
+          Math.min(...components.map(c => c.available / c.required))
+        );
+        addonMaxQty.set(addon.id, maxServings);
+      }
     });
 
     // ---------- Product link map ----------
@@ -98,10 +107,12 @@ export async function getMenu(req, res, next) {
             )
             .map((a) => ({
               id: a.id,
+              addon_id: a.id,
               name: a.name,
               description: a.description,
               price: Number(a.price),
               category: a.category,
+              max_quantity: addonMaxQty.get(a.id) ?? 99,
             })),
         };
       });

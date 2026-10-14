@@ -178,7 +178,55 @@ export async function createOrder(req, res, next) {
 
     total_amount = round2(total_amount + deliveryFee);
 
+    // ── Pre-flight stock check (before we open a transaction) ──────────────
+    // Aggregate the total inventory needed across ALL cart lines (menu items +
+    // add-ons). If any ingredient would go negative we reject immediately with
+    // a descriptive error so the customer sees it before the order is created.
+    const neededByInventoryId = new Map(); // inventoryId → { needed, name }
+    for (const item of validatedItems) {
+      for (const comp of item.inventory_components) {
+        const key = comp.inventory_id;
+        const qty = Number(comp.quantity) * item.quantity;
+        if (!neededByInventoryId.has(key)) {
+          neededByInventoryId.set(key, { needed: 0, name: comp.inventory_name });
+        }
+        neededByInventoryId.get(key).needed += qty;
+      }
+      for (const a of item.addons) {
+        for (const comp of a.inventory_components) {
+          const key = comp.inventory_id;
+          const qty = Number(comp.quantity) * a.quantity;
+          if (!neededByInventoryId.has(key)) {
+            neededByInventoryId.set(key, { needed: 0, name: comp.inventory_name, addonName: a.name });
+          }
+          const entry = neededByInventoryId.get(key);
+          entry.needed += qty;
+          if (!entry.addonName) entry.addonName = a.name;
+        }
+      }
+    }
+
+    if (neededByInventoryId.size > 0) {
+      const inventoryIds = [...neededByInventoryId.keys()];
+      const { rows: stockRows } = await client.query(
+        `SELECT id, stock_quantity FROM inventory_items WHERE id = ANY($1::int[])`,
+        [inventoryIds]
+      );
+      const stockMap = new Map(stockRows.map(r => [r.id, Number(r.stock_quantity ?? Infinity)]));
+      for (const [invId, { needed, name, addonName }] of neededByInventoryId) {
+        const available = stockMap.get(invId) ?? Infinity;
+        if (available < needed) {
+          const label = addonName ? `${addonName} (${name})` : name;
+          return res.status(409).json({
+            error: `Not enough stock for "${label}". Only ${available} available but ${needed} needed across your cart. Please reduce the quantity.`,
+          });
+        }
+      }
+    }
+    // ── End pre-flight check ───────────────────────────────────────────────
+
     await client.query('BEGIN');
+
 
     // Concurrency-safe stock check and deduction inside transaction
     // Lock all inventory rows that will be touched, then check and deduct atomically
@@ -419,7 +467,41 @@ export async function getCustomerOrders(req, res, next) {
       [customer_id]
     );
 
-    res.json({ orders: rows });
+    const ordersWithCustom = rows.map((o) => {
+      let customItems = [];
+      const notesToParse = o.notes || '';
+      if (notesToParse.includes('---CUSTOM_ITEMS_JSON---')) {
+        try {
+          const marker = '---CUSTOM_ITEMS_JSON---';
+          const raw = notesToParse.slice(notesToParse.indexOf(marker) + marker.length).trim();
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            customItems = parsed.map((ci) => {
+              const qty = Number(ci.quantity || ci.qty || 1);
+              const price = Number(ci.price || 0);
+              return {
+                menu_id: null,
+                item_name: ci.name || ci.product_name || 'Custom Item',
+                quantity: qty,
+                price: price,
+                subtotal: ci.subtotal != null ? Number(ci.subtotal) : round2(qty * price),
+                notes: ci.notes || null,
+                add_ons: [],
+                is_custom: true,
+              };
+            });
+          }
+        } catch (e) {}
+      }
+      const cleanNotes = (o.notes || '').split('---CUSTOM_ITEMS_JSON---')[0].trim();
+      return {
+        ...o,
+        clean_notes: cleanNotes,
+        custom_items: customItems,
+      };
+    });
+
+    res.json({ orders: ordersWithCustom });
   } catch (err) {
     next(err);
   }
@@ -452,6 +534,19 @@ export async function updateOrder(req, res, next) {
     }
 
     const fields = { order_type, customer_name, customer_phone, delivery_address, payment_method, notes };
+
+    if (notes !== undefined) {
+      const existingRes = await pool.query(
+        'SELECT notes FROM orders WHERE id = $1 AND customer_id = $2',
+        [id, customer_id]
+      );
+      const existingNotes = existingRes.rows[0]?.notes || '';
+      if (existingNotes.includes('---CUSTOM_ITEMS_JSON---') && !notes.includes('---CUSTOM_ITEMS_JSON---')) {
+        const marker = '---CUSTOM_ITEMS_JSON---';
+        const rawJson = existingNotes.slice(existingNotes.indexOf(marker));
+        fields.notes = (notes ? notes.trim() + '\n' : '') + rawJson;
+      }
+    }
     const cols = [];
     const vals = [];
     for (const [col, val] of Object.entries(fields)) {

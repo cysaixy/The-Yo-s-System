@@ -318,8 +318,9 @@
     { key: 'confirmed', label: 'Confirmed' },
     { key: 'preparing', label: 'Preparing' },
     { key: 'ready', label: 'Ready' },
+    { key: 'completed', label: 'Completed' },
   ];
-  const STEP_ALIASES = { completed: 'ready' };
+  const STEP_ALIASES = {};
 
   function peso(n) {
     return '₱' + Number(n || 0).toLocaleString('en-PH', { maximumFractionDigits: 2 });
@@ -333,6 +334,67 @@
 
   const TYPE_LABEL = { online: 'Delivery', pickup: 'Takeout', dine_in: 'Dine-In' };
   const PAYMENT_LABEL = { gcash: 'GCash', cash: 'Cash' };
+
+  const CUSTOM_ITEMS_MARKER = '---CUSTOM_ITEMS_JSON---';
+
+  function parseOrderNotesAndCustomItems(order) {
+    const rawNotes = String(order?.notes || '');
+    let customItems = Array.isArray(order?.custom_items) ? [...order.custom_items] : [];
+    let baseNotes = rawNotes;
+
+    if (rawNotes.includes(CUSTOM_ITEMS_MARKER)) {
+      const parts = rawNotes.split(CUSTOM_ITEMS_MARKER);
+      baseNotes = (parts[0] || '').trim();
+      if (!customItems.length && parts[1]) {
+        try {
+          const parsed = JSON.parse(parts[1].trim());
+          if (Array.isArray(parsed)) {
+            customItems = parsed.map(ci => {
+              const qty = Number(ci.quantity || ci.qty || 1);
+              const price = Number(ci.price || 0);
+              return {
+                menu_id: null,
+                item_name: ci.name || ci.product_name || 'Custom Item',
+                quantity: qty,
+                price: price,
+                subtotal: ci.subtotal != null ? Number(ci.subtotal) : (price * qty),
+                notes: ci.notes || null,
+                add_ons: [],
+                is_custom: true
+              };
+            });
+          }
+        } catch (e) {}
+      }
+    }
+
+    let prefTime = order?.requested_time || '';
+    let prepInstructions = baseNotes;
+
+    // Extract Preferred Time if it was prepended to notes
+    const timeMatch = baseNotes.match(/^Preferred Time:\s*([^·\n]+)(?:\s*·\s*|\n|$)([\s\S]*)$/i);
+    if (timeMatch) {
+      if (!prefTime) prefTime = timeMatch[1].trim();
+      prepInstructions = (timeMatch[2] || '').trim();
+    }
+
+    return {
+      cleanNotes: prepInstructions,
+      prefTime,
+      customItems,
+      rawCustomJson: rawNotes.includes(CUSTOM_ITEMS_MARKER)
+        ? rawNotes.slice(rawNotes.indexOf(CUSTOM_ITEMS_MARKER))
+        : ''
+    };
+  }
+
+  function getOrderItems(order) {
+    const regularItems = Array.isArray(order?.items)
+      ? order.items.filter(it => it && it.menu_id !== null && it.quantity > 0)
+      : [];
+    const { customItems } = parseOrderNotesAndCustomItems(order);
+    return [...regularItems, ...customItems];
+  }
 
   function isDeliveryOrder(order) {
     return order.order_type === 'online';
@@ -524,14 +586,16 @@
     document.getElementById('detailOrderMeta').textContent =
       `Status: ${(order.status || '').toUpperCase()} · ${esc(TYPE_LABEL[order.order_type] || order.order_type)} · Placed ${order.datetime_ordered ? new Date(order.datetime_ordered).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : ''}`;
 
-    const items = Array.isArray(order.items) ? order.items.filter(it => it && it.menu_id !== null) : [];
+    const parsedNotes = parseOrderNotesAndCustomItems(order);
+    const items = getOrderItems(order);
     document.getElementById('detailItems').innerHTML = items.length
       ? items.map(it => {
           const addons = (it.add_ons || []).filter(a => a && a.quantity > 0)
             .map(a => `<span style="display:block; font-size:0.78rem; color:var(--brass); opacity:0.85; margin-top:1px;">+ ${a.quantity}× ${esc(a.name)} <span style="opacity:.7;">(${peso(a.subtotal)})</span></span>`)
             .join('');
+          const customTag = it.is_custom ? ' <span style="font-size:0.75rem; color:var(--brass); opacity:0.85;">(Custom Item)</span>' : '';
           return `<div class="order-item-row">
-            <span><span class="qty">×${it.quantity}</span>${esc(it.item_name) || 'Item #' + it.menu_id}${it.notes ? ` <span style="opacity:.6; font-size:0.8em;">(${esc(it.notes)})</span>` : ''}${addons}</span>
+            <span><span class="qty">×${it.quantity}</span>${esc(it.item_name) || 'Item #' + it.menu_id}${customTag}${it.notes ? ` <span style="opacity:.6; font-size:0.8em;">(${esc(it.notes)})</span>` : ''}${addons}</span>
             <span>${peso(it.subtotal)}</span>
           </div>`;
         }).join('')
@@ -542,9 +606,9 @@
 
     setVal('detailName', order.customer_name);
     setVal('detailPhone', order.customer_phone);
-    setVal('detailTime', order.requested_time || '');
+    setVal('detailTime', parsedNotes.prefTime || order.requested_time || '');
     setVal('detailAddress', order.delivery_address);
-    setVal('detailNotes', order.notes);
+    setVal('detailNotes', parsedNotes.cleanNotes);
     setSelect('detailService', order.order_type);
     setSelect('detailPayment', order.payment_method);
 
@@ -683,13 +747,21 @@
     btn.textContent = 'Saving…';
 
     const timeVal = document.getElementById('detailTime').value.trim();
+    const cleanNotesVal = document.getElementById('detailNotes').value.trim();
+    const { rawCustomJson } = parseOrderNotesAndCustomItems(order);
+
+    let combinedNotes = [timeVal ? `Preferred Time: ${timeVal}` : '', cleanNotesVal].filter(Boolean).join(' · ');
+    if (rawCustomJson) {
+      combinedNotes = (combinedNotes ? combinedNotes + '\n' : '') + rawCustomJson;
+    }
+
     const payload = {
       customer_name: document.getElementById('detailName').value.trim(),
       customer_phone: document.getElementById('detailPhone').value.trim(),
       order_type: document.getElementById('detailService').value,
       delivery_address: document.getElementById('detailAddress').value.trim(),
       payment_method: document.getElementById('detailPayment').value,
-      notes: [timeVal ? `Preferred Time: ${timeVal}` : '', document.getElementById('detailNotes').value.trim()].filter(Boolean).join(' · '),
+      notes: combinedNotes,
     };
 
     try {
@@ -724,14 +796,17 @@
       return `<div class="status-cancelled"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:3px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>This order was cancelled</div>`;
     }
     const currentIndex = STEPS.findIndex(s => s.key === normalized);
+    const isCompleted = normalized === 'completed';
     let tracker = `<div class="status-tracker">
       ${STEPS.map((step, i) => {
         let cls = 'status-step';
-        if (currentIndex >= 0 && i < currentIndex) cls += ' done';
-        if (i === currentIndex) cls += ' current';
+        const isDone = currentIndex >= 0 && (i < currentIndex || (isCompleted && i === currentIndex));
+        const isCurrent = i === currentIndex && !isCompleted;
+        if (isDone) cls += ' done';
+        if (isCurrent) cls += ' current';
         return `<div class="${cls}">
           <div class="connector"></div>
-          <div class="dot">${i < currentIndex ? '✓' : i + 1}</div>
+          <div class="dot">${isDone ? '✓' : i + 1}</div>
           <div class="step-label">${step.label}</div>
         </div>`;
       }).join('')}
@@ -765,7 +840,7 @@
     const date = order.datetime_ordered
       ? new Date(order.datetime_ordered).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
       : '';
-    const items = Array.isArray(order.items) ? order.items.filter(it => it && it.menu_id !== null) : [];
+    const items = getOrderItems(order);
     const t = totalsFor(order);
 
     return `<div class="order-card">
@@ -791,8 +866,9 @@
               const addons = (it.add_ons || []).filter(a => a && a.quantity > 0)
                 .map(a => `<span style="display:block; font-size:0.78rem; color:var(--brass); opacity:0.85; margin-top:1px;">+ ${a.quantity}× ${esc(a.name)} <span style="opacity:.7;">(${peso(a.subtotal)})</span></span>`)
                 .join('');
+              const customTag = it.is_custom ? ' <span style="font-size:0.75rem; color:var(--brass); opacity:0.85;">(Custom Item)</span>' : '';
               return `<div class="order-item-row">
-                <span><span class="qty">×${it.quantity}</span>${esc(it.item_name) || 'Item #' + it.menu_id}${it.notes ? ` <span style="opacity:.6; font-size:0.8em;">(${esc(it.notes)})</span>` : ''}${addons}</span>
+                <span><span class="qty">×${it.quantity}</span>${esc(it.item_name) || 'Item #' + it.menu_id}${customTag}${it.notes ? ` <span style="opacity:.6; font-size:0.8em;">(${esc(it.notes)})</span>` : ''}${addons}</span>
                 <span>${peso(it.subtotal)}</span>
               </div>`;
             }).join('')

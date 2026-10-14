@@ -382,3 +382,36 @@ export async function changePassword(req, res, next) {
     next(err);
   }
 }
+
+// PUT /api/admin/staff/:id/reset-password — lets an Admin reset any staff member's
+// password directly without requiring the current password (e.g. forgotten password).
+export async function resetStaffPassword(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { new_password } = req.body;
+
+    if (!new_password) {
+      return res.status(400).json({ error: 'New password is required.' });
+    }
+    const passwordError = validatePassword(new_password);
+    if (passwordError) return res.status(400).json({ error: passwordError });
+
+    const { rows: target } = await pool.query(
+      'SELECT id, name, email, role FROM staff WHERE id = $1',
+      [id]
+    );
+    if (!target[0]) return res.status(404).json({ error: 'Staff member not found.' });
+
+    // Superadmin protection: another admin cannot reset the superadmin's password
+    if (target[0].email.toLowerCase() === SUPERADMIN_EMAIL && req.staff.email.toLowerCase() !== SUPERADMIN_EMAIL) {
+      return res.status(403).json({ error: 'The primary admin account is protected and cannot be reset by another user.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+    await pool.query('UPDATE staff SET password = $1 WHERE id = $2', [hashedPassword, id]);
+
+    res.json({ success: true, message: `Password for ${target[0].name || target[0].email} has been reset.` });
+  } catch (err) {
+    next(err);
+  }
+}

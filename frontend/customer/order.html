@@ -1858,19 +1858,25 @@
       container.innerHTML = `<span class="addon-empty">No add-ons for this item.</span>`;
       return;
     }
-    container.innerHTML = addons.map(a => `
+    container.innerHTML = addons.map(a => {
+      const maxQty = a.max_quantity ?? 99;
+      const currentQty = modalState.addons[a.addon_id] || 0;
+      const atMax = currentQty >= maxQty;
+      const stockHint = (maxQty < 99 && maxQty <= 3) ? `<span style="font-size:0.7rem; color:#e05252; font-weight:700;"> — Only ${maxQty} left!</span>` : '';
+      return `
       <div class="addon-row">
-        <div class="addon-name">${a.name}<small>${a.description || ''}</small></div>
+        <div class="addon-name">${a.name}${stockHint}<small>${a.description || ''}</small></div>
         <div class="addon-right">
-          <span class="addon-price">₱${a.price}</span>
+          <span class="addon-price">\u20B1${a.price}</span>
           <div class="stepper">
-            <button type="button" onclick="changeAddonQty(${a.addon_id}, -1)" ${(modalState.addons[a.addon_id] || 0) <= 0 ? 'disabled' : ''} aria-label="Decrease add-on quantity">−</button>
-            <span id="addonQty_${a.addon_id}">${modalState.addons[a.addon_id] || 0}</span>
-            <button type="button" onclick="changeAddonQty(${a.addon_id}, 1)" aria-label="Increase add-on quantity">+</button>
+            <button type="button" onclick="changeAddonQty(${a.addon_id}, -1)" ${currentQty <= 0 ? 'disabled' : ''} aria-label="Decrease add-on quantity">\u2212</button>
+            <span id="addonQty_${a.addon_id}">${currentQty}</span>
+            <button type="button" onclick="changeAddonQty(${a.addon_id}, 1)" ${atMax ? 'disabled title="Max stock reached"' : ''} aria-label="Increase add-on quantity">+</button>
           </div>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   window.changeModalQty = function(delta) {
@@ -1885,8 +1891,11 @@
   }
 
   window.changeAddonQty = function(addonId, delta) {
+    const item = menuDatabase.find(i => i.id === modalState.itemId);
+    const addonDef = (item?.add_ons || []).find(a => (a.addon_id || a.id) === addonId);
+    const maxQty = addonDef?.max_quantity ?? 99;
     const next = (modalState.addons[addonId] || 0) + delta;
-    if (next < 0 || next > 99) return;
+    if (next < 0 || next > maxQty) return;
     modalState.addons[addonId] = next;
     renderModalAddons();
   };

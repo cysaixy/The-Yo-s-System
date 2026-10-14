@@ -1,6 +1,19 @@
 import express from 'express';
 const staffRouter = express.Router();
-import {issueCSRFToken, login, logout, me, listStaff, getStaffById, createStaff, updateStaff, updateProfile, updatePermissions, changePassword}from '../../controllers/admin/staffController.js';
+import {
+  issueCSRFToken,
+  login,
+  logout,
+  me,
+  listStaff,
+  getStaffById,
+  createStaff,
+  updateStaff,
+  updateProfile,
+  updatePermissions,
+  changePassword,
+  resetStaffPassword,
+} from '../../controllers/admin/staffController.js';
 import { requireStaffAuth } from '../../middlewares/auth.middleware.js';
 import { csrfMiddleware } from '../../middlewares/csrf.middleware.js';
 import { requireAdmin } from '../../middlewares/role.middleware.js';
@@ -29,6 +42,8 @@ staffRouter.post('/', requireAdmin, createStaff);
 // changed to match (both routes accepted the same body shape either way).
 staffRouter.put('/:id', requireAdmin, updateStaff);
 staffRouter.put('/:id/permissions', requireAdmin, updatePermissions);
+// PUT /api/admin/staff/:id/reset-password — Admin resets staff password directly
+staffRouter.put('/:id/reset-password', requireAdmin, resetStaffPassword);
 // PUT /api/admin/staff/:id/password — any logged-in staff can change their
 // own password (settings.html); the controller verifies current password
 // and restricts edits to the account owner (or an Admin).
