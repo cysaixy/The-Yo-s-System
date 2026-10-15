@@ -38,7 +38,7 @@
       <div class="stat-grid" id="txSummary">
         <div class="stat-card"><div class="label">Cash In</div><div class="value">₱0</div></div>
         <div class="stat-card"><div class="label">Cash Out</div><div class="value">₱0</div></div>
-        <div class="stat-card"><div class="label">Net Movement</div><div class="value">₱0</div></div>
+        <div class="stat-card stat-card-primary"><div class="label">Net Movement</div><div class="value">₱0</div></div>
       </div>
       <div class="admin-panel">
         <div class="admin-panel-head">
@@ -161,7 +161,7 @@
     document.getElementById('txSummary').innerHTML = `
       <div class="stat-card"><div class="label">Cash In</div><div class="value">${peso(cashIn)}</div></div>
       <div class="stat-card"><div class="label">Cash Out</div><div class="value">${peso(cashOut)}</div></div>
-      <div class="stat-card"><div class="label">Net Movement</div><div class="value">${net < 0 ? '−' : ''}${peso(Math.abs(net))}</div></div>
+      <div class="stat-card stat-card-primary"><div class="label">Net Movement</div><div class="value${net < 0 ? ' danger' : ''}">${net < 0 ? '−' : ''}${peso(Math.abs(net))}</div></div>
     `;
   }
 

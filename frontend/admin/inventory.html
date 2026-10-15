@@ -65,6 +65,11 @@
 .inv-stat-card .isc-value.gold { color: var(--ink); }
 .inv-stat-card .isc-value.sm { font-size: 1.08rem; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
 .inv-stat-card .isc-sub { justify-self: end; text-align: right; font-size: 0.72rem; color: var(--ink-muted); }
+.inv-stat-card-primary { background: #211f1c; border-color: #211f1c; }
+.inv-stat-card-primary:hover { background: #211f1c; border-color: #393631; }
+.inv-stat-card-primary .isc-label { color: rgba(255,255,255,0.68); border-color: rgba(255,255,255,0.16); }
+.inv-stat-card-primary .isc-value, .inv-stat-card-primary .isc-value.gold { color: #78d6a5; }
+.inv-stat-card-primary .isc-sub { color: rgba(255,255,255,0.68); }
 
 /* ---- Status strip ---- */
 .inv-status-strip {
@@ -612,7 +617,7 @@ function buildPageHTML() {
         <div class="isc-value" id="statTotal">—</div>
         <div class="isc-sub">Ingredients & supplies</div>
       </div>
-      <div class="inv-stat-card">
+      <div class="inv-stat-card inv-stat-card-primary">
         <div class="isc-label">Current Stock Value</div>
         <div class="isc-value" id="statValue">—</div>
         <div class="isc-sub">SUM(stock × unit cost)</div>

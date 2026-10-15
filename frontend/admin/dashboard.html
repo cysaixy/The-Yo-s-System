@@ -1160,7 +1160,7 @@
       const needsAttention = d.below_reorder + d.low_stock + d.out_of_stock;
       el.innerHTML = `
         <div class="stat-hero-row">
-          <div class="stat-hero">
+          <div class="stat-hero stat-hero-attention">
             <div class="label">Needs Attention</div>
             <div class="hero-row"><div class="value">${needsAttention}</div></div>
             <div class="stat-note">out of ${d.total_items} total items tracked</div>

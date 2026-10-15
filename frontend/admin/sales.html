@@ -22,18 +22,30 @@
   .stx-tab svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
   /* ---- Summary cards ---- */
-  .stx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .stx-cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.45fr); gap: 12px; margin-bottom: 22px; }
   .stx-card {
-    background: var(--component-bg); border: 1px solid var(--line); border-radius: 12px;
-    padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    min-width: 0; background: var(--component-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04); transition: box-shadow var(--transition-base), border-color var(--transition-fast);
   }
   .stx-card .label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
-  .stx-card .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.55rem; line-height: 1.15; color: var(--ink); margin-top: 5px; }
-  .stx-card .value.brass { color: var(--brass-dark); }
-  .stx-card .value.green { color: var(--success); }
-  .stx-card .sub { font-size: 0.72rem; opacity: 0.45; margin-top: 4px; }
-  .stx-ring { flex-shrink: 0; color: var(--ink); }
+  .stx-card .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: clamp(1.4rem, 2.2vw, 2rem); line-height: 1.15; color: var(--ink); margin-top: 7px; overflow-wrap: anywhere; }
+  .stx-card .sub { font-size: 0.72rem; color: var(--ink-muted); margin-top: 5px; }
+  .stx-card-main { min-width: 0; }
+  .stx-card-footer { display: flex; gap: 18px; border-top: 1px solid var(--line); padding-top: 11px; }
+  .stx-card-foot-metric { display: flex; flex-direction: column; gap: 2px; font-size: 0.7rem; color: var(--ink-muted); }
+  .stx-card-foot-metric strong { color: var(--ink); font-size: 0.82rem; font-weight: 700; }
+  .stx-card-margin { background: #211f1c; border-color: #211f1c; color: #fff; padding: 18px 20px 16px; }
+  .stx-card-margin .label { color: rgba(255,255,255,0.68); opacity: 1; }
+  .stx-card-margin .value { color: #78d6a5; font-size: clamp(1.8rem, 2.8vw, 2.45rem); }
+  .stx-margin-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .stx-margin-badge { border-radius: 999px; padding: 4px 9px; background: rgba(120,214,165,0.18); color: #9aebbb; font-size: 0.65rem; font-weight: 800; white-space: nowrap; }
+  .stx-margin-track { height: 7px; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,0.12); }
+  .stx-margin-fill { display: block; width: 0; height: 100%; border-radius: inherit; background: #78d6a5; transition: width 250ms ease; }
+  .stx-margin-legend { display: flex; justify-content: space-between; gap: 10px; color: rgba(255,255,255,0.64); font-size: 0.62rem; margin-top: 6px; }
+  .stx-card-margin.is-negative .value, .stx-card-margin.is-negative .stx-margin-badge { color: #ff9b91; }
+  .stx-card-margin.is-negative .stx-margin-badge { background: rgba(255,130,120,0.16); }
+  .stx-card-margin.is-negative .stx-margin-fill { background: #ff8278; }
 
   /* ---- Period controls ---- */
   .stx-controls {
@@ -254,7 +266,8 @@
   }
 
   @media (max-width: 900px) {
-    .stx-cards { grid-template-columns: 1fr; }
+    .stx-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stx-card-margin { grid-column: 1 / -1; }
     .stx-toolbar { align-items: stretch; }
     .stx-filters { width: 100%; }
     .stx-filters input[type="search"] { flex: 1; width: auto; }
@@ -300,7 +313,7 @@
   .stx-hours-line { width:66px; height:2px; background: var(--brass-light); position:relative; }
   .stx-hours-line:before,.stx-hours-line:after { content:''; position:absolute; top:-3px; width:8px; height:8px; border-radius:50%; background: var(--brass-dark); }
   .stx-hours-line:before { left:0; }.stx-hours-line:after { right:0; }
-  @media(max-width:700px){ .stx-cards{grid-template-columns:1fr}.stx-dialog{max-width:100%}.stx-filters input[type="search"]{width:100%} }
+  @media(max-width:700px){ .stx-cards{grid-template-columns:1fr}.stx-card-margin{grid-column:auto}.stx-dialog{max-width:100%}.stx-filters input[type="search"]{width:100%} }
   .stx-report-fields { display:grid; grid-template-columns:minmax(180px,1fr) minmax(180px,2fr); gap:8px; margin-bottom:12px; align-items:end; }
   .stx-report-field { position:relative; display:block; border:1px solid var(--line); border-radius:8px; background:#fff; padding:11px 9px 5px; transition: border-color .15s ease; }
   .stx-report-field:focus-within { border-color: var(--brass); }
@@ -314,9 +327,9 @@
     to { opacity: 1; transform: none; }
   }
 
-  /* ---- Extra hover polish for summary cards ---- */
-  .stx-card { transition: box-shadow var(--transition-base), transform var(--transition-fast), border-color var(--transition-base); }
-  .stx-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--line-strong); }
+  /* ---- Summary card hover polish ---- */
+  .stx-card:hover { box-shadow: var(--shadow-md); border-color: var(--line-strong); }
+  .stx-card-margin:hover { border-color: #393631; }
 </style>
 </head>
 <body>
@@ -369,18 +382,6 @@
 
   function statusLabel(s) { return String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1); }
 
-  function ringSVG(pct) {
-    const r = 18, c = 2 * Math.PI * r;
-    const val = Math.round(Math.max(0, Math.min(100, Number(pct) || 0)));
-    const filled = (val / 100) * c;
-    return `<svg class="stx-ring" viewBox="0 0 48 48" width="50" height="50" aria-hidden="true">
-      <circle cx="24" cy="24" r="${r}" fill="none" stroke="var(--line)" stroke-width="4.5"/>
-      <circle cx="24" cy="24" r="${r}" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"
-              stroke-dasharray="${filled} ${c - filled}" transform="rotate(-90 24 24)"/>
-      <text x="24" y="27" text-anchor="middle" font-size="10.5" font-weight="700" fill="currentColor">${val}%</text>
-    </svg>`;
-  }
-
   function init() {
     const content = document.getElementById('adminContent');
     content.innerHTML = `
@@ -400,27 +401,39 @@
         ${canReports ? `
         <div class="stx-cards">
           <div class="stx-card">
-            <div>
+            <div class="stx-card-main">
               <div class="label">Sales</div>
               <div class="value" id="sumSales">₱0.00</div>
-              <div class="sub" id="sumSalesSub">—</div>
+            </div>
+            <div class="stx-card-footer">
+              <div class="stx-card-foot-metric"><span>Orders</span><strong id="sumSalesOrders">—</strong></div>
+              <div class="stx-card-foot-metric"><span>Avg. order</span><strong id="sumSalesAov">—</strong></div>
             </div>
           </div>
           <div class="stx-card">
-            <div>
+            <div class="stx-card-main">
               <div class="label">Cost of Goods Sold</div>
               <div class="value" id="sumCogs">₱0.00</div>
               <div class="sub">ingredients + add-ons</div>
             </div>
-            <span id="sumCogsRing" style="color:var(--brass-dark);">${ringSVG(0)}</span>
-          </div>
-          <div class="stx-card">
-            <div>
-              <div class="label">Margin</div>
-              <div class="value green" id="sumMargin">₱0.00</div>
-              <div class="sub" id="sumMarginSub">gross profit</div>
+            <div class="stx-card-footer">
+              <div class="stx-card-foot-metric"><span>Share of sales</span><strong id="sumCogsShare">0%</strong></div>
             </div>
-            <span id="sumMarginRing" style="color:var(--success);">${ringSVG(0)}</span>
+          </div>
+          <div class="stx-card stx-card-margin" id="sumMarginCard">
+            <div class="stx-card-main">
+              <div class="stx-margin-head">
+                <div class="label">Gross Margin</div>
+                <span class="stx-margin-badge" id="sumMarginBadge">0%</span>
+              </div>
+              <div class="value" id="sumMargin">₱0.00</div>
+            </div>
+            <div>
+              <div class="stx-margin-track" id="sumMarginTrack" role="progressbar" aria-label="Gross margin share of sales" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <span class="stx-margin-fill" id="sumMarginFill"></span>
+              </div>
+              <div class="stx-margin-legend"><span id="sumMarginKept">Kept ₱0.00</span><span id="sumMarginCost">Cost ₱0.00</span></div>
+            </div>
           </div>
         </div>` : ''}
 
@@ -961,12 +974,17 @@
       const marginPct = Number(s.margin) || 0;
 
       document.getElementById('sumSales').textContent = peso(sales);
-      document.getElementById('sumSalesSub').textContent = `${s.order_count} orders · avg ${peso(s.aov)}`;
+      document.getElementById('sumSalesOrders').textContent = s.order_count;
+      document.getElementById('sumSalesAov').textContent = peso(s.aov);
       document.getElementById('sumCogs').textContent = peso(cogs);
-      document.getElementById('sumCogsRing').innerHTML = ringSVG(sales > 0 ? (cogs / sales) * 100 : 0);
+      document.getElementById('sumCogsShare').textContent = `${sales > 0 ? ((cogs / sales) * 100).toFixed(2) : '0.00'}%`;
       document.getElementById('sumMargin').textContent = peso(profit);
-      document.getElementById('sumMarginRing').innerHTML = ringSVG(marginPct);
-      document.getElementById('sumMarginSub').textContent = `Margin ${marginPct}%`;
+      document.getElementById('sumMarginBadge').textContent = `${marginPct}%`;
+      document.getElementById('sumMarginKept').textContent = `Kept ${peso(profit)}`;
+      document.getElementById('sumMarginCost').textContent = `Cost ${peso(cogs)}`;
+      document.getElementById('sumMarginFill').style.width = `${Math.max(0, Math.min(100, marginPct))}%`;
+      document.getElementById('sumMarginTrack').setAttribute('aria-valuenow', String(Math.max(0, Math.min(100, marginPct))));
+      document.getElementById('sumMarginCard').classList.toggle('is-negative', profit < 0);
     } catch (err) {
       console.error('Summary error:', err.message);
     }
