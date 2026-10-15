@@ -49,22 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (navToggle && siteNav && !navToggle.dataset.bound) {
     navToggle.dataset.bound = '1';
 
-    if (!navToggle.querySelector('svg')) {
-      navToggle.innerHTML = `
-        <svg class="nav-toggle-icon nav-icon-menu" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <line x1="4" y1="6" x2="20" y2="6"></line>
-          <line x1="4" y1="12" x2="20" y2="12"></line>
-          <line x1="4" y1="18" x2="20" y2="18"></line>
-        </svg>
-        <svg class="nav-toggle-icon nav-icon-close" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      `;
-    }
-    navToggle.setAttribute('aria-label', 'Toggle navigation menu');
-    navToggle.setAttribute('aria-expanded', 'false');
-
     const openNav = () => {
       siteNav.classList.add('open');
       navToggle.classList.add('open');
