@@ -450,6 +450,13 @@
   @media (max-width: 700px) { .cta-inner { flex-direction: column; align-items: flex-start; } }
 
   footer { border-top: 1px solid var(--hp-line); }
+  .admin-access-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    font: 600 .62rem 'Space Mono', monospace; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--hp-ink-faint); text-decoration: none;
+    transition: color .2s ease;
+  }
+  .admin-access-link:hover { color: var(--brass); }
 
   /* ---------- MOBILE STICKY ORDER BAR ---------- */
   .sticky-order { display: none; }
@@ -834,6 +841,10 @@
     <div class="foot-bottom">
       <span>&copy; <span id="year"></span> The~Yo's Resto Bar.</span>
       <span>Baggao, Cagayan · Made with care.</span>
+      <a href="/admin/login" class="admin-access-link" aria-label="Admin login">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Admin
+      </a>
     </div>
   </div>
 </footer>
