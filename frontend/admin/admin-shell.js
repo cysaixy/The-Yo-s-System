@@ -460,7 +460,7 @@ export function renderAdminShell({ active, title }) {
       <div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div>
       <aside class="admin-sidebar">
         <div class="admin-logo">
-          <span class="mark">TY</span>
+          <img src="../pics&vids/the-yo's_logo.jpg" alt="The~Yo's Logo" class="mark">
           <span class="brand-label">THE~YO'S</span>
           <button class="sidebar-toggle" id="adminSidebarToggle" type="button" aria-label="Minimize sidebar" title="Minimize sidebar">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">

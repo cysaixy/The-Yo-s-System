@@ -58,6 +58,12 @@ nav ul { list-style: none; display: flex; align-items: center; gap: 4px; margin:
 nav ul li { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
 nav ul li.nav-auth-hidden { visibility: hidden !important; pointer-events: none !important; }
 
+/* Push the toggle+CTA+account group away from the text links */
+.sunset-mode-item { margin-left: 12px; }
+/* Space between Order Now and Sign In pill */
+li:has(> .nav-btn) { margin-left: 8px; }
+.nav-account-li { margin-left: 6px; }
+
 /* Nav links — icon + label style, no all-caps, no underline bar */
 nav a {
   color: var(--ink);

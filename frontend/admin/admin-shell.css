@@ -88,10 +88,7 @@ body {
 .admin-logo .mark {
   width: 36px; height: 36px;
   border-radius: 10px;
-  background: linear-gradient(140deg, #c9a86c 0%, #8a6d3a 100%);
-  color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.78rem; font-weight: 900; letter-spacing: -0.02em;
+  object-fit: cover;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(138,109,58,0.28);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
