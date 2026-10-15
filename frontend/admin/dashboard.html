@@ -682,7 +682,7 @@
         ? '—'
         : owner.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
       return `
-        <a class="order-ticket status-${escapeHtml(order.status)}${changed.has(String(order.id)) ? ' live-updated' : ''}" href="sales" aria-label="Open order ${escapeHtml(order.id)}">
+        <a class="order-ticket status-${escapeHtml(order.status)}${changed.has(String(order.id)) ? ' live-updated' : ''}" href="sales?orderId=${encodeURIComponent(order.id)}" aria-label="Open order ${escapeHtml(order.id)}">
           <div class="ticket-top">
             <span class="ticket-number">Order #${escapeHtml(order.id)}</span>
             <span class="ticket-status">${escapeHtml(liveStatusLabel(order.status))}</span>

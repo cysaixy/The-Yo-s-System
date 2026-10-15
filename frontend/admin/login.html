@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head><base href="/admin/">
 <meta charset="UTF-8">
@@ -273,6 +273,8 @@
   /* ---- Password toggle ---- */
   .password-wrap { position: relative; }
   .password-wrap input { padding-right: 46px; }
+  .password-wrap input::-ms-reveal,
+  .password-wrap input::-ms-clear { display: none !important; }
   .password-toggle {
     position: absolute; top: 50%; right: 8px;
     transform: translateY(-50%);

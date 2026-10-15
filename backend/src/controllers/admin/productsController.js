@@ -164,28 +164,39 @@ export const getMenuItem = async (req, res, next) => {
 };
 
 export const createMenuItem = async (req, res, next) => {
+  const {
+    category_id, name, description, price, cost, image_url,
+    stock_quantity, status, inventory_components, flavors,
+  } = req.body || {};
+
+  // Validate BEFORE touching a pooled connection.
+  if (!category_id || !name || price === undefined) {
+    return res.status(400).json({ error: 'category_id, name, and price are required.' });
+  }
+
   const client = await pool.connect();
+  let inTransaction = false;
   try {
-    await client.query('BEGIN');
-
-    const { category_id, name, description, price, cost, image_url, stock_quantity, status, inventory_components, flavors } = req.body;
-    if (!category_id || !name || price === undefined) {
-      return res.status(400).json({ error: 'category_id, name, and price are required.' });
-    }
-
-    const hasRecipe = Array.isArray(inventory_components) && inventory_components.some(c => c.inventory_id && Number(c.quantity) > 0);
+    const hasRecipe =
+      Array.isArray(inventory_components) &&
+      inventory_components.some((c) => c.inventory_id && Number(c.quantity) > 0);
     const trackingMode = hasRecipe ? 'recipe' : 'direct';
-    const flavorsArr = Array.isArray(flavors) ? flavors.map(f => String(f).trim()).filter(Boolean) : [];
+    const flavorsArr = Array.isArray(flavors)
+      ? flavors.map((f) => String(f).trim()).filter(Boolean)
+      : [];
+
+    await client.query('BEGIN');
+    inTransaction = true;
 
     const { rows } = await client.query(
       `INSERT INTO menu_items (category_id, name, description, price, cost, image_url, stock_quantity, status, tracking_mode, flavors)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id, category_id, name, description, price, cost, image_url, stock_quantity, status, tracking_mode, flavors`,
-      [category_id, name, description || null, price, cost || 0, image_url || null, stock_quantity || 0, status || 'available', trackingMode, flavorsArr]
+      [category_id, name, description || null, price, cost || 0, image_url || null,
+        stock_quantity || 0, status || 'available', trackingMode, flavorsArr]
     );
     const item = rows[0];
 
-    // Insert linked inventory components
     if (Array.isArray(inventory_components)) {
       for (const comp of inventory_components) {
         if (comp.inventory_id && Number(comp.quantity) > 0) {
@@ -199,6 +210,7 @@ export const createMenuItem = async (req, res, next) => {
     }
 
     await client.query('COMMIT');
+    inTransaction = false;
 
     const { rows: invComp } = await pool.query(
       `SELECT mii.id, mii.inventory_id, mii.quantity, mii.unit, ii.name AS inventory_name, ii.stock_quantity
@@ -210,7 +222,7 @@ export const createMenuItem = async (req, res, next) => {
 
     res.status(201).json({ item: { ...item, inventory_components: invComp } });
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (inTransaction) await client.query('ROLLBACK');
     next(err);
   } finally {
     client.release();

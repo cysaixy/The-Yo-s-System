@@ -214,7 +214,7 @@ export async function upsertReservationOrder(req, res, next) {
         // ── Inventory: restore old stock if we're re-saving a finalized order ──
         // (items are about to be deleted and re-inserted; without this step the
         //  same ingredients would be deducted twice.)
-        if (orderRes.rows[0] && currentOrderStatus === 'finalized' && newOrderStatus === 'finalized') {
+        if (currentOrderStatus === 'finalized') {
         // Restore menu-item ingredients
           const { rows: oldItemComps } = await client.query(
             `SELECT mii.inventory_id, mii.quantity AS ing_qty, oi.quantity AS item_qty
@@ -334,10 +334,16 @@ export async function upsertReservationOrder(req, res, next) {
           );
           for (const comp of itemComps) {
             const consumed = Number(comp.ing_qty) * Number(oi.item_qty);
-            await client.query(
-              'UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2',
+            const deducted = await client.query(
+              'UPDATE inventory_items SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND stock_quantity >= $1',
               [consumed, comp.inventory_id]
             );
+            if (deducted.rowCount === 0) {
+              const shortage = new Error(`Not enough ${comp.inventory_name} in stock to finalize this order.`);
+              shortage.status = 409;
+              shortage.isOperational = true;
+              throw shortage;
+            }
             await client.query(
               `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
                VALUES ($1, $2, $3, 'sale', $4, $5)`,
@@ -361,10 +367,16 @@ export async function upsertReservationOrder(req, res, next) {
             );
             for (const comp of addonComps) {
               const consumed = Number(comp.ing_qty) * Number(addon.addon_qty);
-              await client.query(
-                'UPDATE inventory_items SET stock_quantity = GREATEST(0, stock_quantity - $1) WHERE id = $2',
+              const deducted = await client.query(
+                'UPDATE inventory_items SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND stock_quantity >= $1',
                 [consumed, comp.inventory_id]
               );
+              if (deducted.rowCount === 0) {
+                const shortage = new Error(`Not enough ${comp.inventory_name} in stock to finalize this order.`);
+                shortage.status = 409;
+                shortage.isOperational = true;
+                throw shortage;
+              }
               await client.query(
                 `INSERT INTO inventory_log (inventory_id, menu_id, staff_id, transaction_type, quantity_change, remarks)
                  VALUES ($1, $2, $3, 'sale', $4, $5)`,

@@ -712,6 +712,12 @@ body {
 .form-field textarea { resize: vertical; min-height: 72px; }
 .form-actions { display: flex; gap: 10px; margin-top: 18px; }
 
+/* Hide Microsoft Edge / IE native password reveal and clear icons to avoid duplicate eye icons */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+}
+
 .filter-bar {
   display: flex; gap: 10px; margin-bottom: 18px;
   flex-wrap: wrap; align-items: center;

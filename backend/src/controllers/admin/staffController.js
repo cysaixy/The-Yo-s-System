@@ -255,6 +255,27 @@ export async function updateProfile(req, res, next) {
     const targetId = Number(req.params.id);
     const requesterId = Number(req.staff.id);
 
+    // Protect the primary admin account (same rule as updateStaff / updatePermissions).
+    const { rows: targetRows } = await pool.query(
+      'SELECT email FROM staff WHERE id = $1',
+      [targetId]
+    );
+    if (!targetRows[0]) return res.status(404).json({ error: 'Staff member not found.' });
+
+    const targetIsSuper = targetRows[0].email.toLowerCase() === SUPERADMIN_EMAIL;
+    const requesterIsSuper = String(req.staff.email || '').toLowerCase() === SUPERADMIN_EMAIL;
+
+    if (targetIsSuper && !requesterIsSuper) {
+      return res.status(403).json({ error: 'This account is protected and cannot be modified.' });
+    }
+    if (
+      targetIsSuper &&
+      req.body?.email !== undefined &&
+      String(req.body.email).trim().toLowerCase() !== SUPERADMIN_EMAIL
+    ) {
+      return res.status(403).json({ error: 'The primary admin email cannot be changed.' });
+    }
+
     // Staff can only edit their own profile. Admins can edit any profile,
     // but in practice settings.html only ever calls this for self.
     if (requesterId !== targetId && req.staff.role !== 'Admin') {

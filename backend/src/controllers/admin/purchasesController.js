@@ -1,8 +1,29 @@
 // src/controllers/admin/purchasesController.js
 import pool from '../../config/db.js';
 
+let stockInColsReady = null;
+async function ensureStockInColumns() {
+  if (!stockInColsReady) {
+    stockInColsReady = (async () => {
+      await pool.query(`
+        ALTER TABLE stock_in ADD COLUMN IF NOT EXISTS inventory_id INTEGER REFERENCES inventory_items(id) ON DELETE SET NULL;
+        ALTER TABLE stock_in ALTER COLUMN menu_id DROP NOT NULL;
+        ALTER TABLE stock_in ADD COLUMN IF NOT EXISTS supplier VARCHAR(150);
+        ALTER TABLE stock_in ADD COLUMN IF NOT EXISTS unit_cost NUMERIC(10,4);
+        ALTER TABLE stock_in ADD COLUMN IF NOT EXISTS total_cost NUMERIC(10,2);
+      `).catch(() => {});
+    })().catch(err => {
+      stockInColsReady = null;
+      throw err;
+    });
+  }
+  return stockInColsReady;
+}
+
 export async function list(req, res, next) {
   try {
+    await ensureStockInColumns();
+
     const { from, to } = req.query;
     const conditions = [];
     const params = [];
@@ -23,10 +44,15 @@ export async function list(req, res, next) {
 
     let query;
     if (hasInventoryId) {
-      // New schema with inventory_id support
+      // New schema with inventory_id and full metadata support
       query = `SELECT si.id, 
                       COALESCE(ii.name, mi.name) AS item_name,
+                      ii.sku,
+                      ii.category,
                       COALESCE(ii.unit, 'pcs') AS unit,
+                      COALESCE(si.supplier, ii.supplier) AS supplier,
+                      si.unit_cost,
+                      si.total_cost,
                       s.name AS staff_name, 
                       si.quantity,
                       si.expiration_date, si.stockin_date, si.remarks
@@ -40,7 +66,12 @@ export async function list(req, res, next) {
       // Legacy schema without inventory_id
       query = `SELECT si.id, 
                       mi.name AS item_name,
+                      NULL AS sku,
+                      NULL AS category,
                       'pcs' AS unit,
+                      NULL AS supplier,
+                      NULL AS unit_cost,
+                      NULL AS total_cost,
                       s.name AS staff_name, 
                       si.quantity,
                       si.expiration_date, si.stockin_date, si.remarks
@@ -60,13 +91,27 @@ export async function list(req, res, next) {
 }
 
 export async function create(req, res, next) {
+  await ensureStockInColumns();
+
   const client = await pool.connect();
   let inTransaction = false;
   try {
-    const { inventory_id, menu_id, packs, quantity, expiration_date, remarks } = req.body || {};
+    const {
+      inventory_id,
+      menu_id,
+      packs,
+      quantity,
+      expiration_date,
+      remarks,
+      supplier,
+      unit_cost,
+      price_per_pack,
+      total_cost
+    } = req.body || {};
 
     let actualQuantity;
     let computedRemarks = remarks ? String(remarks).trim() : null;
+    let targetPackSize = null;
 
     if (packs !== undefined && packs !== null && String(packs).trim() !== '') {
       // Path: compute quantity from packs and pack_size
@@ -96,6 +141,7 @@ export async function create(req, res, next) {
       }
 
       const packSize = itemRows[0].pack_size !== null ? Number(itemRows[0].pack_size) : null;
+      targetPackSize = packSize;
 
       if (packSize === null || !Number.isFinite(packSize) || packSize <= 0) {
         return res.status(400).json({
@@ -145,6 +191,25 @@ export async function create(req, res, next) {
       });
     }
 
+    // Determine unit cost and total cost
+    let computedUnitCost = null;
+    if (unit_cost !== undefined && unit_cost !== null && unit_cost !== '') {
+      const u = Number(unit_cost);
+      if (Number.isFinite(u) && u >= 0) computedUnitCost = u;
+    } else if (price_per_pack !== undefined && price_per_pack !== null && price_per_pack !== '' && targetPackSize > 0) {
+      const p = Number(price_per_pack);
+      if (Number.isFinite(p) && p >= 0) computedUnitCost = Math.round((p / targetPackSize) * 10000) / 10000;
+    }
+
+    let computedTotalCost = null;
+    if (total_cost !== undefined && total_cost !== null && total_cost !== '') {
+      const t = Number(total_cost);
+      if (Number.isFinite(t) && t >= 0) computedTotalCost = t;
+    } else if (computedUnitCost !== null && actualQuantity > 0) {
+      computedTotalCost = Math.round(actualQuantity * computedUnitCost * 100) / 100;
+    }
+
+    const cleanedSupplier = supplier ? String(supplier).trim() : null;
     const staffId = req.staff?.id || null;
 
     // Check if inventory_id column exists
@@ -167,20 +232,35 @@ export async function create(req, res, next) {
 
     let stockIn;
     if (hasInventoryId) {
-      // New schema - support both inventory_id and menu_id
+      // New schema - support inventory_id, supplier, unit_cost, total_cost
       const { rows: stockInRows } = await client.query(
-        `INSERT INTO stock_in (inventory_id, menu_id, staff_id, quantity, expiration_date, remarks)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING id, inventory_id, menu_id, quantity, expiration_date, stockin_date`,
-        [inventory_id || null, menu_id || null, staffId, actualQuantity, expiration_date || null, computedRemarks]
+        `INSERT INTO stock_in (inventory_id, menu_id, staff_id, quantity, expiration_date, remarks, supplier, unit_cost, total_cost)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, inventory_id, menu_id, quantity, expiration_date, stockin_date, supplier, unit_cost, total_cost`,
+        [
+          inventory_id || null,
+          menu_id || null,
+          staffId,
+          actualQuantity,
+          expiration_date || null,
+          computedRemarks,
+          cleanedSupplier,
+          computedUnitCost,
+          computedTotalCost
+        ]
       );
       stockIn = stockInRows[0];
 
       // Update the appropriate stock table
       if (inventory_id) {
+        // Also update supplier or unit_cost on inventory_items if provided
         await client.query(
-          'UPDATE inventory_items SET stock_quantity = stock_quantity + $1 WHERE id = $2',
-          [actualQuantity, inventory_id]
+          `UPDATE inventory_items 
+           SET stock_quantity = stock_quantity + $1,
+               supplier = COALESCE(NULLIF($3, ''), supplier),
+               unit_cost = COALESCE($4, unit_cost)
+           WHERE id = $2`,
+          [actualQuantity, inventory_id, cleanedSupplier, computedUnitCost]
         );
       } else if (menu_id) {
         await client.query(

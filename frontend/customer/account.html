@@ -339,6 +339,8 @@
   /* password toggle */
   .password-wrap { position: relative; }
   .password-wrap input { padding-right: 44px; }
+  .password-wrap input::-ms-reveal,
+  .password-wrap input::-ms-clear { display: none !important; }
   .password-toggle {
     position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
     background: none; border: none; padding: 5px; cursor: pointer;
@@ -833,7 +835,7 @@
       document.getElementById('codeSentToEmail').textContent = email;
       setStatus('codeStatus', isResend ? 'A new code was sent.' : 'Check your inbox for the code.', 'ok');
 
-      let secondsLeft = 45;
+      let secondsLeft = 60;
       document.getElementById('btnResendCode').disabled = true;
       clearInterval(resendCooldownTimer);
       resendCooldownTimer = setInterval(() => {
@@ -993,7 +995,7 @@
       document.getElementById('pwCodeSentToEmail').textContent = user.email;
       setStatus('pwCodeStatus', isResend ? 'A new code was sent.' : 'Check your inbox for the code.', 'ok');
 
-      let secondsLeft = 45;
+      let secondsLeft = 60;
       document.getElementById('btnResendPwCode').disabled = true;
       clearInterval(pwResendTimer);
       pwResendTimer = setInterval(() => {

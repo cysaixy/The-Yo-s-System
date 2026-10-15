@@ -11,6 +11,8 @@
 
   .password-wrap { position: relative; }
   .password-wrap input { padding-right: 44px; }
+  .password-wrap input::-ms-reveal,
+  .password-wrap input::-ms-clear { display: none !important; }
   .password-toggle {
     position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
     background: none; border: none; padding: 6px; cursor: pointer;

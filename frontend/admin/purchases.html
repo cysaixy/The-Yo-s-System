@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head><base href="/admin/">
 <meta charset="UTF-8">
@@ -6,6 +6,156 @@
 <title>Purchases — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin-shell.css?v=6">
+<style>
+  /* Scoped purchases styles matching inventory.html design system */
+  .purchases-page { display: flex; flex-direction: column; gap: 0; }
+
+  /* Toolbar */
+  .p-toolbar {
+    display: flex; gap: 12px; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .p-filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
+  .p-search-wrap {
+    position: relative; flex: 1; min-width: 220px; max-width: 380px;
+  }
+  .p-search-wrap svg {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 16px; stroke: var(--ink-muted); fill: none; stroke-width: 2;
+  }
+  .p-search-input {
+    width: 100%; padding: 9px 12px 9px 36px; border: 1px solid var(--line);
+    border-radius: var(--radius-sm); font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.84rem; background: #fff; color: var(--ink);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+  .p-search-input:focus {
+    outline: none; border-color: var(--brass);
+    box-shadow: 0 0 0 3px rgba(163,132,74,0.12);
+  }
+  .p-select {
+    padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem; background: #fff;
+    color: var(--ink); cursor: pointer; transition: border-color var(--transition-fast);
+  }
+  .p-select:focus { outline: none; border-color: var(--brass); }
+
+  /* Modal styling matching inventory.html */
+  .p-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(15, 16, 18, 0.55);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200; padding: 20px;
+  }
+  .p-modal-backdrop.active { display: flex; }
+  .p-modal {
+    background: #fff; border-radius: 16px; border: 1px solid var(--line);
+    box-shadow: var(--shadow-lg); width: 100%; max-width: 680px; max-height: 90vh;
+    overflow-y: auto; padding: 28px;
+    animation: pModalSlideIn 0.22s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes pModalSlideIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  .p-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  }
+  .p-modal-head h2 {
+    font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.05rem;
+    text-transform: uppercase; letter-spacing: 0.02em; margin: 0; color: var(--ink);
+  }
+  .p-modal-head .close-btn {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line);
+    background: none; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--ink-muted); transition: all .15s ease;
+  }
+  .p-modal-head .close-btn:hover { border-color: var(--danger); color: var(--danger); }
+  .p-modal-head .close-btn svg {
+    width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round;
+  }
+
+  /* Form grid matching inventory item modal */
+  .p-form-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  .p-field { display: flex; flex-direction: column; gap: 5px; }
+  .p-field.span2 { grid-column: span 2; }
+  .p-field label {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-muted);
+  }
+  .p-field input,
+  .p-field select,
+  .p-field textarea {
+    padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.84rem;
+    background: #fdfbf8; color: var(--ink); transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+  .p-field input:focus,
+  .p-field select:focus,
+  .p-field textarea:focus {
+    outline: none; border-color: var(--brass); background: #fff;
+    box-shadow: 0 0 0 3px rgba(163,132,74,0.12);
+  }
+
+  /* Item preview card inside modal */
+  .p-item-card {
+    background: #faf7f2; border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+    grid-column: span 2;
+  }
+  .p-item-card-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    flex-wrap: wrap;
+  }
+  .p-badge-sku {
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 0.70rem;
+    background: var(--ink); color: #fff; padding: 2px 7px; border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .p-badge-cat {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; font-size: 0.72rem;
+    color: var(--brass-dark); background: rgba(163,132,74,0.12); padding: 2px 8px; border-radius: 12px;
+  }
+  .p-item-card-stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px;
+    margin-top: 4px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06);
+  }
+  .p-card-stat { display: flex; flex-direction: column; gap: 2px; }
+  .p-card-stat .lbl {
+    font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 700; color: var(--ink-muted);
+  }
+  .p-card-stat .val {
+    font-size: 0.82rem; font-weight: 700; color: var(--ink);
+  }
+
+  /* Calculation preview banner */
+  .p-calc-banner {
+    background: rgba(163,132,74,0.08); border: 1px dashed rgba(163,132,74,0.35);
+    border-radius: 8px; padding: 9px 12px; font-size: 0.78rem; color: var(--brass-dark);
+    font-weight: 600; display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+
+  /* Table metadata badges */
+  .tbl-sku-badge {
+    font-size: 0.68rem; font-family: 'Archivo', sans-serif; font-weight: 700;
+    color: var(--ink-muted); background: var(--stone); padding: 2px 6px;
+    border-radius: 4px; margin-right: 6px; vertical-align: middle;
+  }
+  .tbl-cat-badge {
+    display: inline-block; font-size: 0.66rem; font-weight: 600;
+    color: var(--ink-muted); opacity: 0.75; margin-top: 2px;
+  }
+
+  .p-modal-footer {
+    display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;
+    padding-top: 16px; border-top: 1px solid var(--line);
+  }
+</style>
 </head>
 <body>
 
@@ -20,85 +170,231 @@
 
   let inventoryItems = [];
   let menuItems = [];
-  let supportsMigration = false; // Will be detected by checking if inventory endpoint works
+  let purchasesList = [];
+  let supportsMigration = false;
+  let quantityMode = 'packs'; // 'packs' or 'quantity'
+
+  const INVENTORY_CATEGORIES = [
+    "Coffee & Espresso",
+    "Milk & Dairy",
+    "Non-Dairy & Plant-Based",
+    "Tea & Matcha",
+    "Syrups & Flavorings",
+    "Powders & Blends",
+    "Sauces & Toppings",
+    "Sweeteners",
+    "Fruits & Fresh Ingredients",
+    "Rice, Grains & Noodles",
+    "Meat & Protein",
+    "Vegetables",
+    "Bread & Bakery",
+    "Condiments",
+    "Packaging",
+    "Cleaning & Sanitation",
+    "Other Supplies"
+  ];
 
   function init() {
     const content = document.getElementById('adminContent');
     content.innerHTML = `
-      <div class="admin-panel">
+      <div class="admin-panel purchases-page">
         <div class="admin-panel-head">
-          <h3>Purchase / Stock-In History</h3>
+          <div>
+            <h3>Purchase / Stock-In History</h3>
+            <div style="font-size:0.78rem; color:var(--ink-muted); margin-top:2px;">
+              Track incoming supplies, raw materials, pack quantities, and suppliers.
+            </div>
+          </div>
           <button class="btn small" id="newPurchaseBtn">+ Record Purchase</button>
         </div>
-        <div class="admin-panel-body" style="padding:0;" id="purchasesWrap"><div class="admin-loading">Loading…</div></div>
+
+        <!-- Filter & Search Toolbar -->
+        <div style="padding:16px 20px 0;">
+          <div class="p-toolbar">
+            <div class="p-filters">
+              <div class="p-search-wrap">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input class="p-search-input" type="text" id="pSearch" placeholder="Search item, SKU, supplier, or staff…" autocomplete="off">
+              </div>
+              <select class="p-select" id="pCatFilter">
+                <option value="">All Categories</option>
+                ${INVENTORY_CATEGORIES.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-panel-body" style="padding:0;" id="purchasesWrap">
+          <div class="admin-loading">Loading purchases…</div>
+        </div>
       </div>
 
-      <div class="modal-backdrop" id="purchaseModal">
-        <div class="modal-box">
-          <h3>Record Purchase (Stock-In)</h3>
-          <div class="form-grid">
-            <div class="form-field" style="grid-column:1/-1;">
+      <!-- ============================================================
+           RECORD PURCHASE (STOCK-IN) MODAL
+           ============================================================ -->
+      <div class="p-modal-backdrop" id="purchaseModal">
+        <div class="p-modal">
+          <div class="p-modal-head">
+            <h2 id="pModalTitle">Record Purchase (Stock-In)</h2>
+            <button class="close-btn" id="pCloseBtn" aria-label="Close modal">
+              <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <div class="p-form-grid">
+            <!-- Item Type (Raw Ingredient vs Finished Product) -->
+            <div class="p-field">
               <label>Item Type</label>
               <select id="pItemType">
                 <option value="inventory">Raw Ingredient</option>
                 <option value="menu">Direct Product (legacy)</option>
               </select>
             </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Item</label>
+
+            <!-- Category filter for Item dropdown -->
+            <div class="p-field" id="pModalCatWrap">
+              <label>Filter By Category</label>
+              <select id="pModalCategory">
+                <option value="">All Categories</option>
+                ${INVENTORY_CATEGORIES.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Item Dropdown -->
+            <div class="p-field span2">
+              <label>Item *</label>
               <select id="pItemId"></select>
             </div>
-            <div class="form-field" id="pQtyField">
-              <label id="pQtyLabel">Quantity</label><input type="number" id="pQty" min="0.01" step="any">
-              <a href="#" id="pPacksToggle" style="display:none; font-size:0.75rem; color:var(--ink-muted);">Enter packs instead</a>
+
+            <!-- Selected Item Preview Card -->
+            <div class="p-item-card" id="itemPreviewCard" style="display:none;">
+              <div class="p-item-card-head">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="p-badge-sku" id="ipcSKU">SKU</span>
+                  <strong style="font-size:0.92rem; color:var(--ink);" id="ipcName">Item Name</strong>
+                </div>
+                <span class="p-badge-cat" id="ipcCategory">Category</span>
+              </div>
+              <div class="p-item-card-stats">
+                <div class="p-card-stat">
+                  <span class="lbl">Current Stock</span>
+                  <span class="val" id="ipcStock">—</span>
+                </div>
+                <div class="p-card-stat">
+                  <span class="lbl">Pack Size</span>
+                  <span class="val" id="ipcPackSize">—</span>
+                </div>
+                <div class="p-card-stat">
+                  <span class="lbl">Price / Pack</span>
+                  <span class="val" id="ipcPricePerPack">—</span>
+                </div>
+                <div class="p-card-stat">
+                  <span class="lbl">Unit Cost</span>
+                  <span class="val" id="ipcUnitCost">—</span>
+                </div>
+              </div>
             </div>
-            <div class="form-field" id="pPacksField" style="display:none;">
-              <label>Packs</label><input type="number" id="pPacks" min="0.01" step="any" placeholder="Number of packs">
-              <small id="pPackPreview" style="font-size:0.75rem; color:var(--ink-muted);"></small>
-              <a href="#" id="pTotalQuantityToggle" style="font-size:0.75rem; color:var(--ink-muted);">Enter total quantity instead</a>
+
+            <!-- Quantity Entry: Packs vs Base Units -->
+            <div class="p-field" id="pPacksField" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label>Packs *</label>
+                <a href="#" id="pTotalQuantityToggle" style="font-size:0.72rem; color:var(--brass); font-weight:600; text-decoration:none;">Enter units instead</a>
+              </div>
+              <input type="number" id="pPacks" min="0.01" step="any" placeholder="e.g. 10">
             </div>
-            <div class="form-field">
-              <label>Expiration Date (optional)</label><input type="date" id="pExpiry">
+
+            <div class="p-field" id="pQtyField">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label id="pQtyLabel">Quantity (Base Units) *</label>
+                <a href="#" id="pPacksToggle" style="display:none; font-size:0.72rem; color:var(--brass); font-weight:600; text-decoration:none;">Enter packs instead</a>
+              </div>
+              <input type="number" id="pQty" min="0.01" step="any" placeholder="e.g. 5000">
             </div>
-            <div class="form-field" style="grid-column:1/-1;">
-              <label>Remarks (optional)</label><input type="text" id="pRemarks" placeholder="Supplier, batch, etc.">
+
+            <!-- Cost Entry: Price per Pack / Unit Cost -->
+            <div class="p-field" id="pCostField">
+              <label id="pCostLabel">Price Per Pack (₱)</label>
+              <input type="number" id="pCostInput" min="0" step="0.01" placeholder="0.00">
+            </div>
+
+            <!-- Live Calculation Preview -->
+            <div class="p-field span2" id="pCalcBannerWrap" style="display:none;">
+              <div class="p-calc-banner">
+                <span id="pCalcQtyPreview">0 packs = 0 units</span>
+                <span id="pCalcCostPreview" style="color:var(--ink);">Estimated: ₱0.00</span>
+              </div>
+            </div>
+
+            <!-- Supplier -->
+            <div class="p-field">
+              <label>Supplier</label>
+              <input type="text" id="pSupplier" placeholder="e.g. ABC Coffee Supplier">
+            </div>
+
+            <!-- Expiration Date -->
+            <div class="p-field">
+              <label>Expiration Date (optional)</label>
+              <input type="date" id="pExpiry">
+            </div>
+
+            <!-- Remarks / Batch / Notes -->
+            <div class="p-field span2">
+              <label>Remarks / Invoice # (optional)</label>
+              <input type="text" id="pRemarks" placeholder="Invoice #, batch code, delivery notes…">
             </div>
           </div>
-          <div class="modal-close-row">
-            <button class="btn btn-outline" id="pCancelBtn">Cancel</button>
-            <button class="btn" id="pSaveBtn">Save Purchase</button>
+
+          <div class="admin-error" id="pError" style="display:none; margin-top:14px; padding:10px; border-radius:6px; text-align:left;"></div>
+
+          <div class="p-modal-footer">
+            <button type="button" class="btn btn-outline" id="pCancelBtn">Cancel</button>
+            <button type="button" class="btn" id="pSaveBtn">Save Purchase</button>
           </div>
-          <div class="admin-error" id="pError" style="display:none; padding:10px 0 0; text-align:left;"></div>
         </div>
       </div>
     `;
 
+    // Event listeners
     document.getElementById('newPurchaseBtn').addEventListener('click', openModal);
     document.getElementById('pCancelBtn').addEventListener('click', () => toggleModal(false));
+    document.getElementById('pCloseBtn').addEventListener('click', () => toggleModal(false));
     document.getElementById('pSaveBtn').addEventListener('click', savePurchase);
-    document.getElementById('pItemType').addEventListener('change', updateItemDropdown);
-    document.getElementById('pItemId').addEventListener('change', () => {
-      document.getElementById('pQty').value = '';
-      document.getElementById('pPacks').value = '';
-      quantityMode = 'packs';
-      updateQuantityFields();
+
+    document.getElementById('pItemType').addEventListener('change', () => {
+      const isInv = document.getElementById('pItemType').value === 'inventory';
+      document.getElementById('pModalCatWrap').style.display = isInv ? '' : 'none';
+      updateItemDropdown();
     });
-    document.getElementById('pPacks').addEventListener('input', updatePackPreview);
-    document.getElementById('pTotalQuantityToggle').addEventListener('click', event => {
-      event.preventDefault();
+
+    document.getElementById('pModalCategory').addEventListener('change', updateItemDropdown);
+    document.getElementById('pItemId').addEventListener('change', onItemSelected);
+
+    document.getElementById('pPacks').addEventListener('input', recalculateTotals);
+    document.getElementById('pQty').addEventListener('input', recalculateTotals);
+    document.getElementById('pCostInput').addEventListener('input', recalculateTotals);
+
+    document.getElementById('pTotalQuantityToggle').addEventListener('click', e => {
+      e.preventDefault();
       setQuantityMode('quantity');
     });
-    document.getElementById('pPacksToggle').addEventListener('click', event => {
-      event.preventDefault();
+    document.getElementById('pPacksToggle').addEventListener('click', e => {
+      e.preventDefault();
       setQuantityMode('packs');
     });
+
+    // Toolbar listeners
+    document.getElementById('pSearch').addEventListener('input', renderPurchasesTable);
+    document.getElementById('pCatFilter').addEventListener('change', renderPurchasesTable);
 
     loadPurchases();
     loadInventoryItems();
     loadMenuItems();
   }
 
-  function toggleModal(show) { document.getElementById('purchaseModal').classList.toggle('active', show); }
+  function toggleModal(show) {
+    document.getElementById('purchaseModal').classList.toggle('active', show);
+  }
 
   async function loadInventoryItems() {
     try {
@@ -106,9 +402,9 @@
       const data = await res.json();
       if (res.ok && data.items) {
         inventoryItems = data.items;
-        supportsMigration = true; // Inventory endpoint works, migration likely applied
+        supportsMigration = true;
       }
-    } catch { 
+    } catch {
       supportsMigration = false;
       inventoryItems = [];
     }
@@ -119,7 +415,9 @@
       const res = await adminFetch('/api/admin/products/menuitems');
       const data = await res.json();
       if (res.ok) menuItems = data.items || [];
-    } catch { /* handled silently - modal will just show empty select */ }
+    } catch {
+      menuItems = [];
+    }
   }
 
   async function loadPurchases() {
@@ -127,163 +425,370 @@
       const res = await adminFetch('/api/admin/purchases/list');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not load purchases.');
-      const rows = data.purchases || [];
-      const wrap = document.getElementById('purchasesWrap');
-      wrap.innerHTML = rows.length
-        ? `<table class="admin-table">
-            <thead><tr><th>Item</th><th>Qty</th><th>Expiration</th><th>Staff</th><th>Date</th><th>Remarks</th></tr></thead>
-            <tbody>${rows.map(p => `
-              <tr>
-                <td>${escapeHtml(p.item_name)}</td>
-                <td>+${p.quantity}${p.unit ? ' ' + escapeHtml(p.unit) : ''}</td>
-                <td>${p.expiration_date ? new Date(p.expiration_date).toLocaleDateString('en-PH') : '—'}</td>
-                <td>${p.staff_name || '—'}</td>
-                <td style="font-size:0.78rem; color:var(--ink-muted);">${formatDate(p.stockin_date)}</td>
-                <td style="font-size:0.8rem; color:var(--ink-muted);">${escapeHtml(p.remarks || '—')}</td>
-              </tr>`).join('')}</tbody>
-          </table>`
-        : `<div class="panel-empty" style="padding:20px;">No purchases recorded yet.</div>`;
+      purchasesList = data.purchases || [];
+      renderPurchasesTable();
     } catch (err) {
-      document.getElementById('purchasesWrap').innerHTML = `<div class="admin-error"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${err.message}</div>`;
+      document.getElementById('purchasesWrap').innerHTML = `<div class="admin-error" style="padding:30px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${err.message}</div>`;
+    }
+  }
+
+  function renderPurchasesTable() {
+    const wrap = document.getElementById('purchasesWrap');
+    if (!wrap) return;
+
+    const search = (document.getElementById('pSearch')?.value || '').trim().toLowerCase();
+    const cat = document.getElementById('pCatFilter')?.value || '';
+
+    const filtered = purchasesList.filter(p => {
+      if (cat && p.category !== cat) return false;
+      if (search) {
+        const item = (p.item_name || '').toLowerCase();
+        const sku = (p.sku || '').toLowerCase();
+        const sup = (p.supplier || '').toLowerCase();
+        const staff = (p.staff_name || '').toLowerCase();
+        const rem = (p.remarks || '').toLowerCase();
+        if (!item.includes(search) && !sku.includes(search) && !sup.includes(search) && !staff.includes(search) && !rem.includes(search)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (!filtered.length) {
+      wrap.innerHTML = `<div class="panel-empty" style="padding:36px 20px; text-align:center; color:var(--ink-muted);">No purchase records found matching your filters.</div>`;
+      return;
+    }
+
+    wrap.innerHTML = `
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Item & SKU</th>
+            <th>Quantity Added</th>
+            <th>Supplier</th>
+            <th>Total Cost</th>
+            <th>Expiration</th>
+            <th>Staff</th>
+            <th>Date</th>
+            <th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map(p => {
+            const hasSku = Boolean(p.sku);
+            const hasCat = Boolean(p.category);
+            const totalCostNum = Number(p.total_cost);
+            const costFormatted = Number.isFinite(totalCostNum) && totalCostNum > 0
+              ? '₱' + totalCostNum.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              : '—';
+
+            return `
+              <tr>
+                <td>
+                  <div style="font-weight:600; color:var(--ink);">
+                    ${hasSku ? `<span class="tbl-sku-badge">${escapeHtml(p.sku)}</span>` : ''}
+                    ${escapeHtml(p.item_name)}
+                  </div>
+                  ${hasCat ? `<span class="tbl-cat-badge">${escapeHtml(p.category)}</span>` : ''}
+                </td>
+                <td style="font-variant-numeric:tabular-nums; font-weight:700; color:var(--brass-dark);">
+                  +${Number(p.quantity).toLocaleString('en-PH', { maximumFractionDigits: 2 })} ${escapeHtml(p.unit || 'pcs')}
+                </td>
+                <td style="font-size:0.83rem;">
+                  ${p.supplier ? escapeHtml(p.supplier) : '<span style="color:var(--ink-muted);">—</span>'}
+                </td>
+                <td style="font-variant-numeric:tabular-nums; font-weight:600;">
+                  ${costFormatted}
+                </td>
+                <td>
+                  ${p.expiration_date ? new Date(p.expiration_date).toLocaleDateString('en-PH') : '<span style="color:var(--ink-muted);">—</span>'}
+                </td>
+                <td style="font-size:0.83rem;">${escapeHtml(p.staff_name || '—')}</td>
+                <td style="font-size:0.78rem; color:var(--ink-muted); white-space:nowrap;">
+                  ${formatDate(p.stockin_date)}
+                </td>
+                <td style="font-size:0.8rem; color:var(--ink-muted); max-width:200px;">
+                  ${escapeHtml(p.remarks || '—')}
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function getSelectedItem() {
+    const isInv = document.getElementById('pItemType').value === 'inventory';
+    const id = document.getElementById('pItemId').value;
+    if (isInv) {
+      return inventoryItems.find(i => String(i.id) === String(id));
+    } else {
+      return menuItems.find(m => String(m.id) === String(id));
     }
   }
 
   function updateItemDropdown() {
-    quantityMode = 'packs';
-    document.getElementById('pQty').value = '';
-    document.getElementById('pPacks').value = '';
-    const itemType = document.getElementById('pItemType').value;
+    const isInv = document.getElementById('pItemType').value === 'inventory';
+    const cat = document.getElementById('pModalCategory').value;
     const itemSelect = document.getElementById('pItemId');
-    
-    if (itemType === 'inventory') {
-      itemSelect.innerHTML = inventoryItems.map(i => 
-        `<option value="${i.id}">${escapeHtml(i.name)} (${escapeHtml(i.unit)})</option>`
-      ).join('');
+
+    if (isInv) {
+      let filtered = inventoryItems;
+      if (cat) {
+        filtered = inventoryItems.filter(i => i.category === cat);
+      }
+
+      if (!filtered.length) {
+        itemSelect.innerHTML = `<option value="">No items found in this category</option>`;
+      } else {
+        itemSelect.innerHTML = filtered.map(i => {
+          const skuPart = i.sku ? `[${i.sku}] ` : '';
+          const unitPart = i.unit ? ` (${i.unit})` : '';
+          return `<option value="${i.id}">${escapeHtml(skuPart + i.name + unitPart)}</option>`;
+        }).join('');
+      }
     } else {
-      itemSelect.innerHTML = menuItems.map(i => 
-        `<option value="${i.id}">${escapeHtml(i.name)}</option>`
+      itemSelect.innerHTML = menuItems.map(m =>
+        `<option value="${m.id}">${escapeHtml(m.name)}</option>`
       ).join('');
     }
-    updateQuantityFields();
+
+    onItemSelected();
   }
 
-  let quantityMode = 'packs';
+  function onItemSelected() {
+    const isInv = document.getElementById('pItemType').value === 'inventory';
+    const item = getSelectedItem();
+    const card = document.getElementById('itemPreviewCard');
 
-  function selectedInventoryItem() {
-    const id = document.getElementById('pItemId').value;
-    return inventoryItems.find(item => String(item.id) === String(id));
+    if (!item || !isInv) {
+      card.style.display = 'none';
+      if (item && !isInv) {
+        document.getElementById('pSupplier').value = '';
+      }
+      setQuantityMode('quantity');
+      updateFieldsDisplay();
+      return;
+    }
+
+    // Populate preview card with rich inventory details
+    card.style.display = 'flex';
+    document.getElementById('ipcName').textContent = item.name;
+    document.getElementById('ipcSKU').textContent = item.sku || 'NO SKU';
+    document.getElementById('ipcCategory').textContent = item.category || 'General';
+
+    const stockNum = Number(item.stock_quantity || 0);
+    const unit = item.unit || 'pcs';
+    document.getElementById('ipcStock').textContent = `${stockNum.toLocaleString('en-PH', { maximumFractionDigits: 2 })} ${unit}`;
+
+    const packSize = Number(item.pack_size || 0);
+    const hasPack = packSize > 0;
+    document.getElementById('ipcPackSize').textContent = hasPack
+      ? `${packSize.toLocaleString('en-PH', { maximumFractionDigits: 2 })} ${unit} / pack`
+      : 'None (Base Units)';
+
+    const unitCost = Number(item.unit_cost || 0);
+    document.getElementById('ipcUnitCost').textContent = unitCost > 0
+      ? `₱${unitCost.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} / ${unit}`
+      : '₱0.00';
+
+    const pricePerPack = hasPack && unitCost > 0 ? unitCost * packSize : 0;
+    document.getElementById('ipcPricePerPack').textContent = pricePerPack > 0
+      ? `₱${pricePerPack.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : '—';
+
+    // Auto-fill supplier
+    document.getElementById('pSupplier').value = item.supplier || '';
+
+    // Auto-fill cost field based on packs vs units
+    if (hasPack) {
+      quantityMode = 'packs';
+      document.getElementById('pCostInput').value = pricePerPack > 0 ? pricePerPack.toFixed(2) : '';
+    } else {
+      quantityMode = 'quantity';
+      document.getElementById('pCostInput').value = unitCost > 0 ? unitCost.toFixed(2) : '';
+    }
+
+    document.getElementById('pPacks').value = '';
+    document.getElementById('pQty').value = '';
+
+    updateFieldsDisplay();
+    recalculateTotals();
   }
 
   function setQuantityMode(mode) {
     quantityMode = mode;
-    updateQuantityFields();
+    updateFieldsDisplay();
+    recalculateTotals();
   }
 
-  function updateQuantityFields() {
-    const isInventory = document.getElementById('pItemType').value === 'inventory';
-    const item = isInventory ? selectedInventoryItem() : null;
-    const packSize = Number(item && item.pack_size);
-    const hasPackSize = Number.isFinite(packSize) && packSize > 0;
-    const usePacks = hasPackSize && quantityMode === 'packs';
+  function updateFieldsDisplay() {
+    const isInv = document.getElementById('pItemType').value === 'inventory';
+    const item = isInv ? getSelectedItem() : null;
+    const packSize = Number(item?.pack_size || 0);
+    const hasPack = packSize > 0;
+    const usePacks = isInv && hasPack && quantityMode === 'packs';
 
-    document.getElementById('pPacksField').style.display = usePacks ? '' : 'none';
-    document.getElementById('pQtyField').style.display = usePacks ? 'none' : '';
-    document.getElementById('pPacksToggle').style.display = hasPackSize && !usePacks ? 'inline' : 'none';
-    document.getElementById('pQtyLabel').textContent = isInventory && item && item.unit
-      ? `Quantity (${item.unit})`
-      : 'Quantity';
-    if (!hasPackSize) quantityMode = 'quantity';
-    updatePackPreview();
+    document.getElementById('pPacksField').style.display = usePacks ? 'flex' : 'none';
+    document.getElementById('pQtyField').style.display = usePacks ? 'none' : 'flex';
+    document.getElementById('pPacksToggle').style.display = hasPack && !usePacks ? 'inline' : 'none';
+
+    const unitLabel = item?.unit || 'pcs';
+    document.getElementById('pQtyLabel').textContent = isInv ? `Quantity in ${unitLabel} *` : 'Quantity *';
+    document.getElementById('pCostLabel').textContent = usePacks ? 'Price Per Pack (₱)' : `Unit Cost per ${unitLabel} (₱)`;
   }
 
-  function updatePackPreview() {
-    const item = selectedInventoryItem();
+  function recalculateTotals() {
+    const isInv = document.getElementById('pItemType').value === 'inventory';
+    const item = isInv ? getSelectedItem() : null;
+    const packSize = Number(item?.pack_size || 0);
+    const hasPack = packSize > 0;
+    const usePacks = isInv && hasPack && quantityMode === 'packs';
+    const unit = item?.unit || 'pcs';
+
     const packs = Number(document.getElementById('pPacks').value);
-    const packSize = Number(item && item.pack_size);
-    const unit = item && item.unit ? item.unit : 'pcs';
-    const preview = document.getElementById('pPackPreview');
-    if (!preview) return;
+    const qty = Number(document.getElementById('pQty').value);
+    const cost = Number(document.getElementById('pCostInput').value);
 
-    if (!Number.isFinite(packs) || packs <= 0 || !Number.isFinite(packSize) || packSize <= 0) {
-      preview.textContent = '';
-      return;
+    const bannerWrap = document.getElementById('pCalcBannerWrap');
+    const qtyPreview = document.getElementById('pCalcQtyPreview');
+    const costPreview = document.getElementById('pCalcCostPreview');
+
+    let totalQuantity = 0;
+    let totalCost = 0;
+
+    if (usePacks) {
+      if (Number.isFinite(packs) && packs > 0) {
+        totalQuantity = Math.round(packs * packSize * 100) / 100;
+        qtyPreview.textContent = `${packs.toLocaleString('en-PH')} pack(s) × ${packSize.toLocaleString('en-PH')} ${unit} = +${totalQuantity.toLocaleString('en-PH', { maximumFractionDigits: 2 })} ${unit}`;
+        bannerWrap.style.display = '';
+
+        if (Number.isFinite(cost) && cost > 0) {
+          totalCost = Math.round(packs * cost * 100) / 100;
+          costPreview.textContent = `Total: ₱${totalCost.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        } else {
+          costPreview.textContent = '';
+        }
+      } else {
+        bannerWrap.style.display = 'none';
+      }
+    } else {
+      if (Number.isFinite(qty) && qty > 0) {
+        totalQuantity = qty;
+        qtyPreview.textContent = `Adding: +${totalQuantity.toLocaleString('en-PH', { maximumFractionDigits: 2 })} ${unit}`;
+        bannerWrap.style.display = '';
+
+        if (Number.isFinite(cost) && cost > 0) {
+          totalCost = Math.round(qty * cost * 100) / 100;
+          costPreview.textContent = `Total: ₱${totalCost.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        } else {
+          costPreview.textContent = '';
+        }
+      } else {
+        bannerWrap.style.display = 'none';
+      }
     }
-
-    const total = Math.round(packs * packSize * 100) / 100;
-    const numberFormat = new Intl.NumberFormat('en-PH', { maximumFractionDigits: 2 });
-    preview.textContent = `${numberFormat.format(packs)} ${packs === 1 ? 'pack' : 'packs'} × ${numberFormat.format(packSize)} ${unit} = ${numberFormat.format(total)} ${unit}`;
   }
 
   function openModal() {
     const itemTypeSelect = document.getElementById('pItemType');
-    
-    // Default to menu items (legacy mode) if migration not supported
+
     if (!supportsMigration || inventoryItems.length === 0) {
       itemTypeSelect.value = 'menu';
-      // Hide inventory option if not supported
-      itemTypeSelect.querySelector('option[value="inventory"]').style.display = 
-        (supportsMigration && inventoryItems.length > 0) ? '' : 'none';
+      itemTypeSelect.querySelector('option[value="inventory"]').style.display = 'none';
+      document.getElementById('pModalCatWrap').style.display = 'none';
     } else {
       itemTypeSelect.value = 'inventory';
+      document.getElementById('pModalCatWrap').style.display = '';
     }
-    
-    updateItemDropdown();
-    document.getElementById('pQty').value = '';
+
+    document.getElementById('pModalCategory').value = '';
     document.getElementById('pPacks').value = '';
+    document.getElementById('pQty').value = '';
+    document.getElementById('pCostInput').value = '';
+    document.getElementById('pSupplier').value = '';
     document.getElementById('pExpiry').value = '';
     document.getElementById('pRemarks').value = '';
     document.getElementById('pError').style.display = 'none';
-    quantityMode = 'packs';
-    updateQuantityFields();
+
+    updateItemDropdown();
     toggleModal(true);
   }
 
   async function savePurchase() {
     const itemType = document.getElementById('pItemType').value;
     const itemId = document.getElementById('pItemId').value;
-    const quantity = Number(document.getElementById('pQty').value);
+    const isInv = itemType === 'inventory';
+    const item = getSelectedItem();
+    const packSize = Number(item?.pack_size || 0);
+    const hasPack = packSize > 0;
+    const usePacks = isInv && hasPack && quantityMode === 'packs';
+
     const packs = Number(document.getElementById('pPacks').value);
-    const inventoryItem = itemType === 'inventory' ? selectedInventoryItem() : null;
-    const itemPackSize = Number(inventoryItem && inventoryItem.pack_size);
-    const usePacks = Number.isFinite(itemPackSize) && itemPackSize > 0 && quantityMode === 'packs';
+    const quantity = Number(document.getElementById('pQty').value);
+    const costInput = Number(document.getElementById('pCostInput').value);
+    const supplier = document.getElementById('pSupplier').value.trim() || null;
     const expiration_date = document.getElementById('pExpiry').value || null;
     const remarks = document.getElementById('pRemarks').value.trim() || null;
     const errEl = document.getElementById('pError');
+    const saveBtn = document.getElementById('pSaveBtn');
 
-    const enteredAmount = usePacks ? packs : quantity;
-    if (!itemId || !Number.isFinite(enteredAmount) || enteredAmount <= 0) {
-      errEl.textContent = `Select an item and enter a positive ${usePacks ? 'number of packs' : 'quantity'}.`;
+    errEl.style.display = 'none';
+
+    if (!itemId) {
+      errEl.textContent = 'Please select an item to stock in.';
       errEl.style.display = 'block';
       return;
     }
 
-    const payload = itemType === 'inventory'
+    const enteredAmount = usePacks ? packs : quantity;
+    if (!Number.isFinite(enteredAmount) || enteredAmount <= 0) {
+      errEl.textContent = `Please enter a valid positive ${usePacks ? 'number of packs' : 'quantity'}.`;
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const payload = isInv
       ? {
           inventory_id: Number(itemId),
           ...(usePacks ? { packs } : { quantity }),
+          ...(usePacks && Number.isFinite(costInput) && costInput >= 0 ? { price_per_pack: costInput } : {}),
+          ...(!usePacks && Number.isFinite(costInput) && costInput >= 0 ? { unit_cost: costInput } : {}),
+          supplier,
           expiration_date,
           remarks
         }
-      : { menu_id: Number(itemId), quantity, expiration_date, remarks };
+      : {
+          menu_id: Number(itemId),
+          quantity,
+          supplier,
+          expiration_date,
+          remarks
+        };
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
 
     try {
-      console.log('Sending purchase payload:', payload);
       const res = await adminFetch('/api/admin/purchases/create', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      console.log('Backend response:', { status: res.status, data });
       if (!res.ok) {
-        // Show the detailed error message from backend
-        throw new Error(data.message || data.error || 'Could not save purchase.');
+        throw new Error(data.message || data.error || 'Could not record purchase.');
       }
+
       toggleModal(false);
-      loadPurchases();
+      await loadPurchases();
+      await loadInventoryItems(); // Refresh inventory counts & suppliers
     } catch (err) {
       errEl.textContent = err.message;
       errEl.style.display = 'block';
-      console.error('Purchase error:', err);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Purchase';
     }
   }
 </script>

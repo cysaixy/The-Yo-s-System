@@ -736,6 +736,9 @@
 
     refresh();
     startAutoRefresh();
+
+    const requestedOrderId = new URLSearchParams(window.location.search).get('orderId');
+    if (/^\d+$/.test(requestedOrderId || '')) openOrderModal(requestedOrderId);
   }
 
   function activePeriod() {

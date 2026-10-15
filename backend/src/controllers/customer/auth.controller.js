@@ -1,10 +1,11 @@
-// src/controllers/customer/auth.controller.js
+import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import pool from '../../config/db.js';
 import { getFirebaseAuth } from '../../config/firebase.js';
 
-const verificationCodes = new Map();
-const OTP_TTL_MS = 5 * 60 * 1000;
+const OTP_TTL_MINUTES = 5;
+const OTP_MAX_ATTEMPTS = 5;
+const OTP_RESEND_COOLDOWN_SECONDS = 60;
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
@@ -15,7 +16,36 @@ function normalizePhoneNumber(value) {
 }
 
 function generateVerificationCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(crypto.randomInt(100000, 1000000));
+}
+
+function hashCode(email, code) {
+  return crypto
+    .createHash('sha256')
+    .update(`${email}:${code}:${process.env.OTP_PEPPER || ''}`)
+    .digest('hex');
+}
+
+// Serverless instances do not share memory, so codes live in Postgres.
+let otpTableReady = null;
+function ensureOtpTable() {
+  if (!otpTableReady) {
+    otpTableReady = pool
+      .query(`
+        CREATE TABLE IF NOT EXISTS email_otps (
+          email VARCHAR(150) PRIMARY KEY,
+          code_hash CHAR(64) NOT NULL,
+          expires_at TIMESTAMPTZ NOT NULL,
+          attempts INTEGER NOT NULL DEFAULT 0,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `)
+      .catch((err) => {
+        otpTableReady = null;
+        throw err;
+      });
+  }
+  return otpTableReady;
 }
 
 async function sendOtpEmail(email, code) {
@@ -153,11 +183,31 @@ export async function sendVerificationCode(req, res, next) {
       return res.status(400).json({ error: 'A valid email address is required.' });
     }
 
+    await ensureOtpTable();
+
+    // Resend cooldown: stops someone from spamming an inbox.
+    const { rows: recent } = await pool.query(
+      `SELECT 1 FROM email_otps
+       WHERE email = $1 AND created_at > NOW() - make_interval(secs => $2)`,
+      [normalizedEmail, OTP_RESEND_COOLDOWN_SECONDS]
+    );
+    if (recent.length > 0) {
+      return res.status(429).json({
+        error: `Please wait ${OTP_RESEND_COOLDOWN_SECONDS} seconds before requesting another code.`,
+      });
+    }
+
     const code = generateVerificationCode();
-    verificationCodes.set(normalizedEmail, {
-      code,
-      expiresAt: Date.now() + OTP_TTL_MS,
-    });
+    await pool.query(
+      `INSERT INTO email_otps (email, code_hash, expires_at, attempts, created_at)
+       VALUES ($1, $2, NOW() + make_interval(mins => $3), 0, NOW())
+       ON CONFLICT (email) DO UPDATE
+         SET code_hash = EXCLUDED.code_hash,
+             expires_at = EXCLUDED.expires_at,
+             attempts = 0,
+             created_at = NOW()`,
+      [normalizedEmail, hashCode(normalizedEmail, code), OTP_TTL_MINUTES]
+    );
 
     const delivery = await sendOtpEmail(normalizedEmail, code);
 
@@ -180,12 +230,29 @@ export async function verifyVerificationCode(req, res, next) {
       return res.status(400).json({ error: 'Email and verification code are required.' });
     }
 
-    const record = verificationCodes.get(normalizedEmail);
-    if (!record || Date.now() > record.expiresAt || record.code !== normalizedCode) {
-      return res.status(400).json({ error: 'Invalid or expired verification code.', verified: false });
-    }
+    await ensureOtpTable();
 
-    verificationCodes.delete(normalizedEmail);
+    // Count the attempt first, atomically, so parallel guesses cannot
+    // sneak past the limit.
+    const { rows } = await pool.query(
+      `UPDATE email_otps
+       SET attempts = attempts + 1
+       WHERE email = $1 AND expires_at > NOW() AND attempts < $2
+       RETURNING code_hash`,
+      [normalizedEmail, OTP_MAX_ATTEMPTS]
+    );
+
+    const invalid = () =>
+      res.status(400).json({ error: 'Invalid or expired verification code.', verified: false });
+
+    if (!rows[0]) return invalid();
+
+    const expected = Buffer.from(rows[0].code_hash, 'hex');
+    const actual = Buffer.from(hashCode(normalizedEmail, normalizedCode), 'hex');
+    const matches = expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+    if (!matches) return invalid();
+
+    await pool.query('DELETE FROM email_otps WHERE email = $1', [normalizedEmail]);
     return res.status(200).json({ verified: true, message: 'Verification code accepted.' });
   } catch (err) {
     next(err);

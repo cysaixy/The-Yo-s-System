@@ -235,6 +235,9 @@ export async function initTables() {
     await pool.query('ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS tracking_mode VARCHAR(10) NOT NULL DEFAULT \'direct\';');
     await pool.query('ALTER TABLE stock_in ADD COLUMN IF NOT EXISTS inventory_id INTEGER REFERENCES inventory_items(id) ON DELETE SET NULL;');
     await pool.query('ALTER TABLE stock_in ALTER COLUMN menu_id DROP NOT NULL;');
+    await pool.query('ALTER TABLE stock_in ADD COLUMN IF NOT EXISTS supplier VARCHAR(150);');
+    await pool.query('ALTER TABLE stock_in ADD COLUMN IF NOT EXISTS unit_cost NUMERIC(10,4);');
+    await pool.query('ALTER TABLE stock_in ADD COLUMN IF NOT EXISTS total_cost NUMERIC(10,2);');
     // 12. Pack size support
     await pool.query('ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS pack_size NUMERIC(10,2);');
     await pool.query('ALTER TABLE stock_in ALTER COLUMN quantity TYPE NUMERIC(10,2);');
@@ -245,6 +248,17 @@ export async function initTables() {
     // Drop legacy tables table — table numbers are now free-form text
     // assigned directly by staff on reservation confirm / walk-in.
     await pool.query('DROP TABLE IF EXISTS tables CASCADE;');
+
+    // 13. email_otps for serverless OTP verification
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS email_otps (
+        email VARCHAR(150) PRIMARY KEY,
+        code_hash CHAR(64) NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
 
     console.log('Database tables initialized successfully.');
   } catch (err) {

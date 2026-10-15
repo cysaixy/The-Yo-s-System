@@ -115,15 +115,19 @@ export async function deleteAccount(req, res, next) {
 export async function getReconciliation(req, res, next) {
   try {
     const { accountId } = req.params;
-    const date = req.query.date ? new Date(req.query.date) : new Date();
-    const dateStr = date.toISOString().split('T')[0];
+    const dateParam = req.query.date;
+
+    if (dateParam !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(dateParam))) {
+      return res.status(400).json({ error: 'date must be in YYYY-MM-DD format.' });
+    }
 
     const { rows } = await pool.query(
       `SELECT dr.*, ca.name AS account_name
        FROM daily_reconciliations dr
        JOIN cash_accounts ca ON ca.id = dr.cash_account_id
-       WHERE dr.cash_account_id = $1 AND dr.reconciliation_date = $2`,
-      [accountId, dateStr]
+       WHERE dr.cash_account_id = $1
+         AND dr.reconciliation_date = COALESCE($2::date, CURRENT_DATE)`,
+      [accountId, dateParam || null]
     );
 
     if (!rows[0]) {
