@@ -97,82 +97,191 @@ export async function getOrCreateTodayReconciliation(clientOrPool, accountId) {
 }
 
 /**
- * Post a cash sale to the default drawer.
- * Must be called inside an already-open transaction (client with BEGIN).
+ * Find or auto-provision an active cash account for the given payment method.
  *
- * @param {object} client   - pg Client inside a transaction
- * @param {{ orderId: number, amount: number, staffId: number|null }} opts
+ * Routing rules:
+ *   - 'cash' -> default drawer account
+ *   - 'gcash', 'maya', 'paymaya', 'ewallet' -> active account matching name or type 'ewallet'
+ *   - 'bank_transfer', 'card', 'bank' -> active account of type 'bank'
+ *   - other -> default drawer account fallback
+ *
+ * @param {object} clientOrPool
+ * @param {string} paymentMethod
+ * @param {{ forUpdate?: boolean }} opts
+ * @returns {Promise<object>} The cash_accounts row
  */
-export async function postCashOrderSale(client, { orderId, amount, staffId }) {
-  const drawer = await getDefaultDrawerAccount(client, { forUpdate: true });
+export async function getAccountForPaymentMethod(clientOrPool, paymentMethod = 'cash', { forUpdate = false } = {}) {
+  const method = String(paymentMethod || 'cash').toLowerCase().trim();
+  const lock = forUpdate ? ' FOR UPDATE' : '';
 
-  await client.query(
-    'UPDATE cash_accounts SET balance = balance + $1 WHERE id = $2',
-    [amount, drawer.id]
-  );
+  if (method === 'cash') {
+    return getDefaultDrawerAccount(clientOrPool, { forUpdate });
+  }
 
-  await client.query(
-    `INSERT INTO cash_transactions
-       (cash_account_id, staff_id, order_id, transaction_type, category, amount, description, transaction_date)
-     VALUES ($1, $2, $3, 'in', 'POS Sale', $4, $5, NOW())`,
-    [drawer.id, staffId, orderId, amount, `POS Order #${orderId} payment (cash)`]
-  );
+  const isEwallet = ['gcash', 'maya', 'paymaya', 'qrph', 'ewallet'].some(k => method.includes(k));
+  const isBankOrCard = ['bank', 'bank_transfer', 'card', 'credit_card', 'debit_card'].some(k => method.includes(k));
 
-  // Ensure today's reconciliation row exists so the dashboard has an
-  // opening balance to work with even before anyone manually opens
-  // the reconciliation page.
-  await getOrCreateTodayReconciliation(client, drawer.id);
+  if (isEwallet) {
+    const pattern = `%${method}%`;
+    const { rows } = await clientOrPool.query(
+      `SELECT id, name, account_type, balance, status, is_default_drawer, created_at
+       FROM cash_accounts
+       WHERE status = 'active'
+         AND (account_type = 'ewallet' OR LOWER(name) LIKE $1)
+       ORDER BY
+         CASE WHEN LOWER(name) LIKE $1 THEN 1
+              WHEN account_type = 'ewallet' THEN 2
+              ELSE 3 END,
+         id ASC
+       LIMIT 1${lock}`,
+      [pattern]
+    );
+    if (rows[0]) return rows[0];
+
+    // Auto-create default E-Wallet account if none exists yet
+    const defaultName = method === 'gcash' ? 'GCash' : (method === 'maya' ? 'Maya' : 'E-Wallet');
+    const { rows: created } = await clientOrPool.query(
+      `INSERT INTO cash_accounts (name, account_type, balance, status, is_default_drawer)
+       VALUES ($1, 'ewallet', 0.00, 'active', FALSE)
+       RETURNING id, name, account_type, balance, status, is_default_drawer, created_at`,
+      [defaultName]
+    );
+    return created[0];
+  }
+
+  if (isBankOrCard) {
+    const { rows } = await clientOrPool.query(
+      `SELECT id, name, account_type, balance, status, is_default_drawer, created_at
+       FROM cash_accounts
+       WHERE status = 'active'
+         AND (account_type = 'bank' OR LOWER(name) LIKE '%bank%')
+       ORDER BY
+         CASE WHEN account_type = 'bank' THEN 1 ELSE 2 END,
+         id ASC
+       LIMIT 1${lock}`
+    );
+    if (rows[0]) return rows[0];
+
+    // Auto-create default Bank account if none exists yet
+    const { rows: created } = await clientOrPool.query(
+      `INSERT INTO cash_accounts (name, account_type, balance, status, is_default_drawer)
+       VALUES ('Bank Account', 'bank', 0.00, 'active', FALSE)
+       RETURNING id, name, account_type, balance, status, is_default_drawer, created_at`
+    );
+    return created[0];
+  }
+
+  // Fallback: try default drawer, or first active account
+  try {
+    return await getDefaultDrawerAccount(clientOrPool, { forUpdate });
+  } catch {
+    const { rows } = await clientOrPool.query(
+      `SELECT id, name, account_type, balance, status, is_default_drawer, created_at
+       FROM cash_accounts
+       WHERE status = 'active'
+       ORDER BY is_default_drawer DESC, id ASC
+       LIMIT 1${lock}`
+    );
+    if (rows[0]) return rows[0];
+    throw new Error('No active cash account available to receive payment.');
+  }
 }
 
 /**
- * Reverse a previously-posted cash sale (refund on cancellation).
- * Must be called inside an already-open transaction.
+ * Post an order sale to the appropriate account (cash drawer, e-wallet, or bank).
+ * Can be called inside an already-open transaction or with pool.
  *
- * Includes:
- *  - Double-refund guard (no-op if a refund already exists).
- *  - Negative-balance clamping (GREATEST(0, …)).
+ * @param {object} clientOrPool
+ * @param {{ orderId: number, paymentMethod?: string, amount: number, staffId?: number|null, description?: string }} opts
+ */
+export async function postOrderPayment(clientOrPool, { orderId, paymentMethod = 'cash', amount, staffId = null, description = null }) {
+  const numAmount = Number(amount) || 0;
+  if (numAmount <= 0) return null;
+
+  const account = await getAccountForPaymentMethod(clientOrPool, paymentMethod, { forUpdate: true });
+
+  await clientOrPool.query(
+    'UPDATE cash_accounts SET balance = balance + $1 WHERE id = $2',
+    [numAmount, account.id]
+  );
+
+  const desc = description || `POS Order #${orderId} payment (${paymentMethod || 'cash'})`;
+
+  const { rows } = await clientOrPool.query(
+    `INSERT INTO cash_transactions
+       (cash_account_id, staff_id, order_id, transaction_type, category, amount, description, transaction_date)
+     VALUES ($1, $2, $3, 'in', 'POS Sale', $4, $5, NOW())
+     RETURNING id, cash_account_id, amount, description`,
+    [account.id, staffId || null, orderId, numAmount, desc]
+  );
+
+  if (account.is_default_drawer) {
+    await getOrCreateTodayReconciliation(clientOrPool, account.id);
+  }
+
+  return rows[0];
+}
+
+/**
+ * Backward compatibility alias for postOrderPayment for cash drawer.
+ */
+export async function postCashOrderSale(client, { orderId, amount, staffId }) {
+  return postOrderPayment(client, { orderId, paymentMethod: 'cash', amount, staffId });
+}
+
+/**
+ * Reverse previously-posted sale payments (refund on cancellation).
+ * Reverses from every account (cash drawer, e-wallet, bank) that received payment for this order.
  *
  * @param {object} client
  * @param {{ orderId: number, staffId: number|null }} opts
  * @returns {Promise<{ refunded: boolean, amount?: number }>}
  */
 export async function reverseCashOrderSale(client, { orderId, staffId }) {
-  // 1. Was cash ever posted for this order?
+  // 1. Find all 'in' payments posted for this order grouped by cash account
   const { rows: saleRows } = await client.query(
-    `SELECT SUM(amount) AS total
+    `SELECT cash_account_id, SUM(amount) AS total
      FROM cash_transactions
-     WHERE order_id = $1 AND transaction_type = 'in' AND category = 'POS Sale'`,
+     WHERE order_id = $1 AND transaction_type = 'in' AND category IN ('POS Sale', 'Order Sale')
+     GROUP BY cash_account_id`,
     [orderId]
   );
-  const saleTotal = Number(saleRows[0]?.total) || 0;
-  if (saleTotal <= 0) return { refunded: false }; // no cash to reverse
 
-  // 2. Has a refund already been issued?
-  const { rows: refundRows } = await client.query(
-    `SELECT SUM(amount) AS total
-     FROM cash_transactions
-     WHERE order_id = $1 AND transaction_type = 'out' AND category = 'POS Refund'`,
-    [orderId]
-  );
-  const refundedAlready = Number(refundRows[0]?.total) || 0;
-  if (refundedAlready >= saleTotal) return { refunded: false }; // already fully refunded
+  if (!saleRows.length) return { refunded: false, amount: 0 };
 
-  const refundAmount = saleTotal - refundedAlready;
+  let totalRefunded = 0;
 
-  // 3. Lock drawer, decrement balance (clamped to 0)
-  const drawer = await getDefaultDrawerAccount(client, { forUpdate: true });
+  for (const row of saleRows) {
+    const accountId = row.cash_account_id;
+    const saleTotal = Number(row.total) || 0;
 
-  await client.query(
-    'UPDATE cash_accounts SET balance = GREATEST(0, balance - $1) WHERE id = $2',
-    [refundAmount, drawer.id]
-  );
+    // Has a refund already been issued for this account on this order?
+    const { rows: refundRows } = await client.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total
+       FROM cash_transactions
+       WHERE order_id = $1 AND cash_account_id = $2 AND transaction_type = 'out' AND category IN ('POS Refund', 'Order Refund')`,
+      [orderId, accountId]
+    );
+    const refundedAlready = Number(refundRows[0]?.total) || 0;
+    const remainingToRefund = saleTotal - refundedAlready;
 
-  await client.query(
-    `INSERT INTO cash_transactions
-       (cash_account_id, staff_id, order_id, transaction_type, category, amount, description, transaction_date)
-     VALUES ($1, $2, $3, 'out', 'POS Refund', $4, $5, NOW())`,
-    [drawer.id, staffId, orderId, refundAmount, `POS Order #${orderId} cancellation refund`]
-  );
+    if (remainingToRefund > 0) {
+      await client.query(
+        'UPDATE cash_accounts SET balance = GREATEST(0, balance - $1) WHERE id = $2',
+        [remainingToRefund, accountId]
+      );
 
-  return { refunded: true, amount: refundAmount };
+      await client.query(
+        `INSERT INTO cash_transactions
+           (cash_account_id, staff_id, order_id, transaction_type, category, amount, description, transaction_date)
+         VALUES ($1, $2, $3, 'out', 'POS Refund', $4, $5, NOW())`,
+        [accountId, staffId, orderId, remainingToRefund, `POS Order #${orderId} cancellation refund`]
+      );
+
+      totalRefunded += remainingToRefund;
+    }
+  }
+
+  return { refunded: totalRefunded > 0, amount: totalRefunded };
 }
+

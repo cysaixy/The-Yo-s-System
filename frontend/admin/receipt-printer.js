@@ -3,6 +3,7 @@
 // Specially tailored for Xprinter XP-58IIH and ESC/POS compatible thermal printers.
 
 const STORAGE_KEY_SETTINGS = 'theyos_receipt_settings';
+const STORAGE_KEY_DEVICES = 'theyos_receipt_devices';
 const DEFAULT_SETTINGS = {
   storeName: "THE YO'S",
   tagline: 'Restaurant & Coffee Bar',
@@ -122,57 +123,8 @@ class ReceiptPrinterManager {
         optionalServices: PRINTER_SERVICES,
       });
 
-      const slotObj = this.printers[slot] || this.printers.counter;
-      slotObj.device = device;
-      device.addEventListener('gattserverdisconnected', () => {
-        slotObj.characteristic = null;
-        slotObj.server = null;
-        this.notifyStatus();
-      });
-
-      const server = await device.gatt.connect();
-      slotObj.server = server;
-
-      let writeChar = null;
-      for (const serviceUuid of PRINTER_SERVICES) {
-        try {
-          const service = await server.getPrimaryService(serviceUuid);
-          const chars = await service.getCharacteristics();
-          for (const char of chars) {
-            if (char.properties.write || char.properties.writeWithoutResponse) {
-              writeChar = char;
-              break;
-            }
-          }
-          if (writeChar) break;
-        } catch (e) {}
-      }
-
-      if (!writeChar) {
-        try {
-          const allServices = await server.getPrimaryServices();
-          for (const service of allServices) {
-            try {
-              const chars = await service.getCharacteristics();
-              for (const char of chars) {
-                if (char.properties.write || char.properties.writeWithoutResponse) {
-                  writeChar = char;
-                  break;
-                }
-              }
-              if (writeChar) break;
-            } catch (e) {}
-          }
-        } catch (e) {}
-      }
-
-      if (!writeChar) {
-        throw new Error(
-          `Connected to ${device.name || 'device'}, but no writable printer characteristic was found. Ensure this is an ESC/POS Bluetooth printer.`
-        );
-      }
-
-      slotObj.characteristic = writeChar;
+      await this.connectDevice(slot, device);
+      this.saveDeviceId(slot, device.id);
       this.notifyStatus();
       return { success: true, slot, deviceName: this.getDeviceName(slot) };
     } catch (err) {
@@ -182,6 +134,97 @@ class ReceiptPrinterManager {
       }
       throw err;
     }
+  }
+
+  async connectDevice(slot, device) {
+    const slotObj = this.printers[slot] || this.printers.counter;
+    slotObj.device = device;
+    device.addEventListener('gattserverdisconnected', () => {
+      if (slotObj.device !== device) return;
+      slotObj.characteristic = null;
+      slotObj.server = null;
+      this.notifyStatus();
+    });
+
+    const server = await device.gatt.connect();
+    slotObj.server = server;
+
+    let writeChar = null;
+    for (const serviceUuid of PRINTER_SERVICES) {
+      try {
+        const service = await server.getPrimaryService(serviceUuid);
+        const chars = await service.getCharacteristics();
+        writeChar = chars.find(char => char.properties.write || char.properties.writeWithoutResponse) || null;
+        if (writeChar) break;
+      } catch (e) {}
+    }
+
+    if (!writeChar) {
+      try {
+        const allServices = await server.getPrimaryServices();
+        for (const service of allServices) {
+          try {
+            const chars = await service.getCharacteristics();
+            writeChar = chars.find(char => char.properties.write || char.properties.writeWithoutResponse) || null;
+            if (writeChar) break;
+          } catch (e) {}
+        }
+      } catch (e) {}
+    }
+
+    if (!writeChar) {
+      if (device.gatt.connected) device.gatt.disconnect();
+      slotObj.device = null;
+      slotObj.server = null;
+      throw new Error(
+        `Connected to ${device.name || 'device'}, but no writable printer characteristic was found. Ensure this is an ESC/POS Bluetooth printer.`
+      );
+    }
+
+    slotObj.characteristic = writeChar;
+  }
+
+  saveDeviceId(slot, deviceId) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_DEVICES) || '{}');
+      saved[slot] = deviceId;
+      localStorage.setItem(STORAGE_KEY_DEVICES, JSON.stringify(saved));
+    } catch (err) {
+      console.warn('Failed to save paired printer for reconnection:', err);
+    }
+  }
+
+  async restoreConnections() {
+    if (!this.isBluetoothSupported() || typeof navigator.bluetooth.getDevices !== 'function') return [];
+
+    let saved;
+    try {
+      saved = JSON.parse(localStorage.getItem(STORAGE_KEY_DEVICES) || '{}');
+    } catch (err) {
+      console.warn('Failed to read paired printers for reconnection:', err);
+      return [];
+    }
+
+    const entries = ['counter', 'kitchen']
+      .filter(slot => typeof saved[slot] === 'string' && saved[slot])
+      .map(slot => [slot, saved[slot]]);
+    if (!entries.length) return [];
+
+    const devices = await navigator.bluetooth.getDevices();
+    const restored = [];
+    for (const [slot, deviceId] of entries) {
+      const device = devices.find(candidate => candidate.id === deviceId);
+      if (!device) continue;
+      try {
+        await this.connectDevice(slot, device);
+        restored.push(slot);
+        this.notifyStatus();
+      } catch (err) {
+        console.warn(`Could not reconnect the ${slot} printer:`, err);
+        this.notifyStatus();
+      }
+    }
+    return restored;
   }
 
   async disconnect(slot = 'counter') {
@@ -197,6 +240,13 @@ class ReceiptPrinterManager {
       slotObj.device = null;
       slotObj.server = null;
       slotObj.characteristic = null;
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_DEVICES) || '{}');
+      delete saved[slot];
+      localStorage.setItem(STORAGE_KEY_DEVICES, JSON.stringify(saved));
+    } catch (err) {
+      console.warn('Failed to clear saved printer pairing:', err);
     }
     this.notifyStatus();
   }

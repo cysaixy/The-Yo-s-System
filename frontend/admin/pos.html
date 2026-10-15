@@ -1088,6 +1088,9 @@
       counterConnected: printerManager.isConnected('counter'),
       kitchenConnected: printerManager.isConnected('kitchen'),
     });
+    printerManager.restoreConnections().catch(err => {
+      console.warn('Could not restore Bluetooth printer connections:', err);
+    });
     document.getElementById('posPrinterBtn').addEventListener('click', () => {
       openPrinterSettingsModal(() => {
         updatePrinterToolbarUI({

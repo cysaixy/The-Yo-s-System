@@ -2,6 +2,7 @@
 import pool from '../../config/db.js';
 import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
 import { createPaymongoCheckoutSession } from '../../utils/paymongo.js';
+import { postOrderPayment } from '../../services/cashReconciliationService.js';
 
 const VALID_ORDER_TYPES = ['online', 'delivery', 'dine_in', 'pickup'];
 const VALID_PAYMENT_METHODS = ['cash', 'gcash'];
@@ -814,6 +815,13 @@ export async function confirmOrderPayment(req, res, next) {
            VALUES ($1, 'gcash', $2, $3, 'paid', NOW())`,
           [order_id, amountPaid, `gcash_auto_${order_id}`]
         );
+
+        await postOrderPayment(pool, {
+          orderId: order_id,
+          paymentMethod: 'gcash',
+          amount: amountPaid,
+          description: `Customer Order #${order_id} payment (GCash)`,
+        });
       }
     }
 

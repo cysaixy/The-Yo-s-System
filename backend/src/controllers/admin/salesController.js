@@ -1,7 +1,7 @@
 // src/controllers/admin/salesController.js
 import pool from '../../config/db.js';
 import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
-import { postCashOrderSale, reverseCashOrderSale } from '../../services/cashReconciliationService.js';
+import { postOrderPayment, postCashOrderSale, reverseCashOrderSale } from '../../services/cashReconciliationService.js';
 
 const VALID_ORDER_TYPES = ['dine_in', 'pickup', 'delivery'];
 const VALID_PAYMENT_METHODS = ['cash', 'card', 'gcash', 'bank_transfer', 'other'];
@@ -395,15 +395,14 @@ export async function createPosOrder(req, res, next) {
       createdPayments.push(paymentResult.rows[0]);
     }
 
-    // Post cash payments to the default drawer
+    // Post payments to the corresponding cash / e-wallet / bank accounts
     for (const payment of createdPayments) {
-      if (payment.payment_method === 'cash') {
-        await postCashOrderSale(client, {
-          orderId: order.id,
-          amount: Number(payment.amount),
-          staffId: req.staff.id,
-        });
-      }
+      await postOrderPayment(client, {
+        orderId: order.id,
+        paymentMethod: payment.payment_method,
+        amount: Number(payment.amount),
+        staffId: req.staff.id,
+      });
     }
 
     await client.query('COMMIT');

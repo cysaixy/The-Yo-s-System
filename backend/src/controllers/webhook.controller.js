@@ -1,6 +1,7 @@
 // src/controllers/webhook.controller.js
 import pool from '../config/db.js';
 import { verifyPaymongoSignature } from '../utils/paymongo.js';
+import { postOrderPayment } from '../services/cashReconciliationService.js';
 
 export async function handlePaymongoWebhook(req, res) {
   const signatureHeader = req.headers['paymongo-signature'];
@@ -72,6 +73,18 @@ export async function handlePaymongoWebhook(req, res) {
             [paymentMethod, orderId]
           );
 
+          // Post payment to matching cash / e-wallet / bank account
+          try {
+            await postOrderPayment(pool, {
+              orderId,
+              paymentMethod,
+              amount: amountPaid,
+              description: `Online Order #${orderId} payment (${paymentMethod})`,
+            });
+          } catch (e) {
+            console.error('[PayMongo Webhook] Failed to post payment to cash account:', e);
+          }
+
           console.log(`✅ Order #${orderId} marked as confirmed and paid.`);
         }
       }
@@ -109,6 +122,18 @@ export async function handlePaymongoWebhook(req, res) {
              WHERE id = $2 AND status = 'pending'`,
             [paymentMethod, orderId]
           );
+
+          // Post payment to matching cash / e-wallet / bank account
+          try {
+            await postOrderPayment(pool, {
+              orderId,
+              paymentMethod,
+              amount: amountPaid,
+              description: `Online Order #${orderId} payment (${paymentMethod})`,
+            });
+          } catch (e) {
+            console.error('[PayMongo Webhook] Failed to post payment to cash account:', e);
+          }
 
           console.log(`✅ Order #${orderId} payment saved.`);
         }
