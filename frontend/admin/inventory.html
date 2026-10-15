@@ -87,9 +87,18 @@
   font-size: 0.82rem; font-weight: 600; color: var(--ink);
   padding: 7px 14px 7px 12px; border-radius: 20px;
   background: var(--stone); border: 1px solid var(--line);
-  transition: all var(--transition-fast); cursor: default;
+  transition: all var(--transition-fast); cursor: pointer;
+  /* reset button defaults */
+  font-family: inherit; line-height: 1;
+  appearance: none; -webkit-appearance: none;
 }
 .inv-status-item:hover { border-color: var(--line-strong); background: var(--stone-hover); transform: translateY(-1px); box-shadow: var(--shadow-xs); }
+/* active (filtered) states — each dot color has its own tint */
+.inv-status-item.is-active[data-status="in_stock"]      { background: rgba(34,197,94,.12);  border-color: var(--success); color: var(--success); }
+.inv-status-item.is-active[data-status="below_reorder"] { background: rgba(44,95,176,.12);  border-color: #2c5fb0;        color: #2c5fb0; }
+.inv-status-item.is-active[data-status="low_stock"]     { background: rgba(234,179,8,.13);  border-color: var(--warning); color: var(--warning); }
+.inv-status-item.is-active[data-status="out_of_stock"]  { background: rgba(239,68,68,.12);  border-color: var(--danger);  color: var(--danger); }
+.inv-status-item.is-active { transform: translateY(-1px); box-shadow: var(--shadow-xs); }
 .inv-status-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
 }
@@ -631,10 +640,10 @@ function buildPageHTML() {
     <!-- Status strip -->
     <div class="inv-status-strip">
       <span class="strip-label">Status</span>
-      <div class="inv-status-item"><span class="inv-status-dot dot-green"></span><span class="count" id="cntInStock">—</span>&nbsp;In Stock</div>
-      <div class="inv-status-item"><span class="inv-status-dot dot-blue"></span><span class="count" id="cntBelow">—</span>&nbsp;Below Reorder</div>
-      <div class="inv-status-item"><span class="inv-status-dot dot-yellow"></span><span class="count" id="cntLow">—</span>&nbsp;Low Stock</div>
-      <div class="inv-status-item"><span class="inv-status-dot dot-red"></span><span class="count" id="cntOut">—</span>&nbsp;Out of Stock</div>
+      <button type="button" class="inv-status-item" data-status="in_stock"      id="filterBtnInStock"><span class="inv-status-dot dot-green" ></span><span class="count" id="cntInStock">—</span>&nbsp;In Stock</button>
+      <button type="button" class="inv-status-item" data-status="below_reorder" id="filterBtnBelow"  ><span class="inv-status-dot dot-blue"  ></span><span class="count" id="cntBelow">—</span>&nbsp;Below Reorder</button>
+      <button type="button" class="inv-status-item" data-status="low_stock"     id="filterBtnLow"   ><span class="inv-status-dot dot-yellow"></span><span class="count" id="cntLow">—</span>&nbsp;Low Stock</button>
+      <button type="button" class="inv-status-item" data-status="out_of_stock"  id="filterBtnOut"   ><span class="inv-status-dot dot-red"   ></span><span class="count" id="cntOut">—</span>&nbsp;Out of Stock</button>
     </div>
 
     <!-- Toolbar -->
@@ -901,7 +910,23 @@ function bindAll() {
   // Search & filters
   document.getElementById('stockSearch').addEventListener('input', applyFilters);
   document.getElementById('catFilter').addEventListener('change', applyFilters);
-  document.getElementById('statusFilter').addEventListener('change', applyFilters);
+  document.getElementById('statusFilter').addEventListener('change', () => {
+    // Keep pills in sync when the dropdown is changed directly
+    syncStatusPills(document.getElementById('statusFilter').value);
+    applyFilters();
+  });
+
+  // Status strip pill buttons — click to filter, click again to clear
+  document.querySelectorAll('.inv-status-item[data-status]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sel = document.getElementById('statusFilter');
+      const val = btn.dataset.status;
+      // Toggle: if already active, clear; otherwise set
+      sel.value = (sel.value === val) ? '' : val;
+      syncStatusPills(sel.value);
+      applyFilters();
+    });
+  });
 
   // Unit dropdown toggle for custom unit
   document.getElementById('itemUnit').addEventListener('change', e => {
@@ -1083,6 +1108,14 @@ async function loadLastAudit() {
 /* ================================================================
    FILTER & RENDER
    ================================================================ */
+
+// Highlight the matching pill button (or clear all) when the status filter changes
+function syncStatusPills(activeValue) {
+  document.querySelectorAll('.inv-status-item[data-status]').forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.status === activeValue && activeValue !== '');
+  });
+}
+
 function applyFilters() {
   const q      = (document.getElementById('stockSearch').value || '').toLowerCase().trim();
   const cat    = document.getElementById('catFilter').value;
