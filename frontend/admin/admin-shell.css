@@ -538,14 +538,26 @@ body {
 .stat-card {
   flex: 1 1 200px;
   min-width: 190px;
-  background: #fff;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, #fff 60%, #f8f5ee 100%);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--brass);
   border-radius: 10px;
   padding: 16px 18px;
   transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
 }
-.stat-card:hover { border-color: var(--line-strong); background: var(--stone); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  right: 16px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--brass);
+  box-shadow: 0 0 0 5px rgba(163,132,74,0.12);
+}
+.stat-card:hover { border-color: var(--line-strong); background: linear-gradient(145deg, #fff 45%, #f3eee2 100%); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 .stat-card .label {
   font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.63rem;
   font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
@@ -576,13 +588,25 @@ body {
 }
 .stat-hero {
   flex: 1 1 260px;
-  background: #fff;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #fff 45%, #f4efe3 100%);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--brass);
   border-radius: 10px;
   padding: 18px 22px;
   display: flex; flex-direction: column; justify-content: center;
   transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.stat-hero::before {
+  content: '';
+  position: absolute;
+  top: -42px;
+  right: -24px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(163,132,74,0.15), rgba(163,132,74,0) 70%);
+  pointer-events: none;
 }
 .stat-hero:hover { border-color: var(--line-strong); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 .stat-hero .label {
@@ -617,6 +641,7 @@ body {
   padding: 13px 15px;
   position: relative; z-index: 0;
 }
+.stat-secondary-grid .stat-card::before { display: none; }
 .stat-secondary-grid .stat-card:hover {
   background: var(--stone); transform: none;
   box-shadow: inset 0 0 0 1px var(--line-strong);
