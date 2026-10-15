@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head><base href="/admin/">
 <meta charset="UTF-8">
@@ -1376,7 +1376,7 @@
     // than the actual fulfillment method, so fall back to whether we have
     // delivery-specific data on the order to decide if this is a delivery.
     const isDelivery = o.order_type === 'delivery' || (o.order_type === 'online' && !!o.delivery_address);
-    const typeLabel = (o.order_type === 'online' && isDelivery) ? 'Delivery' : orderTypeLabel(o.order_type);
+    const typeLabel = (o.order_type === 'delivery') ? 'Delivery' : ((o.order_type === 'online' && isDelivery) ? 'Delivery' : orderTypeLabel(o.order_type));
 
     const deliveryBlock = isDelivery ? `
       <div class="om-delivery">

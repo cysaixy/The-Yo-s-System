@@ -332,7 +332,7 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  const TYPE_LABEL = { online: 'Delivery', pickup: 'Takeout', dine_in: 'Dine-In' };
+  const TYPE_LABEL = { online: 'Delivery', delivery: 'Delivery', pickup: 'Takeout', dine_in: 'Dine-In' };
   const PAYMENT_LABEL = { gcash: 'GCash', cash: 'Cash' };
 
   const CUSTOM_ITEMS_MARKER = '---CUSTOM_ITEMS_JSON---';
@@ -397,7 +397,7 @@
   }
 
   function isDeliveryOrder(order) {
-    return order.order_type === 'online';
+    return order.order_type === 'online' || order.order_type === 'delivery';
   }
 
   function totalsFor(order) {

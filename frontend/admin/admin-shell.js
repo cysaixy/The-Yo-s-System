@@ -46,7 +46,7 @@ const NAV_SECTIONS = [
     label: 'Inventory',
     items: [
       { key: 'inventory', label: 'Inventory', href: 'inventory', icon: 'inventory', perm: 'can_access_inventory', badge: 'inventory' },
-      { key: 'products', label: 'Products', href: 'products', icon: 'products' },
+      { key: 'products', label: 'Products', href: 'products', icon: 'products', adminOnly: true },
       { key: 'purchases', label: 'Purchases', href: 'purchases', icon: 'purchases', perm: 'can_access_stock_in' },
     ],
   },
@@ -79,7 +79,7 @@ function hasAccess(item, staff) {
   if (staff.role === 'Admin') return true;
   if (item.adminOnly) return false;
   if (item.perm) return !!staff[item.perm];
-  return true; // default access - Dashboard, POS, Sales, Reservations, Products (read), Settings
+  return true; // default access - Dashboard, POS, Sales, Reservations, Settings
 }
 
 function navLinkHTML(item, active, staff) {

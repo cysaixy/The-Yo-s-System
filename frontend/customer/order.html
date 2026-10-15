@@ -2416,7 +2416,7 @@
     const ORDER_TYPE_MAP = {
       'Dine-In': 'dine_in',
       'Takeout': 'pickup',
-      'Delivery': 'online'
+      'Delivery': 'delivery'
     };
     const order_type = ORDER_TYPE_MAP[serviceType];
     if (!order_type) {
@@ -2466,7 +2466,7 @@
       serviceType: serviceType,
       paymentChoice: paymentChoice,
       notes: combinedNotes || null,
-      delivery_address: (order_type === 'online') ? ((addrEl && addrEl.value.trim()) || null) : null,
+      delivery_address: (order_type === 'delivery' || order_type === 'online') ? ((addrEl && addrEl.value.trim()) || null) : null,
       customer_name: document.getElementById('name').value.trim() || null,
       customer_phone: customerPhone,
       payment_method: (paymentChoice || '').toLowerCase() || null
@@ -2516,7 +2516,7 @@
         updateCartDisplay();
         resetCheckoutForm();
         isSubmittingOrder = false;
-        showOrderConfirmation(orderId, paymentChoice, confirmedPaymentAmount, requiresDeposit, order_type === 'online', null);
+        showOrderConfirmation(orderId, paymentChoice, confirmedPaymentAmount, requiresDeposit, (order_type === 'delivery' || order_type === 'online'), null);
         return true;
       } else {
         alert("Order submission failed: " + (data.error || data.message));

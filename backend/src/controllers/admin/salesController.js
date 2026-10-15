@@ -451,8 +451,10 @@ export async function listOrders(req, res, next) {
       `SELECT o.id,
               COALESCE(o.customer_name, c.name) AS customer_name,
               COALESCE(o.customer_phone, c.phone) AS contact_no,
-              CASE WHEN o.order_type = 'delivery' THEN COALESCE(o.delivery_address, c.address) ELSE NULL END AS address,
-              s.name AS staff_name, o.order_type,
+              COALESCE(o.delivery_address, CASE WHEN o.order_type = 'delivery' THEN c.address ELSE NULL END) AS address,
+              s.name AS staff_name,
+              CASE WHEN o.order_type = 'online' AND (o.delivery_address IS NOT NULL OR o.delivery_fee_status IS NOT NULL OR o.delivery_fee > 0)
+                   THEN 'delivery' ELSE o.order_type END AS order_type,
               o.status, o.total_amount, o.delivery_fee, o.datetime_ordered,
               o.reservation_id, o.notes,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
@@ -548,7 +550,9 @@ export async function getOrder(req, res, next) {
               COALESCE(o.customer_name, c.name) AS customer_name,
               c.email AS customer_email,
               COALESCE(o.customer_phone, c.phone) AS customer_phone,
-              CASE WHEN o.order_type = 'delivery' THEN COALESCE(o.delivery_address, c.address) ELSE NULL END AS delivery_address,
+              COALESCE(o.delivery_address, CASE WHEN o.order_type = 'delivery' THEN c.address ELSE NULL END) AS delivery_address,
+              CASE WHEN o.order_type = 'online' AND (o.delivery_address IS NOT NULL OR o.delivery_fee_status IS NOT NULL OR o.delivery_fee > 0)
+                   THEN 'delivery' ELSE o.order_type END AS order_type,
               s.name AS staff_name,
               r.reservation_date, r.reservation_time, r.notes AS reservation_notes,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source
@@ -644,7 +648,7 @@ export async function getOrder(req, res, next) {
     res.json({
       order: {
         ...order,
-        delivery_address: order.order_type === 'delivery' ? (order.delivery_address || null) : null,
+        delivery_address: order.delivery_address || null,
         items: itemsWithAddons,
         custom_items: customItems,
         clean_notes: cleanNotes || null,
