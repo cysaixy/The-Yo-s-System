@@ -21,6 +21,12 @@
     font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase;
     opacity: 0.5; letter-spacing: 0.05em;
   }
+  .cash-overview-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
 
   /* Stat cards now fully styled by admin-shell.css shared component */
 
@@ -977,13 +983,13 @@
       let actionButtons = '';
       if (!d.reconciliation_closed) {
         actionButtons = `
-          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+          <div class="cash-overview-actions">
             <button class="btn" id="closeDrawerBtn">Close Drawer (Count)</button>
             <button class="btn btn-outline" id="viewReconciliationBtn">View Details</button>
           </div>`;
       } else {
         actionButtons = `
-          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+          <div class="cash-overview-actions">
             <span class="pill pill-success" style="font-size:0.8rem;">Drawer Closed</span>
             <span style="font-size:0.8rem;color:var(--ink-muted);align-self:center;">Counted: ${peso(d.counted_closing_balance)}</span>
             <button class="btn btn-outline" id="viewReconciliationBtn">View Details</button>
