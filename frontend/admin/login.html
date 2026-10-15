@@ -355,6 +355,18 @@
     fill: none; stroke: currentColor; stroke-width: 2;
     stroke-linecap: round; stroke-linejoin: round;
   }
+  .customer-login-link {
+    margin-top: 22px;
+    text-align: center;
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+  }
+  .customer-login-link a {
+    color: var(--brass-dark);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .customer-login-link a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -426,6 +438,7 @@
         <button type="submit" class="login-submit" id="loginBtn">Sign In</button>
         <div class="login-status" id="loginStatus"></div>
       </form>
+      <p class="customer-login-link">Customer? <a href="/account">Sign in to your account</a></p>
     </div>
 
   </div>
