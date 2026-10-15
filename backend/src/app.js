@@ -45,7 +45,12 @@ app.use(helmet());
 // Falls back to localhost in development; rejects unknown origins in production.
 const _allowedOrigins = process.env.CLIENT_ORIGIN
   ? process.env.CLIENT_ORIGIN.split(',').map(o => o.trim())
-  : process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://localhost:5173'];
+  : process.env.NODE_ENV === 'production' ? [] : [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+    ];
 
 app.use(cors({
   origin: (origin, callback) => {
