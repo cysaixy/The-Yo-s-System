@@ -28,16 +28,38 @@ process.on('uncaughtException', (err) => {
 
 // Serve the frontend from the same server as the API, so the pages load
 // from http://localhost:3000 instead of a separate static server.
-//   /frontend/admin/reservations.html  -> frontend/admin/reservations.html
-//   /frontend/customer/reservations.html -> frontend/customer/reservations.html
-//   /admin/... and /customer/... are aliases so relative asset links
-//   (admin-shell.css, global.js, etc.) resolve the same way they do when
-//   the folder is opened directly.
 app.use("/frontend", express.static(path.join(__dirname, "..", "frontend")));
 app.use("/admin", express.static(path.join(__dirname, "..", "frontend", "admin")));
 app.use("/customer", express.static(path.join(__dirname, "..", "frontend", "customer")));
-// Bare paths work too: http://localhost:3000/ serves the customer site and
-// http://localhost:3000/reservations.html resolves to the customer page.
+
+// Clean URL rewrites — mirrors vercel.json so localhost:3000/about works
+// the same as production (no .html extension needed).
+const customerPages = [
+  'about', 'menu', 'gallery', 'order', 'reservations',
+  'my-orders', 'account', 'index',
+];
+customerPages.forEach(page => {
+  app.get(`/${page}`, (_req, res) =>
+    res.sendFile(path.join(__dirname, "..", "frontend", "customer", `${page}.html`))
+  );
+});
+
+const adminPages = [
+  'home', 'dashboard', 'pos', 'sales', 'reservations', 'inventory',
+  'products', 'purchases', 'cash-transactions', 'cash-accounts',
+  'staff', 'settings', 'login',
+];
+// /admin  → admin/home.html
+app.get('/admin', (_req, res) =>
+  res.sendFile(path.join(__dirname, "..", "frontend", "admin", "home.html"))
+);
+adminPages.forEach(page => {
+  app.get(`/admin/${page}`, (_req, res) =>
+    res.sendFile(path.join(__dirname, "..", "frontend", "admin", `${page}.html`))
+  );
+});
+
+// Root → customer index
 app.use("/", express.static(path.join(__dirname, "..", "frontend", "customer")));
 
 const startServer = async () => {
