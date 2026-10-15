@@ -567,6 +567,9 @@ a, button { -webkit-tap-highlight-color: rgba(163,132,74,.18); }
   cursor: pointer;
   transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
   white-space: nowrap;
+  /* Reserve space so the width never changes between Sign In / name */
+  min-width: 108px;
+  text-decoration: none;
 }
 .nav-account-pill:hover,
 .nav-account-pill[aria-expanded="true"] {
@@ -574,6 +577,8 @@ a, button { -webkit-tap-highlight-color: rgba(163,132,74,.18); }
   background: rgba(163,132,74,.08);
   box-shadow: 0 0 0 3px rgba(163,132,74,.1);
 }
+/* Sign-in state: no dropdown, no caret — just a link */
+.nav-account-signin { justify-content: flex-start; }
 
 /* Avatar circle */
 .nav-account-avatar {

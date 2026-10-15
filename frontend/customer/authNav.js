@@ -1,52 +1,36 @@
 ﻿// authNav.js
-// Transforms the plain account icon into a name+avatar pill with a dropdown
-// menu (My Profile, My Orders, Log out). Loaded as a module on every page.
+// Hydrates the pre-rendered account pill in the nav.
+// The pill HTML is already in every page's static markup (matching size),
+// so there is zero layout shift when this script runs.
+//
+// Logged out  → plain <a> link to account page, no dropdown
+// Logged in   → button with caret + dropdown (Profile, My Orders, Log out)
 
 import { auth, onAuthStateChanged, signOut } from "./firebase-init.js";
 
-const ACCOUNT_CACHE_KEY = 'theYosNavAccount';
+const CACHE_KEY = 'theYosNavAccount';
 
-function getCachedAccount() {
+function getCached() {
   try {
-    const cached = JSON.parse(localStorage.getItem(ACCOUNT_CACHE_KEY) || 'null');
-    if (!cached || typeof cached.displayName !== 'string') return null;
-    return {
-      displayName: cached.displayName,
-      photoURL: typeof cached.photoURL === 'string' ? cached.photoURL : ''
-    };
-  } catch (error) {
-    console.warn('Could not read cached account navigation state:', error);
-    return null;
-  }
+    const v = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (v && typeof v.displayName === 'string') return v;
+  } catch {}
+  return null;
 }
 
-// ── Build dropdown once the DOM is ready ──────────────────────────────────
 function initAccountDropdown() {
   const accountLi = document.getElementById('navAccountLink')?.closest('li');
   if (!accountLi) return;
-
-  // Replace the plain <li> contents with the pill + dropdown structure
   accountLi.classList.add('nav-account-li');
-  accountLi.innerHTML = `
-    <button type="button" class="nav-account-pill" id="navAccountBtn" aria-haspopup="true" aria-expanded="false">
-      <span class="nav-account-avatar" id="navAccountAvatar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-      </span>
-      <span class="nav-account-name" id="navAccountName">Account</span>
-      <svg class="nav-account-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"/>
-      </svg>
-    </button>
 
+  // Inject the dropdown panel once (hidden until logged in)
+  const dropdownHTML = `
     <div class="nav-account-dropdown" id="navAccountDropdown" role="menu">
       <div class="nav-account-meta">
         <div class="nav-account-meta-role">Account</div>
       </div>
       <div class="nav-account-items">
-        <a href="/account" class="nav-account-item" role="menuitem">
+        <a href="account" class="nav-account-item" role="menuitem">
           <span class="nav-account-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -55,7 +39,7 @@ function initAccountDropdown() {
           </span>
           My Profile
         </a>
-        <a href="/my-orders" class="nav-account-item" role="menuitem">
+        <a href="my-orders" class="nav-account-item" role="menuitem">
           <span class="nav-account-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
@@ -78,102 +62,114 @@ function initAccountDropdown() {
           Log out
         </button>
       </div>
-    </div>
-  `;
+    </div>`;
+  accountLi.insertAdjacentHTML('beforeend', dropdownHTML);
 
-  const pill     = document.getElementById('navAccountBtn');
-  const dropdown = document.getElementById('navAccountDropdown');
-  const avatar   = document.getElementById('navAccountAvatar');
-  const name     = document.getElementById('navAccountName');
+  const dropdown  = document.getElementById('navAccountDropdown');
   const logoutBtn = document.getElementById('navLogoutBtn');
 
-  function showSignedInAccount(displayName, photoURL) {
-    const firstName = displayName.split(' ')[0].split('@')[0] || 'Account';
-    name.textContent = firstName;
-    pill.classList.add('is-logged-in');
+  // Helpers to get current pill elements (they stay in the DOM, just updated)
+  const getBtn    = () => document.getElementById('navAccountLink');
+  const getAvatar = () => accountLi.querySelector('.nav-account-avatar');
+  const getNameEl = () => accountLi.querySelector('.nav-account-name');
 
-    if (photoURL) {
-      const image = document.createElement('img');
-      image.src = photoURL;
-      image.alt = firstName;
-      image.referrerPolicy = 'no-referrer';
-      avatar.replaceChildren(image);
-    } else {
-      const initials = displayName.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
-      const initialsLabel = document.createElement('span');
-      initialsLabel.className = 'nav-avatar-initials';
-      initialsLabel.textContent = initials;
-      avatar.replaceChildren(initialsLabel);
+  // ── Dropdown toggle ──────────────────────────────────────────────────────
+  function openDropdown()  { dropdown.classList.add('open');    getBtn()?.setAttribute('aria-expanded', 'true'); }
+  function closeDropdown() { dropdown.classList.remove('open'); getBtn()?.setAttribute('aria-expanded', 'false'); }
+
+  accountLi.addEventListener('click', (e) => {
+    const btn = getBtn();
+    if (!btn || btn.tagName !== 'BUTTON') return; // only active when logged in
+    if (btn.contains(e.target)) {
+      e.stopPropagation();
+      dropdown.classList.contains('open') ? closeDropdown() : openDropdown();
+    }
+  });
+  document.addEventListener('click', (e) => { if (!accountLi.contains(e.target)) closeDropdown(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDropdown(); });
+  dropdown.querySelectorAll('.nav-account-item').forEach(item => item.addEventListener('click', closeDropdown));
+
+  logoutBtn.addEventListener('click', async () => {
+    closeDropdown();
+    await signOut(auth);
+    window.location.href = 'account';
+  });
+
+  // ── State setters (update content in-place, no structural DOM changes) ───
+  function setLoggedIn(displayName, photoURL) {
+    const firstName = (displayName || 'Account').split(' ')[0].split('@')[0];
+    const btn = getBtn();
+
+    // Swap <a> → <button> once
+    if (btn && btn.tagName === 'A') {
+      const newBtn = document.createElement('button');
+      newBtn.type = 'button';
+      newBtn.id = 'navAccountLink';
+      newBtn.className = 'nav-account-pill is-logged-in';
+      newBtn.setAttribute('aria-haspopup', 'true');
+      newBtn.setAttribute('aria-expanded', 'false');
+      // Move children across
+      while (btn.firstChild) newBtn.appendChild(btn.firstChild);
+      // Add caret svg
+      newBtn.insertAdjacentHTML('beforeend',
+        `<svg class="nav-account-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`);
+      btn.replaceWith(newBtn);
+    } else if (btn) {
+      btn.classList.add('is-logged-in');
+    }
+
+    // Update name + avatar in-place
+    const nameEl = getNameEl();
+    const avatar = getAvatar();
+    if (nameEl) nameEl.textContent = firstName;
+    if (avatar) {
+      avatar.innerHTML = photoURL
+        ? `<img src="${photoURL}" alt="${firstName}" referrerpolicy="no-referrer">`
+        : `<span class="nav-avatar-initials">${(displayName || 'A').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}</span>`;
     }
   }
 
-  const cachedAccount = getCachedAccount();
-  if (cachedAccount && typeof cachedAccount.displayName === 'string') {
-    showSignedInAccount(cachedAccount.displayName, cachedAccount.photoURL);
+  function setLoggedOut() {
+    const btn = getBtn();
+    // Swap <button> → <a> if needed
+    if (btn && btn.tagName === 'BUTTON') {
+      const newLink = document.createElement('a');
+      newLink.href = 'account';
+      newLink.id = 'navAccountLink';
+      newLink.className = 'nav-account-pill nav-account-signin';
+      while (btn.firstChild) {
+        const child = btn.firstChild;
+        // Drop the caret
+        if (child.classList?.contains('nav-account-caret')) { btn.removeChild(child); continue; }
+        newLink.appendChild(child);
+      }
+      btn.replaceWith(newLink);
+    }
+
+    const nameEl = getNameEl();
+    const avatar = getAvatar();
+    if (nameEl) nameEl.textContent = 'Sign In';
+    if (avatar) avatar.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>`;
+    closeDropdown();
   }
 
-  // ── Toggle open/close ────────────────────────────────────────────────────
-  function openDropdown() {
-    dropdown.classList.add('open');
-    pill.setAttribute('aria-expanded', 'true');
-  }
-  function closeDropdown() {
-    dropdown.classList.remove('open');
-    pill.setAttribute('aria-expanded', 'false');
-  }
+  // Apply cached state immediately — before Firebase resolves — to avoid flash
+  const cached = getCached();
+  if (cached) setLoggedIn(cached.displayName, cached.photoURL);
 
-  pill.addEventListener('click', (e) => {
-    e.stopPropagation();
-    dropdown.classList.contains('open') ? closeDropdown() : openDropdown();
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!accountLi.contains(e.target)) closeDropdown();
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeDropdown();
-  });
-
-  // Close when a menu link is clicked
-  dropdown.querySelectorAll('.nav-account-item').forEach(item => {
-    item.addEventListener('click', closeDropdown);
-  });
-
-  // ── Log out ──────────────────────────────────────────────────────────────
-  logoutBtn.addEventListener('click', async () => {
-    await signOut(auth);
-    window.location.href = '/account';
-  });
-
-  // ── Auth state → update pill and dropdown ───────────────────────────────
+  // ── Firebase auth listener ───────────────────────────────────────────────
   onAuthStateChanged(auth, (user) => {
     if (user) {
       const displayName = user.displayName || user.email || 'Account';
-      showSignedInAccount(displayName, user.photoURL);
-      try {
-        localStorage.setItem(ACCOUNT_CACHE_KEY, JSON.stringify({
-          displayName,
-          photoURL: user.photoURL || ''
-        }));
-      } catch (error) {
-        console.warn('Could not cache account navigation state:', error);
-      }
+      setLoggedIn(displayName, user.photoURL || '');
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ displayName, photoURL: user.photoURL || '' })); } catch {}
     } else {
-      try {
-        localStorage.removeItem(ACCOUNT_CACHE_KEY);
-      } catch (error) {
-        console.warn('Could not clear cached account navigation state:', error);
-      }
-      name.textContent = 'Sign In';
-      pill.classList.remove('is-logged-in');
-      avatar.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>`;
-      // Make the pill link to sign-in when logged out
-      pill.onclick = () => { window.location.href = '/account'; };
+      try { localStorage.removeItem(CACHE_KEY); } catch {}
+      setLoggedOut();
     }
   });
 }
