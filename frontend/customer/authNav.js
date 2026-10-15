@@ -30,7 +30,7 @@ function initAccountDropdown() {
         <div class="nav-account-meta-role">Account</div>
       </div>
       <div class="nav-account-items">
-        <a href="account" class="nav-account-item" role="menuitem">
+        <a href="/account" class="nav-account-item" role="menuitem">
           <span class="nav-account-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -39,7 +39,7 @@ function initAccountDropdown() {
           </span>
           My Profile
         </a>
-        <a href="my-orders" class="nav-account-item" role="menuitem">
+        <a href="/my-orders" class="nav-account-item" role="menuitem">
           <span class="nav-account-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
@@ -102,7 +102,7 @@ function initAccountDropdown() {
   // ── Log out ──────────────────────────────────────────────────────────────
   logoutBtn.addEventListener('click', async () => {
     await signOut(auth);
-    window.location.href = 'account';
+    window.location.href = '/account';
   });
 
   // ── Auth state → update pill and dropdown ───────────────────────────────
@@ -132,7 +132,7 @@ function initAccountDropdown() {
           <circle cx="12" cy="7" r="4"/>
         </svg>`;
       // Make the pill link to sign-in when logged out
-      pill.onclick = () => { window.location.href = 'account'; };
+      pill.onclick = () => { window.location.href = '/account'; };
     }
   });
 }

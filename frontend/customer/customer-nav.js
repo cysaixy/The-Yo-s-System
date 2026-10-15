@@ -6,12 +6,12 @@
 import { auth, onAuthStateChanged, signOut } from "./firebase-init.js";
 
 const NAV_LINKS = [
-  { key: 'about', label: 'About', href: 'about' },
-  { key: 'menu', label: 'Menu', href: 'menu' },
-  { key: 'gallery', label: 'Gallery', href: 'gallery' },
-  { key: 'reviews', label: 'Reviews', href: 'order#feedback' },
-  { key: 'reservations', label: 'Reserve', href: 'reservations' },
-  { key: 'my-orders', label: 'My Orders', href: 'my-orders' },
+  { key: 'about', label: 'About', href: '/about' },
+  { key: 'menu', label: 'Menu', href: '/menu' },
+  { key: 'gallery', label: 'Gallery', href: '/gallery' },
+  { key: 'reviews', label: 'Reviews', href: '/order#feedback' },
+  { key: 'reservations', label: 'Reserve', href: '/reservations' },
+  { key: 'my-orders', label: 'My Orders', href: '/my-orders' },
 ];
 
 const USER_ICON_SVG = `
@@ -69,13 +69,13 @@ export function renderCustomerNav({ active = '' } = {}) {
           </li>
         `).join('')}
         <li>
-          <a href="account" class="nav-account-btn ${activeKey === 'account' ? 'active' : ''}" id="navAccountLink" title="My Account">
+          <a href="/account" class="nav-account-btn ${activeKey === 'account' ? 'active' : ''}" id="navAccountLink" title="My Account">
             ${ACCOUNT_ICON_SVG}
             <span class="nav-account-label" id="navAccountLabel"></span>
           </a>
         </li>
         <li id="navSignOutItem" style="display:none;"><a href="#" id="navSignOutLink">Sign Out</a></li>
-        <li><a href="order" class="nav-btn ${activeKey === 'order' ? 'active' : ''}">Order Now</a></li>
+        <li><a href="/order" class="nav-btn ${activeKey === 'order' ? 'active' : ''}">Order Now</a></li>
       </ul>
     </nav>
     <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
