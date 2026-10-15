@@ -165,16 +165,7 @@
   import { renderAdminShell } from "./admin-shell.js";
   import { adminFetch, formatDate, escapeHtml } from "./admin-api.js";
 
-  const session = renderAdminShell({ active: 'purchases', title: 'Purchases' });
-  if (session) init();
-
-  let inventoryItems = [];
-  let menuItems = [];
-  let purchasesList = [];
-  let supportsMigration = false;
-  let quantityMode = 'packs'; // 'packs' or 'quantity'
-
-  const INVENTORY_CATEGORIES = [
+  const BASE_INVENTORY_CATEGORIES = [
     "Coffee & Espresso",
     "Milk & Dairy",
     "Non-Dairy & Plant-Based",
@@ -193,6 +184,25 @@
     "Cleaning & Sanitation",
     "Other Supplies"
   ];
+
+  const INVENTORY_CATEGORIES = (() => {
+    try {
+      const custom = JSON.parse(localStorage.getItem('custom_inventory_categories') || '[]');
+      const combined = new Set([...BASE_INVENTORY_CATEGORIES, ...(Array.isArray(custom) ? custom : [])]);
+      return Array.from(combined);
+    } catch {
+      return BASE_INVENTORY_CATEGORIES;
+    }
+  })();
+
+  let inventoryItems = [];
+  let menuItems = [];
+  let purchasesList = [];
+  let supportsMigration = false;
+  let quantityMode = 'packs'; // 'packs' or 'quantity'
+
+  const session = renderAdminShell({ active: 'purchases', title: 'Purchases' });
+  if (session) init();
 
   function init() {
     const content = document.getElementById('adminContent');

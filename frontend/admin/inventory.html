@@ -568,6 +568,7 @@ if (session) init();
    STATE
    ================================================================ */
 let allItems = [];      // raw items from API
+let lastItemPackSize = 1;
 let filtered  = [];     // after search+filter
 let editingItem = null;
 let viewItem = null;
@@ -766,7 +767,7 @@ function buildPageHTML() {
         <div style="font-size:0.70rem; color:var(--ink-muted); margin-top:2px;" id="skuHint">Auto-assigned based on category</div>
       </div>
       <div class="inv-form-field">
-        <label>Current Stock (base units) *</label>
+        <label id="itemStockLabel">Current Stock *</label>
         <input type="number" id="itemStock" min="0" step="0.01" placeholder="0">
         <small style="font-size:0.65rem; color:var(--ink-muted);" id="stockUnitHint">Enter the total quantity in the selected unit.</small>
       </div>
@@ -920,7 +921,16 @@ function bindAll() {
     updatePackCostPreview();
   });
   document.getElementById('itemUnitCustom').addEventListener('input', updatePackCostPreview);
-  document.getElementById('itemPackSize').addEventListener('input', updatePackCostPreview);
+  document.getElementById('itemPackSize').addEventListener('input', event => {
+    const stockInput = document.getElementById('itemStock');
+    const currentStock = Number(stockInput.value) || 0;
+    const baseStock = currentStock * lastItemPackSize;
+    const nextPackSize = Number(event.target.value);
+    lastItemPackSize = Number.isFinite(nextPackSize) && nextPackSize > 0 ? nextPackSize : 1;
+    stockInput.value = String(Number((baseStock / lastItemPackSize).toFixed(4)));
+    updatePackCostPreview();
+  });
+  document.getElementById('itemStock').addEventListener('input', updatePackCostPreview);
   document.getElementById('itemPricePerPack').addEventListener('input', updatePackCostPreview);
 
   // Auto SKU generation when category changes or when Auto Code button is clicked
@@ -1207,7 +1217,6 @@ function openItemModal(item = null) {
   customCatInp.style.display = 'none';
 
   document.getElementById('itemSku').value      = item ? (item.sku || '') : '';
-  document.getElementById('itemStock').value    = item ? item.stock_quantity : '';
   document.getElementById('itemUnitCost').value = item ? item.unit_cost : '';
   document.getElementById('itemReorder').value  = item ? item.reorder_level : '5';
   document.getElementById('itemSupplier').value = item ? (item.supplier || '') : '';
@@ -1216,6 +1225,10 @@ function openItemModal(item = null) {
   document.getElementById('itemPricePerPack').value = item && item.pack_size
     ? (Number(item.unit_cost) * Number(item.pack_size)).toFixed(2)
     : '';
+  document.getElementById('itemStock').value = item
+    ? (item.pack_size ? Number(item.stock_quantity) / Number(item.pack_size) : item.stock_quantity)
+    : '';
+  lastItemPackSize = item && Number(item.pack_size) > 0 ? Number(item.pack_size) : 1;
 
   const unitSel = document.getElementById('itemUnit');
   const customInp = document.getElementById('itemUnitCustom');
@@ -1251,11 +1264,24 @@ function updatePackCostPreview() {
     : unitSelect.value;
   const result = document.getElementById('pricePerPackResult');
   const stockHint = document.getElementById('stockUnitHint');
+  const stockLabel = document.getElementById('itemStockLabel');
+  const packSizeValue = document.getElementById('itemPackSize').value;
+  const packSize = Number(packSizeValue);
+  if (stockLabel && stockHint) {
+    if (packSizeValue !== '' && Number.isFinite(packSize) && packSize > 0) {
+      stockLabel.textContent = 'Packs in stock *';
+      const baseQuantity = Number(document.getElementById('itemStock').value) * packSize;
+      stockHint.textContent = Number.isFinite(baseQuantity)
+        ? `${packSize} ${unit} per pack · ${baseQuantity} ${unit} total`
+        : `Enter the number of packs you have (${packSize} ${unit} per pack).`;
+    } else {
+      stockLabel.textContent = `Current Stock (${unit}) *`;
+      stockHint.textContent = `Enter the total quantity in ${unit}.`;
+    }
+  }
   if (result) {
     const priceValue = document.getElementById('itemPricePerPack').value;
-    const packSizeValue = document.getElementById('itemPackSize').value;
     const price = Number(priceValue);
-    const packSize = Number(packSizeValue);
     const unitCost = priceValue !== '' && Number.isFinite(price) && Number.isFinite(packSize) && packSize > 0
       ? (price / packSize).toFixed(2)
       : '0.00';
@@ -1264,9 +1290,6 @@ function updatePackCostPreview() {
     if (priceValue !== '' && Number.isFinite(price) && Number.isFinite(packSize) && packSize > 0) {
       document.getElementById('itemUnitCost').value = (price / packSize).toFixed(2);
     }
-  }
-  if (stockHint) {
-    stockHint.textContent = `Enter the total quantity in ${unit} (for example, 10 packs of 500 ${unit} = 5,000 ${unit}).`;
   }
 }
 
@@ -1299,15 +1322,26 @@ async function saveItem() {
 
   const pricePerPackValue = document.getElementById('itemPricePerPack').value;
   const packSizeValue = document.getElementById('itemPackSize').value;
+  const packSize = packSizeValue === '' ? null : Number(packSizeValue);
+  if (packSize !== null && (!Number.isFinite(packSize) || packSize <= 0)) {
+    errEl.textContent = 'Enter a positive pack size.';
+    errEl.classList.add('show');
+    return;
+  }
+  const stockInBaseUnits = stock * (packSize || 1);
+  if (!Number.isFinite(stockInBaseUnits)) {
+    errEl.textContent = 'The stock quantity is too large.';
+    errEl.classList.add('show');
+    return;
+  }
   if (pricePerPackValue !== '') {
     const pricePerPack = Number(pricePerPackValue);
-    const packSize = Number(packSizeValue);
     if (!Number.isFinite(pricePerPack) || pricePerPack < 0) {
       errEl.textContent = 'Enter a valid price per pack.';
       errEl.classList.add('show');
       return;
     }
-    if (!Number.isFinite(packSize) || packSize <= 0) {
+    if (!packSize) {
       errEl.textContent = 'Enter a positive pack size to calculate unit cost.';
       errEl.classList.add('show');
       return;
@@ -1335,7 +1369,7 @@ async function saveItem() {
     name,
     category: cat,
     sku: skuVal || null,
-    stock_quantity: stock,
+    stock_quantity: stockInBaseUnits,
     unit: unit || 'pcs',
     pack_size: packSizeValue || null,
     unit_cost: cost,
