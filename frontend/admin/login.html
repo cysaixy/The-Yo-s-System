@@ -80,7 +80,18 @@
     text-transform: uppercase;
     opacity: 0.6;
     position: relative; z-index: 1;
+    margin-top: 6px;
   }
+
+  .art-top { position: relative; z-index: 1; }
+  .art-logo {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  }
+  .art-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   .art-headline { position: relative; z-index: 1; }
   .art-title {
@@ -186,13 +197,12 @@
   .login-brand .brand-mark {
     width: 46px; height: 46px;
     border-radius: 13px;
-    background: linear-gradient(140deg, #c9a86c 0%, #8a6d3a 100%);
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Archivo', sans-serif;
-    font-weight: 900; font-size: 1rem;
+    overflow: hidden;
     flex-shrink: 0;
-    box-shadow: 0 6px 18px rgba(138,109,58,0.32);
+    box-shadow: 0 6px 18px rgba(138,109,58,0.28);
+  }
+  .login-brand .brand-mark img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
   }
   .login-brand-text h1 {
     font-family: 'Archivo', sans-serif;
@@ -241,7 +251,7 @@
   }
 
   /* ---- Fields ---- */
-  .login-field { margin-bottom: 14px; }
+  .login-field { margin-bottom: 16px; }
   .login-field label {
     display: block;
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -249,20 +259,21 @@
     text-transform: uppercase;
     letter-spacing: 0.07em;
     color: var(--ink-muted);
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 7px;
   }
   .login-field input {
-    width: 100%; padding: 11px 14px;
+    width: 100%; padding: 13px 16px;
     border: 1px solid var(--line);
-    border-radius: 9px;
+    border-radius: 10px;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     background: var(--stone);
     color: var(--ink);
     transition: border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
     outline: none;
   }
+  .login-field input::placeholder { opacity: 0.4; }
   .login-field input:hover { border-color: var(--line-strong); }
   .login-field input:focus {
     border-color: var(--brass);
@@ -293,26 +304,28 @@
   .login-submit {
     width: 100%;
     justify-content: center;
-    padding: 13px 18px;
-    border-radius: 9px;
-    margin-top: 6px;
-    font-size: 0.86rem;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-top: 8px;
+    font-size: 0.88rem;
     font-weight: 700;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     background: var(--brass);
-    border: 1px solid var(--brass);
+    border: none;
     color: #fff;
     display: flex; align-items: center;
     cursor: pointer;
-    transition: background 0.18s ease, transform 0.12s ease;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+    font-family: 'Archivo', sans-serif;
+    box-shadow: 0 4px 14px rgba(138,109,58,0.28);
   }
   .login-submit:hover:not(:disabled) {
     background: var(--brass-dark);
-    border-color: var(--brass-dark);
     transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(138,109,58,0.38);
   }
-  .login-submit:active { transform: translateY(0); }
+  .login-submit:active { transform: translateY(0); box-shadow: none; }
   .login-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
   /* ---- Status message ---- */
@@ -374,9 +387,14 @@
 <div class="login-wrap">
   <div class="login-split">
 
-    <!-- LEFT — green branding panel -->
+    <!-- LEFT — dark brass branding panel -->
     <div class="login-art-col">
-      <p class="art-eyebrow">The~Yo's Restaurant</p>
+      <div class="art-top">
+        <div class="art-logo">
+          <img src="/pics&vids/the-yo's_logo.jpg" alt="The~Yo's Logo">
+        </div>
+        <p class="art-eyebrow">The~Yo's Resto Bar</p>
+      </div>
 
       <div class="art-headline">
         <h2 class="art-title">Staff &amp;<br>Admin Portal.</h2>
@@ -403,7 +421,9 @@
     <!-- RIGHT — form panel -->
     <div class="login-card">
       <div class="login-brand">
-        <div class="brand-mark">TY</div>
+        <div class="brand-mark">
+          <img src="/pics&vids/the-yo's_logo.jpg" alt="The~Yo's Logo">
+        </div>
         <div class="login-brand-text">
           <h1>The~Yo's</h1>
           <span>Staff &amp; Admin Panel</span>
@@ -411,8 +431,8 @@
       </div>
 
       <div class="login-page-heading">
-        <h2>Sign in to continue</h2>
-        <p>Enter your staff credentials to access the admin panel.</p>
+        <h2>Welcome back</h2>
+        <p>Sign in with your staff credentials to continue.</p>
       </div>
 
       <div class="login-expired-notice" id="expiredNotice">

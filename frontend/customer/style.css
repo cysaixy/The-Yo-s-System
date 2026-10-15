@@ -336,8 +336,6 @@ a, button { -webkit-tap-highlight-color: rgba(163,132,74,.18); }
     min-height: 52px; padding: 13px 16px; font-size: 1.05rem; border-radius: 10px;
   }
   .nav-btn { width: 100%; justify-content: center; text-align: center; margin-top: 10px; padding: 17px 20px; font-size: 13px !important; }
-  /* account link is an icon only on desktop; show label inside the drawer */
-  #navAccountLink::before { content: 'My Account'; font-size: 1.05rem; }
   .sunset-mode-item { justify-content: center; margin-top: 6px; }
 }
 
