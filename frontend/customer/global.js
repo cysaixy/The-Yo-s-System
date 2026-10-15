@@ -24,18 +24,7 @@ try {
   }
 } catch (e) {}
 
-// ─── STEP 2: Load theme.css and theme.js ─────────────────────────────────────
-if (!document.querySelector('link[href="theme.css"]')) {
-  const themeStyles = document.createElement('link');
-  themeStyles.rel = 'stylesheet';
-  themeStyles.href = 'theme.css';
-  document.head.appendChild(themeStyles);
-}
-if (!document.querySelector('script[src="theme.js"]')) {
-  const themeScript = document.createElement('script');
-  themeScript.src = 'theme.js';
-  document.head.appendChild(themeScript);
-}
+// ─── STEP 2: theme.css and theme.js are now loaded as static tags in each page ──
 
 document.addEventListener('DOMContentLoaded', () => {
   // Year

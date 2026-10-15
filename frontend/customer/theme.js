@@ -32,8 +32,13 @@
       applyVisual();
     });
 
-    // Apply visual state without transitions on load
+    // Apply visual state WITHOUT transitions on load —
+    // add no-transition class, apply state, then remove it next frame
+    button.classList.add('theme-no-transition');
     applyVisual();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => button.classList.remove('theme-no-transition'));
+    });
   };
 
   if (document.readyState === 'loading') {

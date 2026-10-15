@@ -552,6 +552,12 @@ a, button { -webkit-tap-highlight-color: rgba(163,132,74,.18); }
   background: var(--brass);
   box-shadow: 0 1px 5px #0003;
 }
+/* Suppress ALL transitions on initial load so the thumb doesn't slide in */
+.theme-no-transition,
+.theme-no-transition * {
+  transition: none !important;
+  animation: none !important;
+}
 @media (max-width: 1080px) {
   .sunset-mode-toggle { min-height: 44px; padding: 12px 17px; font-size: 13px; }
 }
