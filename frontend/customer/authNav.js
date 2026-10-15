@@ -4,6 +4,22 @@
 
 import { auth, onAuthStateChanged, signOut } from "./firebase-init.js";
 
+const ACCOUNT_CACHE_KEY = 'theYosNavAccount';
+
+function getCachedAccount() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(ACCOUNT_CACHE_KEY) || 'null');
+    if (!cached || typeof cached.displayName !== 'string') return null;
+    return {
+      displayName: cached.displayName,
+      photoURL: typeof cached.photoURL === 'string' ? cached.photoURL : ''
+    };
+  } catch (error) {
+    console.warn('Could not read cached account navigation state:', error);
+    return null;
+  }
+}
+
 // ── Build dropdown once the DOM is ready ──────────────────────────────────
 function initAccountDropdown() {
   const accountLi = document.getElementById('navAccountLink')?.closest('li');
@@ -71,6 +87,31 @@ function initAccountDropdown() {
   const name     = document.getElementById('navAccountName');
   const logoutBtn = document.getElementById('navLogoutBtn');
 
+  function showSignedInAccount(displayName, photoURL) {
+    const firstName = displayName.split(' ')[0].split('@')[0] || 'Account';
+    name.textContent = firstName;
+    pill.classList.add('is-logged-in');
+
+    if (photoURL) {
+      const image = document.createElement('img');
+      image.src = photoURL;
+      image.alt = firstName;
+      image.referrerPolicy = 'no-referrer';
+      avatar.replaceChildren(image);
+    } else {
+      const initials = displayName.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
+      const initialsLabel = document.createElement('span');
+      initialsLabel.className = 'nav-avatar-initials';
+      initialsLabel.textContent = initials;
+      avatar.replaceChildren(initialsLabel);
+    }
+  }
+
+  const cachedAccount = getCachedAccount();
+  if (cachedAccount && typeof cachedAccount.displayName === 'string') {
+    showSignedInAccount(cachedAccount.displayName, cachedAccount.photoURL);
+  }
+
   // ── Toggle open/close ────────────────────────────────────────────────────
   function openDropdown() {
     dropdown.classList.add('open');
@@ -109,21 +150,21 @@ function initAccountDropdown() {
   onAuthStateChanged(auth, (user) => {
     if (user) {
       const displayName = user.displayName || user.email || 'Account';
-      const firstName   = displayName.split(' ')[0].split('@')[0];
-      const photoURL    = user.photoURL;
-
-      name.textContent = firstName;
-      pill.classList.add('is-logged-in');
-
-      // Swap to photo avatar if available
-      if (photoURL) {
-        avatar.innerHTML = `<img src="${photoURL}" alt="${firstName}" referrerpolicy="no-referrer">`;
-      } else {
-        // Initials fallback
-        const initials = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-        avatar.innerHTML = `<span class="nav-avatar-initials">${initials}</span>`;
+      showSignedInAccount(displayName, user.photoURL);
+      try {
+        localStorage.setItem(ACCOUNT_CACHE_KEY, JSON.stringify({
+          displayName,
+          photoURL: user.photoURL || ''
+        }));
+      } catch (error) {
+        console.warn('Could not cache account navigation state:', error);
       }
     } else {
+      try {
+        localStorage.removeItem(ACCOUNT_CACHE_KEY);
+      } catch (error) {
+        console.warn('Could not clear cached account navigation state:', error);
+      }
       name.textContent = 'Sign In';
       pill.classList.remove('is-logged-in');
       avatar.innerHTML = `

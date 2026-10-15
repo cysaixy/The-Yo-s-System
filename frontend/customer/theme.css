@@ -45,16 +45,11 @@ body.sunset-mode textarea {
 }
 .coffee-glass, .coffee-ice, .coffee-straw, .coffee-drop {
   opacity: 0; transform-origin: center;
-  transition: opacity .45s ease, transform .7s cubic-bezier(.2,.8,.2,1);
 }
 .coffee-steam {
   animation: coffeeSteam 2.8s ease-in-out infinite;
-  transition: opacity .35s ease, transform .65s ease;
 }
 .steam-b { animation-delay: .7s; }
-.coffee-thumb {
-  transition: transform .75s cubic-bezier(.2,.8,.2,1), background .75s ease;
-}
 .sunset-mode-toggle.is-sunset .coffee-thumb { transform: translateX(28px); background: #d4edf2; }
 .sunset-mode-toggle.is-sunset .coffee-steam,
 .sunset-mode-toggle.is-sunset .coffee-cup { opacity: 0; transform: translateY(-6px) scale(.8); }
@@ -62,6 +57,19 @@ body.sunset-mode textarea {
 .sunset-mode-toggle.is-sunset .coffee-ice,
 .sunset-mode-toggle.is-sunset .coffee-straw,
 .sunset-mode-toggle.is-sunset .coffee-drop { opacity: 1; transform: scale(1); }
+
+body.sunset-mode .coffee-glass,
+body.sunset-mode .coffee-ice,
+body.sunset-mode .coffee-straw,
+body.sunset-mode .coffee-drop {
+  transition: opacity .45s ease, transform .7s cubic-bezier(.2,.8,.2,1);
+}
+body.sunset-mode .coffee-steam {
+  transition: opacity .35s ease, transform .65s ease;
+}
+body.sunset-mode .coffee-thumb {
+  transition: transform .75s cubic-bezier(.2,.8,.2,1), background .75s ease;
+}
 
 @keyframes coffeeSteam { 50% { transform: translateY(-3px); opacity: .45; } }
 
