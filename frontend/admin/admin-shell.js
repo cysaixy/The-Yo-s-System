@@ -93,9 +93,7 @@ function navLinkHTML(item, active, staff) {
       ${badge}<span class="lock-icon">${iconSvg('lock')}</span>
     </span>`;
   }
-  const keepPosOpen = active === 'pos' && item.key !== 'pos';
-  const newTabAttrs = keepPosOpen ? ' target="_blank" rel="noopener"' : '';
-  return `<a class="admin-nav-link${item.key === active ? ' active' : ''}" href="${item.href}" title="${item.label}"${newTabAttrs}>
+  return `<a class="admin-nav-link${item.key === active ? ' active' : ''}" href="${item.href}" title="${item.label}">
     <span class="icon">${iconSvg(item.icon)}</span><span class="nav-text">${item.label}</span>${badge}
   </a>`;
 }

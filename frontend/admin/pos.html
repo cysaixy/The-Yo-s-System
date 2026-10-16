@@ -1088,8 +1088,22 @@
       counterConnected: printerManager.isConnected('counter'),
       kitchenConnected: printerManager.isConnected('kitchen'),
     });
-    printerManager.restoreConnections().catch(err => {
-      console.warn('Could not restore Bluetooth printer connections:', err);
+    let printerRestorePromise = null;
+    const restorePrinterConnections = () => {
+      if (printerRestorePromise) return printerRestorePromise;
+      printerRestorePromise = printerManager.restoreConnections()
+        .catch(err => {
+          console.warn('Could not restore Bluetooth printer connections:', err);
+        })
+        .finally(() => {
+          printerRestorePromise = null;
+        });
+      return printerRestorePromise;
+    };
+    restorePrinterConnections();
+    window.addEventListener('pageshow', restorePrinterConnections);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) restorePrinterConnections();
     });
     document.getElementById('posPrinterBtn').addEventListener('click', () => {
       openPrinterSettingsModal(() => {

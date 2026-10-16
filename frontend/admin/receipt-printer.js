@@ -213,6 +213,10 @@ class ReceiptPrinterManager {
     const devices = await navigator.bluetooth.getDevices();
     const restored = [];
     for (const [slot, deviceId] of entries) {
+      if (this.isConnected(slot)) {
+        restored.push(slot);
+        continue;
+      }
       const device = devices.find(candidate => candidate.id === deviceId);
       if (!device) continue;
       try {
