@@ -93,7 +93,7 @@ function navLinkHTML(item, active, staff) {
       ${badge}<span class="lock-icon">${iconSvg('lock')}</span>
     </span>`;
   }
-  return `<a class="admin-nav-link${item.key === active ? ' active' : ''}" href="${item.href}" title="${item.label}">
+  return `<a class="admin-nav-link${item.key === active ? ' active' : ''}" href="${item.href}" title="${item.label}" data-admin-nav-key="${item.key}">
     <span class="icon">${iconSvg(item.icon)}</span><span class="nav-text">${item.label}</span>${badge}
   </a>`;
 }
@@ -563,7 +563,21 @@ document.getElementById('adminLogoutBtn').addEventListener('click', async () => 
   // Tapping a nav link (or trying to, if disabled) should close the drawer
   // instead of leaving it open behind the newly-loaded page/alert.
   shell.querySelector('.admin-sidebar').addEventListener('click', (e) => {
-    if (e.target.closest('.admin-nav-link')) closeMobileNav();
+    const link = e.target.closest('a.admin-nav-link');
+    if (!link) return;
+    closeMobileNav();
+    if (
+      link.dataset.adminNavKey === 'pos' &&
+      window.parent !== window &&
+      e.button === 0 &&
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.shiftKey &&
+      !e.altKey
+    ) {
+      e.preventDefault();
+      window.parent.postMessage({ type: 'theyos:return-to-pos' }, window.location.origin);
+    }
   });
 
 initOnlineOrderNotifications(staff);
