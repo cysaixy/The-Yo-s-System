@@ -735,16 +735,19 @@
     initializeSettingsControls();
 
     /* ---- Order modal ---- */
-    document.getElementById('orderModalCloseBtn').addEventListener('click', () => {
+    const _backParam = new URLSearchParams(window.location.search).get('back');
+    const _closeOrderModal = () => {
       document.getElementById('orderModal').classList.remove('active');
-    });
+      if (_backParam === 'dashboard') window.location.href = 'dashboard';
+    };
+    document.getElementById('orderModalCloseBtn').addEventListener('click', _closeOrderModal);
     document.getElementById('orderModalPrintBtn')?.addEventListener('click', () => {
       if (currentModalOrder) {
         openReceiptModal(normalizeOrderData(currentModalOrder));
       }
     });
     document.getElementById('orderModal').addEventListener('click', (e) => {
-      if (e.target === e.currentTarget) e.currentTarget.classList.remove('active');
+      if (e.target === e.currentTarget) _closeOrderModal();
     });
 
     refresh();
