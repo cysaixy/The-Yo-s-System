@@ -1,4 +1,4 @@
-// admin-shell.js
+ï»¿// admin-shell.js
 // Renders the sidebar + header shared by every admin page and returns the
 // logged-in staff session, or null (after redirecting to login) if nobody
 // is signed in. Every admin page should call this first and stop if it
@@ -271,7 +271,7 @@ function showAdminToast(notification) {
       <strong>${escapeNotificationHtml(notification.title)}</strong>
       <span>${escapeNotificationHtml(notification.message)}</span>
     </div>
-    <button type="button" aria-label="Dismiss notification">×</button>
+    <button type="button" aria-label="Dismiss notification">&times;</button>
   `;
   stack.appendChild(toast);
   const dismiss = () => {
@@ -308,13 +308,13 @@ function initOnlineOrderNotifications(staff) {
   const renderPanel = () => {
     const history = getActiveNotificationHistory();
     panel.innerHTML = `
-      <div class="online-order-panel-head"><div><strong>Notifications</strong><span>${activeAlertCount} active ${activeAlertCount === 1 ? 'alert' : 'alerts'}</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">×</button></div>
+      <div class="online-order-panel-head"><div><strong>Notifications</strong><span>${activeAlertCount} active ${activeAlertCount === 1 ? 'alert' : 'alerts'}</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">ï¿½</button></div>
       <div class="online-order-panel-list">${history.length ? history.map(item => `
         <a href="${escapeNotificationHtml(item.href || 'dashboard')}" class="online-order-panel-item">
           <span class="online-order-dot notification-${escapeNotificationHtml(item.type || 'order')}"></span>
           <div><strong>${escapeNotificationHtml(item.title)}</strong><span>${escapeNotificationHtml(item.message)}</span><time>${escapeNotificationHtml(notificationTime(item.createdAt))}</time></div>
         </a>`).join('') : '<div class="online-order-panel-empty">No notifications yet.</div>'}</div>
-      <a class="online-order-panel-action" href="dashboard">Open dashboard ?</a>`;
+      <a class="online-order-panel-action" href="dashboard">Open dashboard &rarr;</a>`;
     panel.querySelector('#closeOnlineOrderPanel')?.addEventListener('click', () => panel.classList.remove('open'));
   };
 
@@ -361,7 +361,7 @@ function initOnlineOrderNotifications(staff) {
             id: `order-${order.id}-${order.status}`,
             type: 'order',
             title: order.source === 'online' ? 'New online order' : 'New order',
-            message: `Order #${order.id} · ${order.customer_name || 'Customer'} · ?${Number(order.total_amount || 0).toLocaleString('en-PH')}`,
+            message: `Order #${order.id} \u00b7 ${order.customer_name || 'Customer'} \u00b7 \u20b1${Number(order.total_amount || 0).toLocaleString('en-PH')}`,
             href: 'sales',
           };
           if (addNotification(notification) && hadOrderSnapshot) notifications.push(notification);
@@ -371,7 +371,7 @@ function initOnlineOrderNotifications(staff) {
             id: `order-${order.id}-${order.status}`,
             type: 'status',
             title: `Order #${order.id} updated`,
-            message: `Status changed to ${String(order.status).replace(/_/g, ' ')}${order.handler_name ? ` · ${order.handler_name}` : ''}`,
+            message: `Status changed to ${String(order.status).replace(/_/g, ' ')}${order.handler_name ? ` \u00b7 ${order.handler_name}` : ''}`,
             href: 'sales',
           };
           if (addNotification(notification)) notifications.push(notification);

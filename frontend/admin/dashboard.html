@@ -173,7 +173,26 @@
   }
   .live-orders-viewport { overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth; }
   .live-orders-viewport::-webkit-scrollbar { display: none; }
-  .rail-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .rail-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+  .live-filter-btns { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-right: 6px; }
+  .live-filter-btn {
+    padding: 5px 12px; border-radius: 999px;
+    border: 1px solid var(--line);
+    background: transparent; color: var(--ink-muted);
+    font: 600 .72rem 'Plus Jakarta Sans', sans-serif;
+    text-transform: uppercase; letter-spacing: .04em;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+    white-space: nowrap;
+  }
+  .live-filter-btn:hover { border-color: var(--brass); color: var(--brass); background: rgba(163,132,74,.07); }
+  .live-filter-btn.active { background: var(--brass); border-color: var(--brass); color: #fff; }
+  /* status-tinted active states */
+  .live-filter-btn[data-status="pending"].active    { background: rgba(163,132,74,.15); border-color: var(--brass); color: var(--brass-dark); }
+  .live-filter-btn[data-status="confirmed"].active  { background: rgba(163,132,74,.15); border-color: var(--brass); color: var(--brass-dark); }
+  .live-filter-btn[data-status="preparing"].active  { background: rgba(44,95,176,.12);  border-color: #2c5fb0; color: #2c5fb0; }
+  .live-filter-btn[data-status="ready"].active      { background: rgba(46,125,79,.12);  border-color: var(--success); color: var(--success); }
+  @media (max-width: 700px) { .live-filter-btns { display: none; } }
   .rail-nav-btn {
     width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%;
     display: grid; place-items: center; cursor: pointer;
@@ -285,6 +304,7 @@
   const session = renderAdminShell({ active: 'dashboard', title: 'Dashboard' });
   let liveRailScrollTimer = null;
   let liveElapsedTimer = null;
+  let liveStatusFilter = ''; // '' = show all
   if (session) init();
 
   /* ================================================================
@@ -514,6 +534,13 @@
             <div><h2 id="liveOrdersHeading">Live Orders</h2><p>Pending, preparing, and ready now · updates automatically</p></div>
           </div>
           <div class="rail-nav">
+            <div class="live-filter-btns" id="liveFilterBtns">
+              <button type="button" class="live-filter-btn active" data-status="">All</button>
+              <button type="button" class="live-filter-btn" data-status="pending">Pending</button>
+              <button type="button" class="live-filter-btn" data-status="confirmed">Confirmed</button>
+              <button type="button" class="live-filter-btn" data-status="preparing">Preparing</button>
+              <button type="button" class="live-filter-btn" data-status="ready">Ready</button>
+            </div>
             <span class="live-orders-count" id="liveOrdersCount">Connecting…</span>
             <button type="button" class="rail-nav-btn" id="railPrevBtn" aria-label="Scroll left" disabled>
               <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
@@ -666,21 +693,33 @@
       (priority[a.status] ?? 9) - (priority[b.status] ?? 9) ||
       new Date(a.datetime_ordered) - new Date(b.datetime_ordered)
     );
+
+    // Update filter button counts
+    const filterBtns = document.querySelectorAll('.live-filter-btn[data-status]');
+    filterBtns.forEach(btn => {
+      const s = btn.dataset.status;
+      const n = s ? active.filter(o => o.status === s).length : active.length;
+      const label = { '': 'All', pending: 'Pending', confirmed: 'Confirmed', preparing: 'Preparing', ready: 'Ready' }[s] ?? s;
+      btn.textContent = n > 0 ? `${label} (${n})` : label;
+    });
+
+    // Apply status filter
+    const filtered = liveStatusFilter ? active.filter(o => o.status === liveStatusFilter) : active;
     count.textContent = `${active.length} active`;
 
-    if (!active.length) {
+    if (!filtered.length) {
       rail.innerHTML = `
         <div class="live-orders-empty">
           <div class="loe-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-          <p class="loe-title">No orders in progress</p>
-          <p class="loe-sub">New orders will appear here automatically as they come in.</p>
+          <p class="loe-title">${liveStatusFilter ? `No ${liveStatusFilter} orders` : 'No orders in progress'}</p>
+          <p class="loe-sub">${liveStatusFilter ? 'Try a different filter or wait for new orders.' : 'New orders will appear here automatically as they come in.'}</p>
         </div>`;
       window.clearInterval(liveRailScrollTimer);
       return;
     }
 
     const changed = new Set((changedIds || []).map(String));
-    rail.innerHTML = active.map(order => {
+    rail.innerHTML = filtered.map(order => {
       const items = Array.isArray(order.items) ? order.items : [];
       const visibleItems = items.slice(0, 3);
       const owner = order.handler_name || 'Unassigned';
@@ -712,15 +751,29 @@
 
   function setupLiveOrderRail() {
     document.addEventListener('admin:orders-updated', event => {
-      renderLiveOrderRail(event.detail?.orders || [], event.detail?.changedIds || []);
+      window.__liveOrdersCache = event.detail?.orders || [];
+      renderLiveOrderRail(window.__liveOrdersCache, event.detail?.changedIds || []);
     });
-    if (Array.isArray(window.__adminLiveOrders)) renderLiveOrderRail(window.__adminLiveOrders);
+    if (Array.isArray(window.__adminLiveOrders)) {
+      window.__liveOrdersCache = window.__adminLiveOrders;
+      renderLiveOrderRail(window.__liveOrdersCache);
+    }
     window.clearInterval(liveElapsedTimer);
     liveElapsedTimer = window.setInterval(updateElapsedLabels, 30000);
     setupRailNavButtons();
   }
 
   function setupRailNavButtons() {
+    // ── Filter buttons ───────────────────────────────────────────────────
+    document.getElementById('liveFilterBtns')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.live-filter-btn');
+      if (!btn) return;
+      liveStatusFilter = btn.dataset.status;
+      document.querySelectorAll('.live-filter-btn').forEach(b => b.classList.toggle('active', b === btn));
+      // Re-render with current cached orders
+      if (window.__liveOrdersCache) renderLiveOrderRail(window.__liveOrdersCache);
+    });
+
     const viewport = document.getElementById('liveOrdersViewport');
     const rail = document.getElementById('liveOrdersRail');
     const prevBtn = document.getElementById('railPrevBtn');
