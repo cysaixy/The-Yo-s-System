@@ -43,7 +43,7 @@ img, video { display: block; max-width: 100%; }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
 @media(max-width:640px) { .wrap { padding: 0 22px; } }
 header {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  position: static; top: 0; left: 0; right: 0; z-index: 100;
   display: flex; align-items: center; justify-content: space-between;
   padding: 20px 40px; background: var(--header-bg) !important;
   border-bottom: 1px solid var(--line); transition: background .3s ease;
@@ -61,8 +61,8 @@ nav ul li.nav-auth-hidden { visibility: hidden !important; pointer-events: none 
 /* Push the toggle+CTA+account group away from the text links */
 .sunset-mode-item { margin-left: 12px; }
 /* Space between Order Now and Sign In pill */
-li:has(> .nav-btn) { margin-left: 8px; }
-.nav-account-li { margin-left: 6px; }
+li:has(> .nav-btn) { margin-left: 16px; }
+.nav-account-li { margin-left: 12px; }
 
 /* Nav links — icon + label style, no all-caps, no underline bar */
 nav a {
