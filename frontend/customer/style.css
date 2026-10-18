@@ -316,7 +316,7 @@ footer { background: var(--dark); color: #FAF8F4; padding: 90px 0 30px; }
    ========================================================================== */
 :root { --header-h: 95px; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-body { padding-top: var(--header-h); }
+body { }
 a, button, input, select, textarea, label, summary { touch-action: manipulation; }
 a, button { -webkit-tap-highlight-color: rgba(163,132,74,.18); }
 
