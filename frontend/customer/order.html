@@ -1167,6 +1167,13 @@
   }
   .kiosk-grid > * { min-width: 0; }
   .kiosk-tabs { max-width: 100%; }
+
+  /* Hide header when embedded in customer-app.html iframe */
+  .customer-app-embedded header { display: none !important; }
+
+  /* Ensure feedback section scrolls correctly when embedded */
+  .customer-app-embedded #feedback { scroll-margin-top: 0; }
+  #feedback { scroll-margin-top: calc(var(--header-h, 95px) + 20px); }
 </style>
 <link rel="stylesheet" href="theme.css"></head>
 <body data-no-floating-cart>
@@ -2683,6 +2690,18 @@
   });
   loadMenuFromServer();
   loadSavedReviews();
+
+  // Handle hash scroll for embedded pages (e.g., #feedback)
+  // Re-scroll to hash after header is hidden to prevent layout shift
+  if (window.location.hash && document.documentElement.classList.contains('customer-app-embedded')) {
+    const target = document.querySelector(window.location.hash);
+    if (target) {
+      // Use requestAnimationFrame to ensure layout is stable
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: 'auto', block: 'start' });
+      });
+    }
+  }
 </script>
 <script type="module" src="authNav.js"></script>
 
