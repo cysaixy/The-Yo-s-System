@@ -552,8 +552,17 @@ class ReceiptPrinterManager {
   }
 }
 
-// Global printer manager singleton
-export const printerManager = new ReceiptPrinterManager();
+// The persistent admin app host owns the live connection. POS uses that
+// manager when it runs inside the host's iframe, so moving away from POS
+// cannot destroy the Bluetooth session. A standalone POS page still gets
+// its own manager as a safe fallback.
+let hostPrinterManager = null;
+try {
+  hostPrinterManager = window.parent !== window ? window.parent.__yoPrinterManager : null;
+} catch {
+  // A cross-origin embed cannot share the host manager; use the local fallback.
+}
+export const printerManager = hostPrinterManager || new ReceiptPrinterManager();
 
 /* ================================================================
    HELPERS & FORMATTERS

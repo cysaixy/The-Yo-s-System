@@ -1,4 +1,10 @@
 import { renderAdminShell } from './admin-shell.js';
+import { printerManager } from './receipt-printer.js?v=2';
+
+// The app host is never replaced during feature navigation. Put the live
+// Bluetooth manager here rather than inside the POS iframe, whose lifecycle
+// a browser may pause when it is hidden.
+window.__yoPrinterManager = printerManager;
 
 const FEATURES = {
   dashboard: 'Dashboard',
@@ -28,8 +34,29 @@ if (session) {
   const body = content.closest('.admin-body');
   body.classList.add('admin-app-body');
   content.style.cssText = 'max-width:none; width:100%; height:100%;';
-  content.innerHTML = '<iframe class="admin-app-frame" title="Admin feature" id="adminFeatureFrame"></iframe>';
-  const frame = document.getElementById('adminFeatureFrame');
+  content.innerHTML = `
+    <div class="admin-app-workspace">
+      <iframe class="admin-app-frame" title="Admin feature" id="adminFeatureFrame"></iframe>
+    </div>`;
+  const workspace = content.querySelector('.admin-app-workspace');
+  const featureFrame = document.getElementById('adminFeatureFrame');
+  let posFrame = null;
+
+  function createPosFrame() {
+    if (posFrame) return posFrame;
+    posFrame = document.createElement('iframe');
+    posFrame.className = 'admin-app-frame';
+    posFrame.id = 'adminPosFrame';
+    posFrame.title = 'Point of Sale';
+    posFrame.src = 'pos?embedded=1';
+    workspace.appendChild(posFrame);
+    return posFrame;
+  }
+
+  function showFrame(frame) {
+    featureFrame.hidden = frame !== featureFrame;
+    if (posFrame) posFrame.hidden = frame !== posFrame;
+  }
 
   function setActiveFeature(feature, { addHistory = false } = {}) {
     if (!Object.hasOwn(FEATURES, feature)) return;
@@ -42,7 +69,15 @@ if (session) {
     if (addHistory) {
       history.pushState({ feature }, '', `app.html?feature=${encodeURIComponent(feature)}`);
     }
-    frame.src = `${feature}?embedded=1`;
+    // The POS document owns the live Bluetooth printer connection. Keep its
+    // iframe alive after the first visit so leaving POS never destroys that
+    // connection; other features can still be replaced normally.
+    if (feature === 'pos') {
+      showFrame(createPosFrame());
+    } else {
+      showFrame(featureFrame);
+      featureFrame.src = `${feature}?embedded=1`;
+    }
   }
 
   document.querySelector('.admin-sidebar').addEventListener('click', event => {
