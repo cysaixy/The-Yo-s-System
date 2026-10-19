@@ -341,8 +341,9 @@
   import { adminFetch, peso, formatDate, escapeHtml } from "./admin-api.js";
   import {
     openReceiptModal,
-    normalizeOrderData
-  } from "./receipt-printer.js";
+    normalizeOrderData,
+    printReceiptAutomatic
+  } from "./receipt-printer.js?v=4";
 
   const session = renderAdminShell({ active: 'sales', title: 'Sales Transactions' });
 
@@ -1237,6 +1238,20 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not update order status.');
+
+      // Auto-print receipt when order is confirmed or completed
+      if (newStatus === 'confirmed' || newStatus === 'completed') {
+        try {
+          const orderRes = await adminFetch(`/api/admin/sales/orders/${orderId}`);
+          const orderData = await orderRes.json();
+          if (orderRes.ok && orderData.order) {
+            const receiptData = normalizeOrderData(orderData.order);
+            printReceiptAutomatic(receiptData, null, null);
+          }
+        } catch (printErr) {
+          console.warn('Auto-print after status change failed:', printErr);
+        }
+      }
 
       loadOrders();
       loadSummary();

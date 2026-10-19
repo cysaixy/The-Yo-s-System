@@ -1,5 +1,5 @@
 import { renderAdminShell } from './admin-shell.js';
-import { printerManager } from './receipt-printer.js?v=2';
+import { printerManager } from './receipt-printer.js?v=4';
 
 // The app host is never replaced during feature navigation. Put the live
 // Bluetooth manager here rather than inside the POS iframe, whose lifecycle
