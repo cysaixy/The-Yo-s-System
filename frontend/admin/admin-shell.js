@@ -452,7 +452,44 @@ export function renderAdminShell({ active, title }) {
     return null;
   }
 
+  const isEmbeddedFeature = new URLSearchParams(window.location.search).get('embedded') === '1';
+  const isAdminAppHost = document.body.dataset.adminAppHost === 'true';
+
+  // Feature pages now run inside admin-app.html. The host keeps the sidebar
+  // and header alive while the iframe swaps only this feature's content.
+  // Direct links are still supported: they enter the host once, then stay
+  // there for every later navigation.
+  if (!isEmbeddedFeature && !isAdminAppHost) {
+    window.location.replace(`app.html?feature=${encodeURIComponent(active)}`);
+    return null;
+  }
+
+  const activeItem = NAV_ITEMS.find(i => i.key === active);
+  if (activeItem && !hasAccess(activeItem, staff)) {
+    alert("You don't have permission to access this page. Ask an Admin to grant it.");
+    window.location.href = isEmbeddedFeature ? 'dashboard?embedded=1' : 'app.html?feature=dashboard';
+    return null;
+  }
+
   const root = document.getElementById('adminShell');
+
+  // The embedded document supplies just a content mount. Its existing page
+  // module can keep using #adminContent without rebuilding a second shell.
+  if (isEmbeddedFeature) {
+    root.className = 'embedded-admin-feature';
+    root.innerHTML = '<main class="admin-section" id="adminContent"></main>';
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href]');
+      if (!link || link.target || event.defaultPrevented) return;
+      const href = link.getAttribute('href');
+      const target = NAV_ITEMS.find(item => item.href === href);
+      if (!target || window.parent === window) return;
+      event.preventDefault();
+      window.parent.postMessage({ type: 'theyos:admin-navigate', feature: target.key }, window.location.origin);
+    }, true);
+    return { staff };
+  }
+
   const initial = (staff.name || staff.email || '?').charAt(0).toUpperCase();
 
   root.innerHTML = `
@@ -585,12 +622,5 @@ initOnlineOrderNotifications(staff);
   // A signed-in staff member who isn't allowed on this page (e.g. they
   // bookmarked it before permissions changed) gets bounced to Home rather
   // than seeing a broken/empty page.
-  const activeItem = NAV_ITEMS.find(i => i.key === active);
-  if (activeItem && !hasAccess(activeItem, staff)) {
-    alert("You don't have permission to access this page. Ask an Admin to grant it.");
-    window.location.href = 'dashboard';
-    return null;
-  }
-
   return { staff };
 }

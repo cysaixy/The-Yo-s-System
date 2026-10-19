@@ -34,38 +34,6 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-/* Keep the shared admin canvas visible while a new feature page loads.
-   Each feature is currently a separate document, so without this the empty
-   #adminShell briefly exposes the browser's white default background before
-   admin-shell.js rebuilds the layout. */
-html { background: #f2ede4; }
-#adminShell:empty {
-  min-height: 100vh;
-  display: block;
-  background:
-    linear-gradient(#1b1d22 0 var(--header-h), transparent var(--header-h)),
-    radial-gradient(ellipse 80% 60% at 80% 0%, rgba(163,132,74,0.09) 0%, transparent 60%),
-    linear-gradient(160deg, #f8f3ea 0%, #f2ede4 45%, #ede8de 100%);
-}
-#adminShell:empty::after {
-  content: 'Loading workspace…';
-  position: fixed;
-  top: calc(var(--header-h) + 28px);
-  left: 30px;
-  color: #5c6065;
-  font: 600 0.72rem 'Plus Jakarta Sans', sans-serif;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-/* Chrome/Edge preserve and cross-fade the old document during same-origin
-   admin navigation instead of revealing a blank page between features. */
-@view-transition { navigation: auto; }
-::view-transition-old(root), ::view-transition-new(root) {
-  animation-duration: 150ms;
-  animation-timing-function: ease-out;
-}
-
 body {
   margin: 0;
   background:
@@ -499,6 +467,12 @@ body {
   margin: 0 0 4px; letter-spacing: 0.02em;
 }
 .admin-section > p.sub { color: var(--ink-muted); font-size: 0.87rem; margin: 0 0 20px; }
+
+/* The app host owns the persistent header/sidebar. Feature documents are
+   rendered in this frame so moving through the navigation never reloads it. */
+.admin-body.admin-app-body { padding: 0; overflow: hidden; }
+.admin-app-frame { display: block; width: 100%; height: calc(100vh - var(--header-h)); border: 0; background: transparent; }
+.embedded-admin-feature { min-height: 100vh; padding: 28px 30px; }
 
 /* ========================================================
    PANELS / CARDS
