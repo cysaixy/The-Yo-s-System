@@ -30,6 +30,14 @@ body:not(.menu-page-theme).dark-theme {
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+html.customer-app-host,
+html.customer-app-host body { height: 100%; overflow: hidden; }
+html.customer-app-embedded {
+  scroll-behavior: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html.customer-app-embedded::-webkit-scrollbar { display: none; }
 body {
   background: var(--bone); color: var(--ink); font-family: 'Inter', sans-serif;
   font-size: 16px; line-height: 1.6; overflow-x: hidden;
@@ -47,8 +55,8 @@ html.customer-app-embedded .logo-link,
 body.customer-app-embedded .logo-link {
   display: none !important;
 }
-body[data-customer-app-host="true"] { min-height: 100vh; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-.customer-app-workspace { flex: 1; min-height: 0; width: 100%; }
+body[data-customer-app-host="true"] { min-height: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.customer-app-workspace { flex: 1 1 auto; min-height: 0; width: 100%; }
 .customer-app-workspace iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--bone); }
 a { color: inherit; text-decoration: none; }
 img, video { display: block; max-width: 100%; }

@@ -12,6 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import app from "./src/app.js";
 
 import { initTables } from "./src/config/initTables.js";
+import { startOverdueReservationCron } from "./src/services/overdueReservationService.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -67,6 +68,8 @@ const startServer = async () => {
     await pool.query("SELECT NOW()");
     console.log("Connected to database");
     await initTables();
+
+    startOverdueReservationCron();
 
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);

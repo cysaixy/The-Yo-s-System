@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="customer-app-redirect.js?v=3"></script>
+<script src="customer-app-redirect.js?v=4"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Order Terminal — The~Yo's</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 <style>
   /* =========================================================
      DESKTOP & BASE ORDER TERMINAL STYLES
@@ -2688,20 +2688,12 @@
   document.querySelectorAll('input[name="paymentChoice"]').forEach(input => {
     input.addEventListener('change', () => { renderPaymentReceipt(); updatePaymentButtonState(); });
   });
-  loadMenuFromServer();
-  loadSavedReviews();
-
-  // Handle hash scroll for embedded pages (e.g., #feedback)
-  // Re-scroll to hash after header is hidden to prevent layout shift
-  if (window.location.hash && document.documentElement.classList.contains('customer-app-embedded')) {
-    const target = document.querySelector(window.location.hash);
-    if (target) {
-      // Use requestAnimationFrame to ensure layout is stable
-      requestAnimationFrame(() => {
-        target.scrollIntoView({ behavior: 'auto', block: 'start' });
-      });
+  loadMenuFromServer().finally(() => {
+    if (document.documentElement.classList.contains('customer-app-embedded')) {
+      window.parent.postMessage({ type: 'theyos:customer-layout-ready' }, window.location.origin);
     }
-  }
+  });
+  loadSavedReviews();
 </script>
 <script type="module" src="authNav.js"></script>
 
