@@ -2067,8 +2067,13 @@
     // Auto-print if enabled and any printer is connected
     if (printerManager.settings.autoPrintPos && printerManager.isAnyConnected() && activeReceipt) {
       const target = printerManager.settings.autoPrintTarget || 'both';
-      printerManager.printReceiptBluetooth(activeReceipt, target).catch((err) => {
+      if (noticeEl) noticeEl.innerHTML = `<span style="color:#2e7d4f;">⏳ Sending to printer…</span>`;
+      printerManager.printReceiptBluetooth(activeReceipt, target).then(() => {
+        if (noticeEl) noticeEl.innerHTML = `<span style="color:#2e7d4f;">✓ Receipt printed automatically.</span>`;
+        if (printBothBtn) { printBothBtn.textContent = '✓ Printed'; }
+      }).catch((err) => {
         console.warn('Auto-print error:', err);
+        if (noticeEl) noticeEl.innerHTML = `<span style="color:#c0392b;">⚠ Auto-print failed: ${err.message}</span>`;
       });
     }
 

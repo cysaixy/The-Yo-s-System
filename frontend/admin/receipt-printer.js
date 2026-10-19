@@ -10,7 +10,7 @@ const DEFAULT_SETTINGS = {
   address: 'General Santos City',
   phone: '0912 345 6789',
   footerNote: 'Thank you for your visit!\nPlease come again.',
-  autoPrintPos: false,
+  autoPrintPos: true,
   autoPrintTarget: 'both', // 'both', 'counter', 'kitchen'
   printDoubleIfSingle: true, // If only 1 printer is connected, print 2 copies (Customer + Kitchen)
   paperWidth: 58, // 58mm = 32 columns
