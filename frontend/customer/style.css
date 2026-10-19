@@ -39,8 +39,12 @@ body {
    keep their own markup and scripts, but hide their duplicate header. */
 html.customer-app-embedded header,
 body.customer-app-embedded header,
+html.customer-app-embedded #siteNav,
+body.customer-app-embedded #siteNav,
 html.customer-app-embedded .site-header,
-body.customer-app-embedded .site-header {
+body.customer-app-embedded .site-header,
+html.customer-app-embedded .logo-link,
+body.customer-app-embedded .logo-link {
   display: none !important;
 }
 body[data-customer-app-host="true"] { min-height: 100vh; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
