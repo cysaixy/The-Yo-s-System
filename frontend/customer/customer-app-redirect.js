@@ -1,10 +1,16 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
+  const isEmbedded = params.get('embedded') === '1' || window.parent !== window;
+
   const syncEmbeddedState = () => {
-    const isEmbedded = params.get('embedded') === '1' || document.body?.dataset.customerAppHost === 'true';
     if (!isEmbedded) return;
     document.documentElement.classList.add('customer-app-embedded');
     if (document.body) document.body.classList.add('customer-app-embedded');
+
+    document.querySelectorAll('header, #siteNav, .logo-link, .site-header').forEach(node => {
+      node.style.display = 'none';
+      node.setAttribute('data-theyos-hidden', 'embedded');
+    });
   };
 
   syncEmbeddedState();
@@ -12,7 +18,7 @@
     document.addEventListener('DOMContentLoaded', syncEmbeddedState, { once: true });
   }
 
-  if (params.get('embedded') === '1' || document.body?.dataset.customerAppHost === 'true') {
+  if (isEmbedded) {
     window.addEventListener('message', event => {
       if (event.origin !== window.location.origin || event.data?.type !== 'theyos:customer-theme') return;
       document.body?.classList.toggle('coffee-night', event.data.dark);
