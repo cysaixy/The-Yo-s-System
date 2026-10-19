@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="customer-app-redirect.js?v=5"></script>
+<script src="customer-app-redirect.js?v=6"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Account — The~Yo's</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 <style>
   /* =====================================================================
      ACCOUNT PAGE — Redesigned split layout (inspired by B&J clean style)
@@ -404,7 +404,7 @@
       <li><a href="/about">About</a></li>
       <li><a href="/menu">Menu</a></li>
       <li><a href="/gallery">Gallery</a></li>
-      <li><a href="/order#feedback">Reviews</a></li>
+      <li><a href="/reviews">Reviews</a></li>
       <li><a href="/reservations">Reserve</a></li>
       <li class="sunset-mode-item">
         <button type="button" id="coffeeThemeToggle" class="sunset-mode-toggle coffee-theme-toggle"
@@ -739,6 +739,15 @@
     return params.get('redirect') || 'my-orders.html';
   }
 
+  function completeAuthRedirect() {
+    const target = getRedirectTarget();
+    if (target === 'reviews' && window.parent !== window) {
+      window.parent.postMessage({ type: 'theyos:customer-navigate', path: '/reviews' }, window.location.origin);
+      return;
+    }
+    window.location.href = target;
+  }
+
   window.switchTab = function (tab) {
     document.getElementById('tabSignIn').classList.toggle('active', tab === 'signin');
     document.getElementById('tabCreate').classList.toggle('active', tab === 'create');
@@ -788,7 +797,7 @@
       return;
     }
 
-    window.location.href = getRedirectTarget();
+    completeAuthRedirect();
   }
 
   function showPhoneGate(userCred, profileFields) {
@@ -812,7 +821,7 @@
         throw new Error('Could not save your mobile number. Please try again.');
       }
       pendingGate = null;
-      window.location.href = getRedirectTarget();
+      completeAuthRedirect();
     } catch (err) {
       setStatus('pgStatus', err.message || 'Could not save your mobile number.', 'err');
     }

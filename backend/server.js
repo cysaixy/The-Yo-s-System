@@ -36,12 +36,12 @@ app.use("/customer", express.static(path.join(__dirname, "..", "frontend", "cust
 // Clean URL rewrites — mirrors vercel.json so localhost:3000/about works
 // the same as production (no .html extension needed).
 const customerPages = [
-  'about', 'menu', 'gallery', 'order', 'reservations',
+  'about', 'menu', 'gallery', 'order', 'reviews', 'reservations',
   'my-orders', 'account', 'index',
 ];
 customerPages.forEach(page => {
   app.get(`/${page}`, (_req, res) =>
-    res.sendFile(path.join(__dirname, "..", "frontend", "customer", `${page}.html`))
+    res.sendFile(path.join(__dirname, "..", "frontend", "customer", page === 'reviews' ? 'reviews.html' : `${page}.html`))
   );
 });
 

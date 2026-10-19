@@ -27,6 +27,7 @@
     { "source": "/about", "destination": "/frontend/customer/about.html" },
     { "source": "/menu", "destination": "/frontend/customer/menu.html" },
     { "source": "/gallery", "destination": "/frontend/customer/gallery.html" },
+    { "source": "/reviews", "destination": "/frontend/customer/reviews.html" },
     { "source": "/order", "destination": "/frontend/customer/order.html" },
     { "source": "/reservations", "destination": "/frontend/customer/reservations.html" },
     { "source": "/my-orders", "destination": "/frontend/customer/my-orders.html" },

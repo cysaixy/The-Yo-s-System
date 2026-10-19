@@ -1,9 +1,6 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
   const isEmbedded = params.get('embedded') === '1' || window.parent !== window;
-  if (isEmbedded && params.get('section') === 'feedback') {
-    document.documentElement.classList.add('customer-reviews-only');
-  }
 
   const syncEmbeddedState = () => {
     if (!isEmbedded) return;
@@ -26,10 +23,6 @@
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === 'theyos:customer-theme') {
         document.body?.classList.toggle('coffee-night', event.data.dark);
-        return;
-      }
-      if (event.data?.type === 'theyos:customer-scroll' && typeof event.data.targetId === 'string') {
-        document.getElementById(event.data.targetId)?.scrollIntoView({ block: 'start', inline: 'nearest' });
       }
     });
 
@@ -39,10 +32,10 @@
       const destination = new URL(link.href, window.location.href);
       if (link.getAttribute('href').startsWith('#')) return;
       if (destination.origin !== window.location.origin) return;
-      const supported = new Set(['/', '/about', '/menu', '/gallery', '/order', '/reservations', '/my-orders', '/account']);
+      const supported = new Set(['/', '/about', '/menu', '/gallery', '/order', '/reviews', '/reservations', '/my-orders', '/account']);
       if (!supported.has(destination.pathname)) return;
       event.preventDefault();
-      window.parent.postMessage({ type: 'theyos:customer-navigate', path: `${destination.pathname}${destination.hash}` }, window.location.origin);
+      window.parent.postMessage({ type: 'theyos:customer-navigate', path: `${destination.pathname}${destination.search}${destination.hash}` }, window.location.origin);
     }, true);
     return;
   }

@@ -1,66 +1,41 @@
-const SUPPORTED_PATHS = new Set(['/', '/about', '/menu', '/gallery', '/order', '/reservations', '/my-orders', '/account']);
+const SUPPORTED_PATHS = new Set(['/', '/about', '/menu', '/gallery', '/order', '/reviews', '/reservations', '/my-orders', '/account']);
 const frame = document.getElementById('customerFeatureFrame');
-let pendingScrollTarget = '';
-let pendingFramePath = '';
-let scrollFallbackTimer = 0;
 
-function scrollFeatureToPendingTarget() {
-  if (!pendingScrollTarget || !pendingFramePath) return;
-  const targetId = pendingScrollTarget;
-  pendingScrollTarget = '';
-  pendingFramePath = '';
-  window.clearTimeout(scrollFallbackTimer);
-  scrollFallbackTimer = 0;
-  frame.contentWindow?.postMessage({
-    type: 'theyos:customer-scroll',
-    targetId,
-  }, window.location.origin);
+function normalizePath(path) {
+  const url = new URL(path, window.location.origin);
+  if (url.pathname === '/order' && url.hash === '#feedback') {
+    url.pathname = '/reviews';
+    url.search = '';
+    url.hash = '';
+  }
+  return url;
 }
 
-frame.addEventListener('load', () => {
-  if (!pendingScrollTarget || !pendingFramePath) return;
-  try {
-    if (frame.contentWindow.location.pathname !== pendingFramePath) return;
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'SecurityError') return;
-    throw error;
-  }
-  if (pendingFramePath === '/order') {
-    scrollFallbackTimer = window.setTimeout(scrollFeatureToPendingTarget, 2500);
-    return;
-  }
-  scrollFeatureToPendingTarget();
-});
-
 function requestedPath() {
-  const value = new URLSearchParams(window.location.search).get('page') || '/';
-  const url = new URL(value, window.location.origin);
-  return SUPPORTED_PATHS.has(url.pathname) ? `${url.pathname}${url.hash}` : '/';
+  const page = new URLSearchParams(window.location.search).get('page')
+    || (window.location.pathname === '/reviews' ? '/reviews' : '/');
+  const url = normalizePath(page);
+  return SUPPORTED_PATHS.has(url.pathname) ? `${url.pathname}${url.search}${url.hash}` : '/';
 }
 
 function updateActiveLink(path) {
-  const url = new URL(path, window.location.origin);
-  const normalizedPath = `${url.pathname}${url.hash}`;
+  const normalizedPath = normalizePath(path).pathname;
   document.querySelectorAll('[data-customer-path]').forEach(link => {
-    const linkPath = link.dataset.customerPath;
-    link.classList.toggle('active', linkPath === normalizedPath);
+    link.classList.toggle('active', normalizePath(link.dataset.customerPath).pathname === normalizedPath);
   });
 }
 
 function navigate(path, { addHistory = false } = {}) {
-  const url = new URL(path, window.location.origin);
+  const url = normalizePath(path);
   if (!SUPPORTED_PATHS.has(url.pathname)) return;
-  const nextPath = `${url.pathname}${url.hash}`;
-  const showReviewsOnly = url.pathname === '/order' && url.hash === '#feedback';
-  pendingScrollTarget = url.hash && !showReviewsOnly ? decodeURIComponent(url.hash.slice(1)) : '';
-  pendingFramePath = pendingScrollTarget ? url.pathname : '';
-  if (addHistory) history.pushState({ path: nextPath }, '', `customer-app.html?page=${encodeURIComponent(nextPath)}`);
+
+  const nextPath = `${url.pathname}${url.search}${url.hash}`;
+  if (addHistory) {
+    history.pushState({ path: nextPath }, '', `customer-app.html?page=${encodeURIComponent(nextPath)}`);
+  }
   updateActiveLink(nextPath);
   url.searchParams.set('embedded', '1');
-  if (showReviewsOnly) url.searchParams.set('section', 'feedback');
-  else url.searchParams.delete('section');
-  url.hash = '';
-  frame.src = `${url.pathname}${url.search}`;
+  frame.src = `${url.pathname}${url.search}${url.hash}`;
 }
 
 document.addEventListener('click', event => {
@@ -71,18 +46,11 @@ document.addEventListener('click', event => {
 });
 
 window.addEventListener('message', event => {
-  if (event.origin !== window.location.origin) return;
-  if (event.data?.type === 'theyos:customer-layout-ready') {
-    if (pendingFramePath === '/order') scrollFeatureToPendingTarget();
-    return;
-  }
-  if (event.data?.type === 'theyos:customer-navigate') {
-    navigate(event.data.path, { addHistory: true });
-  }
+  if (event.origin !== window.location.origin || event.data?.type !== 'theyos:customer-navigate') return;
+  navigate(event.data.path, { addHistory: true });
 });
 window.addEventListener('popstate', () => navigate(requestedPath()));
 
-// Keep dark-mode changes visually in sync without reloading the feature page.
 document.getElementById('coffeeThemeToggle')?.addEventListener('click', () => {
   requestAnimationFrame(() => frame.contentWindow?.postMessage({
     type: 'theyos:customer-theme',

@@ -1,28 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="customer-app-redirect.js?v=5"></script>
+<script src="customer-app-redirect.js?v=6"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Order Terminal — The~Yo's</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 <style>
-  html.customer-reviews-only body > header,
-  html.customer-reviews-only body > .reserve,
-  html.customer-reviews-only body > .mobile-order-bar,
-  html.customer-reviews-only body > .mob-drawer-overlay,
-  html.customer-reviews-only body > .checkout-overlay,
-  html.customer-reviews-only body > #cancelOrderModal,
-  html.customer-reviews-only body > #customizationModal,
-  html.customer-reviews-only body > footer {
-    display: none !important;
-  }
-  html.customer-reviews-only #feedback {
-    min-height: 100vh;
-    padding-top: 48px;
-  }
-
   /* =========================================================
      DESKTOP & BASE ORDER TERMINAL STYLES
      ========================================================= */
@@ -770,184 +755,6 @@
   }
 
   /* =========================================================
-     FEEDBACK & REVIEWS SECTION MODERN STYLING
-     ========================================================= */
-  .feedback-section {
-    background: var(--bone);
-    border-top: 1px solid var(--line);
-    padding: 60px 0;
-  }
-  .feedback-container {
-    display: grid;
-    grid-template-columns: 1.15fr 1.35fr;
-    gap: 48px;
-    align-items: start;
-  }
-  .feedback-form-card {
-    background: var(--component-bg, #1C1E22);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 28px 26px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-  }
-  .star-rating-selector {
-    display: flex;
-    gap: 8px;
-    margin: 6px 0 4px;
-    touch-action: manipulation;
-  }
-  .star-rating-selector span {
-    font-size: 2.2rem;
-    width: 46px;
-    height: 46px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--line, #333);
-    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s ease, text-shadow 0.2s ease;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .star-rating-selector span.active, .star-rating-selector span:hover {
-    color: var(--brass, #d4af37);
-    text-shadow: 0 0 14px rgba(163,132,74,0.45);
-  }
-  .star-rating-selector span:active {
-    transform: scale(1.3);
-  }
-  .star-rating-hint {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.76rem;
-    color: var(--brass);
-    font-weight: 700;
-    margin-bottom: 12px;
-    min-height: 1.2em;
-  }
-  .private-toggle-card {
-    margin: 16px 0;
-    background: rgba(163,132,74,0.08);
-    padding: 12px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(163,132,74,0.25);
-  }
-  .private-toggle-label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    user-select: none;
-    margin: 0;
-  }
-  .private-toggle-label input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--brass);
-    margin-right: 10px;
-    cursor: pointer;
-  }
-  .private-toggle-box {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.74rem;
-    font-weight: 700;
-    color: var(--ink);
-    letter-spacing: 0.04em;
-  }
-  .comments-display {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    max-height: 540px;
-    overflow-y: auto;
-    padding-right: 8px;
-  }
-  .comments-display::-webkit-scrollbar { width: 4px; }
-  .comments-display::-webkit-scrollbar-thumb { background: var(--brass); border-radius: 2px; }
-  .comment-card {
-    background: var(--component-bg, #1C1E22);
-    padding: 18px 20px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-    transition: transform 0.2s ease, border-color 0.2s ease;
-  }
-  .comment-card:hover {
-    border-color: rgba(163, 132, 74, 0.4);
-  }
-  .comment-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    gap: 10px;
-  }
-  .comment-author-wrap {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-  .comment-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(163, 132, 74, 0.18);
-    border: 1px solid rgba(163, 132, 74, 0.45);
-    color: var(--brass);
-    font-family: 'Space Mono', monospace;
-    font-weight: 700;
-    font-size: 0.78rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .comment-user {
-    font-family: 'Archivo', sans-serif;
-    font-weight: 700;
-    font-size: 0.92rem;
-    text-transform: uppercase;
-    color: var(--ink);
-    display: block;
-    line-height: 1.2;
-  }
-  .comment-verified-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.62rem;
-    color: var(--brass);
-    opacity: 0.85;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-top: 2px;
-  }
-  .comment-stars {
-    color: var(--brass);
-    font-size: 1rem;
-    letter-spacing: 2px;
-    flex-shrink: 0;
-  }
-  .comment-text {
-    font-size: 0.9rem;
-    color: var(--ink);
-    opacity: 0.9;
-    line-height: 1.5;
-    margin: 0;
-  }
-  .comment-date {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--ink);
-    opacity: 0.45;
-    margin-top: 10px;
-    display: block;
-  }
-
-  /* =========================================================
      RESPONSIVE BREAKPOINTS (PHONE & TABLET)
      ========================================================= */
   @media(max-width: 990px) {
@@ -964,10 +771,6 @@
     }
     .reserve {
       padding-bottom: 96px !important; /* Space for the floating bottom bar */
-    }
-    .feedback-container {
-      grid-template-columns: 1fr;
-      gap: 36px;
     }
   }
 
@@ -1034,18 +837,6 @@
       font-size: 1.15rem;
     }
 
-    .feedback-form-card {
-      padding: 22px 18px;
-    }
-    .feedback-form-card input,
-    .feedback-form-card textarea {
-      font-size: 16px !important; /* Prevent iOS zoom */
-    }
-    .star-rating-selector span {
-      font-size: 2.2rem;
-      width: 44px;
-      height: 44px;
-    }
   }
 
   @media(max-width: 480px) {
@@ -1186,9 +977,6 @@
   /* Hide header when embedded in customer-app.html iframe */
   .customer-app-embedded header { display: none !important; }
 
-  /* Ensure feedback section scrolls correctly when embedded */
-  .customer-app-embedded #feedback { scroll-margin-top: 0; }
-  #feedback { scroll-margin-top: calc(var(--header-h, 95px) + 20px); }
 </style>
 <link rel="stylesheet" href="theme.css"></head>
 <body data-no-floating-cart>
@@ -1203,7 +991,7 @@
       <li><a href="/about">About</a></li>
       <li><a href="/menu">Menu</a></li>
       <li><a href="/gallery">Gallery</a></li>
-      <li><a href="/order#feedback" class="active">Reviews</a></li>
+      <li><a href="/reviews">Reviews</a></li>
       <li><a href="/reservations">Reserve</a></li>
       <li class="sunset-mode-item">
         <button type="button" id="coffeeThemeToggle" class="sunset-mode-toggle coffee-theme-toggle"
@@ -1508,56 +1296,6 @@
     </div>
   </div>
 </div>
-
-<section id="feedback" class="feedback-section">
-  <div class="wrap reveal in">
-    <div class="section-head" style="margin-bottom:28px;">
-      <h2 class="display">Scan, Rate & Review</h2>
-      <p>Have something to share? Post a public review on our guest wall, or send a private note straight to management.</p>
-    </div>
-    <div class="feedback-container">
-      <div class="feedback-form-card">
-        <form onsubmit="return handleFeedback(event)">
-          <div style="margin-bottom:14px;">
-            <label style="display:block; margin-bottom:4px;">Star Score</label>
-            <div class="star-rating-selector" id="starSelector" role="radiogroup" aria-label="Star Score">
-              <span data-value="1" role="button" aria-label="1 Star" tabindex="0">★</span>
-              <span data-value="2" role="button" aria-label="2 Stars" tabindex="0">★</span>
-              <span data-value="3" role="button" aria-label="3 Stars" tabindex="0">★</span>
-              <span data-value="4" role="button" aria-label="4 Stars" tabindex="0">★</span>
-              <span data-value="5" class="active" role="button" aria-label="5 Stars" tabindex="0">★</span>
-            </div>
-            <div class="star-rating-hint" id="starRatingHint">5/5 — Outstanding! Loved everything.</div>
-          </div>
-          <div style="margin-bottom:14px;"><label for="reviewerName">Your Name</label><input id="reviewerName" type="text" required placeholder="Maria Santos"></div>
-          <div style="margin-bottom:14px;"><label for="feedbackText">Comments / Messages</label><textarea id="feedbackText" required placeholder="Write your thoughts or message..."></textarea></div>
-          
-          <div class="private-toggle-card">
-            <label class="private-toggle-label">
-              <input type="checkbox" id="privateToggle">
-              <span class="private-toggle-box">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span>SEND PRIVATELY TO MANAGEMENT</span>
-              </span>
-            </label>
-          </div>
-
-          <div style="margin-top: 16px;"><button type="submit" class="btn" style="width:100%; justify-content:center; padding:15px; border-radius:8px;">Submit Feedback</button></div>
-        </form>
-      </div>
-      <div>
-        <p class="eyebrow" style="margin-bottom: 16px;">Live Guest Comments</p>
-        <div class="comments-display" id="commentsDisplay">
-          <div class="comment-card">
-            <div class="comment-header"><span class="comment-user">Aaron Lavado</span><span class="comment-stars">★★★★★</span></div>
-            <p class="comment-text">The Barbeque Pork Ribs are unbelievably tender!</p>
-            <span class="comment-date">July 2, 2026</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <script type="module">
   import { auth, onAuthStateChanged, signOut, API_BASE_URL } from "./firebase-init.js";
@@ -2548,7 +2286,7 @@
           setOrderSubmitting(true);
           const btn = document.getElementById('btnCheckoutNext');
           if (btn) btn.textContent = `Connecting to ${paymentChoice} to complete payment...`;
-          window.location.href = data.checkout_url;
+          window.top.location.href = data.checkout_url;
           return true;
         }
 
@@ -2571,129 +2309,6 @@
     }
   }
 
-  // Feedback Section Handlers & Persistence
-  const REVIEWS_STORAGE_KEY = 'theyos_guest_reviews';
-  const DEFAULT_REVIEWS = [
-    {
-      name: 'Aaron Lavado',
-      stars: 5,
-      text: 'The Barbeque Pork Ribs are unbelievably tender!',
-      date: 'July 2, 2026'
-    },
-    {
-      name: 'Claire Mendoza',
-      stars: 5,
-      text: 'Best Batil Patung in Baggao! The iced caramel macchiato is also top-tier.',
-      date: 'August 10, 2026'
-    }
-  ];
-
-  function loadSavedReviews() {
-    let reviews = DEFAULT_REVIEWS;
-    try {
-      const stored = localStorage.getItem(REVIEWS_STORAGE_KEY);
-      if (stored) {
-        reviews = JSON.parse(stored);
-      } else {
-        localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(DEFAULT_REVIEWS));
-      }
-    } catch (e) {
-      reviews = DEFAULT_REVIEWS;
-    }
-    renderReviews(reviews);
-  }
-
-  function getInitials(name) {
-    if (!name) return 'Y';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-  }
-
-  function renderReviews(reviews) {
-    const container = document.getElementById('commentsDisplay');
-    if (!container) return;
-    container.innerHTML = reviews.map(r => `
-      <div class="comment-card">
-        <div class="comment-header">
-          <div class="comment-author-wrap">
-            <div class="comment-avatar">${getInitials(r.name)}</div>
-            <div>
-              <span class="comment-user">${escapeReceiptHtml(r.name)}</span>
-              <span class="comment-verified-badge"><svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Verified Guest</span>
-            </div>
-          </div>
-          <span class="comment-stars">${'★'.repeat(r.stars || 5)}</span>
-        </div>
-        <p class="comment-text">${escapeReceiptHtml(r.text)}</p>
-        <span class="comment-date">${escapeReceiptHtml(r.date)}</span>
-      </div>
-    `).join('');
-  }
-
-  const RATING_HINTS = {
-    1: '1/5 — Poor experience',
-    2: '2/5 — Below average',
-    3: '3/5 — Good, average meal',
-    4: '4/5 — Very good, enjoyed it!',
-    5: '5/5 — Outstanding! Loved everything.'
-  };
-
-  function updateRatingHint(val) {
-    const hintEl = document.getElementById('starRatingHint');
-    if (hintEl) hintEl.textContent = RATING_HINTS[val] || '';
-  }
-
-  let chosenRating = 5;
-  const stars = document.querySelectorAll('#starSelector span');
-  stars.forEach(star => {
-    star.addEventListener('click', () => {
-      chosenRating = parseInt(star.getAttribute('data-value'), 10) || 5;
-      stars.forEach(s => s.classList.toggle('active', parseInt(s.getAttribute('data-value'), 10) <= chosenRating));
-      updateRatingHint(chosenRating);
-    });
-  });
-
-  window.handleFeedback = function(e) {
-    e.preventDefault();
-    const name = document.getElementById('reviewerName').value.trim();
-    const txt = document.getElementById('feedbackText').value.trim();
-    const isPrivate = document.getElementById('privateToggle').checked;
-
-    if (!name || !txt) return false;
-
-    if (isPrivate) {
-      try {
-        const privateNotes = JSON.parse(localStorage.getItem('theyos_private_notes') || '[]');
-        privateNotes.unshift({ name, stars: chosenRating, text: txt, date: new Date().toLocaleDateString('en-PH', { dateStyle: 'medium' }) });
-        localStorage.setItem('theyos_private_notes', JSON.stringify(privateNotes));
-      } catch (err) {}
-      alert(`✓ Thank you, ${name}. Your message was sent privately to management.`);
-    } else {
-      try {
-        let reviews = JSON.parse(localStorage.getItem(REVIEWS_STORAGE_KEY) || '[]');
-        if (!Array.isArray(reviews) || reviews.length === 0) reviews = [...DEFAULT_REVIEWS];
-        const newReview = {
-          name,
-          stars: chosenRating,
-          text: txt,
-          date: new Date().toLocaleDateString('en-PH', { dateStyle: 'medium' })
-        };
-        reviews.unshift(newReview);
-        localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(reviews));
-        renderReviews(reviews);
-        alert(`✓ Thank you, ${name}! Your review has been posted to our guest wall.`);
-      } catch (err) {
-        console.error('Error saving review:', err);
-      }
-    }
-    e.target.reset();
-    chosenRating = 5;
-    stars.forEach(s => s.classList.add('active'));
-    updateRatingHint(5);
-    return false;
-  };
-
   window.renderCatalog = renderCatalog;
   window.updateCartDisplay = updateCartDisplay;
   document.getElementById('catalogSearch').addEventListener('input', event => {
@@ -2703,12 +2318,7 @@
   document.querySelectorAll('input[name="paymentChoice"]').forEach(input => {
     input.addEventListener('change', () => { renderPaymentReceipt(); updatePaymentButtonState(); });
   });
-  loadMenuFromServer().finally(() => {
-    if (document.documentElement.classList.contains('customer-app-embedded')) {
-      window.parent.postMessage({ type: 'theyos:customer-layout-ready' }, window.location.origin);
-    }
-  });
-  loadSavedReviews();
+  loadMenuFromServer();
 </script>
 <script type="module" src="authNav.js"></script>
 

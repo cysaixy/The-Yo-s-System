@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { key: 'about', label: 'About', href: '/about' },
   { key: 'menu', label: 'Menu', href: '/menu' },
   { key: 'gallery', label: 'Gallery', href: '/gallery' },
-  { key: 'reviews', label: 'Reviews', href: '/order#feedback' },
+  { key: 'reviews', label: 'Reviews', href: '/reviews' },
   { key: 'reservations', label: 'Reserve', href: '/reservations' },
   { key: 'my-orders', label: 'My Orders', href: '/my-orders' },
 ];
@@ -37,10 +37,8 @@ function detectActiveKey() {
   if (file.includes('reservations')) return 'reservations';
   if (file.includes('my-orders')) return 'my-orders';
   if (file.includes('account')) return 'account';
-  if (file.includes('order')) {
-    if (window.location.hash === '#feedback') return 'reviews';
-    return 'order';
-  }
+  if (file.includes('reviews')) return 'reviews';
+  if (file.includes('order')) return 'order';
   return '';
 }
 
