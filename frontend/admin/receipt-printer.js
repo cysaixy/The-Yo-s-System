@@ -46,7 +46,25 @@ class ReceiptPrinterManager {
   loadSettings() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_SETTINGS);
-      if (saved) return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const merged = { ...DEFAULT_SETTINGS, ...parsed };
+        // Migration: if autoPrintPos was never explicitly saved as true by the
+        // user (i.e. it was stored as false from the old default), upgrade it
+        // to the new default of true. We detect this by checking whether the
+        // saved JSON contains the key at all AND it equals false — meaning it
+        // was set from the old code default, not from a deliberate user choice
+        // to disable it (which would write the same value, but after this
+        // migration it won't matter because the user toggle will re-save it).
+        if (parsed.autoPrintPos === false && DEFAULT_SETTINGS.autoPrintPos === true) {
+          merged.autoPrintPos = true;
+          // Persist the migrated value so subsequent loads reflect it
+          try {
+            localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(merged));
+          } catch (_) {}
+        }
+        return merged;
+      }
     } catch (e) {
       console.warn('Failed to load receipt settings:', e);
     }
@@ -707,6 +725,85 @@ export function printReceiptSystem(receiptData, copyType = 'CUSTOMER RECEIPT') {
 
   // Trigger print
   window.print();
+}
+
+/**
+ * printReceiptAutomatic — called on every successful POS order confirm.
+ *
+ * Strategy (in order):
+ *  1. If a Bluetooth printer is already live → print BT immediately.
+ *  2. If no BT connection but a previously-paired device is stored →
+ *     silently try restoreConnections() (no user picker needed on Chrome
+ *     with getDevices() permission) then print BT.
+ *  3. If BT unavailable or reconnect fails → fall back to browser
+ *     system print (window.print) so a receipt always comes out.
+ *
+ * @param {object}  receiptData  — output of normalizeOrderData()
+ * @param {Element} noticeEl     — optional DOM element to show status text
+ * @param {Element} printBothBtn — optional "Print Both" button to update
+ */
+export async function printReceiptAutomatic(receiptData, noticeEl, printBothBtn) {
+  const setNotice = (html) => { if (noticeEl) noticeEl.innerHTML = html; };
+
+  // Guard: setting must be on
+  if (!printerManager.settings.autoPrintPos) return;
+
+  const target = printerManager.settings.autoPrintTarget || 'both';
+
+  // --- Step 1: Already connected? Print immediately via Bluetooth ---
+  if (printerManager.isAnyConnected()) {
+    setNotice(`<span style="color:#2e7d4f;">⏳ Sending to printer…</span>`);
+    try {
+      await printerManager.printReceiptBluetooth(receiptData, target);
+      setNotice(`<span style="color:#2e7d4f;">✓ Receipt printed automatically.</span>`);
+      if (printBothBtn) printBothBtn.textContent = '✓ Printed';
+    } catch (err) {
+      console.warn('Auto-print (BT connected) error:', err);
+      setNotice(`<span style="color:#c0392b;">⚠ Bluetooth print failed: ${err.message}</span>`);
+    }
+    return;
+  }
+
+  // --- Step 2: Try silent reconnect (Chrome getDevices — no picker) ---
+  if (printerManager.isBluetoothSupported() && typeof navigator.bluetooth.getDevices === 'function') {
+    let savedDevices;
+    try {
+      savedDevices = JSON.parse(localStorage.getItem('theyos_receipt_devices') || '{}');
+    } catch (_) { savedDevices = {}; }
+
+    const hasSavedDevice = Object.values(savedDevices).some(Boolean);
+    if (hasSavedDevice) {
+      setNotice(`<span style="color:#2e7d4f;">⏳ Reconnecting printer…</span>`);
+      try {
+        await printerManager.restoreConnections();
+      } catch (err) {
+        console.warn('Auto-print reconnect failed:', err);
+      }
+
+      if (printerManager.isAnyConnected()) {
+        setNotice(`<span style="color:#2e7d4f;">⏳ Sending to printer…</span>`);
+        try {
+          await printerManager.printReceiptBluetooth(receiptData, target);
+          setNotice(`<span style="color:#2e7d4f;">✓ Receipt printed automatically.</span>`);
+          if (printBothBtn) printBothBtn.textContent = '✓ Printed';
+        } catch (err) {
+          console.warn('Auto-print (BT reconnected) error:', err);
+          setNotice(`<span style="color:#c0392b;">⚠ Bluetooth print failed: ${err.message}</span>`);
+        }
+        return;
+      }
+    }
+  }
+
+  // --- Step 3: Fallback — browser system print (always works) ---
+  setNotice(`<span style="color:#2e7d4f;">⏳ Opening system print…</span>`);
+  try {
+    printReceiptSystem(receiptData, 'CUSTOMER RECEIPT');
+    setNotice(`<span style="color:#2e7d4f;">✓ System print dialog opened.</span>`);
+  } catch (err) {
+    console.warn('Auto-print (system) error:', err);
+    setNotice(`<span style="color:#c0392b;">⚠ Print failed: ${err.message}</span>`);
+  }
 }
 
 /**
