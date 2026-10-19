@@ -105,7 +105,12 @@
   .workflow-note strong { display: block; margin-bottom: 6px; }
 
   /* Hide header when embedded in customer-app.html iframe */
-  .customer-app-embedded header { display: none !important; }
+  body.customer-app-embedded header,
+  html.customer-app-embedded header,
+  body.customer-app-embedded .site-header,
+  html.customer-app-embedded .site-header {
+    display: none !important;
+  }
 </style>
 <link rel="stylesheet" href="theme.css"></head>
 <body>

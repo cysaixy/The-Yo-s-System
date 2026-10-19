@@ -1,7 +1,13 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('embedded') === '1' || document.body?.dataset.customerAppHost === 'true') {
+  const addEmbeddedState = () => {
     document.documentElement.classList.add('customer-app-embedded');
+    if (document.body) document.body.classList.add('customer-app-embedded');
+  };
+
+  if (params.get('embedded') === '1' || document.body?.dataset.customerAppHost === 'true') {
+    addEmbeddedState();
+    document.addEventListener('DOMContentLoaded', addEmbeddedState, { once: true });
 
     window.addEventListener('message', event => {
       if (event.origin !== window.location.origin || event.data?.type !== 'theyos:customer-theme') return;
