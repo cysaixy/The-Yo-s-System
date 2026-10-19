@@ -51,11 +51,14 @@ function navigate(path, { addHistory = false } = {}) {
   const url = new URL(path, window.location.origin);
   if (!SUPPORTED_PATHS.has(url.pathname)) return;
   const nextPath = `${url.pathname}${url.hash}`;
-  pendingScrollTarget = url.hash ? decodeURIComponent(url.hash.slice(1)) : '';
-  pendingFramePath = url.pathname;
+  const showReviewsOnly = url.pathname === '/order' && url.hash === '#feedback';
+  pendingScrollTarget = url.hash && !showReviewsOnly ? decodeURIComponent(url.hash.slice(1)) : '';
+  pendingFramePath = pendingScrollTarget ? url.pathname : '';
   if (addHistory) history.pushState({ path: nextPath }, '', `customer-app.html?page=${encodeURIComponent(nextPath)}`);
   updateActiveLink(nextPath);
   url.searchParams.set('embedded', '1');
+  if (showReviewsOnly) url.searchParams.set('section', 'feedback');
+  else url.searchParams.delete('section');
   url.hash = '';
   frame.src = `${url.pathname}${url.search}`;
 }

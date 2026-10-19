@@ -1,6 +1,9 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
   const isEmbedded = params.get('embedded') === '1' || window.parent !== window;
+  if (isEmbedded && params.get('section') === 'feedback') {
+    document.documentElement.classList.add('customer-reviews-only');
+  }
 
   const syncEmbeddedState = () => {
     if (!isEmbedded) return;

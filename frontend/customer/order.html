@@ -1,13 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="customer-app-redirect.js?v=4"></script>
+<script src="customer-app-redirect.js?v=5"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Order Terminal — The~Yo's</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=9">
 <style>
+  html.customer-reviews-only body > header,
+  html.customer-reviews-only body > .reserve,
+  html.customer-reviews-only body > .mobile-order-bar,
+  html.customer-reviews-only body > .mob-drawer-overlay,
+  html.customer-reviews-only body > .checkout-overlay,
+  html.customer-reviews-only body > #cancelOrderModal,
+  html.customer-reviews-only body > #customizationModal,
+  html.customer-reviews-only body > footer {
+    display: none !important;
+  }
+  html.customer-reviews-only #feedback {
+    min-height: 100vh;
+    padding-top: 48px;
+  }
+
   /* =========================================================
      DESKTOP & BASE ORDER TERMINAL STYLES
      ========================================================= */
