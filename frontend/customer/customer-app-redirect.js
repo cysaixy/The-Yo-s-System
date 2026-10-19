@@ -1,6 +1,7 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
   const isEmbedded = params.get('embedded') === '1' || window.parent !== window;
+  const pendingHash = window.location.hash && window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
 
   const syncEmbeddedState = () => {
     if (!isEmbedded) return;
@@ -13,12 +14,36 @@
     });
   };
 
+  const setupHashScroll = () => {
+    if (!pendingHash) return;
+    const target = document.getElementById(pendingHash) || document.querySelector(`[id="${CSS.escape(pendingHash)}"]`);
+    if (!target) return;
+
+    const restoreHash = () => {
+      const current = new URL(window.location.href);
+      current.hash = '';
+      history.replaceState({}, '', `${current.pathname}${current.search}`);
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ block: 'start', inline: 'nearest' });
+      });
+    };
+
+    if (document.readyState === 'complete') {
+      restoreHash();
+      return;
+    }
+
+    window.addEventListener('load', restoreHash, { once: true });
+  };
+
   syncEmbeddedState();
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', syncEmbeddedState, { once: true });
   }
 
   if (isEmbedded) {
+    setupHashScroll();
+
     window.addEventListener('message', event => {
       if (event.origin !== window.location.origin || event.data?.type !== 'theyos:customer-theme') return;
       document.body?.classList.toggle('coffee-night', event.data.dark);
