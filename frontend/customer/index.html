@@ -224,12 +224,11 @@
     padding: 0 22px; width: 100%;
   }
   body.js-anim #mapFrame { height: 100vh; height: 100dvh; }
-  /* Safety valve: on very short viewports (small phones, landscape),
-     allow the pinned frame to scroll internally rather than clip content -
-     this never fights the page-level pin/scrub since it's a separate,
-     inner scroll container. */
+  /* Keep short viewports from creating a nested scroll area inside the
+     pinned scene, which can trap wheel input instead of advancing the page. */
   @media (max-height: 700px) {
-    body.js-anim #mapFrame { overflow-y: auto; padding: 18px 22px; }
+    body.js-anim #mapFrame { padding: 18px 22px; }
+    body.js-anim .journey-art { height: min(48vh, 340px); }
   }
   .journey-copy {
     width: min(1120px, 100%); display: grid; grid-template-columns: 1fr 1fr;
