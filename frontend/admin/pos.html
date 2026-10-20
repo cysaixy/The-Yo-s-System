@@ -116,7 +116,7 @@
 .pos-order-thead span:nth-child(3),
 .pos-order-thead span:nth-child(4) { text-align: right; }
 
-.pos-cart-scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.pos-cart-scroll { flex: 1 1 0; min-height: 140px; overflow-y: auto; overscroll-behavior: contain; }
 .pos-empty-orders { padding: 50px 20px; text-align: center; color: var(--ink-muted); font-size: 0.85rem; }
 .pos-empty-orders svg { display: block; margin: 0 auto 12px; opacity: 0.25; }
 
@@ -654,7 +654,7 @@
   .pos-left { border-right: none; border-bottom: 1px solid var(--line); }
   .pos-product-scroll { overflow: visible; max-height: none; }
   .pos-right { overflow: visible; }
-  .pos-cart-scroll { overflow: visible; max-height: none; }
+  .pos-cart-scroll { min-height: 220px; overflow-y: auto; max-height: none; }
   .admin-body { overflow: auto !important; }
   .admin-section { overflow: visible !important; }
   .pay-card { max-height: none; }
