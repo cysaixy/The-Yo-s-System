@@ -2,6 +2,23 @@
   const params = new URLSearchParams(window.location.search);
   const isEmbedded = params.get('embedded') === '1' || window.parent !== window;
 
+  const applyTheme = (isDark) => {
+    document.documentElement.classList.toggle('coffee-night', isDark);
+    if (document.body) {
+      document.body.classList.toggle('coffee-night', isDark);
+    }
+  };
+
+  try {
+    const isDark = localStorage.getItem('theYosTheme') === 'dark';
+    if (isDark) {
+      applyTheme(true);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => applyTheme(true), { once: true });
+      }
+    }
+  } catch (e) {}
+
   const syncEmbeddedState = () => {
     if (!isEmbedded) return;
     document.documentElement.classList.add('customer-app-embedded');
@@ -22,9 +39,14 @@
     window.addEventListener('message', event => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === 'theyos:customer-theme') {
-        document.body?.classList.toggle('coffee-night', event.data.dark);
+        if (document.body) document.body.classList.add('sunset-mode');
+        applyTheme(Boolean(event.data.dark));
       }
     });
+
+    try {
+      window.parent.postMessage({ type: 'theyos:request-theme' }, window.location.origin);
+    } catch (e) {}
 
     document.addEventListener('click', event => {
       const link = event.target.closest('a[href]');

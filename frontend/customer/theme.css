@@ -3,6 +3,7 @@
    so they apply on first paint without waiting for this async-injected file. */
 
 /* Dark mode variables — no sunset-mode dependency so they apply before JS runs */
+html.coffee-night,
 body.coffee-night {
   --bone: #160f0b;
   --stone: #2a1a12;
@@ -14,12 +15,22 @@ body.coffee-night {
   color: #f5ead8;
 }
 
+body.coffee-night .eyebrow {
+  color: var(--brass);
+  opacity: 0.9;
+}
+
 /* Transitions only when user has toggled — added by JS on click only */
 body.sunset-mode { transition: background-color .9s ease, color .9s ease; }
 body.sunset-mode header,
 body.sunset-mode .card,
 body.sunset-mode .menu-item,
 body.sunset-mode .order-builder,
+body.sunset-mode .feedback-form-card,
+body.sunset-mode .comment-card,
+body.sunset-mode .reviews-identity,
+body.sunset-mode .reviews-consent,
+body.sunset-mode .reviews-page,
 body.sunset-mode input,
 body.sunset-mode select,
 body.sunset-mode textarea {

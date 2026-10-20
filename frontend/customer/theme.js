@@ -13,32 +13,39 @@
 
   const init = () => {
     const body = document.body;
-    const button = document.getElementById('coffeeThemeToggle');
-    if (!body || !button) return;
+    if (!body) return;
 
+    const button = document.getElementById('coffeeThemeToggle');
     let dark = localStorage.getItem(key) === 'dark';
 
     const applyVisual = () => {
+      document.documentElement.classList.toggle('coffee-night', dark);
       body.classList.toggle('coffee-night', dark);
-      button.classList.toggle('is-sunset', dark);
-      button.setAttribute('aria-pressed', String(dark));
+      if (button) {
+        button.classList.toggle('is-sunset', dark);
+        button.setAttribute('aria-pressed', String(dark));
+      }
     };
 
-    button.addEventListener('click', () => {
-      // Only add sunset-mode (slow transitions) when the user manually toggles
-      body.classList.add('sunset-mode');
-      dark = !dark;
-      localStorage.setItem(key, dark ? 'dark' : 'light');
-      applyVisual();
-    });
+    if (button) {
+      button.addEventListener('click', () => {
+        // Only add sunset-mode (slow transitions) when the user manually toggles
+        body.classList.add('sunset-mode');
+        dark = !dark;
+        localStorage.setItem(key, dark ? 'dark' : 'light');
+        applyVisual();
+      });
 
-    // Apply visual state WITHOUT transitions on load —
-    // add no-transition class, apply state, then remove it next frame
-    button.classList.add('theme-no-transition');
-    applyVisual();
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => button.classList.remove('theme-no-transition'));
-    });
+      // Apply visual state WITHOUT transitions on load —
+      // add no-transition class, apply state, then remove it next frame
+      button.classList.add('theme-no-transition');
+      applyVisual();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => button.classList.remove('theme-no-transition'));
+      });
+    } else {
+      applyVisual();
+    }
   };
 
   if (document.readyState === 'loading') {

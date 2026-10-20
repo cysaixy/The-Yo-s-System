@@ -38,6 +38,20 @@ function navigate(path, { addHistory = false } = {}) {
   frame.src = `${url.pathname}${url.search}${url.hash}`;
 }
 
+function sendThemeToFrame() {
+  const isDark = document.body.classList.contains('coffee-night') || localStorage.getItem('theYosTheme') === 'dark';
+  try {
+    frame.contentWindow?.postMessage({
+      type: 'theyos:customer-theme',
+      dark: isDark,
+    }, window.location.origin);
+  } catch (e) {}
+}
+
+frame.addEventListener('load', () => {
+  sendThemeToFrame();
+});
+
 document.addEventListener('click', event => {
   const link = event.target.closest('[data-customer-path]');
   if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -46,16 +60,17 @@ document.addEventListener('click', event => {
 });
 
 window.addEventListener('message', event => {
-  if (event.origin !== window.location.origin || event.data?.type !== 'theyos:customer-navigate') return;
-  navigate(event.data.path, { addHistory: true });
+  if (event.origin !== window.location.origin) return;
+  if (event.data?.type === 'theyos:customer-navigate') {
+    navigate(event.data.path, { addHistory: true });
+  } else if (event.data?.type === 'theyos:request-theme') {
+    sendThemeToFrame();
+  }
 });
 window.addEventListener('popstate', () => navigate(requestedPath()));
 
 document.getElementById('coffeeThemeToggle')?.addEventListener('click', () => {
-  requestAnimationFrame(() => frame.contentWindow?.postMessage({
-    type: 'theyos:customer-theme',
-    dark: document.body.classList.contains('coffee-night'),
-  }, window.location.origin));
+  requestAnimationFrame(sendThemeToFrame);
 });
 
 navigate(requestedPath());
