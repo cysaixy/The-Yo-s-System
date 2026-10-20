@@ -42,6 +42,25 @@ if (session) {
   const featureFrame = document.getElementById('adminFeatureFrame');
   let posFrame = null;
 
+  function sendLiveOrdersToDashboard(orders, changedIds = []) {
+    if (currentFeature !== 'dashboard' || !Array.isArray(orders)) return;
+    featureFrame.contentWindow?.postMessage({
+      type: 'theyos:admin-orders-updated',
+      orders,
+      changedIds,
+    }, window.location.origin);
+  }
+
+  document.addEventListener('admin:orders-updated', event => {
+    sendLiveOrdersToDashboard(event.detail?.orders || [], event.detail?.changedIds || []);
+  });
+
+  featureFrame.addEventListener('load', () => {
+    if (currentFeature === 'dashboard' && Array.isArray(window.__adminLiveOrders)) {
+      sendLiveOrdersToDashboard(window.__adminLiveOrders);
+    }
+  });
+
   function createPosFrame() {
     if (posFrame) return posFrame;
     posFrame = document.createElement('iframe');

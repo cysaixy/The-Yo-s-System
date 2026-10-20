@@ -64,21 +64,36 @@ function readReviews() {
 
 function renderReviews(reviews) {
   const container = document.getElementById('commentsDisplay');
+  const countEl = document.getElementById('reviewsWallCount');
+
+  if (countEl) {
+    countEl.textContent = reviews.length > 0 ? `${reviews.length} review${reviews.length !== 1 ? 's' : ''}` : '';
+  }
+
+  if (reviews.length === 0) {
+    container.innerHTML = '<div class="reviews-empty">No reviews yet. Be the first to share your experience!</div>';
+    return;
+  }
+
   container.innerHTML = reviews.map(review => {
     const name = String(review.name || 'Guest');
     const rating = Math.max(1, Math.min(5, Number.parseInt(review.stars, 10) || 5));
+    const emptyStars = 5 - rating;
     return `
       <article class="comment-card">
         <div class="comment-header">
           <div class="comment-author-wrap">
             <div class="comment-avatar" aria-hidden="true">${escapeHtml(initials(name))}</div>
-            <div>
+            <div class="comment-author-meta">
               <span class="comment-user">${escapeHtml(name)}</span>
               ${review.email ? `<span class="comment-email">${escapeHtml(review.email)}</span>` : ''}
               <span class="comment-verified-badge">Verified Guest</span>
             </div>
           </div>
-          <span class="comment-stars" aria-label="${rating} out of 5 stars">${'★'.repeat(rating)}</span>
+          <div class="comment-stars-wrap">
+            <span class="comment-stars" aria-label="${rating} out of 5 stars">${'★'.repeat(rating)}<span style="opacity:.2">${'★'.repeat(emptyStars)}</span></span>
+            <span class="comment-star-label">${rating}/5</span>
+          </div>
         </div>
         <p class="comment-text">${escapeHtml(review.text)}</p>
         <span class="comment-date">${escapeHtml(review.date)}</span>
@@ -170,6 +185,9 @@ onAuthStateChanged(auth, user => {
   const name = user.displayName?.trim() || user.email?.split('@')[0] || 'Account';
   document.getElementById('reviewerName').textContent = name;
   document.getElementById('reviewerEmail').textContent = user.email || 'Email unavailable';
+
+  const avatarEl = document.getElementById('reviewerAvatar');
+  if (avatarEl) avatarEl.textContent = initials(name);
 }, error => {
   console.error('Could not check sign-in status for reviews:', error);
   formCard.hidden = true;

@@ -750,13 +750,20 @@
   }
 
   function setupLiveOrderRail() {
+    const updateOrders = (orders, changedIds = []) => {
+      window.__liveOrdersCache = Array.isArray(orders) ? orders : [];
+      renderLiveOrderRail(window.__liveOrdersCache, changedIds);
+    };
     document.addEventListener('admin:orders-updated', event => {
-      window.__liveOrdersCache = event.detail?.orders || [];
-      renderLiveOrderRail(window.__liveOrdersCache, event.detail?.changedIds || []);
+      updateOrders(event.detail?.orders, event.detail?.changedIds);
+    });
+    window.addEventListener('message', event => {
+      if (event.origin !== window.location.origin || event.source !== window.parent) return;
+      if (event.data?.type !== 'theyos:admin-orders-updated') return;
+      updateOrders(event.data.orders, event.data.changedIds);
     });
     if (Array.isArray(window.__adminLiveOrders)) {
-      window.__liveOrdersCache = window.__adminLiveOrders;
-      renderLiveOrderRail(window.__liveOrdersCache);
+      updateOrders(window.__adminLiveOrders);
     }
     window.clearInterval(liveElapsedTimer);
     liveElapsedTimer = window.setInterval(updateElapsedLabels, 30000);

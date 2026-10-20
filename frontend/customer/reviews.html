@@ -6,41 +6,139 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reviews — The~Yo's</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=11">
 <link rel="stylesheet" href="theme.css">
 <style>
-  .reviews-page { min-height: 100vh; padding: 52px 0 72px; background: var(--bone); }
-  .reviews-page .section-head { margin-bottom: 28px; }
-  .feedback-container { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: start; gap: 36px; }
-  .feedback-form-card { padding: 28px 26px; background: var(--component-bg); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.12); }
-  .reviews-identity { margin-bottom: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 8px; background: var(--stone); }
-  .reviews-identity-name { display: block; font-family: 'Archivo', sans-serif; font-weight: 700; text-transform: uppercase; }
-  .reviews-identity-email { display: block; margin-top: 3px; font-size: .85rem; overflow-wrap: anywhere; }
-  .reviews-email-notice { margin: 0 0 16px; font-size: .8rem; line-height: 1.5; opacity: .72; }
-  .reviews-consent { display: flex; align-items: flex-start; gap: 9px; margin-top: 16px; font-size: .78rem; line-height: 1.45; }
-  .reviews-consent input { flex: 0 0 auto; width: 18px; height: 18px; accent-color: var(--brass); }
-  .reviews-auth-gate { padding: 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--component-bg); }
-  .reviews-auth-gate p { margin-bottom: 16px; }
+  /* ── Page shell ── */
+  .reviews-page { min-height: 100vh; padding: 52px 0 80px; background: var(--bone); }
+  .reviews-page .section-head { margin-bottom: 36px; }
+  .reviews-page .section-head p { max-width: 44ch; opacity: .72; font-size: .9rem; line-height: 1.6; margin-top: 10px; }
+
+  /* ── Two-column layout ── */
+  .feedback-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-items: start;
+    gap: 40px;
+  }
+
+  /* ── Left column heading ── */
+  .reviews-col-label {
+    font-family: 'Space Mono', monospace;
+    font-size: .68rem; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase;
+    color: var(--brass); margin-bottom: 14px;
+  }
+
+  /* ── Auth gate ── */
+  .reviews-auth-gate {
+    padding: 32px 28px; border: 1px solid var(--line);
+    border-radius: 16px; background: var(--component-bg);
+    text-align: center;
+  }
+  .reviews-auth-gate p { margin-bottom: 20px; font-size: .93rem; opacity: .8; }
   .reviews-auth-gate .btn { display: inline-flex; }
-  .reviews-status { min-height: 1.4em; margin-top: 12px; font-size: .82rem; }
+
+  /* ── Form card ── */
+  .feedback-form-card {
+    padding: 28px 26px;
+    background: var(--component-bg);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.1);
+  }
+
+  /* ── Identity strip ── */
+  .reviews-identity {
+    display: flex; align-items: center; gap: 13px;
+    margin-bottom: 18px; padding: 13px 15px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--stone);
+  }
+  .reviews-identity-avatar {
+    flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%;
+    background: var(--brass); color: #fff;
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: .82rem;
+    display: flex; align-items: center; justify-content: center;
+    text-transform: uppercase; letter-spacing: .03em;
+  }
+  .reviews-identity-name { display: block; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: .9rem; text-transform: uppercase; letter-spacing: .04em; }
+  .reviews-identity-email { display: block; margin-top: 2px; font-size: .78rem; overflow-wrap: anywhere; opacity: .6; }
+
+  /* ── Form field labels ── */
+  .reviews-field-label {
+    display: block; font-family: 'Space Mono', monospace;
+    font-size: .68rem; font-weight: 700; letter-spacing: .15em;
+    text-transform: uppercase; opacity: .55; margin-bottom: 8px;
+  }
+
+  /* ── Email notice ── */
+  .reviews-email-notice {
+    margin: 0 0 20px; padding: 10px 13px;
+    border-left: 2px solid var(--brass);
+    background: rgba(163,132,74,.07);
+    border-radius: 0 6px 6px 0;
+    font-size: .78rem; line-height: 1.55; opacity: .8;
+  }
+
+  /* ── Star section ── */
+  .reviews-star-section { margin-bottom: 20px; }
+
+  /* ── Textarea ── */
+  .reviews-textarea-section { margin-bottom: 18px; }
+
+  /* ── Consent ── */
+  .reviews-consent {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 14px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--stone);
+    font-size: .78rem; line-height: 1.5; cursor: pointer;
+  }
+  .reviews-consent input { flex: 0 0 auto; width: 16px; height: 16px; accent-color: var(--brass); margin-top: 2px; }
+
+  /* ── Submit button wrapper ── */
+  .reviews-submit-wrap { margin-top: 18px; }
+  .reviews-submit-wrap .btn { width: 100%; justify-content: center; padding: 15px; border-radius: 10px; font-size: .9rem; letter-spacing: .04em; }
+
+  /* ── Status message ── */
+  .reviews-status { min-height: 1.4em; margin-top: 10px; font-size: .82rem; display: flex; align-items: center; gap: 6px; }
   .reviews-status.error { color: #e05252; }
   .reviews-status.success { color: #4caf7d; }
-  .comments-display { display: flex; flex-direction: column; gap: 16px; }
-  .comment-header { gap: 12px; }
-  .comment-author-wrap { min-width: 0; }
-  .comment-email { display: block; margin-top: 3px; font-size: .78rem; overflow-wrap: anywhere; opacity: .7; }
+  .reviews-status.error::before { content: '✕'; font-size: .75rem; }
+  .reviews-status.success::before { content: '✓'; font-size: .75rem; }
+
+  /* ── Right column: guest wall ── */
+  .reviews-wall-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .reviews-wall-count {
+    font-family: 'Space Mono', monospace; font-size: .68rem;
+    opacity: .45; letter-spacing: .05em;
+  }
+
+  /* ── Empty state ── */
+  .reviews-empty {
+    padding: 40px 24px; text-align: center;
+    border: 1px dashed var(--line); border-radius: 12px;
+    opacity: .5; font-size: .88rem;
+  }
+
+  /* ── Responsive ── */
   @media(max-width: 900px) {
-    .feedback-container { grid-template-columns: 1fr; gap: 28px; }
+    .feedback-container { grid-template-columns: 1fr; gap: 32px; }
   }
   @media(max-width: 640px) {
-    .reviews-page { padding: 34px 0 52px; }
+    .reviews-page { padding: 34px 0 56px; }
     .feedback-form-card { padding: 22px 18px; }
+    .reviews-auth-gate { padding: 28px 20px; }
   }
 </style>
 </head>
 <body>
 <main class="reviews-page">
   <section class="wrap">
+
     <div class="section-head">
       <div>
         <p class="eyebrow">Guest Wall</p>
@@ -48,21 +146,38 @@
       </div>
       <p>Share your experience at The~Yo's. Reviews are public and include the name and Gmail address on your account.</p>
     </div>
+
     <div class="feedback-container">
+
+      <!-- ── Left: form area ── -->
       <div>
+        <p class="reviews-col-label">Leave a Review</p>
+
+        <!-- Auth gate (shown when signed out) -->
         <div class="reviews-auth-gate" id="reviewsAuthGate" hidden>
           <p>Sign in to your account to leave a review.</p>
           <a class="btn" href="/account?redirect=reviews" data-customer-path="/account?redirect=reviews">Sign In / Create Account</a>
         </div>
+
+        <!-- Review form (shown when signed in) -->
         <div class="feedback-form-card" id="reviewFormCard" hidden>
-          <form id="reviewForm">
+          <form id="reviewForm" novalidate>
+
+            <!-- Identity strip -->
             <div class="reviews-identity">
-              <span class="reviews-identity-name" id="reviewerName"></span>
-              <span class="reviews-identity-email" id="reviewerEmail"></span>
+              <div class="reviews-identity-avatar" id="reviewerAvatar" aria-hidden="true"></div>
+              <div>
+                <span class="reviews-identity-name" id="reviewerName"></span>
+                <span class="reviews-identity-email" id="reviewerEmail"></span>
+              </div>
             </div>
+
+            <!-- Email notice -->
             <p class="reviews-email-notice">Your full Gmail address will appear publicly below your name with this review.</p>
-            <div style="margin-bottom:14px;">
-              <label style="display:block; margin-bottom:4px;">Star Score</label>
+
+            <!-- Star rating -->
+            <div class="reviews-star-section">
+              <label class="reviews-field-label">Star Score</label>
               <div class="star-rating-selector" id="starSelector" role="radiogroup" aria-label="Star Score">
                 <span data-value="1" role="radio" aria-checked="false" aria-label="1 Star" tabindex="0">★</span>
                 <span data-value="2" role="radio" aria-checked="false" aria-label="2 Stars" tabindex="0">★</span>
@@ -72,28 +187,41 @@
               </div>
               <div class="star-rating-hint" id="starRatingHint">5/5 — Outstanding! Loved everything.</div>
             </div>
-            <div style="margin-bottom:14px;">
-              <label for="feedbackText">Comments / Review</label>
+
+            <!-- Comment textarea -->
+            <div class="reviews-textarea-section">
+              <label class="reviews-field-label" for="feedbackText">Comments / Review</label>
               <textarea id="feedbackText" required maxlength="2000" placeholder="Write about your experience..."></textarea>
             </div>
+
+            <!-- Consent checkbox -->
             <label class="reviews-consent">
               <input type="checkbox" id="publicEmailConsent" required>
               <span>I understand my full Gmail address will be displayed publicly with this review.</span>
             </label>
-            <div style="margin-top:16px;">
-              <button type="submit" class="btn" style="width:100%; justify-content:center; padding:15px; border-radius:8px;">Submit Review</button>
+
+            <!-- Submit -->
+            <div class="reviews-submit-wrap">
+              <button type="submit" class="btn">Submit Review</button>
             </div>
+
             <p class="reviews-status" id="reviewFormStatus" aria-live="polite"></p>
           </form>
         </div>
       </div>
+
+      <!-- ── Right: live guest wall ── -->
       <div>
-        <p class="eyebrow" style="margin-bottom:16px;">Live Guest Comments</p>
+        <div class="reviews-wall-header">
+          <p class="reviews-col-label" style="margin:0;">Live Guest Comments</p>
+          <span class="reviews-wall-count" id="reviewsWallCount"></span>
+        </div>
         <div class="comments-display" id="commentsDisplay" aria-live="polite"></div>
       </div>
+
     </div>
   </section>
 </main>
-<script type="module" src="reviews.js?v=1"></script>
+<script type="module" src="reviews.js?v=2"></script>
 </body>
 </html>
