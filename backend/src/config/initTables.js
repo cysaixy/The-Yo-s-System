@@ -272,6 +272,5 @@ export async function initTables() {
     console.log('Database tables initialized successfully.');
   } catch (err) {
     console.error('Error initializing tables:', err.message);
-    throw err;
   }
 }
