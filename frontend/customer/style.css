@@ -148,6 +148,7 @@ nav a.active .nav-icon { opacity: 1; }
   cursor: pointer;
   padding: 8px;
   border-radius: 6px;
+  position: relative;
   z-index: 110;
   transition: color 0.3s ease, background 0.2s ease;
   line-height: 1;
@@ -155,14 +156,28 @@ nav a.active .nav-icon { opacity: 1; }
 .nav-toggle:hover {
   background: rgba(255, 255, 255, 0.08);
 }
-body.light-theme .nav-toggle:hover {
+body.light-theme .nav-toggle:hover,
+body:not(.coffee-night) .nav-toggle:hover {
   background: rgba(0, 0, 0, 0.06);
 }
 .nav-toggle svg {
   display: block;
   width: 24px;
   height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nav-toggle svg line,
+.nav-toggle svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .nav-toggle .nav-icon-close {
   display: none;
