@@ -291,6 +291,70 @@
   @keyframes livePulse { 50% { opacity: .45; transform: scale(.82); } }
   @media (prefers-reduced-motion: reduce) { .live-indicator, .order-ticket.live-updated { animation: none; } .live-orders-viewport { scroll-behavior: auto; } }
   @media (max-width: 600px) { .live-orders-section { padding: 16px; } .order-ticket { width: 260px; flex-basis: 260px; } }
+
+  /* ---- Order detail modal (for Live Orders rail) ---- */
+  .modal-box.modal-wide { max-width: 720px; max-height: 92vh; overflow-y: auto; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .modal-header h3 { margin: 0; font-family: 'Archivo', sans-serif; text-transform: uppercase; font-size: 1rem; letter-spacing: 0.02em; }
+  .modal-close { background: none; border: none; font-size: 1.5rem; line-height: 1; color: var(--ink-muted); cursor: pointer; padding: 2px 6px; }
+  .modal-close:hover { color: var(--danger); }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+  .om-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; font-size: 0.84rem; margin-bottom: 16px; }
+  .om-meta .row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  .om-meta .row span:first-child { opacity: 0.55; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase; padding-top: 2px; }
+  .om-items { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 16px; }
+  .om-items th { text-align: left; padding: 8px 10px; background: var(--stone); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.6rem; text-transform: uppercase; opacity: 0.55; }
+  .om-items td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .om-items td.right, .om-items th.right { text-align: right; }
+  .om-totals { width: 100%; font-size: 0.84rem; margin-bottom: 18px; }
+  .om-totals .row { display: flex; justify-content: space-between; padding: 4px 0; }
+  .om-totals .row.grand { font-weight: 700; border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 10px; font-size: 0.95rem; }
+  .addon-line-list { color: var(--brass-dark); opacity: 0.85; }
+  .money-neg { color: var(--danger); }
+  .profit-pos { color: var(--success); font-weight: 700; }
+  .fee-display-wrap { display: inline-flex; align-items: center; gap: 8px; }
+  .fee-edit-btn {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.62rem; text-transform: uppercase; font-weight: 700;
+    border: 1px solid var(--line); background: var(--component-bg); color: var(--brass-dark);
+    border-radius: 5px; padding: 3px 8px; cursor: pointer;
+  }
+  .fee-edit-btn:hover { border-color: var(--brass); }
+  .fee-edit-row { display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding: 6px 0 10px; }
+  .fee-edit-row input {
+    width: 110px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 6px;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; background: var(--bone); color: var(--ink); text-align: right;
+  }
+  .fee-edit-row input:focus { outline: none; border-color: var(--brass); }
+  .fee-edit-row .btn.small { padding: 6px 12px; font-size: 0.72rem; }
+  .fee-error { font-size: 0.72rem; color: var(--danger); text-align: right; margin-top: -4px; margin-bottom: 8px; display: none; }
+
+  .om-delivery { margin-bottom: 16px; }
+  .om-delivery-head {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase;
+    letter-spacing: 0.06em; opacity: 0.55; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+  }
+  .om-delivery-head svg { width: 14px; height: 14px; fill: none; stroke: var(--brass-dark); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .om-delivery .om-meta { margin-bottom: 0; background: var(--stone); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+  .om-delivery .om-meta .row { border-bottom-color: rgba(0,0,0,0.06); }
+  .om-delivery .om-meta .row:last-child { border-bottom: none; }
+
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .row-actions button {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.66rem; text-transform: uppercase; font-weight: 700;
+    border-radius: 5px; padding: 6px 10px; cursor: pointer; border: 1px solid var(--line);
+    background: var(--component-bg); color: var(--ink); transition: all .15s ease;
+  }
+  .row-actions button:hover { border-color: var(--brass); color: var(--brass-dark); }
+  .row-actions button.primary { background: var(--brass); color: #fff; border-color: var(--brass); }
+  .row-actions button.primary:hover { background: var(--brass-dark); color: #fff; }
+  .row-actions button.danger { color: var(--danger); border-color: rgba(192,57,43,0.3); }
+  .row-actions button.danger:hover { background: rgba(192,57,43,0.08); }
+  .row-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  @media (max-width: 900px) {
+    .om-meta { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -299,12 +363,13 @@
 
 <script type="module">
   import { renderAdminShell, showAlert } from "./admin-shell.js";
-  import { adminFetch, peso, escapeHtml } from "./admin-api.js";
+  import { adminFetch, peso, escapeHtml, formatDate } from "./admin-api.js";
 
   const session = renderAdminShell({ active: 'dashboard', title: 'Dashboard' });
   let liveRailScrollTimer = null;
   let liveElapsedTimer = null;
   let liveStatusFilter = ''; // '' = show all
+  let liveRailRenderKey = 0;
   if (session) init();
 
   /* ================================================================
@@ -561,6 +626,17 @@
         </div>
       </section>
 
+      <div class="modal-backdrop" id="orderModal" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
+        <div class="modal-box modal-wide" role="document">
+          <header class="modal-header">
+            <h3 id="orderModalTitle">Order Details</h3>
+            <button type="button" class="modal-close" id="orderModalCloseBtn" aria-label="Close">&times;</button>
+          </header>
+          <div id="orderModalBody"><div class="admin-loading">Loading…</div></div>
+          <footer class="modal-footer" id="orderModalFooter" style="display:none;"></footer>
+        </div>
+      </div>
+
       <div class="dash-section">
         <div class="dash-section-head"><h3>Sales Overview</h3><span class="dash-sub">as of today · ${today}</span></div>
         <div id="sec-overview"><div class="admin-loading">Loading…</div></div>
@@ -688,7 +764,9 @@
     const count = document.getElementById('liveOrdersCount');
     if (!rail || !count) return;
 
-    const priority = { ready: 0, preparing: 1, confirmed: 2, pending: 3 };
+    const thisRender = ++liveRailRenderKey;
+
+    const priority = { pending: 0, confirmed: 1, preparing: 2, ready: 3 };
     const active = [...(orders || [])].sort((a, b) =>
       (priority[a.status] ?? 9) - (priority[b.status] ?? 9) ||
       new Date(a.datetime_ordered) - new Date(b.datetime_ordered)
@@ -718,8 +796,10 @@
       return;
     }
 
-    const changed = new Set((changedIds || []).map(String));
-    rail.innerHTML = filtered.map(order => {
+    if (thisRender !== liveRailRenderKey) return;
+
+const changed = new Set((changedIds || []).map(String));
+    const html = filtered.map(order => {
       const items = Array.isArray(order.items) ? order.items : [];
       const visibleItems = items.slice(0, 3);
       const owner = order.handler_name || 'Unassigned';
@@ -727,7 +807,7 @@
         ? '—'
         : owner.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
       return `
-        <a class="order-ticket status-${escapeHtml(order.status)}${changed.has(String(order.id)) ? ' live-updated' : ''}" href="sales?orderId=${encodeURIComponent(order.id)}&back=dashboard" aria-label="Open order ${escapeHtml(order.id)}">
+        <button type="button" class="order-ticket status-${escapeHtml(order.status)}${changed.has(String(order.id)) ? ' live-updated' : ''}" data-order-id="${escapeHtml(order.id)}" aria-label="Open order ${escapeHtml(order.id)}">
           <div class="ticket-top">
             <span class="ticket-number">Order #${escapeHtml(order.id)}</span>
             <span class="ticket-status">${escapeHtml(liveStatusLabel(order.status))}</span>
@@ -744,8 +824,12 @@
             </div>
             <span class="ticket-elapsed" data-ordered-at="${escapeHtml(order.datetime_ordered)}">${escapeHtml(elapsedLabel(order.datetime_ordered))}</span>
           </div>
-        </a>`;
+        </button>`;
     }).join('');
+
+    if (thisRender !== liveRailRenderKey) return;
+
+    rail.innerHTML = html;
     window.setTimeout(startRailAutoScroll, 0);
   }
 
@@ -768,6 +852,18 @@
     window.clearInterval(liveElapsedTimer);
     liveElapsedTimer = window.setInterval(updateElapsedLabels, 30000);
     setupRailNavButtons();
+    setupOrderTicketClicks();
+  }
+
+  function setupOrderTicketClicks() {
+    const rail = document.getElementById('liveOrdersRail');
+    if (!rail) return;
+    rail.addEventListener('click', (e) => {
+      const ticket = e.target.closest('.order-ticket');
+      if (ticket && ticket.dataset.orderId) {
+        openOrderModal(ticket.dataset.orderId);
+      }
+    });
   }
 
   function setupRailNavButtons() {
@@ -808,6 +904,280 @@
     // it changes (new orders arriving can shrink/grow the scrollable range).
     new MutationObserver(refreshNavState).observe(rail, { childList: true });
     refreshNavState();
+  }
+
+  /* ================================================================
+     ORDER DETAIL MODAL (for Live Orders rail)
+     ================================================================ */
+  let currentModalOrder = null;
+
+  function openOrderModal(orderId) {
+    const modal = document.getElementById('orderModal');
+    const body = document.getElementById('orderModalBody');
+    const footer = document.getElementById('orderModalFooter');
+    modal.classList.add('active');
+    document.getElementById('orderModalTitle').textContent = `Order #${orderId}`;
+    body.innerHTML = `<div class="admin-loading">Loading…</div>`;
+    footer.style.display = 'none';
+    footer.innerHTML = '';
+
+    fetch(`/api/admin/sales/orders/${orderId}`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.order) throw new Error(data.error || 'Could not load order.');
+        renderOrderDetail(data.order);
+      })
+      .catch(err => {
+        body.innerHTML = `<div class="admin-error"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${err.message}</div>`;
+      });
+  }
+
+  function closeOrderModal() {
+    document.getElementById('orderModal').classList.remove('active');
+    currentModalOrder = null;
+  }
+
+  document.getElementById('orderModalCloseBtn')?.addEventListener('click', closeOrderModal);
+  document.getElementById('orderModal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeOrderModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeOrderModal();
+  });
+
+  const STATUS_LABELS = { pending: 'Pending', confirmed: 'Confirmed', preparing: 'Preparing', ready: 'Ready', completed: 'Completed', cancelled: 'Cancelled' };
+  const TYPE_LABELS = { dine_in: 'Dine-in', pickup: 'Pickup', delivery: 'Delivery', takeout: 'Takeout', online: 'Online Order' };
+  const PAYMENT_LABELS = { cash: 'Cash', gcash: 'GCash', card: 'Card', online: 'Online' };
+
+  function statusLabel(status) {
+    return STATUS_LABELS[status] || status;
+  }
+
+  function orderTypeLabel(type) {
+    return TYPE_LABELS[type] || type;
+  }
+
+  function renderOrderDetail(o) {
+    currentModalOrder = o;
+    const source = o.source === 'online' ? 'Online (Customer)' : `POS · ${escapeHtml(o.staff_name || 'Staff')}`;
+    const payment = (o.payments && o.payments.length)
+      ? o.payments.map(p => `${escapeHtml(PAYMENT_LABELS[p.payment_method] || p.payment_method)} · ${peso(p.amount)} · ${escapeHtml(p.status || 'paid')}`).join('<br>')
+      : (o.payment_method ? `${escapeHtml(PAYMENT_LABELS[o.payment_method] || o.payment_method)} · ${peso(o.total_amount)} · ${escapeHtml(o.status || 'pending')}` : '—');
+
+    const isDelivery = o.order_type === 'delivery' || (o.order_type === 'online' && !!o.delivery_address);
+    const typeLabel = (o.order_type === 'delivery') ? 'Delivery' : ((o.order_type === 'online' && isDelivery) ? 'Delivery' : orderTypeLabel(o.order_type));
+
+    const deliveryBlock = isDelivery ? `
+      <div class="om-delivery">
+        <div class="om-delivery-head">
+          <svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg>
+          Delivery Details
+        </div>
+        <div class="om-meta">
+          <div class="row"><span>Mobile Number</span><b>${escapeHtml(o.customer_mobile || o.mobile_number || '—')}</b></div>
+          <div class="row"><span>Requested Time</span><b>${escapeHtml(o.requested_time || '—')}</b></div>
+          <div class="row" style="grid-column:1/-1;"><span>Delivery Address</span><b>${escapeHtml(o.delivery_address || '—')}</b></div>
+          ${o.special_instructions ? `<div class="row" style="grid-column:1/-1;"><span>Special Prep Instructions</span><b>${escapeHtml(o.special_instructions)}</b></div>` : ''}
+        </div>
+      </div>` : '';
+
+    const cleanNotes = (o.clean_notes != null) ? o.clean_notes : (o.notes || '').split('---CUSTOM_ITEMS_JSON---')[0].trim();
+
+    const itemsRows = (o.items || []).map(it => `
+      <tr>
+        <td>
+          ${escapeHtml(it.product_name || `Menu #${it.menu_id}`)}
+          ${it.notes ? `<div style="font-size:0.72rem; color:var(--ink-muted);">${escapeHtml(it.notes)}</div>` : ''}
+          ${(it.add_ons || []).length ? `
+            <div class="addon-line-list" style="font-size:0.76rem;">
+              + ${it.add_ons.map(a => `${escapeHtml(a.name)} ×${a.quantity} (${peso(a.subtotal)})`).join(', ')}
+            </div>` : ''}
+        </td>
+        <td class="right">${peso(it.price)}</td>
+        <td class="right">${it.quantity}</td>
+        <td class="right">${peso(Number(it.subtotal) + (it.add_ons || []).reduce((s, a) => s + Number(a.subtotal), 0))}</td>
+      </tr>`).join('');
+
+    const customList = (Array.isArray(o.custom_items) && o.custom_items.length)
+      ? o.custom_items
+      : [];
+
+    const customItemsRows = customList.map(ci => {
+      const qty = Number(ci.quantity || ci.qty || 1);
+      const price = Number(ci.price || 0);
+      const subtotal = qty * price;
+      return `
+        <tr>
+          <td>
+            <span style="display:inline-block; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; padding:2px 6px; border-radius:4px; background:#f0e6d2; color:#8b6b23; margin-right:6px;">Custom</span>
+            <b>${escapeHtml(ci.name || ci.product_name || 'Custom Order Item')}</b>
+            ${ci.notes ? `<div style="font-size:0.72rem; color:var(--ink-muted);">${escapeHtml(ci.notes)}</div>` : ''}
+          </td>
+          <td class="right">${peso(price)}</td>
+          <td class="right">${qty}</td>
+          <td class="right">${peso(subtotal)}</td>
+        </tr>`;
+    }).join('');
+
+    const body = document.getElementById('orderModalBody');
+    body.innerHTML = `
+      <div class="om-meta">
+        <div class="row"><span>Customer</span><b>${escapeHtml(o.customer_name) || '—'}</b></div>
+        <div class="row"><span>Source</span><b>${source}</b></div>
+        <div class="row"><span>Order Type</span><b>${typeLabel}</b></div>
+        <div class="row"><span>Status</span><b>${statusLabel(o.status)}</b></div>
+        <div class="row"><span>Payment</span><b>${payment}</b></div>
+        <div class="row"><span>Placed</span><b>${formatDate(o.datetime_ordered)}</b></div>
+        ${o.reservation_date ? `<div class="row"><span>Reservation Date</span><b>${formatDate(o.reservation_date)} at ${String(o.reservation_time || '').slice(0, 5)}</b></div>` : ''}
+        ${cleanNotes ? `<div class="row" style="grid-column:1/-1;"><span>Order Notes</span><b>${escapeHtml(cleanNotes)}</b></div>` : ''}
+      </div>
+
+      ${deliveryBlock}
+
+      <table class="om-items">
+        <thead><tr><th>Item</th><th class="right">Unit Price</th><th class="right">Qty</th><th class="right">Total</th></tr></thead>
+        <tbody>
+          ${itemsRows}
+          ${customItemsRows}
+          ${(!itemsRows && !customItemsRows) ? `<tr><td colspan="4" style="text-align:center; color:var(--ink-muted); padding:16px;">No items in this order</td></tr>` : ''}
+        </tbody>
+      </table>
+
+      <div class="om-totals">
+        <div class="row"><span>Subtotal (items + add-ons)</span><span>${peso(Number(o.total_amount) - Number(o.delivery_fee || 0))}</span></div>
+        <div class="row" id="omFeeRow">
+          <span>Delivery Fee</span>
+          <span class="fee-display-wrap">
+            <b id="omFeeDisplay">${peso(o.delivery_fee || 0)}</b>
+            ${isDelivery ? `<button type="button" class="fee-edit-btn" id="omFeeEditBtn">Edit</button>` : ''}
+          </span>
+        </div>
+        ${isDelivery ? `
+          <div class="fee-edit-row" id="omFeeEditRow" style="display:none;">
+            <input type="number" id="omFeeInput" min="0" step="0.01" value="${Number(o.delivery_fee || 0)}">
+            <button type="button" class="btn btn-outline small" id="omFeeCancelBtn">Cancel</button>
+            <button type="button" class="btn small" id="omFeeSaveBtn">Save</button>
+          </div>
+          <div class="fee-error" id="omFeeError"></div>` : ''}
+        <div class="row grand"><span>Grand Total</span><span>${peso(o.total_amount)}</span></div>
+        ${(() => {
+          const paidList = Array.isArray(o.payments) ? o.payments.filter(p => p && (p.status === 'paid' || p.status === 'completed')) : [];
+          const amountPaid = paidList.reduce((s, p) => s + Number(p.amount || 0), 0);
+          const totalAmt = Number(o.total_amount || 0);
+          const rem = Math.max(0, Math.round((totalAmt - amountPaid) * 100) / 100);
+          if (amountPaid > 0 && rem > 0) {
+            return `
+              <div class="row" style="color:#27ae60; font-weight:600;"><span>Paid via GCash (Downpayment)</span><span>-${peso(amountPaid)}</span></div>
+              <div class="row" style="color:var(--gold,#d4af37); font-weight:700; font-size:1.02rem;"><span>Remaining Balance to Collect</span><span>${peso(rem)}</span></div>`;
+          } else if (amountPaid > 0) {
+            return `<div class="row" style="color:#27ae60; font-weight:600;"><span>Paid in Full</span><span>${peso(amountPaid)}</span></div>`;
+          }
+          return '';
+        })()}
+        ${o.cogs !== undefined ? `
+          <div class="row"><span>COGS</span><span>${peso(o.cogs)}</span></div>
+          <div class="row"><span>Gross Profit</span><span class="${o.profit >= 0 ? 'profit-pos' : 'money-neg'}">${peso(o.profit)}</span></div>
+          <div class="row"><span>Margin</span><span>${o.margin}%</span></div>` : ''}
+      </div>
+
+      <div class="row-actions" id="orderModalActions" style="justify-content:flex-end;">
+        ${modalActionButtons(o)}
+      </div>
+    `;
+
+    body.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await handleStatusChange(btn.dataset.id, btn.dataset.action);
+        openOrderModal(btn.dataset.id);
+      });
+    });
+
+    if (isDelivery) {
+      const editBtn = document.getElementById('omFeeEditBtn');
+      const editRow = document.getElementById('omFeeEditRow');
+      const errEl = document.getElementById('omFeeError');
+      editBtn.addEventListener('click', () => {
+        editRow.style.display = 'flex';
+        errEl.style.display = 'none';
+        document.getElementById('omFeeInput').focus();
+      });
+      document.getElementById('omFeeCancelBtn').addEventListener('click', () => {
+        editRow.style.display = 'none';
+        errEl.style.display = 'none';
+      });
+      document.getElementById('omFeeSaveBtn').addEventListener('click', () => saveDeliveryFee(o.id));
+    }
+
+    const footer = document.getElementById('orderModalFooter');
+    footer.style.display = 'flex';
+    footer.innerHTML = `
+      <button type="button" class="btn btn-outline" onclick="closeOrderModal()">Close</button>
+      <button type="button" class="btn" onclick="window.open('sales?orderId=${encodeURIComponent(o.id)}&back=dashboard', '_blank')">Open in Sales</button>
+    `;
+  }
+
+  function modalActionButtons(o) {
+    const id = o.id;
+    switch (o.status) {
+      case 'pending':
+        return `<button class="primary" data-action="confirmed" data-id="${id}">Confirm Order</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel Order</button>`;
+      case 'confirmed':
+        return `<button class="primary" data-action="preparing" data-id="${id}">Start Preparing</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
+      case 'preparing':
+        return `<button class="primary" data-action="ready" data-id="${id}">Mark Ready</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
+      case 'ready':
+        return `<button class="primary" data-action="completed" data-id="${id}">Mark Completed</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
+      case 'completed':
+        return `<button class="danger" data-action="cancelled" data-id="${id}">Void Order</button>`;
+      default:
+        return `<span style="font-size:0.75rem; color:var(--ink-muted);">No further action</span>`;
+    }
+  }
+
+  async function handleStatusChange(orderId, action) {
+    try {
+      const res = await fetch(`/api/admin/sales/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: action })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update status');
+      showAlert(`Order ${action}`, { title: 'Status updated' });
+    } catch (err) {
+      showAlert(err.message, { title: 'Error' });
+    }
+  }
+
+  async function saveDeliveryFee(orderId) {
+    const errEl = document.getElementById('omFeeError');
+    const input = document.getElementById('omFeeInput');
+    const newFee = Number(input.value);
+
+    if (isNaN(newFee) || newFee < 0) {
+      errEl.textContent = 'Enter a valid, non-negative fee.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/sales/orders/${orderId}/delivery-fee`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ delivery_fee: newFee })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save fee');
+      document.getElementById('omFeeDisplay').textContent = peso(newFee);
+      document.getElementById('omFeeEditRow').style.display = 'none';
+      errEl.style.display = 'none';
+      showAlert('Delivery fee updated', { title: 'Saved' });
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    }
   }
 
   /* ========== 1. Sales overview ========== */
