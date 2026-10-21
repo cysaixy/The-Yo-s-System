@@ -238,50 +238,55 @@ export async function postCashOrderSale(client, { orderId, amount, staffId }) {
  * @returns {Promise<{ refunded: boolean, amount?: number }>}
  */
 export async function reverseCashOrderSale(client, { orderId, staffId }) {
-  // 1. Find all 'in' payments posted for this order grouped by cash account
-  const { rows: saleRows } = await client.query(
-    `SELECT cash_account_id, SUM(amount) AS total
-     FROM cash_transactions
-     WHERE order_id = $1 AND transaction_type = 'in' AND category IN ('POS Sale', 'Order Sale')
-     GROUP BY cash_account_id`,
-    [orderId]
-  );
-
-  if (!saleRows.length) return { refunded: false, amount: 0 };
-
-  let totalRefunded = 0;
-
-  for (const row of saleRows) {
-    const accountId = row.cash_account_id;
-    const saleTotal = Number(row.total) || 0;
-
-    // Has a refund already been issued for this account on this order?
-    const { rows: refundRows } = await client.query(
-      `SELECT COALESCE(SUM(amount), 0) AS total
+  try {
+    // 1. Find all 'in' payments posted for this order grouped by cash account
+    const { rows: saleRows } = await client.query(
+      `SELECT cash_account_id, SUM(amount) AS total
        FROM cash_transactions
-       WHERE order_id = $1 AND cash_account_id = $2 AND transaction_type = 'out' AND category IN ('POS Refund', 'Order Refund')`,
-      [orderId, accountId]
+       WHERE order_id = $1 AND transaction_type = 'in' AND category IN ('POS Sale', 'Order Sale')
+       GROUP BY cash_account_id`,
+      [orderId]
     );
-    const refundedAlready = Number(refundRows[0]?.total) || 0;
-    const remainingToRefund = saleTotal - refundedAlready;
 
-    if (remainingToRefund > 0) {
-      await client.query(
-        'UPDATE cash_accounts SET balance = GREATEST(0, balance - $1) WHERE id = $2',
-        [remainingToRefund, accountId]
+    if (!saleRows.length) return { refunded: false, amount: 0 };
+
+    let totalRefunded = 0;
+
+    for (const row of saleRows) {
+      const accountId = row.cash_account_id;
+      const saleTotal = Number(row.total) || 0;
+
+      // Has a refund already been issued for this account on this order?
+      const { rows: refundRows } = await client.query(
+        `SELECT COALESCE(SUM(amount), 0) AS total
+         FROM cash_transactions
+         WHERE order_id = $1 AND cash_account_id = $2 AND transaction_type = 'out' AND category IN ('POS Refund', 'Order Refund')`,
+        [orderId, accountId]
       );
+      const refundedAlready = Number(refundRows[0]?.total) || 0;
+      const remainingToRefund = saleTotal - refundedAlready;
 
-      await client.query(
-        `INSERT INTO cash_transactions
-           (cash_account_id, staff_id, order_id, transaction_type, category, amount, description, transaction_date)
-         VALUES ($1, $2, $3, 'out', 'POS Refund', $4, $5, NOW())`,
-        [accountId, staffId, orderId, remainingToRefund, `POS Order #${orderId} cancellation refund`]
-      );
+      if (remainingToRefund > 0) {
+        await client.query(
+          'UPDATE cash_accounts SET balance = GREATEST(0, balance - $1) WHERE id = $2',
+          [remainingToRefund, accountId]
+        );
 
-      totalRefunded += remainingToRefund;
+        await client.query(
+          `INSERT INTO cash_transactions
+             (cash_account_id, staff_id, order_id, transaction_type, category, amount, description, transaction_date)
+           VALUES ($1, $2, $3, 'out', 'POS Refund', $4, $5, NOW())`,
+          [accountId, staffId, orderId, remainingToRefund, `POS Order #${orderId} cancellation refund`]
+        );
+
+        totalRefunded += remainingToRefund;
+      }
     }
-  }
 
-  return { refunded: totalRefunded > 0, amount: totalRefunded };
+    return { refunded: totalRefunded > 0, amount: totalRefunded };
+  } catch (err) {
+    console.warn(`[reverseCashOrderSale] Could not reverse cash sale for order #${orderId}:`, err.message);
+    return { refunded: false, amount: 0 };
+  }
 }
 

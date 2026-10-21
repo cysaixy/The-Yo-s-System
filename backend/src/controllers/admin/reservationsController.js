@@ -78,7 +78,7 @@ export async function updateStatus(req, res, next) {
     const resvResult = await client.query(
       `SELECT r.*, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone
        FROM reservations r
-       JOIN customers c ON c.id = r.customer_id
+       LEFT JOIN customers c ON c.id = r.customer_id
        WHERE r.id = $1 FOR UPDATE`,
       [req.params.id]
     );
@@ -121,31 +121,46 @@ export async function updateStatus(req, res, next) {
           paymentRecord = pRows[0];
 
           // Post to cash_transactions and credit account
-          cashTx = await postOrderPayment(client, {
-            orderId: order.id,
-            paymentMethod: payMethod,
-            amount: totalAmount,
-            staffId: req.staff?.id || null,
-            description: `Reservation #${reservation.id} dining payment (${payMethod.toUpperCase()})`,
-          });
+          try {
+            cashTx = await postOrderPayment(client, {
+              orderId: order.id,
+              paymentMethod: payMethod,
+              amount: totalAmount,
+              staffId: req.staff?.id || null,
+              description: `Reservation #${reservation.id} dining payment (${payMethod.toUpperCase()})`,
+            });
+          } catch (postErr) {
+            console.warn(`[updateStatus] Could not post cash transaction for completed reservation #${reservation.id}:`, postErr.message);
+          }
         }
 
         // Update order status to completed
-        const { rows: ordUpd } = await client.query(
-          `UPDATE orders
-           SET status = 'completed',
-               payment_method = $1,
-               status_updated_at = NOW(),
-               handled_by_staff_id = COALESCE(handled_by_staff_id, $2)
-           WHERE id = $3
-           RETURNING *`,
-          [payMethod, req.staff?.id || null, order.id]
-        );
-        updatedOrder = ordUpd[0];
+        try {
+          const { rows: ordUpd } = await client.query(
+            `UPDATE orders
+             SET status = 'completed',
+                 payment_method = $1,
+                 status_updated_at = NOW(),
+                 handled_by_staff_id = COALESCE(handled_by_staff_id, $2)
+             WHERE id = $3
+             RETURNING *`,
+            [payMethod, req.staff?.id || null, order.id]
+          );
+          updatedOrder = ordUpd[0];
+        } catch {
+          const { rows: ordUpd } = await client.query(
+            `UPDATE orders
+             SET status = 'completed',
+                 payment_method = $1
+             WHERE id = $2
+             RETURNING *`,
+            [payMethod, order.id]
+          );
+          updatedOrder = ordUpd[0];
+        }
       }
     } else if (status === 'cancelled') {
-      // Keep cancellation independent of optional order-handler tracking
-      // columns so older databases can still cancel reservations safely.
+      // Find all active uncompleted orders linked to this reservation
       const { rows: ordersToCancel } = await client.query(
         `SELECT id FROM orders
          WHERE reservation_id = $1 AND status NOT IN ('completed', 'cancelled')
@@ -153,15 +168,32 @@ export async function updateStatus(req, res, next) {
         [reservation.id]
       );
       for (const order of ordersToCancel) {
-        await client.query(
-          'UPDATE orders SET status = \'cancelled\' WHERE id = $1',
-          [order.id]
-        );
-        await restoreOrderInventory(client, order.id, req.staff?.id || null);
-        await reverseCashOrderSale(client, {
-          orderId: order.id,
-          staffId: req.staff?.id || null,
-        });
+        try {
+          await client.query(
+            'UPDATE orders SET status = \'cancelled\', status_updated_at = NOW() WHERE id = $1',
+            [order.id]
+          );
+        } catch {
+          await client.query(
+            'UPDATE orders SET status = \'cancelled\' WHERE id = $1',
+            [order.id]
+          );
+        }
+
+        try {
+          await restoreOrderInventory(client, order.id, req.staff?.id || null);
+        } catch (invErr) {
+          console.warn(`[updateStatus] Could not restore inventory for order #${order.id}:`, invErr.message);
+        }
+
+        try {
+          await reverseCashOrderSale(client, {
+            orderId: order.id,
+            staffId: req.staff?.id || null,
+          });
+        } catch (cashErr) {
+          console.warn(`[updateStatus] Could not reverse cash sale for order #${order.id}:`, cashErr.message);
+        }
       }
     }
 
