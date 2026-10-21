@@ -1141,7 +1141,7 @@ const changed = new Set((changedIds || []).map(String));
   async function handleStatusChange(orderId, action) {
     try {
       const res = await adminFetch(`/api/admin/sales/orders/${orderId}/status`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify({ status: action })
       });
       const data = await res.json();
@@ -1165,7 +1165,7 @@ const changed = new Set((changedIds || []).map(String));
 
     try {
       const res = await adminFetch(`/api/admin/sales/orders/${orderId}/delivery-fee`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify({ delivery_fee: newFee })
       });
       const data = await res.json();
