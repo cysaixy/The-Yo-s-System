@@ -132,6 +132,7 @@ export async function updateStatus(req, res, next) {
         }
 
         // Update order status to completed
+        await client.query('SAVEPOINT before_order_complete');
         try {
           const { rows: ordUpd } = await client.query(
             `UPDATE orders
@@ -144,7 +145,9 @@ export async function updateStatus(req, res, next) {
             [payMethod, req.staff?.id || null, order.id]
           );
           updatedOrder = ordUpd[0];
+          await client.query('RELEASE SAVEPOINT before_order_complete');
         } catch {
+          await client.query('ROLLBACK TO SAVEPOINT before_order_complete');
           const { rows: ordUpd } = await client.query(
             `UPDATE orders
              SET status = 'completed',
@@ -165,12 +168,15 @@ export async function updateStatus(req, res, next) {
         [reservation.id]
       );
       for (const order of ordersToCancel) {
+        await client.query('SAVEPOINT before_order_cancel');
         try {
           await client.query(
             'UPDATE orders SET status = \'cancelled\', status_updated_at = NOW() WHERE id = $1',
             [order.id]
           );
+          await client.query('RELEASE SAVEPOINT before_order_cancel');
         } catch {
+          await client.query('ROLLBACK TO SAVEPOINT before_order_cancel');
           await client.query(
             'UPDATE orders SET status = \'cancelled\' WHERE id = $1',
             [order.id]
