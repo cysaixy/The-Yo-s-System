@@ -200,17 +200,21 @@ export async function updateStatus(req, res, next) {
       }
     }
 
+    // Resolve the new reservation_status in JS to avoid PostgreSQL's
+    // "inconsistent types deduced for parameter $1" error (text vs varchar)
+    // that arises when the same parameter is used in both SET and CASE.
+    const newReservationStatus =
+      status === 'completed' ? 'completed'
+      : status === 'cancelled' ? 'cancelled'
+      : reservation.reservation_status;
+
     const { rows: finalResv } = await client.query(
       `UPDATE reservations
-       SET status = $1,
-           reservation_status = CASE
-             WHEN $1 = 'completed' THEN 'completed'
-             WHEN $1 = 'cancelled' THEN 'cancelled'
-             ELSE reservation_status
-           END
+       SET status = $1::text,
+           reservation_status = $3::text
        WHERE id = $2
        RETURNING *`,
-      [status, reservation.id]
+      [status, reservation.id, newReservationStatus]
     );
 
     await client.query('COMMIT');
