@@ -946,8 +946,6 @@ const changed = new Set((changedIds || []).map(String));
   });
 
   const STATUS_LABELS = { pending: 'Pending', confirmed: 'Confirmed', preparing: 'Preparing', ready: 'Ready', completed: 'Completed', cancelled: 'Cancelled' };
-  const TYPE_LABELS = { dine_in: 'Dine-in', pickup: 'Pickup', delivery: 'Delivery', takeout: 'Takeout', online: 'Online Order' };
-  const PAYMENT_LABELS = { cash: 'Cash', gcash: 'GCash', card: 'Card', online: 'Online' };
 
   function statusLabel(status) {
     return STATUS_LABELS[status] || status;
