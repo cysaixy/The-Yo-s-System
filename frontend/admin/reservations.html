@@ -643,6 +643,13 @@
 <script type="module">
   import { renderAdminShell, confirmDialog } from "./admin-shell.js";
   import { adminFetch, formatDate, escapeHtml, peso } from "./admin-api.js";
+  import {
+    printerManager,
+    normalizeOrderData,
+    openReceiptModal,
+    printReceiptSystem,
+    printReceiptAutomatic
+  } from "./receipt-printer.js?v=4";
 
   const session = renderAdminShell({ active: 'reservations', title: 'Reservations' });
   if (session) init();
@@ -865,6 +872,8 @@
         else if (action === 'contact') updateReservationStatus(id, 'contact_customer');
         else if (action === 'order') openManageModal(id);
         else if (action === 'finalize') updateReservationStatus(id, 'order_finalized');
+        else if (action === 'completed') openCompleteModal(id);
+        else if (action === 'receipt') openReservationReceipt(id);
         else updateStatus(id, action);
       });
     });
@@ -973,6 +982,10 @@
       return `${viewBtn}
               <button class="res-btn res-btn-primary" data-action="completed" data-id="${r.id}">Complete</button>
               <button class="res-btn res-btn-danger" data-action="cancelled" data-id="${r.id}">Cancel</button>`;
+    }
+    if (r.status === 'completed' && r.order_status !== 'no_order') {
+      return `${viewBtn}
+              <button class="res-btn" data-action="receipt" data-id="${r.id}">Receipt</button>`;
     }
     return `${viewBtn}`;
   }
@@ -2218,6 +2231,337 @@
       r.status = status;
       toast(status === 'cancelled' ? 'Reservation cancelled.' : 'Reservation completed.', 'success');
       render();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
+  // ---- Complete & Settlement Modal ----
+  async function openCompleteModal(id) {
+    const r = reservations.find(x => x.id == id);
+    if (!r) return;
+
+    // Show loading indicator
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop active';
+    backdrop.innerHTML = `
+      <div class="modal-box" style="max-width:520px; text-align:center; padding:36px 24px;">
+        <div style="font-size:1.1rem; font-weight:700; margin-bottom:12px;">Loading reservation details…</div>
+        <div style="color:var(--ink-muted); font-size:0.85rem;">Checking order and bill amount for Reservation #${r.id}…</div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    let orderData = null;
+    try {
+      const res = await adminFetch(`/api/admin/reservations/${id}/order`);
+      if (res.ok) {
+        orderData = await res.json();
+      }
+    } catch (e) {
+      console.warn('Could not fetch reservation order details:', e);
+    }
+
+    const order = orderData?.order;
+    const totalAmount = Number(order?.total_amount) || 0;
+
+    // If no order or zero balance, simple confirmation
+    if (!order || totalAmount <= 0) {
+      backdrop.innerHTML = `
+        <div class="modal-box" style="max-width:480px;">
+          <h3>Complete Reservation #${r.id}</h3>
+          <div class="detail-list" style="margin-bottom:18px;">
+            <dt>Customer</dt><dd><b>${escapeHtml(r.customer_name)}</b></dd>
+            <dt>Date &amp; Time</dt><dd>${r.reservation_date ? fmtDate(r.reservation_date) : "—"} at ${String(r.reservation_time || "").slice(0, 5)}</dd>
+            <dt>Table</dt><dd>${r.table_no ? escapeHtml(r.table_no) : 'Not assigned'}</dd>
+            <dt>Order Bill</dt><dd><span style="color:var(--ink-muted);">No advance order billed</span></dd>
+          </div>
+          <p style="font-size:0.82rem; color:var(--ink-muted); margin:0 0 18px; line-height:1.55;">
+            This reservation has no advance food bill attached. Mark it as completed?
+          </p>
+          <div class="modal-error" id="completeErr"></div>
+          <div class="modal-close-row">
+            <button class="btn btn-outline" id="completeCancel">Back</button>
+            <button class="btn" id="completeSubmit">Mark Completed</button>
+          </div>
+        </div>
+      `;
+
+      backdrop.querySelector('#completeCancel').addEventListener('click', () => backdrop.remove());
+      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
+      backdrop.querySelector('#completeSubmit').addEventListener('click', async () => {
+        const btn = backdrop.querySelector('#completeSubmit');
+        const errEl = backdrop.querySelector('#completeErr');
+        btn.disabled = true;
+        btn.textContent = 'Completing…';
+        try {
+          const res = await adminFetch(`/api/admin/reservations/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'completed' }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Could not complete reservation.');
+          r.status = 'completed';
+          r.reservation_status = 'completed';
+          backdrop.remove();
+          toast('Reservation completed.', 'success');
+          render();
+        } catch (err) {
+          errEl.textContent = err.message;
+          errEl.classList.add('show');
+          btn.disabled = false;
+          btn.textContent = 'Mark Completed';
+        }
+      });
+      return;
+    }
+
+    // Reservation HAS an order: Render Payment / Settlement Screen
+    let selectedMethod = 'cash';
+    let tendered = totalAmount;
+
+    const renderBillModal = () => {
+      const change = Math.max(0, tendered - totalAmount);
+      const isCash = selectedMethod === 'cash';
+
+      const itemsListHtml = (order.items || []).map(item => `
+        <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:4px;">
+          <span>${item.quantity || 1}x ${escapeHtml(item.name || 'Item')}</span>
+          <span style="font-family:'Space Mono', monospace;">₱${(Number(item.subtotal) || (Number(item.price) * (item.quantity || 1))).toFixed(2)}</span>
+        </div>
+        ${(item.add_ons || []).map(a => `
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--ink-muted); margin-bottom:2px; padding-left:12px;">
+            <span>+ ${escapeHtml(a.name)} (x${a.quantity || 1})</span>
+            <span style="font-family:'Space Mono', monospace;">₱${Number(a.subtotal || 0).toFixed(2)}</span>
+          </div>
+        `).join('')}
+      `).join('') + ((order.custom_items || []).map(ci => `
+        <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:4px; color:var(--brass);">
+          <span>[Custom] ${escapeHtml(ci.name || 'Custom Item')} (x${ci.quantity || ci.qty || 1})</span>
+          <span style="font-family:'Space Mono', monospace;">₱${((Number(ci.price) || 0) * (Number(ci.quantity || ci.qty) || 1)).toFixed(2)}</span>
+        </div>
+      `).join(''));
+
+      backdrop.innerHTML = `
+        <div class="modal-box" style="max-width:540px; max-height:92vh; overflow-y:auto;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+            <div>
+              <h3 style="margin:0; font-size:1.15rem;">Settle &amp; Complete Reservation #${r.id}</h3>
+              <div style="font-size:0.78rem; color:var(--ink-muted); margin-top:2px;">
+                Customer: <b>${escapeHtml(r.customer_name)}</b> &middot; Table: <b>${escapeHtml(r.table_no || '—')}</b>
+              </div>
+            </div>
+            <button type="button" class="res-btn" id="settleCloseBtn" style="padding:4px 8px;">&times;</button>
+          </div>
+
+          <!-- Order Items Summary Box -->
+          <div style="background:var(--bone); border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:16px;">
+            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-muted); margin-bottom:8px;">
+              Order Items Summary
+            </div>
+            <div style="max-height:140px; overflow-y:auto; padding-right:4px;">
+              ${itemsListHtml}
+            </div>
+            <div style="border-top:1px dashed var(--line); margin-top:10px; padding-top:8px; display:flex; justify-content:space-between; align-items:baseline;">
+              <span style="font-weight:700; font-size:0.92rem;">TOTAL DUE</span>
+              <span style="font-family:'Space Mono', monospace; font-weight:900; font-size:1.2rem; color:var(--brass);">
+                ₱${totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+
+          <!-- Payment Method Selection -->
+          <div style="margin-bottom:16px;">
+            <label style="display:block; font-size:0.76rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; color:var(--ink-muted);">
+              Payment Method
+            </label>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;" id="pmButtonGroup">
+              <button type="button" class="res-btn ${selectedMethod === 'cash' ? 'res-btn-primary' : ''}" data-method="cash" style="justify-content:center; padding:10px;">
+                💵 Cash Drawer
+              </button>
+              <button type="button" class="res-btn ${selectedMethod === 'gcash' ? 'res-btn-primary' : ''}" data-method="gcash" style="justify-content:center; padding:10px;">
+                📱 GCash
+              </button>
+              <button type="button" class="res-btn ${selectedMethod === 'bank' ? 'res-btn-primary' : ''}" data-method="bank" style="justify-content:center; padding:10px;">
+                🏦 Bank Transfer
+              </button>
+            </div>
+          </div>
+
+          <!-- Cash Tendered & Change -->
+          ${isCash ? `
+            <div style="background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <label for="cashTenderedInput" style="font-size:0.78rem; font-weight:700; text-transform:uppercase; color:var(--ink-muted);">
+                  Amount Received (₱)
+                </label>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" class="res-btn quick-cash" data-val="${totalAmount}" style="font-size:0.72rem; padding:3px 7px;">Exact</button>
+                  <button type="button" class="res-btn quick-cash" data-val="500" style="font-size:0.72rem; padding:3px 7px;">₱500</button>
+                  <button type="button" class="res-btn quick-cash" data-val="1000" style="font-size:0.72rem; padding:3px 7px;">₱1,000</button>
+                  <button type="button" class="res-btn quick-cash" data-val="2000" style="font-size:0.72rem; padding:3px 7px;">₱2,000</button>
+                </div>
+              </div>
+              <input type="number" id="cashTenderedInput" step="any" min="${totalAmount}" value="${tendered}"
+                style="width:100%; font-size:1.15rem; font-family:'Space Mono', monospace; font-weight:700; padding:8px 12px; border:1px solid var(--line); border-radius:6px; box-sizing:border-box;">
+              
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:0.88rem;">
+                <span style="color:var(--ink-muted);">Change:</span>
+                <span style="font-family:'Space Mono', monospace; font-weight:700; font-size:1.05rem; color:${change >= 0 ? 'var(--success)' : 'var(--danger)'};" id="cashChangeDisplay">
+                  ₱${change.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          ` : `
+            <div style="background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:16px;">
+              <label for="refNoInput" style="display:block; font-size:0.78rem; font-weight:700; text-transform:uppercase; color:var(--ink-muted); margin-bottom:6px;">
+                ${selectedMethod === 'gcash' ? 'GCash Reference Number' : 'Bank Reference Number'} <span style="font-weight:400; text-transform:none;">(optional)</span>
+              </label>
+              <input type="text" id="refNoInput" placeholder="e.g. Ref # 10029384729"
+                style="width:100%; font-size:0.9rem; padding:8px 12px; border:1px solid var(--line); border-radius:6px; box-sizing:border-box;">
+            </div>
+          `}
+
+          <div class="modal-error" id="settleError"></div>
+
+          <div style="display:flex; justify-content:space-between; gap:10px; margin-top:20px;">
+            <button type="button" class="btn btn-outline" id="settleCancelBtn" style="flex:1;">Cancel</button>
+            <button type="button" class="btn" id="settleConfirmBtn" style="flex:2; justify-content:center; background:var(--brass); color:#fff; font-weight:700;">
+              ✓ Complete &amp; Settle (₱${totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Event bindings
+      backdrop.querySelector('#settleCloseBtn').onclick = () => backdrop.remove();
+      backdrop.querySelector('#settleCancelBtn').onclick = () => backdrop.remove();
+
+      backdrop.querySelectorAll('#pmButtonGroup button').forEach(b => {
+        b.onclick = () => {
+          selectedMethod = b.dataset.method;
+          tendered = totalAmount;
+          renderBillModal();
+        };
+      });
+
+      if (isCash) {
+        const inp = backdrop.querySelector('#cashTenderedInput');
+        const chgEl = backdrop.querySelector('#cashChangeDisplay');
+        inp.oninput = () => {
+          tendered = Number(inp.value) || 0;
+          const newChg = Math.max(0, tendered - totalAmount);
+          chgEl.textContent = `₱${newChg.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          chgEl.style.color = tendered >= totalAmount ? 'var(--success)' : 'var(--danger)';
+        };
+
+        backdrop.querySelectorAll('.quick-cash').forEach(qc => {
+          qc.onclick = () => {
+            tendered = Number(qc.dataset.val) || totalAmount;
+            inp.value = tendered;
+            inp.dispatchEvent(new Event('input'));
+          };
+        });
+      }
+
+      backdrop.querySelector('#settleConfirmBtn').onclick = async () => {
+        const confirmBtn = backdrop.querySelector('#settleConfirmBtn');
+        const errEl = backdrop.querySelector('#settleError');
+        errEl.classList.remove('show');
+
+        if (isCash && tendered < totalAmount) {
+          errEl.textContent = `Amount received (₱${tendered}) is less than total amount (₱${totalAmount}).`;
+          errEl.classList.add('show');
+          return;
+        }
+
+        const refNo = backdrop.querySelector('#refNoInput')?.value?.trim() || null;
+
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Processing Settlement…';
+
+        try {
+          const res = await adminFetch(`/api/admin/reservations/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              status: 'completed',
+              payment_method: selectedMethod,
+              amount_received: isCash ? tendered : totalAmount,
+              reference_number: refNo,
+            }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Could not complete and settle reservation.');
+
+          r.status = 'completed';
+          r.reservation_status = 'completed';
+          backdrop.remove();
+
+          toast(`Reservation #${r.id} completed! Payment of ₱${totalAmount.toFixed(2)} recorded in Cash Transactions.`, 'success');
+          render();
+
+          // Prepare receipt data
+          const fullOrder = data.order || order;
+          const receiptData = normalizeOrderData(fullOrder, {
+            orderId: fullOrder.id,
+            customerName: r.customer_name,
+            customerPhone: r.customer_phone,
+            staffName: session?.name || 'Staff',
+            totalAmount: totalAmount,
+            amountReceived: isCash ? tendered : totalAmount,
+            change: Math.max(0, (isCash ? tendered : totalAmount) - totalAmount),
+            paymentMethod: selectedMethod.toUpperCase(),
+          });
+
+          // Print automatic (if Bluetooth printer connected/configured) OR open modal
+          try {
+            await printReceiptAutomatic(receiptData);
+          } catch (pe) {
+            console.warn('Auto print error:', pe);
+          }
+          openReceiptModal(receiptData);
+
+        } catch (err) {
+          errEl.textContent = err.message;
+          errEl.classList.add('show');
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = `✓ Complete & Settle (₱${totalAmount.toFixed(2)})`;
+        }
+      };
+    };
+
+    renderBillModal();
+  }
+
+  // ---- Open Receipt Modal for Completed Reservation ----
+  async function openReservationReceipt(id) {
+    const r = reservations.find(x => x.id == id);
+    if (!r) return;
+
+    try {
+      toast('Loading receipt…', 'info');
+      const res = await adminFetch(`/api/admin/reservations/${id}/order`);
+      if (!res.ok) throw new Error('Could not fetch reservation order.');
+      const data = await res.json();
+      const order = data.order;
+      if (!order || !order.id) {
+        toast('No advance order or bill found for this reservation.', 'error');
+        return;
+      }
+
+      const receiptData = normalizeOrderData(order, {
+        orderId: order.id,
+        customerName: r.customer_name,
+        customerPhone: r.customer_phone,
+        staffName: session?.name || 'Staff',
+        totalAmount: Number(order.total_amount) || 0,
+        amountReceived: Number(order.total_amount) || 0,
+        change: 0,
+        paymentMethod: (order.payment_method || 'CASH').toUpperCase(),
+      });
+
+      openReceiptModal(receiptData);
     } catch (err) {
       toast(err.message, 'error');
     }

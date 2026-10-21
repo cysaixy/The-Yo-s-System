@@ -1,6 +1,7 @@
 // src/controllers/admin/reservations.controller.js
 import pool from '../../config/db.js';
 import { checkTimeSlotCapacity } from '../../utils/reservationCapacity.js';
+import { postOrderPayment } from '../../services/cashReconciliationService.js';
 
 const VALID_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed', 'contact_customer', 'order_preparing', 'order_finalized'];
 const VALID_ORDER_STATUSES = ['no_order', 'editable', 'finalized', 'locked'];
@@ -63,18 +64,121 @@ export async function confirmReservation(req, res, next) {
 }
 
 export async function updateStatus(req, res, next) {
+  const client = await pool.connect();
   try {
-    const { status } = req.body;
+    const { status, payment_method, amount_received, reference_number } = req.body;
     if (!VALID_STATUSES.includes(status)) {
+      client.release();
       return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
     }
-    const { rows } = await pool.query(
-      'UPDATE reservations SET status = $1 WHERE id = $2 RETURNING id, status',
-      [status, req.params.id]
+
+    await client.query('BEGIN');
+
+    const resvResult = await client.query(
+      `SELECT r.*, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone
+       FROM reservations r
+       JOIN customers c ON c.id = r.customer_id
+       WHERE r.id = $1 FOR UPDATE`,
+      [req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Reservation not found.' });
-    res.json({ reservation: rows[0] });
+
+    if (!resvResult.rows[0]) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(404).json({ error: 'Reservation not found.' });
+    }
+
+    const reservation = resvResult.rows[0];
+    let updatedOrder = null;
+    let paymentRecord = null;
+    let cashTx = null;
+
+    if (status === 'completed') {
+      const { rows: orderRows } = await client.query(
+        'SELECT * FROM orders WHERE reservation_id = $1 FOR UPDATE',
+        [reservation.id]
+      );
+
+      if (orderRows[0]) {
+        const order = orderRows[0];
+        const payMethod = String(payment_method || order.payment_method || 'cash').toLowerCase();
+        const totalAmount = Number(order.total_amount) || 0;
+
+        // Check if payment already recorded
+        const { rows: existingPayments } = await client.query(
+          'SELECT * FROM payments WHERE order_id = $1',
+          [order.id]
+        );
+
+        if (totalAmount > 0 && existingPayments.length === 0) {
+          const { rows: pRows } = await client.query(
+            `INSERT INTO payments (order_id, payment_method, amount, status, datetime_paid, reference_number)
+             VALUES ($1, $2, $3, 'paid', NOW(), $4)
+             RETURNING *`,
+            [order.id, payMethod, totalAmount, reference_number || null]
+          );
+          paymentRecord = pRows[0];
+
+          // Post to cash_transactions and credit account
+          cashTx = await postOrderPayment(client, {
+            orderId: order.id,
+            paymentMethod: payMethod,
+            amount: totalAmount,
+            staffId: req.staff?.id || null,
+            description: `Reservation #${reservation.id} dining payment (${payMethod.toUpperCase()})`,
+          });
+        }
+
+        // Update order status to completed
+        const { rows: ordUpd } = await client.query(
+          `UPDATE orders
+           SET status = 'completed',
+               payment_method = $1,
+               status_updated_at = NOW(),
+               handled_by_staff_id = COALESCE(handled_by_staff_id, $2)
+           WHERE id = $3
+           RETURNING *`,
+          [payMethod, req.staff?.id || null, order.id]
+        );
+        updatedOrder = ordUpd[0];
+      }
+    } else if (status === 'cancelled') {
+      // If reservation is cancelled, also cancel any uncompleted linked order
+      await client.query(
+        `UPDATE orders
+         SET status = 'cancelled',
+             status_updated_at = NOW(),
+             handled_by_staff_id = COALESCE(handled_by_staff_id, $1)
+         WHERE reservation_id = $2 AND status NOT IN ('completed', 'cancelled')`,
+        [req.staff?.id || null, reservation.id]
+      );
+    }
+
+    const { rows: finalResv } = await client.query(
+      `UPDATE reservations
+       SET status = $1,
+           reservation_status = CASE
+             WHEN $1 = 'completed' THEN 'completed'
+             WHEN $1 = 'cancelled' THEN 'cancelled'
+             ELSE reservation_status
+           END
+       WHERE id = $2
+       RETURNING *`,
+      [status, reservation.id]
+    );
+
+    await client.query('COMMIT');
+    client.release();
+
+    res.json({
+      reservation: finalResv[0],
+      order: updatedOrder,
+      payment: paymentRecord,
+      cash_transaction: cashTx,
+    });
   } catch (err) {
+    await client.query('ROLLBACK');
+    client.release();
     next(err);
   }
 }
