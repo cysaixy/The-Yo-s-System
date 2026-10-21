@@ -443,12 +443,28 @@
         const cancelBtn = displayStatus === 'pending'
           ? `<button type="button" class="btn btn-outline" style="padding:7px 12px; font-size:0.68rem; margin:10px 0 0; border-radius:4px;" onclick="cancelReservation(${r.id})">Cancel</button>`
           : '';
+
+        // Strip internal JSON marker from notes before showing the customer
+        const MARKER = '---CUSTOM_ITEMS_JSON---';
+        let visibleNotes = (r.notes || '');
+        let customItems = [];
+        const markerIdx = visibleNotes.indexOf(MARKER);
+        if (markerIdx !== -1) {
+          try { customItems = JSON.parse(visibleNotes.slice(markerIdx + MARKER.length).trim()); } catch {}
+          visibleNotes = visibleNotes.slice(0, markerIdx).trim();
+        }
+
+        const customItemsHtml = customItems.length
+          ? `<span style="display:block; margin-top:5px; font-size:0.78rem; opacity:0.75;">${customItems.map(ci => esc(`${ci.name} \u00d7${ci.qty}${ci.price ? ' \u2014 \u20b1' + Number(ci.price).toLocaleString('en-PH', {minimumFractionDigits:2}) : ''}`)).join('<br>')}</span>`
+          : '';
+
         return `
           <div class="res-card">
             <div class="res-info">
               <strong>${dateStr} at ${(r.reservation_time || '').slice(0, 5)}</strong>
-              <span>${r.guests} guest${r.guests == 1 ? '' : 's'}${r.table_no ? ' · ' + esc(r.table_no) : ''}</span>
-              ${r.notes ? `<span style="display:block; margin-top:4px;">“${esc(r.notes)}”</span>` : ''}
+              <span>${r.guests} guest${r.guests == 1 ? '' : 's'}${r.table_no ? ' \u00b7 ' + esc(r.table_no) : ''}</span>
+              ${visibleNotes ? `<span style="display:block; margin-top:4px;">"${esc(visibleNotes)}"</span>` : ''}
+              ${customItemsHtml}
               ${cancelBtn}
             </div>
             <span class="res-status-pill res-status-${displayStatus}">${STATUS_LABEL[displayStatus] || displayStatus}</span>
