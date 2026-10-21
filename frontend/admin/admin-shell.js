@@ -308,7 +308,7 @@ function initOnlineOrderNotifications(staff) {
   const renderPanel = () => {
     const history = getActiveNotificationHistory();
     panel.innerHTML = `
-      <div class="online-order-panel-head"><div><strong>Notifications</strong><span>${activeAlertCount} active ${activeAlertCount === 1 ? 'alert' : 'alerts'}</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications">�</button></div>
+      <div class="online-order-panel-head"><div><strong>Notifications</strong><span>${activeAlertCount} active ${activeAlertCount === 1 ? 'alert' : 'alerts'}</span></div><button type="button" id="closeOnlineOrderPanel" aria-label="Close notifications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
       <div class="online-order-panel-list">${history.length ? history.map(item => `
         <a href="${escapeNotificationHtml(item.href || 'dashboard')}" class="online-order-panel-item">
           <span class="online-order-dot notification-${escapeNotificationHtml(item.type || 'order')}"></span>
