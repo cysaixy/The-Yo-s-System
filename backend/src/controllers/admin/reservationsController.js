@@ -76,10 +76,7 @@ export async function updateStatus(req, res, next) {
     await client.query('BEGIN');
 
     const resvResult = await client.query(
-      `SELECT r.*, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone
-       FROM reservations r
-       LEFT JOIN customers c ON c.id = r.customer_id
-       WHERE r.id = $1 FOR UPDATE`,
+      'SELECT * FROM reservations WHERE id = $1 FOR UPDATE',
       [req.params.id]
     );
 
