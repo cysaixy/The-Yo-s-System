@@ -143,6 +143,15 @@ export async function initTables() {
     await pool.query(
       'ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)'
     );
+    await pool.query(
+      'ALTER TABLE orders ADD COLUMN IF NOT EXISTS handled_by_staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL'
+    );
+    await pool.query(
+      'ALTER TABLE orders ADD COLUMN IF NOT EXISTS status_updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP'
+    );
+    await pool.query(
+      'CREATE INDEX IF NOT EXISTS orders_handled_by_staff_id_idx ON orders(handled_by_staff_id)'
+    );
 
     // Delivery-fee status column: 'pending' while Admin assigns fee, 'confirmed' once fee is set.
     await pool.query(
@@ -263,5 +272,6 @@ export async function initTables() {
     console.log('Database tables initialized successfully.');
   } catch (err) {
     console.error('Error initializing tables:', err.message);
+    throw err;
   }
 }

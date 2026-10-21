@@ -12,6 +12,7 @@ function ensureInit() {
     initPromise = initTables().catch((err) => {
       console.error("Vercel initTables error:", err);
       initPromise = null; // allow retry on next request if initialization failed
+      throw err;
     });
   }
   return initPromise;
