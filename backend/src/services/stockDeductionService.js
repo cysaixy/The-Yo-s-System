@@ -224,9 +224,9 @@ export async function restoreStock(params) {
     `SELECT inventory_id, menu_id, quantity_change 
      FROM inventory_log 
      WHERE transaction_type = 'sale' 
-       AND remarks LIKE $1
+       AND remarks ~ $1
      ORDER BY id`,
-    [`%Order #${orderId}%`]
+    [`Order #${orderId}([^0-9]|$)`]
   );
 
   let restoredCount = 0;

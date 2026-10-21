@@ -1,7 +1,8 @@
 // src/controllers/admin/reservations.controller.js
 import pool from '../../config/db.js';
 import { checkTimeSlotCapacity } from '../../utils/reservationCapacity.js';
-import { postOrderPayment } from '../../services/cashReconciliationService.js';
+import { postOrderPayment, reverseCashOrderSale } from '../../services/cashReconciliationService.js';
+import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
 
 const VALID_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed', 'contact_customer', 'order_preparing', 'order_finalized'];
 const VALID_ORDER_STATUSES = ['no_order', 'editable', 'finalized', 'locked'];
@@ -143,15 +144,25 @@ export async function updateStatus(req, res, next) {
         updatedOrder = ordUpd[0];
       }
     } else if (status === 'cancelled') {
-      // If reservation is cancelled, also cancel any uncompleted linked order
-      await client.query(
-        `UPDATE orders
-         SET status = 'cancelled',
-             status_updated_at = NOW(),
-             handled_by_staff_id = COALESCE(handled_by_staff_id, $1)
-         WHERE reservation_id = $2 AND status NOT IN ('completed', 'cancelled')`,
-        [req.staff?.id || null, reservation.id]
+      // Keep cancellation independent of optional order-handler tracking
+      // columns so older databases can still cancel reservations safely.
+      const { rows: ordersToCancel } = await client.query(
+        `SELECT id FROM orders
+         WHERE reservation_id = $1 AND status NOT IN ('completed', 'cancelled')
+         FOR UPDATE`,
+        [reservation.id]
       );
+      for (const order of ordersToCancel) {
+        await client.query(
+          'UPDATE orders SET status = \'cancelled\' WHERE id = $1',
+          [order.id]
+        );
+        await restoreOrderInventory(client, order.id, req.staff?.id || null);
+        await reverseCashOrderSale(client, {
+          orderId: order.id,
+          staffId: req.staff?.id || null,
+        });
+      }
     }
 
     const { rows: finalResv } = await client.query(
