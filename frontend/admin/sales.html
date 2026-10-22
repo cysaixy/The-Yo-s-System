@@ -1209,7 +1209,7 @@
     
     switch (o.status) {
       case 'pending':
-        return `${view}<button class="primary" data-action="confirmed" data-id="${id}">Confirm</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
+        return `<button class="primary" data-view="${id}">View &amp; Confirm</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
       case 'confirmed':
         return `${view}<button class="primary" data-action="preparing" data-id="${id}">Prepare</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
       case 'preparing':
