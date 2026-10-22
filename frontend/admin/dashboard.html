@@ -1140,7 +1140,7 @@ const changed = new Set((changedIds || []).map(String));
 
   async function handleStatusChange(orderId, action) {
     try {
-      const res = await adminFetch(`/api/admin/sales/pos/orders/${orderId}/status`, {
+      const res = await adminFetch(`/api/admin/sales/orders/${orderId}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status: action })
       });

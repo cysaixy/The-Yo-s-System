@@ -69,6 +69,19 @@ describe('Critical Bug Fixes - API & Code Verification', () => {
     });
   });
 
+  describe('Admin order status updates', () => {
+    it('should route PATCH /api/admin/sales/orders/:id/status through staff authentication', async () => {
+      const res = await request(app)
+        .patch('/api/admin/sales/orders/999/status')
+        .set('Cookie', 'csrf_token=test-csrf-token')
+        .set('X-CSRF-Token', 'test-csrf-token')
+        .send({ status: 'confirmed' });
+
+      expect(res.status).toBe(401);
+      expect(res.body.error).toContain('Unauthorized');
+    });
+  });
+
   describe('Rate Limiting with Redis Fallback', () => {
     it('should have rate limiters exported', async () => {
       const { globalLimiter, authLimiter, otpLimiter, posLimiter, liveStateLimiter } = await import('../src/middlewares/rateLimit.middleware.js');
