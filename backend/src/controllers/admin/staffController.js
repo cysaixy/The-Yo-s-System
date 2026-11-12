@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import pool from '../../config/db.js';
 import { generateStaffToken } from '../../utils/generateToken.js';
+import { resolveStaffSession } from '../../middlewares/auth.middleware.js';
 
 const COOKIE_NAME = 'staff_token';
 
@@ -16,30 +17,55 @@ const SUPERADMIN_EMAIL = 'admin@theyos.com';
  * Shared password strength validator.
  * Returns an error string if invalid, or null if the password is acceptable.
  */
+const ALLOWED_ROLES = new Set(['Admin', 'Manager', 'Cashier', 'Kitchen']);
+const ALLOWED_STATUSES = new Set(['active', 'inactive']);
+
 function validatePassword(password) {
   if (typeof password !== 'string' || password.length < 10) {
     return 'Password must be at least 10 characters.';
   }
+  if (password.length > 72) {
+    return 'Password must be at most 72 characters.';
+  }
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return 'Password must contain at least one letter and one number.';
+  }
   return null;
 }
+// Frontend and API share one origin (Vercel rewrites), so the session cookie
+// never needs to travel cross-site: 'strict' stops other sites from riding
+// on it at all. Lifetime matches the 12h JWT.
+const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  maxAge: 24 * 60 * 60 * 1000, // 1 day
+  sameSite: 'strict',
+  maxAge: SESSION_MAX_AGE_MS,
+  path: '/',
+};
+const CSRF_COOKIE_OPTIONS = {
+  httpOnly: false,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: SESSION_MAX_AGE_MS,
   path: '/',
 };
 
+// Used to make "unknown email" take as long as "wrong password" so login
+// response timing can't be used to discover which staff emails exist.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('timing-equalizer-not-a-real-password', 10);
+
 function setCSRFTokenCookie(res) {
   const csrfToken = crypto.randomBytes(32).toString('hex');
-  res.cookie('csrf_token', csrfToken, {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000,
-    path: '/',
-  });
+  res.cookie('csrf_token', csrfToken, CSRF_COOKIE_OPTIONS);
   return csrfToken;
+}
+
+function clearSessionCookies(res) {
+  // clearCookie must not receive maxAge (Express would re-set the cookie).
+  const strip = ({ httpOnly, secure, sameSite, path }) => ({ httpOnly, secure, sameSite, path });
+  res.clearCookie(COOKIE_NAME, strip(COOKIE_OPTIONS));
+  res.clearCookie('csrf_token', strip(CSRF_COOKIE_OPTIONS));
 }
 
 export function issueCSRFToken(req, res) {
@@ -54,9 +80,14 @@ export async function login(req, res, next) {
     if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
+    // bcrypt only looks at the first 72 bytes; cap input to avoid CPU abuse.
+    if (email.length > 150 || password.length > 128) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
 
     const { rows } = await pool.query(
-      `SELECT s.*, p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
+      `SELECT s.id, s.name, s.email, s.role, s.status, s.password,
+              p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
        FROM staff s
        LEFT JOIN staff_permissions p ON p.staff_id = s.id
        WHERE LOWER(s.email) = LOWER($1)`,
@@ -64,27 +95,19 @@ export async function login(req, res, next) {
     );
     const staff = rows[0];
 
-    if (!staff || staff.status !== 'active') {
-      return res.status(401).json({ error: 'Invalid email or password.' });
-    }
-
-    if (!staff.password) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
-    }
-
     let matches = false;
     try {
-      matches = await bcrypt.compare(password, staff.password);
+      matches = await bcrypt.compare(password, staff?.password || DUMMY_PASSWORD_HASH);
     } catch (bcryptErr) {
       console.error('[staffController.login] bcrypt compare failed:', bcryptErr?.message || bcryptErr);
+      matches = false;
+    }
+
+    if (!staff || !staff.password || staff.status !== 'active' || !matches) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
-    if (!matches) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
-    }
-
-    const token = generateStaffToken(staff.id);
+    const token = generateStaffToken(staff.id, staff.password);
     delete staff.password;
 
     // Set httpOnly session cookie
@@ -102,8 +125,21 @@ export async function login(req, res, next) {
 
 export async function logout(req, res, next) {
   try {
-    res.clearCookie(COOKIE_NAME, { ...COOKIE_OPTIONS, maxAge: 0 });
+    clearSessionCookies(res);
     res.json({ success: true, message: 'Logged out successfully.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/staff/session — never 401s. Lets the customer site detect a
+// live staff session in this browser (the cookie is httpOnly) so the two
+// identities can't be signed in side by side.
+export async function sessionStatus(req, res, next) {
+  try {
+    res.set('Cache-Control', 'no-store');
+    const staff = await resolveStaffSession(req.cookies?.[COOKIE_NAME]);
+    res.json({ active: Boolean(staff) });
   } catch (err) {
     next(err);
   }
@@ -162,8 +198,14 @@ export async function createStaff(req, res, next) {
       can_access_stock_in,
       can_access_reports,
     } = req.body;
-    if (!name || !email || !password) {
+    if (!name || !email || !password || typeof email !== 'string' || typeof name !== 'string') {
       return res.status(400).json({ error: 'name, email, and password are required.' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || email.length > 150) {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+    if (role !== undefined && role !== null && role !== '' && !ALLOWED_ROLES.has(role)) {
+      return res.status(400).json({ error: 'Invalid role.' });
     }
     const passwordError = validatePassword(password);
     if (passwordError) return res.status(400).json({ error: passwordError });
@@ -179,7 +221,7 @@ export async function createStaff(req, res, next) {
       return res.status(400).json({ error: 'Staff permissions must be boolean values.' });
     }
 
-    const existingRes = await client.query('SELECT id FROM staff WHERE email = $1', [email]);
+    const existingRes = await client.query('SELECT id FROM staff WHERE LOWER(email) = LOWER($1)', [email.trim()]);
     if (existingRes.rows.length > 0) {
       return res.status(409).json({ error: 'A staff account with this email already exists.' });
     }
@@ -192,7 +234,7 @@ export async function createStaff(req, res, next) {
       `INSERT INTO staff (name, email, password, role, status, created_at)
        VALUES ($1, $2, $3, $4, 'active', NOW())
        RETURNING id, name, email, role, status, created_at`,
-      [name, email, hashedPassword, role || 'Cashier']
+      [name.trim().slice(0, 120), email.trim().toLowerCase(), hashedPassword, role || 'Cashier']
     );
     const staff = rows[0];
 
@@ -228,6 +270,16 @@ export async function updateStaff(req, res, next) {
       return res.status(403).json({
         error: 'This account is protected and cannot be modified.',
       });
+    }
+    if (role !== undefined && role !== null && !ALLOWED_ROLES.has(role)) {
+      return res.status(400).json({ error: 'Invalid role.' });
+    }
+    if (status !== undefined && status !== null && !ALLOWED_STATUSES.has(status)) {
+      return res.status(400).json({ error: 'Invalid status.' });
+    }
+    // An admin locking themselves out would leave nobody able to undo it.
+    if (String(req.params.id) === String(req.staff.id) && (status === 'inactive' || (role && role !== 'Admin'))) {
+      return res.status(400).json({ error: 'You cannot deactivate or demote your own account.' });
     }
 
     const { rows } = await pool.query(
@@ -397,6 +449,12 @@ export async function changePassword(req, res, next) {
 
     const hashedPassword = await bcrypt.hash(new_password, 10);
     await pool.query('UPDATE staff SET password = $1 WHERE id = $2', [hashedPassword, staff.id]);
+
+    // All older sessions for this account are now revoked (password
+    // fingerprint changed). Keep the person who made the change signed in.
+    if (String(req.staff.id) === String(staff.id)) {
+      res.cookie(COOKIE_NAME, generateStaffToken(staff.id, hashedPassword), COOKIE_OPTIONS);
+    }
 
     res.json({ success: true, message: 'Password updated.' });
   } catch (err) {

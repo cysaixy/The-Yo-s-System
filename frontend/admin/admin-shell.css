@@ -984,3 +984,41 @@ input::-ms-clear {
   .admin-panel-head { padding: 13px 16px; }
   .admin-body { padding: 13px 10px; }
 }
+
+/* ========================================================
+   CLEAN PASS (v9) — same brass/bone theme, less visual noise.
+   Kept at the end so it refines the rules above without rewrites.
+   ======================================================== */
+body {
+  background:
+    radial-gradient(ellipse 70% 50% at 85% -10%, rgba(163,132,74,0.07) 0%, transparent 60%),
+    #f6f2ea;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Sidebar: no padding jump on hover (it nudged every row sideways) */
+.admin-nav-link { border-radius: 10px; transition: background var(--transition-fast), color var(--transition-fast); }
+.admin-nav-link:hover { padding-left: 11px; background: #f8f1e4; }
+.admin-nav-link:hover .icon { transform: none; }
+.admin-nav-link.active { background: #f3e9d6; box-shadow: inset 0 0 0 1px rgba(169,117,43,.14); }
+.admin-nav-link.active::before { top: 9px; bottom: 9px; }
+.nav-group-label { font-size: 10.5px; color: #a3a6ad; padding: 12px 11px 6px; }
+
+/* Panels and cards: one radius scale, lighter elevation */
+.admin-panel { border-radius: 16px; box-shadow: var(--shadow-xs); }
+.admin-panel:hover { transform: none; box-shadow: var(--shadow-sm); }
+.admin-panel-head { background: #fff; padding: 16px 20px; }
+.stat-card, .stat-secondary-grid .stat-card { border-radius: 12px; }
+.stat-hero { border-radius: 14px; background: linear-gradient(150deg, #24211d 0%, #1b1916 100%); }
+.admin-table th { background: #faf6ef; border-bottom-width: 1px; }
+
+/* Clear keyboard focus everywhere */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

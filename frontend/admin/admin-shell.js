@@ -23,6 +23,10 @@ const ICONS = {
   lock: '<rect x="5" y="10" width="14" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
 };
 
+function escapeShellHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function iconSvg(name) {
   return `<svg viewBox="0 0 24 24">${ICONS[name] || ''}</svg>`;
 }
@@ -490,7 +494,10 @@ export function renderAdminShell({ active, title }) {
     return { staff };
   }
 
-  const initial = (staff.name || staff.email || '?').charAt(0).toUpperCase();
+  const initial = escapeShellHtml((staff.name || staff.email || '?').charAt(0).toUpperCase());
+  const displayName = escapeShellHtml(staff.name || staff.email || 'Staff');
+  const displayRole = escapeShellHtml(staff.role || 'Staff');
+  const safeTitle = escapeShellHtml(title);
 
   root.innerHTML = `
     <div class="admin-shell">
@@ -515,8 +522,8 @@ export function renderAdminShell({ active, title }) {
         <div class="sidebar-user-section">
           <div class="sidebar-user-avatar">${initial}</div>
           <div class="sidebar-user-info">
-            <strong>${staff.name || staff.email}</strong>
-            <span>${staff.role || 'Staff'}</span>
+            <strong>${displayName}</strong>
+            <span>${displayRole}</span>
           </div>
         </div>
       </aside>
@@ -526,7 +533,7 @@ export function renderAdminShell({ active, title }) {
             <button class="mobile-nav-toggle" id="adminMobileNavToggle" type="button" aria-label="Open menu" title="Open menu">
               <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
             </button>
-            <h1>${title}</h1>
+            <h1>${safeTitle}</h1>
           </div>
           <div class="admin-user">
             <div class="admin-notification-wrap">
@@ -537,8 +544,8 @@ export function renderAdminShell({ active, title }) {
               <div class="online-order-panel" id="onlineOrderPanel"></div>
             </div>
             <div class="who">
-              <strong>${staff.name || staff.email}</strong>
-              <span>${staff.role || 'Staff'}</span>
+              <strong>${displayName}</strong>
+              <span>${displayRole}</span>
             </div>
             <div class="avatar">${initial}</div>
             <button class="logout-btn" id="adminLogoutBtn">Log Out</button>
@@ -556,6 +563,7 @@ document.getElementById('adminLogoutBtn').addEventListener('click', async () => 
       await fetch('/api/admin/staff/logout', { method: 'POST', credentials: 'include' });
     } catch {}
     clearStaffSession();
+    try { localStorage.removeItem('__admin_csrf_token'); } catch {}
     window.location.href = 'login';
   });
 

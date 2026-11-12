@@ -4,35 +4,48 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The~Yo's Resto Bar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=11">
-<link rel="stylesheet" href="theme.css?v=2">
+<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="theme.css?v=3">
+<link rel="stylesheet" href="app-shell.css?v=1">
+<script src="global.js"></script>
 </head>
 <body data-customer-app-host="true">
-<header>
-  <a href="/" class="logo-link" data-customer-path="/"><img src="../pics&vids/the-yo's_logo.jpg" alt="Logo" class="logo-img"><span class="logo-text">The~Yo's</span></a>
-  <nav id="siteNav"><ul>
-    <li><a href="/about" data-customer-path="/about">About</a></li>
-    <li><a href="/menu" data-customer-path="/menu">Menu</a></li>
-    <li><a href="/gallery" data-customer-path="/gallery">Gallery</a></li>
-    <li><a href="/reviews" data-customer-path="/reviews">Reviews</a></li>
-    <li><a href="/reservations" data-customer-path="/reservations">Reserve</a></li>
-    <li class="sunset-mode-item"><button type="button" id="coffeeThemeToggle" class="sunset-mode-toggle coffee-theme-toggle" aria-label="Switch coffee mode" aria-pressed="false"><span class="coffee-toggle-art" aria-hidden="true"><svg viewBox="0 0 52 28"><path class="coffee-cup" d="M12 10h18v10a7 7 0 0 1-14 0V10Z M30 12h4a4 4 0 0 1 0 7h-4"/><path class="coffee-steam steam-a" d="M17 8c-2-2 2-3 0-6"/><path class="coffee-steam steam-b" d="M24 8c-2-2 2-3 0-6"/><path class="coffee-glass" d="M15 7h19l-2 16H17L15 7Z"/><path class="coffee-straw" d="M30 7l3-5"/><rect class="coffee-ice ice-a" x="19" y="12" width="6" height="6" rx="1"/><rect class="coffee-ice ice-b" x="26" y="15" width="6" height="6" rx="1"/><circle class="coffee-drop" cx="38" cy="14" r="1.4"/></svg><i class="coffee-thumb"></i></span></button></li>
-    <li><a href="/order" class="nav-btn" data-customer-path="/order">Order Now</a></li>
-    <li><a href="/account" class="nav-account-pill nav-account-signin" id="navAccountLink" data-customer-path="/account"><span class="nav-account-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="nav-account-name">Sign In</span></a></li>
-  </ul></nav>
-  <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
-    <svg class="nav-toggle-icon nav-icon-menu" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-      <line x1="4" y1="6" x2="20" y2="6"></line>
-      <line x1="4" y1="12" x2="20" y2="12"></line>
-      <line x1="4" y1="18" x2="20" y2="18"></line>
-    </svg>
-    <svg class="nav-toggle-icon nav-icon-close" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-      <line x1="18" y1="6" x2="6" y2="18"></line>
-      <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
+<header class="yo-header" id="siteHeader">
+  <a href="/" class="yo-brand" data-customer-path="/" aria-label="The~Yo's home">
+    <img src="../pics&vids/the-yo's_logo.jpg" alt="" class="yo-brand-mark" width="40" height="40">
+    <span class="yo-brand-text">The~Yo's</span>
+  </a>
+
+  <nav class="yo-nav" id="siteNav" aria-label="Main">
+    <ul class="yo-links" id="yoLinks">
+      <li><a href="/about" data-customer-path="/about">About</a></li>
+      <li><a href="/menu" data-customer-path="/menu">Menu</a></li>
+      <li><a href="/gallery" data-customer-path="/gallery">Gallery</a></li>
+      <li><a href="/reviews" data-customer-path="/reviews">Reviews</a></li>
+      <li><a href="/reservations" data-customer-path="/reservations">Reserve</a></li>
+      <li class="yo-indicator" id="yoIndicator" aria-hidden="true"></li>
+    </ul>
+
+    <ul class="yo-actions">
+      <li class="sunset-mode-item"><button type="button" id="coffeeThemeToggle" class="sunset-mode-toggle coffee-theme-toggle" aria-label="Switch coffee mode" aria-pressed="false"><span class="coffee-toggle-art" aria-hidden="true"><svg viewBox="0 0 52 28"><path class="coffee-cup" d="M12 10h18v10a7 7 0 0 1-14 0V10Z M30 12h4a4 4 0 0 1 0 7h-4"/><path class="coffee-steam steam-a" d="M17 8c-2-2 2-3 0-6"/><path class="coffee-steam steam-b" d="M24 8c-2-2 2-3 0-6"/><path class="coffee-glass" d="M15 7h19l-2 16H17L15 7Z"/><path class="coffee-straw" d="M30 7l3-5"/><rect class="coffee-ice ice-a" x="19" y="12" width="6" height="6" rx="1"/><rect class="coffee-ice ice-b" x="26" y="15" width="6" height="6" rx="1"/><circle class="coffee-drop" cx="38" cy="14" r="1.4"/></svg><i class="coffee-thumb"></i></span></button></li>
+      <li><a href="/order" class="yo-cta" data-customer-path="/order">Order Now</a></li>
+      <li><a href="/account" class="nav-account-pill nav-account-signin" id="navAccountLink" data-customer-path="/account"><span class="nav-account-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="nav-account-name">Sign In</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="yo-burger" id="navToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="siteNav" data-bound="1">
+    <span></span><span></span><span></span>
   </button>
 </header>
+
+<div class="yo-progress" id="yoProgress" aria-hidden="true"></div>
 <main class="customer-app-workspace"><iframe id="customerFeatureFrame" title="The Yo's page"></iframe></main>
-<script src="theme.js"></script><script src="global.js"></script><script type="module" src="authNav.js"></script><script type="module" src="customer-app.js?v=6"></script>
+
+<script src="theme.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script type="module" src="authNav.js?v=2"></script>
+<script type="module" src="customer-app.js?v=7"></script>
 </body></html>

@@ -4,6 +4,7 @@ import {
   issueCSRFToken,
   login,
   logout,
+  sessionStatus,
   me,
   listStaff,
   getStaffById,
@@ -20,6 +21,7 @@ import { requireAdmin } from '../../middlewares/role.middleware.js';
 
 // POST /api/admin/staff/login — public, no auth required yet
 staffRouter.get('/csrf-token', issueCSRFToken);
+staffRouter.get('/session', sessionStatus);
 staffRouter.post('/login', login);
 staffRouter.post('/logout', logout);
 

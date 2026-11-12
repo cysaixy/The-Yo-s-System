@@ -113,6 +113,38 @@ describe('Critical Bug Fixes - API & Code Verification', () => {
     });
   });
 
+  describe('Session hardening', () => {
+    it('reports no staff session without a cookie (never 401s)', async () => {
+      const res = await request(app).get('/api/admin/staff/session');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ active: false });
+      expect(res.headers['cache-control']).toContain('no-store');
+    });
+
+    it('does not accept a staff token from the Authorization header', async () => {
+      const token = generateStaffToken(1, 'hash');
+      const res = await request(app).get('/api/admin/staff/me').set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects forged tokens signed with the old fallback secret', async () => {
+      const jwt = (await import('jsonwebtoken')).default;
+      const forged = jwt.sign({ staffId: 1 }, 'default-secret-must-change-in-production');
+      const res = await request(app).get('/api/admin/staff/me').set('Cookie', `staff_token=${forged}`);
+      expect(res.status).toBe(401);
+    });
+
+    it('binds staff tokens to the password hash (rotating the password revokes sessions)', async () => {
+      const { passwordFingerprint } = await import('../src/utils/generateToken.js');
+      expect(passwordFingerprint('$2b$10$old')).not.toBe(passwordFingerprint('$2b$10$new'));
+    });
+
+    it('rejects customer password changes without a token', async () => {
+      const res = await request(app).post('/api/customer/auth/update-password').send({ newPassword: 'whatever123' });
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('httpOnly Cookie Configuration', () => {
     it('should import cookie-parser in app', async () => {
       const appModule = await import('../src/app.js');

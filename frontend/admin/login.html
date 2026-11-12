@@ -471,6 +471,35 @@
     document.getElementById('expiredNotice').classList.add('show');
   }
 
+  // Only allow same-origin admin paths — never javascript:, //evil.com, etc.
+  function safeRedirect(value) {
+    const fallback = 'app.html';
+    if (!value) return fallback;
+    try {
+      const url = new URL(value, window.location.href);
+      if (url.origin !== window.location.origin) return fallback;
+      if (!url.pathname.startsWith('/admin/') && !url.pathname.startsWith('/frontend/admin/')) return fallback;
+      if (/\/login(\.html)?$/.test(url.pathname)) return fallback;
+      return url.pathname + url.search + url.hash;
+    } catch {
+      return fallback;
+    }
+  }
+
+  async function endCustomerSession() {
+    try {
+      localStorage.removeItem('theYosNavAccount');
+      localStorage.removeItem('theYosCustomerSignInAt');
+      const mod = await Promise.race([
+        import('/firebase-init.js'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000)),
+      ]);
+      if (mod.auth?.currentUser) await mod.signOut(mod.auth);
+    } catch (err) {
+      console.warn('Could not end customer session:', err);
+    }
+  }
+
   // Password visibility toggle
   document.querySelectorAll('[data-toggle-pw]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -528,8 +557,10 @@ try {
         // Also persist the csrfToken so adminFetch can fall back to it
         if (data.csrfToken) localStorage.setItem('__admin_csrf_token', data.csrfToken);
 
-        const redirect = params.get('redirect') || 'dashboard.html';
-        window.location.href = redirect;
+        // One identity per browser: signing in as staff ends any customer session.
+        await endCustomerSession();
+
+        window.location.href = safeRedirect(params.get('redirect'));
     } catch (err) {
       statusEl.textContent = 'Connection error. Please try again.';
       statusEl.className = 'login-status err';

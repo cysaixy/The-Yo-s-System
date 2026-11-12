@@ -6,9 +6,34 @@
 // Logged out  → plain <a> link to account page, no dropdown
 // Logged in   → button with caret + dropdown (Profile, My Orders, Log out)
 
-import { auth, onAuthStateChanged, signOut } from "./firebase-init.js";
+// Firebase is imported lazily (below) so the cached account state paints
+// immediately instead of waiting for the SDK download — that wait was the
+// visible "Sign In → name" flicker in the nav.
 
 const CACHE_KEY = 'theYosNavAccount';
+const isEmbedded = document.documentElement.classList.contains('customer-app-embedded');
+
+function escapeText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function safePhotoUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function goTo(path) {
+  if (typeof window.theYosNavigate === 'function') return window.theYosNavigate(path);
+  if (isEmbedded && window.parent !== window) {
+    window.parent.postMessage({ type: 'theyos:customer-navigate', path }, window.location.origin);
+    return;
+  }
+  window.location.href = path;
+}
 
 function getCached() {
   try {
@@ -30,7 +55,7 @@ function initAccountDropdown() {
         <div class="nav-account-meta-role">Account</div>
       </div>
       <div class="nav-account-items">
-        <a href="account" class="nav-account-item" role="menuitem">
+        <a href="/account" data-customer-path="/account" class="nav-account-item" role="menuitem">
           <span class="nav-account-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -39,7 +64,7 @@ function initAccountDropdown() {
           </span>
           My Profile
         </a>
-        <a href="my-orders" class="nav-account-item" role="menuitem">
+        <a href="/my-orders" data-customer-path="/my-orders" class="nav-account-item" role="menuitem">
           <span class="nav-account-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
@@ -89,10 +114,14 @@ function initAccountDropdown() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDropdown(); });
   dropdown.querySelectorAll('.nav-account-item').forEach(item => item.addEventListener('click', closeDropdown));
 
+  let firebase = null; // { auth, signOut, onAuthStateChanged } once loaded
+
   logoutBtn.addEventListener('click', async () => {
     closeDropdown();
-    await signOut(auth);
-    window.location.href = 'account';
+    try { localStorage.removeItem(CACHE_KEY); } catch {}
+    setLoggedOut();
+    if (firebase) await firebase.signOut(firebase.auth);
+    goTo('/account');
   });
 
   // ── State setters (update content in-place, no structural DOM changes) ───
@@ -106,6 +135,7 @@ function initAccountDropdown() {
       newBtn.type = 'button';
       newBtn.id = 'navAccountLink';
       newBtn.className = 'nav-account-pill is-logged-in';
+      if (btn.dataset.customerPath) newBtn.dataset.customerPath = btn.dataset.customerPath;
       newBtn.setAttribute('aria-haspopup', 'true');
       newBtn.setAttribute('aria-expanded', 'false');
       // Move children across
@@ -123,9 +153,11 @@ function initAccountDropdown() {
     const avatar = getAvatar();
     if (nameEl) nameEl.textContent = firstName;
     if (avatar) {
-      avatar.innerHTML = photoURL
-        ? `<img src="${photoURL}" alt="${firstName}" referrerpolicy="no-referrer">`
-        : `<span class="nav-avatar-initials">${(displayName || 'A').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}</span>`;
+      const photo = safePhotoUrl(photoURL);
+      const initials = (displayName || 'A').split(' ').map(w => w[0] || '').join('').slice(0, 2).toUpperCase();
+      avatar.innerHTML = photo
+        ? `<img src="${escapeText(photo)}" alt="${escapeText(firstName)}" referrerpolicy="no-referrer">`
+        : `<span class="nav-avatar-initials">${escapeText(initials)}</span>`;
     }
   }
 
@@ -134,8 +166,9 @@ function initAccountDropdown() {
     // Swap <button> → <a> if needed
     if (btn && btn.tagName === 'BUTTON') {
       const newLink = document.createElement('a');
-      newLink.href = 'account';
+      newLink.href = '/account';
       newLink.id = 'navAccountLink';
+      if (btn.dataset.customerPath) newLink.dataset.customerPath = btn.dataset.customerPath;
       newLink.className = 'nav-account-pill nav-account-signin';
       while (btn.firstChild) {
         const child = btn.firstChild;
@@ -161,17 +194,44 @@ function initAccountDropdown() {
   const cached = getCached();
   if (cached) setLoggedIn(cached.displayName, cached.photoURL);
 
-  // ── Firebase auth listener ───────────────────────────────────────────────
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      const displayName = user.displayName || user.email || 'Account';
-      setLoggedIn(displayName, user.photoURL || '');
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ displayName, photoURL: user.photoURL || '' })); } catch {}
-    } else {
-      try { localStorage.removeItem(CACHE_KEY); } catch {}
-      setLoggedOut();
-    }
-  });
+  // ── Firebase auth listener (loaded after the cached paint) ───────────────
+  let staffChecked = false;
+  import('./firebase-init.js').then(mod => {
+    firebase = mod;
+    mod.onAuthStateChanged(mod.auth, async (user) => {
+      if (user) {
+        // One identity per browser: if a staff session is live here, the
+        // customer session is ended (staff must sign out of admin first).
+        // Checked once per page, only by the visible shell, not each iframe.
+        if (!staffChecked && !isEmbedded) {
+          staffChecked = true;
+          try {
+            const res = await fetch('/api/admin/staff/session', { credentials: 'include' });
+            const data = res.ok ? await res.json() : null;
+            if (data?.active) {
+              // Last sign-in wins: a customer who just signed in ends the
+              // staff session; otherwise the older customer session ends.
+              let signedInAt = 0;
+              try { signedInAt = Number(localStorage.getItem('theYosCustomerSignInAt')) || 0; } catch {}
+              if (Date.now() - signedInAt < 2 * 60 * 1000) {
+                await fetch('/api/admin/staff/logout', { method: 'POST', credentials: 'include' });
+                try { localStorage.removeItem('staffInfo'); localStorage.removeItem('__admin_csrf_token'); } catch {}
+              } else {
+                await mod.signOut(mod.auth);
+                return; // listener fires again with user = null
+              }
+            }
+          } catch {}
+        }
+        const displayName = user.displayName || user.email || 'Account';
+        setLoggedIn(displayName, user.photoURL || '');
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ displayName, photoURL: user.photoURL || '' })); } catch {}
+      } else {
+        try { localStorage.removeItem(CACHE_KEY); } catch {}
+        setLoggedOut();
+      }
+    });
+  }).catch(err => console.warn('Account status unavailable:', err));
 }
 
 if (document.readyState === 'loading') {

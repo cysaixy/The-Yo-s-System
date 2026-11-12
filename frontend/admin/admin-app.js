@@ -1,5 +1,6 @@
 import { renderAdminShell } from './admin-shell.js';
-import { printerManager } from './receipt-printer.js?v=4';
+import { adminFetch } from './admin-api.js';
+import { printerManager } from './receipt-printer.js?v=5';
 
 // The app host is never replaced during feature navigation. Put the live
 // Bluetooth manager here rather than inside the POS iframe, whose lifecycle
@@ -29,7 +30,37 @@ function requestedFeature() {
 let currentFeature = requestedFeature();
 const session = renderAdminShell({ active: currentFeature, title: FEATURES[currentFeature] });
 
+// The cached staffInfo only drives the UI. Confirm the httpOnly session with
+// the server (adminFetch bounces to login on 401) and refresh the cached
+// role/permissions so a demoted or deactivated account can't keep stale UI.
+async function verifyStaffSession() {
+  try {
+    const res = await adminFetch('/api/admin/staff/me');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.staff) localStorage.setItem('staffInfo', JSON.stringify(data.staff));
+  } catch (err) {
+    console.warn('Session check failed:', err.message);
+  }
+}
+
+// One identity per browser: an open staff dashboard ends any customer
+// (Firebase) session that's also signed in here.
+async function endCustomerSession() {
+  try {
+    localStorage.removeItem('theYosNavAccount');
+    localStorage.removeItem('theYosCustomerSignInAt');
+    const mod = await import('/firebase-init.js');
+    if (mod.auth?.authStateReady) await mod.auth.authStateReady();
+    if (mod.auth?.currentUser) await mod.signOut(mod.auth);
+  } catch (err) {
+    console.warn('Could not end customer session:', err);
+  }
+}
+
 if (session) {
+  verifyStaffSession();
+  endCustomerSession();
   const content = document.getElementById('adminContent');
   const body = content.closest('.admin-body');
   body.classList.add('admin-app-body');

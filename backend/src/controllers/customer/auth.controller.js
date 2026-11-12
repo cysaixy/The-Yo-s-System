@@ -26,6 +26,20 @@ function hashCode(email, code) {
     .digest('hex');
 }
 
+const VERIFICATION_GRANT_MINUTES = 10;
+const MAX_NAME_LENGTH = 120;
+const MAX_ADDRESS_LENGTH = 300;
+
+function cleanText(value, maxLength) {
+  if (value === undefined || value === null) return null;
+  // Replace control characters (codes 0–31 and 127) with spaces.
+  const text = Array.from(String(value), ch => {
+    const code = ch.charCodeAt(0);
+    return code < 32 || code === 127 ? ' ' : ch;
+  }).join('').trim();
+  return text ? text.slice(0, maxLength) : null;
+}
+
 // Serverless instances do not share memory, so codes live in Postgres.
 let otpTableReady = null;
 function ensureOtpTable() {
@@ -38,7 +52,14 @@ function ensureOtpTable() {
           expires_at TIMESTAMPTZ NOT NULL,
           attempts INTEGER NOT NULL DEFAULT 0,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
+        );
+        -- A successful code check leaves a short-lived, single-use grant so
+        -- sensitive actions (password change) can be enforced server-side
+        -- instead of trusting the browser's "verified" flag.
+        CREATE TABLE IF NOT EXISTS email_otp_grants (
+          email VARCHAR(150) PRIMARY KEY,
+          expires_at TIMESTAMPTZ NOT NULL
+        );
       `)
       .catch((err) => {
         otpTableReady = null;
@@ -108,8 +129,10 @@ export async function syncCustomerProfile(req, res, next) {
     }
 
     const { firebaseUid, email } = req.user;
-    const { name, phone, address } = req.body || {};
-    const normalizedPhone = normalizePhoneNumber(phone);
+    const body = req.body || {};
+    const name = cleanText(body.name, MAX_NAME_LENGTH);
+    const address = cleanText(body.address, MAX_ADDRESS_LENGTH);
+    const normalizedPhone = normalizePhoneNumber(body.phone);
     let customer = req.user.customer;
 
     if (customer) {
@@ -253,6 +276,12 @@ export async function verifyVerificationCode(req, res, next) {
     if (!matches) return invalid();
 
     await pool.query('DELETE FROM email_otps WHERE email = $1', [normalizedEmail]);
+    await pool.query(
+      `INSERT INTO email_otp_grants (email, expires_at)
+       VALUES ($1, NOW() + make_interval(mins => $2))
+       ON CONFLICT (email) DO UPDATE SET expires_at = EXCLUDED.expires_at`,
+      [normalizedEmail, VERIFICATION_GRANT_MINUTES]
+    );
     return res.status(200).json({ verified: true, message: 'Verification code accepted.' });
   } catch (err) {
     next(err);
@@ -267,8 +296,27 @@ export async function updatePassword(req, res, next) {
     }
 
     const { newPassword } = req.body || {};
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+    if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128) {
+      return res.status(400).json({ error: 'New password must be 8 to 128 characters long.' });
+    }
+
+    // Require (and consume) a fresh email-code grant for THIS account's email.
+    // Without it, anyone holding a stolen ID token could silently take over
+    // the account by setting a new password.
+    const email = normalizeEmail(req.user.email);
+    if (!email) {
+      return res.status(403).json({ error: 'Email verification is required to change your password.' });
+    }
+    await ensureOtpTable();
+    const { rows: grant } = await pool.query(
+      'DELETE FROM email_otp_grants WHERE email = $1 AND expires_at > NOW() RETURNING email',
+      [email]
+    );
+    if (!grant[0]) {
+      return res.status(403).json({
+        error: 'Please verify the code sent to your email before changing your password.',
+        code: 'VERIFICATION_REQUIRED',
+      });
     }
 
     await getFirebaseAuth().updateUser(req.user.firebaseUid, { password: newPassword });

@@ -643,7 +643,7 @@
           <div>
             <label for="pwNew">New Password</label>
             <div class="password-wrap">
-              <input id="pwNew" type="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+              <input id="pwNew" type="password" required minlength="8" maxlength="128" placeholder="At least 8 characters" autocomplete="new-password">
               <button type="button" class="password-toggle" data-toggle-pw="pwNew" aria-label="Show password">
                 <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
                 <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -653,7 +653,7 @@
           <div>
             <label for="pwConfirm">Confirm New Password</label>
             <div class="password-wrap">
-              <input id="pwConfirm" type="password" required minlength="6" placeholder="Re-enter new password" autocomplete="new-password">
+              <input id="pwConfirm" type="password" required minlength="8" maxlength="128" placeholder="Re-enter new password" autocomplete="new-password">
               <button type="button" class="password-toggle" data-toggle-pw="pwConfirm" aria-label="Show password">
                 <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
                 <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -734,9 +734,37 @@
     });
   });
 
+  // Only same-origin customer pages — never javascript:, //evil.com or /admin.
   function getRedirectTarget() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('redirect') || 'my-orders.html';
+    const value = params.get('redirect');
+    const fallback = 'my-orders';
+    if (!value) return fallback;
+    try {
+      const url = new URL(value, window.location.href);
+      if (url.origin !== window.location.origin) return fallback;
+      if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/api')) return fallback;
+      return value === 'reviews' ? 'reviews' : url.pathname + url.search + url.hash;
+    } catch {
+      return fallback;
+    }
+  }
+
+  // Synchronous marker so the nav shell knows this customer sign-in is the
+  // newest one ("last sign-in wins") and ends the staff session, not this one.
+  function markCustomerSignIn() {
+    try { localStorage.setItem('theYosCustomerSignInAt', String(Date.now())); } catch {}
+  }
+
+  // One identity per browser: a customer sign-in ends any staff session.
+  async function endStaffSession() {
+    try {
+      await fetch(`${API_BASE_URL}/api/admin/staff/logout`, { method: 'POST', credentials: 'include' });
+      localStorage.removeItem('staffInfo');
+      localStorage.removeItem('__admin_csrf_token');
+    } catch (err) {
+      console.warn('Could not end staff session:', err);
+    }
   }
 
   function completeAuthRedirect() {
@@ -782,6 +810,7 @@
   let pendingGate = null;
 
   async function finishAuth(userCred, profileFields) {
+    await endStaffSession();
     const idToken = await userCred.user.getIdToken();
     let customer = null;
     try {
@@ -847,6 +876,7 @@
     const password = document.getElementById('siPassword').value;
     setStatus('siStatus', 'Signing in…', 'info');
     try {
+      markCustomerSignIn();
       const userCred = await signInWithEmailAndPassword(auth, email, password);
       setStatus('siStatus', 'Success! Redirecting…', 'ok');
       await finishAuth(userCred, {});
@@ -967,6 +997,7 @@
 
     setStatus('caStatus2', 'Creating your account…', 'info');
     try {
+      markCustomerSignIn();
       const userCred = await createUserWithEmailAndPassword(auth, verifiedEmail, password);
       setStatus('caStatus2', 'Account created! Redirecting…', 'ok');
       await finishAuth(userCred, { name, phone, address });
@@ -980,6 +1011,7 @@
     const activePanel = document.getElementById('panelCreate').classList.contains('active') ? 'caStatus' : 'siStatus';
     setStatus(activePanel, 'Opening Google sign-in…', 'info');
     try {
+      markCustomerSignIn();
       const userCred = await signInWithPopup(auth, googleProvider);
       setStatus(activePanel, 'Success! Redirecting…', 'ok');
       await finishAuth(userCred, { name: userCred.user.displayName || undefined });
@@ -1230,5 +1262,6 @@
 <script src="global.js"></script>
 <script type="module" src="authNav.js"></script>
 <script src="cart.js"></script>
+<script src="motion.js?v=1" defer></script>
 </body>
 </html>

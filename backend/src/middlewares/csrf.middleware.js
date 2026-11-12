@@ -1,18 +1,27 @@
 // src/middlewares/csrf.middleware.js
+import crypto from 'crypto';
+
+function safeEqual(a, b) {
+  const left = Buffer.from(String(a));
+  const right = Buffer.from(String(b));
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
 
 export function csrfMiddleware(req, res, next) {
   // Only apply CSRF protection to state-changing admin routes
-  if (req.method === 'GET' || req.method === 'HEAD') {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
     return next();
   }
 
-  // Exempt authentication endpoints from CSRF check (pre-session login & logout)
+  // Logout is exempt so any page (including the customer site, when a
+  // customer signs in) can end a staff session. Login is NOT exempt:
+  // login.html bootstraps a token from /staff/csrf-token first, which blocks
+  // login-CSRF (forcing a victim's browser into an attacker's account).
   const path = req.originalUrl || req.path || '';
-  if (path.includes('/staff/login') || path.includes('/staff/logout')) {
+  if (path.startsWith('/api/admin/staff/logout')) {
     return next();
   }
 
-  // Check for CSRF token in header
   const headerToken = req.headers['x-csrf-token'];
   const cookieToken = req.cookies?.['csrf_token'];
 
@@ -20,7 +29,7 @@ export function csrfMiddleware(req, res, next) {
     return res.status(403).json({ error: 'CSRF token missing.' });
   }
 
-  if (headerToken !== cookieToken) {
+  if (!safeEqual(headerToken, cookieToken)) {
     return res.status(403).json({ error: 'CSRF token mismatch.' });
   }
 

@@ -1,0 +1,213 @@
+/* The~Yo's customer app shell — the one navigation bar customers see.
+   Scoped to the host page (body[data-customer-app-host]) and written to
+   override the generic header/nav element rules in style.css.
+   Anti-glitch rules: fixed header height (the iframe below never resizes),
+   only transform/opacity animate, and no layout depends on JS timing. */
+
+body[data-customer-app-host="true"] {
+  --yo-header-h: 68px;
+  --yo-radius: 999px;
+  --yo-ease: cubic-bezier(.22, 1, .36, 1);
+  --yo-hover: rgba(163, 132, 74, .10);
+  --yo-shadow: 0 1px 0 var(--line), 0 10px 30px -18px rgba(0, 0, 0, .35);
+}
+
+/* ---------- Bar ---------- */
+body[data-customer-app-host] .yo-header {
+  position: relative;
+  z-index: 120;
+  flex: 0 0 var(--yo-header-h);
+  height: var(--yo-header-h);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 clamp(16px, 3vw, 36px);
+  background: var(--header-bg) !important;
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  transition: box-shadow .35s var(--yo-ease), border-color .35s var(--yo-ease);
+}
+body[data-customer-app-host] .yo-header.is-scrolled {
+  box-shadow: var(--yo-shadow);
+  border-bottom-color: transparent;
+}
+
+/* ---------- Brand ---------- */
+.yo-brand {
+  display: inline-flex; align-items: center; gap: 11px;
+  text-decoration: none; color: var(--ink); flex-shrink: 0;
+}
+.yo-brand-mark {
+  width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+  box-shadow: 0 0 0 1px var(--line);
+  transition: transform .5s var(--yo-ease);
+}
+.yo-brand:hover .yo-brand-mark { transform: rotate(-8deg) scale(1.04); }
+.yo-brand-text {
+  font: 900 1.12rem/1 'Archivo', sans-serif;
+  text-transform: uppercase; letter-spacing: .02em;
+}
+
+/* ---------- Nav layout ---------- */
+body[data-customer-app-host] .yo-nav {
+  /* reset style.css `nav` rules */
+  position: static; inset: auto; width: auto; height: auto; padding: 0;
+  opacity: 1; visibility: visible; pointer-events: auto; background: none; overflow: visible;
+  flex: 1 1 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-width: 0;
+}
+body[data-customer-app-host] .yo-nav ul {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; align-items: center; flex-direction: row; width: auto; max-width: none;
+}
+body[data-customer-app-host] .yo-nav li { display: inline-flex; margin: 0; }
+
+/* Center link group with sliding indicator */
+body[data-customer-app-host] .yo-links {
+  position: relative;
+  margin: 0 auto !important;
+  gap: 2px;
+  padding: 4px !important;
+  border: 1px solid var(--line);
+  border-radius: var(--yo-radius);
+  background: color-mix(in srgb, var(--component-bg) 55%, transparent);
+}
+body[data-customer-app-host] .yo-links a {
+  position: relative; z-index: 1;
+  display: inline-flex; align-items: center;
+  min-height: 36px; padding: 0 16px;
+  border-radius: var(--yo-radius);
+  font: 500 14px/1 'Inter', sans-serif; letter-spacing: .01em;
+  color: var(--ink); opacity: .78;
+  background: transparent !important;
+  transition: opacity .25s ease, color .25s ease;
+}
+body[data-customer-app-host] .yo-links a:hover { opacity: 1; }
+body[data-customer-app-host] .yo-links a.active { opacity: 1; color: #fff; }
+body.coffee-night[data-customer-app-host] .yo-links a.active { color: #1a110b; }
+
+.yo-indicator {
+  position: absolute; z-index: 0; top: 4px; left: 0;
+  height: calc(100% - 8px); width: 0;
+  border-radius: var(--yo-radius);
+  background: var(--brass);
+  box-shadow: 0 6px 18px -8px rgba(163, 132, 74, .9);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, width;
+}
+
+/* Right-side actions */
+body[data-customer-app-host] .yo-actions { gap: 10px; flex-shrink: 0; }
+body[data-customer-app-host] .sunset-mode-item { margin: 0; }
+body[data-customer-app-host] .yo-cta {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 38px; padding: 0 18px;
+  border-radius: var(--yo-radius);
+  background: var(--brass); color: #fff !important;
+  font: 700 12px/1 'Inter', sans-serif; letter-spacing: .08em; text-transform: uppercase;
+  box-shadow: 0 8px 20px -10px rgba(163, 132, 74, .95);
+  transition: transform .3s var(--yo-ease), box-shadow .3s var(--yo-ease), background .25s ease;
+}
+body[data-customer-app-host] .yo-cta:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -10px rgba(163, 132, 74, 1); }
+body[data-customer-app-host] .yo-cta.active { background: var(--ink); color: var(--bone) !important; }
+body[data-customer-app-host] #navAccountLink { padding: 4px 12px 4px 4px; min-height: 38px; }
+body[data-customer-app-host] .nav-account-li { margin: 0; }
+
+/* ---------- Page-load progress line ---------- */
+.yo-progress {
+  position: relative; z-index: 121;
+  height: 2px; margin-top: -2px;
+  background: linear-gradient(90deg, var(--brass), #d9b878);
+  transform: scaleX(0); transform-origin: left center;
+  opacity: 0; pointer-events: none;
+}
+
+/* ---------- Iframe page transitions ---------- */
+.customer-app-workspace { position: relative; overflow: hidden; }
+#customerFeatureFrame { will-change: opacity, transform; }
+.customer-app-workspace.is-loading #customerFeatureFrame { pointer-events: none; }
+
+/* ---------- Burger ---------- */
+.yo-burger {
+  display: none;
+  position: relative; z-index: 130;
+  width: 44px; height: 44px; margin-left: auto; margin-right: -6px;
+  border: 0; border-radius: 12px; background: transparent; color: var(--ink);
+  cursor: pointer;
+}
+.yo-burger span {
+  position: absolute; left: 12px; right: 12px; height: 2px; border-radius: 2px;
+  background: currentColor;
+  transition: transform .45s var(--yo-ease), opacity .25s ease, top .45s var(--yo-ease);
+}
+.yo-burger span:nth-child(1) { top: 15px; }
+.yo-burger span:nth-child(2) { top: 21px; }
+.yo-burger span:nth-child(3) { top: 27px; }
+.yo-burger.open span:nth-child(1) { top: 21px; transform: rotate(45deg); }
+.yo-burger.open span:nth-child(2) { opacity: 0; transform: scaleX(.2); }
+.yo-burger.open span:nth-child(3) { top: 21px; transform: rotate(-45deg); }
+.yo-burger:hover { background: var(--yo-hover); }
+
+/* Mid widths: tighten before switching to the drawer */
+@media (max-width: 1240px) {
+  body[data-customer-app-host] .yo-links a { padding: 0 12px; font-size: 13.5px; }
+  body[data-customer-app-host] .yo-brand-text { display: none; }
+}
+
+/* ---------- Mobile drawer (<=1080px) ---------- */
+@media (max-width: 1080px) {
+  body[data-customer-app-host] { --yo-header-h: 62px; }
+  body[data-customer-app-host] .yo-brand-text { display: inline; }
+  .yo-burger { display: inline-flex; align-items: center; justify-content: center; }
+
+  body[data-customer-app-host] .yo-nav {
+    position: fixed; inset: 0; z-index: 125;
+    flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 22px;
+    padding: calc(var(--yo-header-h) + 24px) 24px calc(28px + env(safe-area-inset-bottom, 0px));
+    background: var(--bone);
+    overflow-y: auto; overscroll-behavior: contain;
+    visibility: hidden; pointer-events: none;
+    clip-path: inset(0 0 100% 0);
+  }
+  body[data-customer-app-host] .yo-nav.open { visibility: visible; pointer-events: auto; clip-path: inset(0 0 0 0); }
+  /* CSS fallback when GSAP isn't available */
+  html:not(.yo-gsap) body[data-customer-app-host] .yo-nav { transition: clip-path .5s var(--yo-ease), visibility 0s linear .5s; }
+  html:not(.yo-gsap) body[data-customer-app-host] .yo-nav.open { transition: clip-path .5s var(--yo-ease), visibility 0s; }
+
+  body[data-customer-app-host] .yo-links {
+    flex-direction: column; align-items: stretch;
+    margin: 0 !important; padding: 0 !important; gap: 0;
+    border: 0; background: none;
+  }
+  body[data-customer-app-host] .yo-links li { display: block; border-bottom: 1px solid var(--line); }
+  body[data-customer-app-host] .yo-links a {
+    display: flex; justify-content: space-between; width: 100%;
+    min-height: 62px; padding: 0 4px; border-radius: 0;
+    font: 900 clamp(1.6rem, 7vw, 2.2rem)/1 'Archivo', sans-serif; text-transform: uppercase;
+    letter-spacing: -.01em; opacity: 1;
+  }
+  body[data-customer-app-host] .yo-links a::after {
+    content: '→'; font: 400 1.1rem 'Inter', sans-serif; opacity: .35;
+    transition: transform .35s var(--yo-ease), opacity .25s ease;
+  }
+  body[data-customer-app-host] .yo-links a:hover::after,
+  body[data-customer-app-host] .yo-links a.active::after { transform: translateX(4px); opacity: 1; }
+  body[data-customer-app-host] .yo-links a.active,
+  body.coffee-night[data-customer-app-host] .yo-links a.active { color: var(--brass); }
+  .yo-indicator { display: none !important; }
+
+  body[data-customer-app-host] .yo-actions {
+    flex-direction: column; align-items: stretch; gap: 12px; margin-top: auto;
+  }
+  body[data-customer-app-host] .yo-actions li { display: flex; justify-content: center; width: 100%; }
+  body[data-customer-app-host] .yo-cta { width: 100%; min-height: 52px; font-size: 13px; border-radius: 14px; }
+  body[data-customer-app-host] #navAccountLink { width: 100%; max-width: none; justify-content: center; min-height: 52px; border-radius: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-customer-app-host] .yo-nav,
+  .yo-burger span, .yo-cta, .yo-brand-mark { transition: none !important; }
+}

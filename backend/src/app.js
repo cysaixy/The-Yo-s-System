@@ -37,8 +37,25 @@ const app = express();
 // Required for express-rate-limit to correctly identify client IP addresses
 app.set('trust proxy', 1);
 
+app.disable('x-powered-by');
+
 // Security headers: CSP, X-Frame-Options, HSTS, X-Content-Type-Options, etc.
-app.use(helmet());
+// API responses are JSON only, so they get the strictest possible CSP.
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: { defaultSrc: ['\'none\''], frameAncestors: ['\'none\''] },
+  },
+  hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+}));
+
+// Authenticated data (orders, customers, cash) must never sit in a shared
+// or browser cache where the next person on the device could read it.
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 // CORS — only accept requests from the explicitly configured origin(s).
 // Multiple origins can be comma-separated in CLIENT_ORIGIN.
@@ -93,7 +110,7 @@ app.get('/api/health', requireStaffAuth, (req, res) => {
     status: 'ok',
     firebase: {
       status: fbStatus,
-      error: fbError,
+      error: process.env.NODE_ENV === 'production' ? (fbError ? 'see server logs' : null) : fbError,
       hasProjectId: Boolean(process.env.FIREBASE_PROJECT_ID),
       hasClientEmail: Boolean(process.env.FIREBASE_CLIENT_EMAIL),
       hasPrivateKey: Boolean(process.env.FIREBASE_PRIVATE_KEY),

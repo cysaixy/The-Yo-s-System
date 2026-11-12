@@ -742,6 +742,10 @@ export function printReceiptSystem(receiptData, copyType = 'CUSTOMER RECEIPT') {
  * @param {Element} noticeEl     — optional DOM element to show status text
  * @param {Element} printBothBtn — optional "Print Both" button to update
  */
+function escapeNoticeText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 export async function printReceiptAutomatic(receiptData, noticeEl, printBothBtn) {
   const setNotice = (html) => { if (noticeEl) noticeEl.innerHTML = html; };
 
@@ -759,7 +763,7 @@ export async function printReceiptAutomatic(receiptData, noticeEl, printBothBtn)
       if (printBothBtn) printBothBtn.textContent = '✓ Printed';
     } catch (err) {
       console.warn('Auto-print (BT connected) error:', err);
-      setNotice(`<span style="color:#c0392b;">⚠ Bluetooth print failed: ${err.message}</span>`);
+      setNotice(`<span style="color:#c0392b;">⚠ Bluetooth print failed: ${escapeNoticeText(err.message)}</span>`);
     }
     return;
   }
@@ -788,22 +792,18 @@ export async function printReceiptAutomatic(receiptData, noticeEl, printBothBtn)
           if (printBothBtn) printBothBtn.textContent = '✓ Printed';
         } catch (err) {
           console.warn('Auto-print (BT reconnected) error:', err);
-          setNotice(`<span style="color:#c0392b;">⚠ Bluetooth print failed: ${err.message}</span>`);
+          setNotice(`<span style="color:#c0392b;">⚠ Bluetooth print failed: ${escapeNoticeText(err.message)}</span>`);
         }
         return;
       }
     }
   }
 
-  // --- Step 3: Fallback — browser system print (always works) ---
-  setNotice(`<span style="color:#2e7d4f;">⏳ Opening system print…</span>`);
-  try {
-    printReceiptSystem(receiptData, 'CUSTOMER RECEIPT');
-    setNotice(`<span style="color:#2e7d4f;">✓ System print dialog opened.</span>`);
-  } catch (err) {
-    console.warn('Auto-print (system) error:', err);
-    setNotice(`<span style="color:#c0392b;">⚠ Print failed: ${err.message}</span>`);
-  }
+  // --- Step 3: No printer reachable ---
+  // Never pop the browser's print dialog on its own: confirming an order
+  // must not hijack the screen. Staff can still print manually with the
+  // "System Print" / "Print Receipt" buttons.
+  setNotice(`<span style="color:#8a6d3b;">No receipt printer connected — use <b>System Print</b> if you need a paper copy.</span>`);
 }
 
 /**
