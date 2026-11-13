@@ -334,6 +334,19 @@
   .account-status.ok { color: #4caf7d; }
   .account-status.info { color: var(--brass); }
 
+  /* Backup password-reset card (shown when the code email can't be sent) */
+  .pw-reset-fallback {
+    margin-top: 12px; padding: 14px 16px;
+    border: 1px solid rgba(163,132,74,.35); border-radius: 14px;
+    background: rgba(163,132,74,.08);
+  }
+  .pw-reset-fallback p { margin: 0 0 10px; font-size: .84rem; line-height: 1.5; color: var(--ink); }
+  .pw-reset-fallback .btn { width: 100%; justify-content: center; }
+  .pw-reset-fallback .pw-reset-note { margin: 10px 0 0; font-size: .8rem; }
+  .pw-reset-fallback .pw-reset-note:empty { display: none; }
+  .pw-reset-fallback .pw-reset-note.ok { color: #2e7d4f; font-weight: 600; }
+  .pw-reset-fallback .pw-reset-note.err { color: #e05252; }
+
   /* password toggle */
   .password-wrap { position: relative; }
   .password-wrap input { padding-right: 44px; }
@@ -1074,28 +1087,45 @@
     const status = document.getElementById(statusId);
     if (!status) return;
     status.className = 'account-status err';
-    status.textContent = 'We couldn\'t send the verification code right now. ';
-    const link = document.createElement('button');
-    link.type = 'button';
-    link.className = 'btn-google';
-    link.style.marginTop = '10px';
-    link.textContent = 'Email me a password reset link instead';
-    link.addEventListener('click', async () => {
-      link.disabled = true;
-      link.textContent = 'Sending…';
+    status.textContent = 'We couldn\'t send the verification code right now.';
+
+    // A clearly separate card under the message (not buried in the red text).
+    let box = document.getElementById('pwResetFallback');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'pwResetFallback';
+      box.className = 'pw-reset-fallback';
+      status.insertAdjacentElement('afterend', box);
+    }
+    box.innerHTML = '';
+    const text = document.createElement('p');
+    text.textContent = 'You can still change your password: we\'ll email you a secure reset link instead.';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn account-submit';
+    btn.textContent = 'Email me a password reset link';
+    const note = document.createElement('p');
+    note.className = 'pw-reset-note';
+    box.append(text, btn, note);
+
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
       try {
         await sendPasswordResetEmail(auth, email);
-        status.className = 'account-status ok';
-        status.textContent = `Reset link sent to ${email}. Open it to choose a new password (check Spam too).`;
+        status.textContent = '';
+        status.className = 'account-status';
+        text.textContent = '';
+        btn.remove();
+        note.className = 'pw-reset-note ok';
+        note.textContent = `Reset link sent to ${email}. Open the email (check Spam too) and choose your new password there.`;
       } catch (fbErr) {
-        link.disabled = false;
-        link.textContent = 'Email me a password reset link instead';
-        status.className = 'account-status err';
-        status.textContent = friendlyAuthError(fbErr);
-        status.appendChild(link);
+        btn.disabled = false;
+        btn.textContent = 'Email me a password reset link';
+        note.className = 'pw-reset-note err';
+        note.textContent = friendlyAuthError(fbErr);
       }
     });
-    status.appendChild(link);
   }
 
   window.handleSendPasswordCode = async function (isResend) {
