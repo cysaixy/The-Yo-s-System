@@ -1022,3 +1022,100 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ========================================================
+   BENTO + CLEAN (v10) — applies to every admin page.
+   Rule of thumb: the card a page marks as "primary" is the number that
+   matters most, so it is always larger and placed first; supporting
+   numbers are smaller. Same brass/bone/charcoal theme.
+   ======================================================== */
+
+/* ---- Generic stat grids (Cash Accounts, Cash Transactions, …) ---- */
+.stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.stat-grid > .stat-card { border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; min-height: 112px; }
+.stat-grid > .stat-card-primary {
+  order: -1;
+  grid-column: span 2;
+  padding: 22px 24px;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(163,132,74,.28), transparent 55%),
+    linear-gradient(150deg, #24211d 0%, #181613 100%);
+  box-shadow: 0 22px 44px -26px rgba(24,20,14,.85);
+}
+.stat-grid > .stat-card-primary .value { font-size: clamp(2rem, 3.2vw, 2.8rem); margin-top: 14px; }
+.stat-grid > .stat-card:not(.stat-card-primary) .value { font-size: 1.35rem; }
+@media (max-width: 900px) {
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat-grid > .stat-card-primary { grid-column: 1 / -1; }
+}
+
+/* ---- Inventory summary: stock value leads, wider ---- */
+body .inv-summary-row { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+body .inv-summary-row .inv-stat-card { border-radius: 16px; }
+body .inv-summary-row .inv-stat-card-primary {
+  order: -1;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(163,132,74,.28), transparent 55%),
+    linear-gradient(150deg, #24211d 0%, #181613 100%);
+  box-shadow: 0 22px 44px -26px rgba(24,20,14,.85);
+}
+body .inv-summary-row .inv-stat-card-primary .isc-value { font-size: clamp(2.2rem, 3.4vw, 3rem); }
+@media (max-width: 900px) {
+  body .inv-summary-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body .inv-summary-row .inv-stat-card-primary { grid-column: 1 / -1; }
+}
+
+/* ---- Products / Sales summaries: already uneven — refine surfaces ---- */
+body .prd-summary-row { grid-template-columns: minmax(0, 1.8fr) repeat(3, minmax(0, 1fr)); gap: 14px; }
+body .prd-stat-card, body .stx-card { border-radius: 16px; }
+body .prd-stat-card-primary, body .stx-card-margin {
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(163,132,74,.28), transparent 55%),
+    linear-gradient(150deg, #24211d 0%, #181613 100%);
+  box-shadow: 0 22px 44px -26px rgba(24,20,14,.85);
+}
+@media (max-width: 900px) {
+  body .prd-summary-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body .prd-summary-row .prd-stat-card-primary { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  .stat-grid, body .inv-summary-row, body .prd-summary-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- Buttons, fields, pills: one calm system ---- */
+.btn {
+  border-radius: 10px;
+  background: var(--brass);
+  border-color: var(--brass);
+  box-shadow: 0 8px 18px -12px rgba(138,109,58,.9);
+  transition: background var(--transition-fast), box-shadow var(--transition-base), transform var(--transition-base), border-color var(--transition-fast), color var(--transition-fast);
+}
+.btn:hover { background: var(--brass-dark); border-color: var(--brass-dark); transform: translateY(-1px); box-shadow: 0 12px 22px -12px rgba(138,109,58,.95); }
+.btn.btn-outline { background: #fff; }
+.btn.btn-danger { background: var(--danger); border-color: var(--danger); box-shadow: 0 8px 18px -12px rgba(192,57,43,.8); }
+.btn.btn-danger:hover { background: #a3271b; }
+.btn.small { border-radius: 8px; }
+.form-field input, .form-field select, .form-field textarea,
+.filter-bar select, .filter-bar input { border-radius: 10px; min-height: 40px; }
+.pill { padding: 4px 10px; letter-spacing: .03em; }
+
+/* ---- Tables: airy rows, quiet header ---- */
+.admin-table th { font-size: .6rem; color: #8b8f96; }
+.admin-table td { padding: 14px 16px; }
+
+/* ---- Modals ---- */
+.modal-box { border-radius: 20px; box-shadow: 0 40px 90px -30px rgba(24,20,14,.55); }
+
+/* ---- Feature pages fade in smoothly when the iframe swaps ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .embedded-admin-feature #adminContent > :not(.modal-backdrop):not([class*="modal"]) {
+    animation: adminFadeUp .5s cubic-bezier(.22,1,.36,1) both;
+  }
+  .embedded-admin-feature #adminContent > :nth-child(2) { animation-delay: .05s; }
+  .embedded-admin-feature #adminContent > :nth-child(3) { animation-delay: .1s; }
+  .embedded-admin-feature #adminContent > :nth-child(n+4) { animation-delay: .15s; }
+}
+@keyframes adminFadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }

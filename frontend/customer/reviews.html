@@ -134,7 +134,7 @@
     .reviews-auth-gate { padding: 28px 20px; }
   }
 </style>
-</head>
+<link rel="stylesheet" href="refresh.css?v=2"></head>
 <body>
 <main class="reviews-page">
   <section class="wrap">
@@ -144,7 +144,18 @@
         <p class="eyebrow">Guest Wall</p>
         <h1 class="display">Reviews</h1>
       </div>
-      <p>Share your experience at The~Yo's. Reviews are public and include the name and Gmail address on your account.</p>
+      <p>Real words from real guests. Reviews are public and show your first name and last initial only.</p>
+    </div>
+
+    <!-- Rating summary (bento) -->
+    <div class="rv-summary" id="rvSummary" aria-live="polite">
+      <div class="rv-score">
+        <span class="rv-score-label">Guest rating</span>
+        <div class="rv-score-value"><strong id="rvAverage">–</strong><span>/ 5</span></div>
+        <div class="rv-score-stars" id="rvAverageStars" aria-hidden="true">★★★★★</div>
+        <span class="rv-score-count" id="rvTotal">Loading reviews…</span>
+      </div>
+      <div class="rv-bars" id="rvBars"></div>
     </div>
 
     <div class="feedback-container">
@@ -172,8 +183,8 @@
               </div>
             </div>
 
-            <!-- Email notice -->
-            <p class="reviews-email-notice">Your full Gmail address will appear publicly below your name with this review.</p>
+            <!-- Privacy notice -->
+            <p class="reviews-email-notice">Your review appears as <strong id="reviewerPublicName">your first name and last initial</strong>. Your email is never shown.</p>
 
             <!-- Star rating -->
             <div class="reviews-star-section">
@@ -191,13 +202,14 @@
             <!-- Comment textarea -->
             <div class="reviews-textarea-section">
               <label class="reviews-field-label" for="feedbackText">Comments / Review</label>
-              <textarea id="feedbackText" required maxlength="2000" placeholder="Write about your experience..."></textarea>
+              <textarea id="feedbackText" required minlength="5" maxlength="1000" placeholder="What did you order? How was the service?"></textarea>
+              <span class="rv-char-count" id="rvCharCount">0 / 1000</span>
             </div>
 
             <!-- Consent checkbox -->
             <label class="reviews-consent">
               <input type="checkbox" id="publicEmailConsent" required>
-              <span>I understand my full Gmail address will be displayed publicly with this review.</span>
+              <span>I agree my review will be shown publicly. Offensive words are hidden automatically.</span>
             </label>
 
             <!-- Submit -->
@@ -217,6 +229,7 @@
           <span class="reviews-wall-count" id="reviewsWallCount"></span>
         </div>
         <div class="comments-display" id="commentsDisplay" aria-live="polite"></div>
+        <div class="rv-more-wrap"><button type="button" class="btn btn-outline" id="rvLoadMore" hidden>Load more reviews</button></div>
       </div>
 
     </div>
@@ -224,7 +237,7 @@
 </main>
 <script src="theme.js"></script>
 <script src="global.js"></script>
-<script type="module" src="reviews.js?v=2"></script>
-<script src="motion.js?v=1" defer></script>
+<script type="module" src="reviews.js?v=3"></script>
+<script src="motion.js?v=2" defer></script>
 </body>
 </html>

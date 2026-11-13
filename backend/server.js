@@ -46,7 +46,7 @@ customerPages.forEach(page => {
 });
 
 const adminPages = [
-  'home', 'dashboard', 'pos', 'sales', 'reservations', 'inventory',
+  'home', 'dashboard', 'pos', 'sales', 'reservations', 'reviews', 'inventory',
   'products', 'purchases', 'cash-transactions', 'cash-accounts',
   'staff', 'settings', 'login',
 ];

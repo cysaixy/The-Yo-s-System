@@ -12,6 +12,7 @@ const FEATURES = {
   pos: 'Point of Sale',
   sales: 'Sales Transactions',
   reservations: 'Reservations',
+  reviews: 'Guest Reviews',
   inventory: 'Inventory',
   products: 'Products',
   purchases: 'Purchases',

@@ -16,6 +16,8 @@ import customerMenuRoutes from './routes/customer/menu.routes.js';
 import customerAuthRoutes from './routes/customer/auth.routes.js';
 import customerOrderRoutes from './routes/customer/order.routes.js';
 import customerReservationRoutes from './routes/customer/reservation.routes.js';
+import customerReviewRoutes from './routes/customer/review.routes.js';
+import adminReviewsRoutes from './routes/admin/reviewsRoutes.js';
 
 // Admin routes
 import adminStaffRoutes from './routes/admin/staffRoutes.js';
@@ -124,6 +126,7 @@ app.use('/api/customer/auth', authLimiter); // Brute-force protection on custome
 app.use('/api/customer/auth', customerAuthRoutes);
 app.use('/api/customer/orders', customerOrderRoutes);
 app.use('/api/customer/reservations', customerReservationRoutes);
+app.use('/api/customer/reviews', customerReviewRoutes);
 
 // --- Admin API ---
 app.use('/api/admin/staff/login', authLimiter); // Stricter limit specifically for admin login
@@ -143,6 +146,7 @@ app.use('/api/admin/reports', adminReportsRoutes);
 // Was missing entirely — pos.html's live customer search
 // (GET /api/admin/customers/search) had nowhere to send its requests.
 app.use('/api/admin/customers', adminCustomersRoutes);
+app.use('/api/admin/reviews', adminReviewsRoutes);
 
 // Webhooks (PayMongo, etc.)
 app.use('/api/webhooks', webhookRoutes);

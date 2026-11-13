@@ -21,6 +21,7 @@ const ICONS = {
   settings: '<circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.5 1.5M7.1 16.9l-1.5 1.5M18.4 18.4l-1.5-1.5M7.1 7.1 5.6 5.6"/>',
   signout: '<path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><path d="M16 17l5-5-5-5M21 12H9"/>',
   lock: '<rect x="5" y="10" width="14" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  reviews: '<path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8L12 3.5Z"/>',
 };
 
 function escapeShellHtml(value) {
@@ -44,6 +45,7 @@ const NAV_SECTIONS = [
       { key: 'pos', label: 'Point of Sale', href: 'pos', icon: 'pos' },
       { key: 'sales', label: 'Sales Transactions', href: 'sales', icon: 'sales', badge: 'orders' },
       { key: 'reservations', label: 'Reservations', href: 'reservations', icon: 'reservations' },
+      { key: 'reviews', label: 'Guest Reviews', href: 'reviews', icon: 'reviews' },
     ],
   },
   {

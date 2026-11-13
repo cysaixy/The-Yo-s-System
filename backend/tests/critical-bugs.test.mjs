@@ -145,6 +145,34 @@ describe('Critical Bug Fixes - API & Code Verification', () => {
     });
   });
 
+  describe('Guest reviews', () => {
+    it('masks bad words with # and leaves clean words alone', async () => {
+      const { censorText } = await import('../src/utils/profanity.js');
+      expect(censorText('This is sh!t').text).toBe('This is ####');
+      expect(censorText('fuuuck').flagged).toBe(true);
+      expect(censorText('Putangina ang sarap').text).toBe('######### ang sarap');
+      expect(censorText('f.u.c.k').text).toBe('#######');
+      expect(censorText('Leche flan, putahe, class, assistant, cocktail').flagged).toBe(false);
+      expect(censorText('Great as always').flagged).toBe(false);
+    });
+
+    it('requires sign-in to post a review', async () => {
+      const res = await request(app).post('/api/customer/reviews').send({ rating: 5, comment: 'Lovely place' });
+      expect(res.status).toBe(401);
+    });
+
+    it('requires staff auth to moderate reviews', async () => {
+      const list = await request(app).get('/api/admin/reviews');
+      expect(list.status).toBe(401);
+      const hide = await request(app)
+        .patch('/api/admin/reviews/1/status')
+        .set('Cookie', 'csrf_token=t')
+        .set('X-CSRF-Token', 't')
+        .send({ status: 'hidden' });
+      expect(hide.status).toBe(401);
+    });
+  });
+
   describe('httpOnly Cookie Configuration', () => {
     it('should import cookie-parser in app', async () => {
       const appModule = await import('../src/app.js');

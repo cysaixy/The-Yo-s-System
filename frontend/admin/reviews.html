@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><base href="/admin/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guest Reviews — The~Yo's Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin-shell.css?v=11">
+<style>
+  /* Bento: the average rating is the headline number; counts support it. */
+  .rvw-bento {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+    gap: 14px; margin-bottom: 20px;
+  }
+  .rvw-tile {
+    border-radius: 16px; border: 1px solid var(--line); background: #fff;
+    padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
+    box-shadow: var(--shadow-xs); min-height: 118px;
+  }
+  .rvw-tile .label {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: .63rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; color: var(--ink-muted);
+  }
+  .rvw-tile .value { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 1.6rem; letter-spacing: -.02em; }
+  .rvw-tile.is-primary {
+    background:
+      radial-gradient(120% 140% at 100% 0%, rgba(163,132,74,.30), transparent 55%),
+      linear-gradient(150deg, #24211d 0%, #181613 100%);
+    border-color: #211f1c; color: #fff;
+    box-shadow: 0 22px 44px -26px rgba(24,20,14,.85);
+  }
+  .rvw-tile.is-primary .label { color: rgba(255,255,255,.66); }
+  .rvw-tile.is-primary .value { font-size: clamp(2.4rem, 4vw, 3.2rem); color: #e7bc68; }
+  .rvw-tile.is-primary .stars { color: #e7bc68; letter-spacing: 3px; }
+  .rvw-tile.is-primary .stars .dim { opacity: .25; }
+  .rvw-tile.is-warn { border-color: rgba(184,134,11,.35); background: linear-gradient(180deg, #fffaf0, #fff 70%); }
+  .rvw-tile.is-warn .value { color: var(--warning); }
+
+  .rvw-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .rvw-chips { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: #fff; border: 1px solid var(--line); }
+  .rvw-chip {
+    border: 0; background: transparent; border-radius: 999px; padding: 8px 14px; cursor: pointer;
+    font: 600 .8rem 'Plus Jakarta Sans', sans-serif; color: var(--ink-muted);
+    transition: background var(--transition-fast), color var(--transition-fast);
+  }
+  .rvw-chip:hover { color: var(--ink); background: var(--stone); }
+  .rvw-chip.active { background: var(--brass); color: #fff; }
+  .rvw-chip .n { opacity: .7; margin-left: 4px; }
+
+  .rvw-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 14px; }
+  .rvw-card {
+    border-radius: 16px; border: 1px solid var(--line); background: #fff; padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow-xs);
+    transition: box-shadow var(--transition-base), border-color var(--transition-base), opacity var(--transition-base);
+  }
+  .rvw-card:hover { box-shadow: var(--shadow-sm); border-color: var(--line-strong); }
+  .rvw-card.is-hidden { opacity: .62; background: #faf8f4; }
+  .rvw-card.is-flagged { border-color: rgba(184,134,11,.4); }
+  .rvw-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .rvw-who { display: flex; gap: 10px; align-items: center; min-width: 0; }
+  .rvw-avatar {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(140deg, #c9a86c, var(--brass-dark)); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: .78rem;
+  }
+  .rvw-who strong { display: block; font-size: .9rem; }
+  .rvw-who span { display: block; font-size: .72rem; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rvw-stars { color: var(--brass); letter-spacing: 2px; white-space: nowrap; }
+  .rvw-stars .dim { opacity: .2; }
+  .rvw-text { margin: 0; font-size: .88rem; line-height: 1.6; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .rvw-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 10px; }
+  .rvw-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: .72rem; color: var(--ink-muted); }
+  .rvw-actions { display: flex; gap: 6px; }
+
+  @media (max-width: 1000px) {
+    .rvw-bento { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .rvw-tile.is-primary { grid-column: 1 / -1; }
+  }
+  @media (max-width: 560px) {
+    .rvw-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body>
+
+<div id="adminShell"></div>
+
+<script type="module">
+  import { renderAdminShell, confirmDialog, showAlert } from "./admin-shell.js";
+  import { adminFetch, formatDate, escapeHtml } from "./admin-api.js";
+
+  const session = renderAdminShell({ active: 'reviews', title: 'Guest Reviews' });
+  const isAdmin = session?.staff?.role === 'Admin';
+  let filter = 'all';
+  let reviews = [];
+
+  const stars = n => `${'★'.repeat(n)}<span class="dim">${'★'.repeat(5 - n)}</span>`;
+  const initials = name => String(name || 'G').trim().split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase();
+
+  function init() {
+    document.getElementById('adminContent').innerHTML = `
+      <div class="rvw-bento" id="rvwStats">
+        <div class="rvw-tile is-primary"><div class="label">Average rating · published</div><div><div class="value">–</div><div class="stars">${stars(0)}</div></div></div>
+        <div class="rvw-tile"><div class="label">Published</div><div class="value">–</div></div>
+        <div class="rvw-tile"><div class="label">Hidden</div><div class="value">–</div></div>
+        <div class="rvw-tile is-warn"><div class="label">Had bad words masked</div><div class="value">–</div></div>
+      </div>
+
+      <div class="rvw-toolbar">
+        <div class="rvw-chips" role="tablist" id="rvwChips">
+          <button class="rvw-chip active" data-filter="all">All</button>
+          <button class="rvw-chip" data-filter="published">Published</button>
+          <button class="rvw-chip" data-filter="hidden">Hidden</button>
+          <button class="rvw-chip" data-filter="flagged">Masked words</button>
+        </div>
+        ${isAdmin ? '' : '<span class="pill pill-neutral">View only · Admins can hide or delete</span>'}
+      </div>
+
+      <div id="rvwList"><div class="admin-loading">Loading reviews…</div></div>
+    `;
+
+    document.getElementById('rvwChips').addEventListener('click', e => {
+      const chip = e.target.closest('[data-filter]');
+      if (!chip) return;
+      filter = chip.dataset.filter;
+      document.querySelectorAll('.rvw-chip').forEach(c => c.classList.toggle('active', c === chip));
+      load();
+    });
+
+    document.getElementById('rvwList').addEventListener('click', async e => {
+      const btn = e.target.closest('[data-act]');
+      if (!btn) return;
+      const id = Number(btn.dataset.id);
+      if (btn.dataset.act === 'delete') {
+        const ok = await confirmDialog('Delete this review permanently? This cannot be undone.', { confirmLabel: 'Delete', danger: true });
+        if (!ok) return;
+        await act(`/api/admin/reviews/${id}`, { method: 'DELETE' });
+      } else {
+        await act(`/api/admin/reviews/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: btn.dataset.act }) });
+      }
+    });
+
+    load();
+  }
+
+  async function act(path, options) {
+    try {
+      const res = await adminFetch(path, options);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not update the review.');
+      load();
+    } catch (err) {
+      showAlert(err.message, { title: 'Review update failed' });
+    }
+  }
+
+  async function load() {
+    const list = document.getElementById('rvwList');
+    try {
+      const res = await adminFetch(`/api/admin/reviews?status=${encodeURIComponent(filter)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load reviews.');
+      reviews = data.reviews || [];
+      renderStats(data.stats || {});
+      renderList();
+    } catch (err) {
+      list.innerHTML = `<div class="admin-error">⚠ ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  function renderStats(s) {
+    const avg = Number(s.average || 0);
+    document.getElementById('rvwStats').innerHTML = `
+      <div class="rvw-tile is-primary"><div class="label">Average rating · published</div>
+        <div><div class="value">${s.published ? avg.toFixed(1) : '–'}</div><div class="stars">${stars(Math.round(avg))}</div></div></div>
+      <div class="rvw-tile"><div class="label">Published</div><div class="value">${s.published ?? 0}</div></div>
+      <div class="rvw-tile"><div class="label">Hidden</div><div class="value">${s.hidden ?? 0}</div></div>
+      <div class="rvw-tile is-warn"><div class="label">Had bad words masked</div><div class="value">${s.flagged ?? 0}</div></div>`;
+  }
+
+  function renderList() {
+    const list = document.getElementById('rvwList');
+    if (!reviews.length) {
+      list.innerHTML = '<div class="admin-panel"><div class="panel-empty">No reviews here yet.</div></div>';
+      return;
+    }
+    list.innerHTML = `<div class="rvw-list">${reviews.map(r => {
+      const hidden = r.status === 'hidden';
+      return `
+        <article class="rvw-card${hidden ? ' is-hidden' : ''}${r.flagged ? ' is-flagged' : ''}">
+          <div class="rvw-head">
+            <div class="rvw-who">
+              <div class="rvw-avatar">${escapeHtml(initials(r.display_name))}</div>
+              <div style="min-width:0;">
+                <strong>${escapeHtml(r.display_name)}</strong>
+                <span>${escapeHtml(r.customer_email || 'Account removed')}</span>
+              </div>
+            </div>
+            <span class="rvw-stars" aria-label="${r.rating} of 5">${stars(r.rating)}</span>
+          </div>
+          <p class="rvw-text">${escapeHtml(r.comment)}</p>
+          <div class="rvw-foot">
+            <div class="rvw-meta">
+              <span>${escapeHtml(formatDate(r.created_at))}</span>
+              <span class="pill ${hidden ? 'pill-neutral' : 'pill-success'}">${hidden ? 'Hidden' : 'Published'}</span>
+              ${r.flagged ? '<span class="pill pill-warning">Words masked</span>' : ''}
+            </div>
+            ${isAdmin ? `<div class="rvw-actions">
+              <button class="btn btn-outline small" data-act="${hidden ? 'published' : 'hidden'}" data-id="${r.id}">${hidden ? 'Publish' : 'Hide'}</button>
+              <button class="btn btn-danger small" data-act="delete" data-id="${r.id}">Delete</button>
+            </div>` : ''}
+          </div>
+        </article>`;
+    }).join('')}</div>`;
+  }
+
+  // Called last so every helper above is defined before first render.
+  if (session) init();
+</script>
+</body>
+</html>

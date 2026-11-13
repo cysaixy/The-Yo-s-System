@@ -39,15 +39,17 @@
   const HERO = [
     '.section-head .eyebrow', '.section-head h1', '.section-head h2', '.section-head .display',
     '.section-head p', '.login-heading', '.reviews-wall-header', '.my-reservations-title',
+    '.about-copy > *',
   ].join(',');
 
   // Content that slides up in batches as it scrolls into view
   const BLOCKS = [
-    '.menu-tabs', '.tab-btn', '.menu-item', '.media-box', '.gallery-filters .filter-tag',
+    '.menu-tabs', '.menu-item', '.media-box', '.gallery-filters .filter-tag',
     '.reserve-card', '.res-card', '.order-card', '.orders-list > *',
     '.account-card', '.login-art-benefit-item', '.feedback-form-card', '.comment-card',
     '.reviews-identity', '.order-summary-box', '.checkout-step-panel.active',
     '.about-figure', '.about-text', '.stat-row > div', '.footer-grid > *', '.gallery-section-cta',
+    '.about-tile', '.about-cta',
   ].join(',');
 
   function run() {
@@ -99,19 +101,65 @@
     });
     mo.observe(document.body, { childList: true, subtree: true });
 
+    // Segmented tabs (account sign-in / create, profile / security): a brass
+    // pill glides under the active tab instead of the colour snapping.
+    document.querySelectorAll('.account-tabs').forEach(tabs => {
+      if (tabs.querySelector('.acct-tab-pill')) return;
+      const pill = document.createElement('span');
+      pill.className = 'acct-tab-pill';
+      pill.setAttribute('aria-hidden', 'true');
+      tabs.prepend(pill);
+      tabs.classList.add('has-pill');
+      const place = (instant) => {
+        const active = tabs.querySelector('.account-tab-btn.active');
+        if (!active || !active.offsetWidth) return;
+        gsap.to(pill, {
+          x: active.offsetLeft - 4, width: active.offsetWidth,
+          duration: instant ? 0 : 0.5, ease: 'expo.out', overwrite: true,
+        });
+      };
+      place(true);
+      new MutationObserver(() => place(false)).observe(tabs, { attributes: true, subtree: true, attributeFilter: ['class'] });
+      window.addEventListener('resize', () => place(true));
+      // Cards that start hidden (e.g. profile card after sign-in) need a re-measure.
+      new ResizeObserver(() => place(true)).observe(tabs);
+    });
+
+    // Panels that switch by toggling `.active` slide in instead of popping.
+    const PANELS = '.account-panel, .checkout-step-panel';
+    const panelObserver = new MutationObserver(records => {
+      records.forEach(r => {
+        const el = r.target;
+        if (!el.matches?.(PANELS)) return;
+        const wasActive = (r.oldValue || '').split(/\s+/).includes('active');
+        if (el.classList.contains('active') && !wasActive) {
+          gsap.fromTo(el, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power3.out', clearProps: 'transform,opacity,visibility' });
+        }
+      });
+    });
+    document.querySelectorAll(PANELS).forEach(el => panelObserver.observe(el, { attributes: true, attributeFilter: ['class'], attributeOldValue: true }));
+
     // Subtle press feedback on primary buttons
     document.addEventListener('pointerdown', e => {
       const btn = e.target.closest('.btn, .add-btn, .nav-btn');
       if (btn) gsap.fromTo(btn, { scale: 0.96 }, { scale: 1, duration: 0.35, ease: 'back.out(3)', clearProps: 'transform' });
     }, { passive: true });
 
-    // Watchdog: never leave content invisible, whatever happens.
-    setTimeout(() => {
-      gsap.utils.toArray(BLOCKS).forEach(el => {
+    // Watchdog: never leave content invisible, whatever happens. Uses an
+    // instant set (not a tween) so it works even if animation frames are
+    // throttled — e.g. a background tab or a paused iframe.
+    const forceVisible = () => {
+      const stuck = gsap.utils.toArray(`${HERO},${BLOCKS}`).filter(el => {
         const r = el.getBoundingClientRect();
-        if (r.top < window.innerHeight && getComputedStyle(el).opacity === '0') reveal(el);
+        return r.top < window.innerHeight * 1.2 && Number(getComputedStyle(el).opacity) < 0.98;
       });
-    }, 2500);
+      if (stuck.length) {
+        gsap.killTweensOf(stuck);
+        gsap.set(stuck, { clearProps: 'transform,opacity,visibility' });
+      }
+    };
+    setTimeout(forceVisible, 2200);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(forceVisible, 900); });
 
     let t;
     window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => ScrollTrigger.refresh(), 200); });

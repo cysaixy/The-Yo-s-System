@@ -106,6 +106,14 @@ function revealFrame() {
   finishProgress();
   if (gsap) {
     gsap.fromTo(frame, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out', overwrite: true, clearProps: 'transform' });
+    // If animation frames are throttled, don't leave the page invisible.
+    const token = navToken;
+    setTimeout(() => {
+      if (token === navToken && Number(getComputedStyle(frame).opacity) < 0.98) {
+        gsap.killTweensOf(frame);
+        gsap.set(frame, { clearProps: 'opacity,visibility,transform' });
+      }
+    }, 1200);
   } else {
     frame.style.opacity = '1';
     frame.style.visibility = 'visible';
@@ -292,9 +300,11 @@ document.fonts?.ready?.then(() => moveIndicator({ instant: true }));
 /* ---------------- Boot ---------------- */
 if (gsap) {
   gsap.set(frame, { autoAlpha: 0 });
-  gsap.from(header.querySelectorAll('.yo-brand, .yo-links, .yo-actions > li, .yo-burger'), {
+  const headerParts = header.querySelectorAll('.yo-brand, .yo-links, .yo-actions > li, .yo-burger');
+  gsap.from(headerParts, {
     y: -14, autoAlpha: 0, duration: 0.7, ease: 'power3.out', stagger: 0.06, clearProps: 'all',
   });
+  setTimeout(() => { gsap.killTweensOf(headerParts); gsap.set(headerParts, { clearProps: 'all' }); }, 1500);
 }
 navigate(requestedPath(), { animate: false });
 requestAnimationFrame(() => moveIndicator({ instant: true }));
