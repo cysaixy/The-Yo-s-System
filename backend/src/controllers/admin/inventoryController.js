@@ -14,7 +14,7 @@ async function ensureIncidentTable() {
           id SERIAL PRIMARY KEY,
           inventory_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE RESTRICT,
           staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL,
-          incident_type VARCHAR(20) NOT NULL CHECK (incident_type IN ('spoilage', 'theft')),
+          incident_type VARCHAR(50) NOT NULL,
           quantity NUMERIC(10,2) NOT NULL CHECK (quantity > 0),
           occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
           description TEXT NOT NULL,
@@ -23,7 +23,9 @@ async function ensureIncidentTable() {
           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      await pool.query('CREATE INDEX IF NOT EXISTS inventory_incidents_occurred_at_idx ON inventory_incidents(occurred_at DESC)');
+      await pool.query('ALTER TABLE inventory_incidents DROP CONSTRAINT IF EXISTS inventory_incidents_incident_type_check').catch(() => {});
+      await pool.query('ALTER TABLE inventory_incidents ALTER COLUMN incident_type TYPE VARCHAR(50)').catch(() => {});
+      await pool.query('CREATE INDEX IF NOT EXISTS inventory_incidents_occurred_at_idx ON inventory_incidents(occurred_at DESC)').catch(() => {});
     })().catch(err => {
       incidentTableReady = null;
       throw err;
@@ -36,7 +38,7 @@ async function ensureIncidentTable() {
 export async function overview(req, res, next) {
   try {
     const { rows } = await pool.query(
-      `SELECT id, name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, notes,
+      `SELECT id, name, category, sku, stock_quantity, unit, unit_cost, pack_size, reorder_level, supplier, notes,
                CASE
                  WHEN stock_quantity <= 0 THEN 'out_of_stock'
                  WHEN stock_quantity <= reorder_level THEN 'below_reorder'
@@ -46,6 +48,7 @@ export async function overview(req, res, next) {
         FROM inventory_items
         ORDER BY name ASC`
     );
+
 
     res.json({ items: rows });
   } catch (err) {
@@ -112,17 +115,17 @@ export async function generateUniqueSku(category, client = pool) {
   }
   return candidate;
 }
-
 // POST /api/admin/inventory/items
 export async function createItem(req, res, next) {
   try {
     const {
-      name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, notes
+      name, category, sku, stock_quantity, unit, unit_cost, pack_size, reorder_level, supplier, notes
     } = req.body || {};
 
     if (!name || !category) {
       return res.status(400).json({ error: 'Item name and category are required.' });
     }
+
 
     const toNumber = (value, fallback) => {
       if (value === undefined || value === null || value === '') return fallback;
@@ -131,9 +134,13 @@ export async function createItem(req, res, next) {
     const stock = toNumber(stock_quantity, 0);
     const cost = toNumber(unit_cost, 0);
     const reorder = toNumber(reorder_level, 5);
+    const pack = toNumber(pack_size, null);
 
     if (![stock, cost, reorder].every(Number.isFinite) || stock < 0 || cost < 0 || reorder < 0) {
       return res.status(400).json({ error: 'Stock quantity, unit cost, and reorder level must be non-negative numbers.' });
+    }
+    if (pack !== null && (!Number.isFinite(pack) || pack <= 0)) {
+      return res.status(400).json({ error: 'Pack size must be a positive number.' });
     }
 
     // Auto-generate or validate unique SKU based on category
@@ -157,11 +164,12 @@ export async function createItem(req, res, next) {
     else if (stock <= reorder) status = 'below_reorder';
     else if (stock <= reorder * 1.5) status = 'low_stock';
 
+
     const { rows } = await pool.query(
-      `INSERT INTO inventory_items (name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, status, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO inventory_items (name, category, sku, stock_quantity, unit, unit_cost, pack_size, reorder_level, supplier, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [name, category, finalSku || null, stock, unit || 'pcs', cost, reorder, supplier || null, status, notes || null]
+      [name, category, finalSku || null, stock, unit || 'pcs', cost, pack, reorder, supplier || null, status, notes || null]
     );
 
     res.status(201).json({ item: rows[0] });
@@ -169,13 +177,12 @@ export async function createItem(req, res, next) {
     next(err);
   }
 }
-
 // PATCH /api/admin/inventory/items/:id
 export async function updateItem(req, res, next) {
   try {
     const { id } = req.params;
     const {
-      name, category, sku, stock_quantity, unit, unit_cost, reorder_level, supplier, notes
+      name, category, sku, stock_quantity, unit, unit_cost, pack_size, reorder_level, supplier, notes
     } = req.body || {};
 
     const existingRes = await pool.query('SELECT * FROM inventory_items WHERE id = $1', [id]);
@@ -200,6 +207,19 @@ export async function updateItem(req, res, next) {
       }
     }
 
+    // pack_size: omitted = keep current, empty/null = clear it, number = set it
+    let newPack = current.pack_size;
+    if (pack_size !== undefined) {
+      if (pack_size === null || pack_size === '') {
+        newPack = null;
+      } else {
+        newPack = Number(pack_size);
+        if (!Number.isFinite(newPack) || newPack <= 0) {
+          return res.status(400).json({ error: 'Pack size must be a positive number.' });
+        }
+      }
+    }
+
     const newStock = stock_quantity !== undefined ? Number(stock_quantity) : Number(current.stock_quantity);
     const newReorder = reorder_level !== undefined ? Number(reorder_level) : Number(current.reorder_level);
 
@@ -219,14 +239,18 @@ export async function updateItem(req, res, next) {
            reorder_level = $7,
            supplier = COALESCE($8, supplier),
            status = $9,
-           notes = COALESCE($10, notes)
-       WHERE id = $11
+           notes = COALESCE($10, notes),
+           pack_size = $11
+       WHERE id = $12
        RETURNING *`,
-      [name, category, finalSku, newStock, unit, unit_cost, newReorder, supplier, status, notes, id]
+      [name, category, finalSku, newStock, unit, unit_cost, newReorder, supplier, status, notes, newPack, id]
     );
 
     res.json({ item: rows[0] });
   } catch (err) {
+    if (err.code === '22P02') {
+      return res.status(400).json({ error: 'Invalid inventory item ID format.' });
+    }
     next(err);
   }
 }
@@ -356,13 +380,13 @@ export async function createIncident(req, res, next) {
     const { inventory_id, incident_type, quantity, occurred_at, description, location, reference_number } = req.body || {};
     const inventoryId = Number(inventory_id);
     const lossQuantity = Number(quantity);
-    const type = String(incident_type || '').toLowerCase();
+    const type = String(incident_type || '').toLowerCase().trim();
 
     if (!Number.isInteger(inventoryId) || inventoryId <= 0 || !Number.isFinite(lossQuantity) || lossQuantity <= 0) {
       return res.status(400).json({ error: 'A valid inventory item and positive quantity are required.' });
     }
-    if (!['spoilage', 'theft'].includes(type)) {
-      return res.status(400).json({ error: 'Incident type must be spoilage or theft.' });
+    if (!type) {
+      return res.status(400).json({ error: 'Incident type is required.' });
     }
     if (!String(description || '').trim()) {
       return res.status(400).json({ error: 'Please describe what happened.' });
@@ -409,7 +433,8 @@ export async function createIncident(req, res, next) {
       [inventoryId, staffId, type, lossQuantity, occurredAt, description.trim(), location?.trim() || null, reference_number?.trim() || null]
     );
 
-    const summary = `${type === 'theft' ? 'Theft' : 'Spoilage'} incident #${incidentRows[0].id}: ${description.trim()}`;
+    const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+    const summary = `${typeLabel} incident #${incidentRows[0].id}: ${description.trim()}`;
     await client.query(
       `INSERT INTO inventory_log (inventory_id, staff_id, transaction_type, quantity_change, remarks)
        VALUES ($1, $2, $3, $4, $5)`,
