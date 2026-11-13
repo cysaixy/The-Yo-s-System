@@ -57,16 +57,20 @@ function createLimiter({ windowMs, max, prefix, keyGenerator, skip, handler }) {
   });
 }
 
-// Global limiter for standard API routes
+// Global limiter — applied ONCE to every /api route in app.js. Do not add it
+// again on individual routes: the same limiter twice counts each request twice.
+// Sized for a restaurant where many guests share one IP (shop Wi-Fi, mobile
+// carrier NAT), while still stopping scripted floods.
 export const globalLimiter = createLimiter({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 100,
+  max: 300,
   prefix: 'global',
   skip: req => req.originalUrl.startsWith('/api/admin/sales/live-state'),
-  handler: (req, res) => res.status(429).json({ error: 'Too many requests. Please try again after 15 minutes.' }),
+  handler: (req, res) => res.status(429).json({ error: 'Too many requests. Please wait a few minutes and try again.' }),
 });
 
-// Stricter limiter for sensitive routes (e.g., login, password resets)
+// Staff password login only (customers sign in through Firebase, which has
+// its own brute-force protection).
 export const authLimiter = createLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
@@ -74,12 +78,30 @@ export const authLimiter = createLimiter({
   handler: (req, res) => res.status(429).json({ error: 'Too many login attempts. Please try again after 15 minutes.' }),
 });
 
-// OTP / verification code attempts for email verification and password updates
+// Sending verification emails (account creation, password change). The
+// per-email 60-second cooldown in the controller also applies.
 export const otpLimiter = createLimiter({
   windowMs: 10 * 60 * 1000,
-  max: 8,
-  prefix: 'otp',
-  handler: (req, res) => res.status(429).json({ error: 'Too many verification attempts. Please try again in a few minutes.' }),
+  max: 6,
+  prefix: 'otp-send',
+  handler: (req, res) => res.status(429).json({ error: 'Too many codes requested. Please wait about 10 minutes before asking for another.' }),
+});
+
+// Checking a code. Each code is also limited to 5 wrong guesses in the
+// database, so this only needs to stop someone cycling through many codes.
+export const otpVerifyLimiter = createLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  prefix: 'otp-verify',
+  handler: (req, res) => res.status(429).json({ error: 'Too many code attempts. Please wait a few minutes and request a new code.' }),
+});
+
+// Posting guest reviews (separate bucket so reviewing never blocks codes).
+export const reviewLimiter = createLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 6,
+  prefix: 'review',
+  handler: (req, res) => res.status(429).json({ error: 'Too many reviews from this connection. Please try again later.' }),
 });
 
 // Transactional endpoints (e.g., POS order creation)

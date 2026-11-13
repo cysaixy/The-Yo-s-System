@@ -145,6 +145,15 @@ describe('Critical Bug Fixes - API & Code Verification', () => {
     });
   });
 
+  describe('Rate limits do not lock customers out of their own account', () => {
+    it('allows more than 10 account requests in a row (no login limit on /api/customer/auth)', async () => {
+      for (let i = 0; i < 12; i++) {
+        const res = await request(app).get('/api/customer/auth/me');
+        expect(res.status).not.toBe(429);
+      }
+    });
+  });
+
   describe('Guest reviews', () => {
     it('masks bad words with # and leaves clean words alone', async () => {
       const { censorText } = await import('../src/utils/profanity.js');

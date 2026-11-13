@@ -1,54 +1,9 @@
 // src/middlewares/auth.middleware.js
 import { getFirebaseAuth } from '../config/firebase.js';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
 import pool from '../config/db.js';
-import {
-  getJwtSecret,
-  passwordFingerprint,
-  STAFF_TOKEN_ISSUER,
-  STAFF_TOKEN_AUDIENCE,
-} from '../utils/generateToken.js';
 
-export const STAFF_COOKIE_NAME = 'staff_token';
-
-// Verifies a staff session token and returns the live staff row, or null.
-// Shared by requireStaffAuth and the customer-side "one session per browser"
-// guard below.
-export async function resolveStaffSession(token) {
-  if (!token) return null;
-  let decoded;
-  try {
-    decoded = jwt.verify(token, getJwtSecret(), {
-      algorithms: ['HS256'],
-      issuer: STAFF_TOKEN_ISSUER,
-      audience: STAFF_TOKEN_AUDIENCE,
-    });
-  } catch {
-    return null;
-  }
-
-  const { rows } = await pool.query(
-    `SELECT s.id, s.name, s.email, s.role, s.status, s.password,
-            p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
-     FROM staff s
-     LEFT JOIN staff_permissions p ON p.staff_id = s.id
-     WHERE s.id = $1`,
-    [decoded.staffId]
-  );
-  const staff = rows[0];
-  if (!staff || staff.status !== 'active') return null;
-
-  // Password changed/reset since this token was issued → session revoked.
-  const expected = Buffer.from(passwordFingerprint(staff.password));
-  const actual = Buffer.from(String(decoded.pwv || ''));
-  if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) {
-    return null;
-  }
-
-  delete staff.password;
-  return staff;
-}
+const COOKIE_NAME = 'staff_token';
 
 // Firebase Token Middleware for Customers
 export async function verifyFirebaseToken(req, res, next) {
@@ -58,27 +13,12 @@ export async function verifyFirebaseToken(req, res, next) {
     return res.status(401).json({ error: 'Unauthorized. Token missing.' });
   }
 
-  // One identity per browser: a live staff session must not also act as a
-  // customer. The staff cookie is httpOnly, so only the server can see it.
-  try {
-    if (await resolveStaffSession(req.cookies?.[STAFF_COOKIE_NAME])) {
-      return res.status(409).json({
-        error: 'This browser is signed in to the staff dashboard. Sign out of the admin panel to use a customer account.',
-        code: 'STAFF_SESSION_ACTIVE',
-      });
-    }
-  } catch (err) {
-    console.error('Staff session check failed:', err.message);
-  }
-
-  const token = authHeader.slice('Bearer '.length).trim();
+  const token = authHeader.split(' ')[1];
 
   let decodedToken;
   try {
     const auth = getFirebaseAuth();
-    // checkRevoked = true: tokens from disabled accounts or after a
-    // "sign out everywhere"/password change are rejected immediately.
-    decodedToken = await auth.verifyIdToken(token, true);
+    decodedToken = await auth.verifyIdToken(token);
   } catch (error) {
     console.error('Firebase Token Error:', error.message);
     if (
@@ -88,7 +28,8 @@ export async function verifyFirebaseToken(req, res, next) {
       error.code === 'app/invalid-credential'
     ) {
       return res.status(503).json({
-        error: 'Authentication service is temporarily unavailable.',
+        error: 'Authentication service is not properly configured on the server.',
+        details: error.message,
       });
     }
 
@@ -101,7 +42,7 @@ export async function verifyFirebaseToken(req, res, next) {
 
     return res.status(401).json({
       error: 'Unauthorized. Invalid or expired token.',
-      code: 'TOKEN_INVALID',
+      code: error.code || 'TOKEN_INVALID',
     });
   }
 
@@ -126,26 +67,38 @@ export async function verifyFirebaseToken(req, res, next) {
   }
 }
 
-// Staff/Admin Auth Middleware — verifies the JWT from the httpOnly cookie
-// only (no Authorization-header fallback, so the token can never be read or
-// replayed by page scripts), loads the staff row + permissions, attaches it
-// as req.staff.
+// Staff/Admin Auth Middleware — verifies the JWT from httpOnly cookie,
+// loads the staff row + permissions, and attaches it as req.staff
 export async function requireStaffAuth(req, res, next) {
-  const token = req.cookies?.[STAFF_COOKIE_NAME];
+  // Try to get token from cookie first, fallback to Authorization header for backward compat
+  const token = req.cookies?.[COOKIE_NAME] || 
+    (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : null);
 
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized. Staff login required.' });
   }
 
   try {
-    const staff = await resolveStaffSession(token);
-    if (!staff) {
-      return res.status(401).json({ error: 'Unauthorized. Invalid or expired session.' });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const { rows } = await pool.query(
+      `SELECT s.id, s.name, s.email, s.role, s.status,
+              p.can_access_inventory, p.can_access_stock_in, p.can_access_reports
+       FROM staff s
+       LEFT JOIN staff_permissions p ON p.staff_id = s.id
+       WHERE s.id = $1`,
+      [decoded.staffId]
+    );
+    const staff = rows[0];
+
+    if (!staff || staff.status !== 'active') {
+      return res.status(401).json({ error: 'Unauthorized. Staff account not found or inactive.' });
     }
+
     req.staff = staff;
     next();
   } catch (error) {
-    console.error('Staff auth error:', error.message);
-    return res.status(401).json({ error: 'Unauthorized. Invalid or expired session.' });
+    console.error('Staff Token Error:', error.message);
+    return res.status(401).json({ error: 'Unauthorized. Invalid or expired token.' });
   }
 }

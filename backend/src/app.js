@@ -122,7 +122,6 @@ app.get('/api/health', requireStaffAuth, (req, res) => {
 
 // --- Customer API ---
 app.use('/api/customer/menu', customerMenuRoutes);
-app.use('/api/customer/auth', authLimiter); // Brute-force protection on customer login/signup
 app.use('/api/customer/auth', customerAuthRoutes);
 app.use('/api/customer/orders', customerOrderRoutes);
 app.use('/api/customer/reservations', customerReservationRoutes);
