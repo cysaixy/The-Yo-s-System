@@ -266,6 +266,13 @@ if (gsap) {
     });
   });
   links.addEventListener('mouseleave', () => moveIndicator());
+  // Moving the pointer quickly into the page iframe (or off the window) can
+  // skip the mouseleave above and leave the hover preview stuck on a link.
+  header.addEventListener('mouseleave', () => moveIndicator());
+  frame.addEventListener('mouseenter', () => moveIndicator());
+  frame.addEventListener('pointerover', () => moveIndicator());
+  document.addEventListener('mouseleave', () => moveIndicator());
+  window.addEventListener('blur', () => moveIndicator());
 }
 
 /* ---------------- Theme ---------------- */

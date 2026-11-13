@@ -192,3 +192,14 @@ body.home-gsap .ticket-grid > .ticket:first-child .add {
   box-shadow: 0 10px 22px -10px rgba(163,132,74,.95);
 }
 body.home-gsap .ticket-grid > .ticket:first-child .add:hover { background: #fff; color: #15120e; }
+
+/* Fix: the hero title is sized for half the screen now that the photo
+   collage takes the other half — never squeeze or clip the letters. */
+body.home-gsap .gs-title .l { flex-shrink: 0; }
+@media (min-width: 981px) {
+  body.home-gsap .gs-title { font-size: clamp(3.4rem, 5.4vw, 7rem); letter-spacing: -.035em; }
+}
+
+/* Fix: `hidden` must win over the chip's display rule, so the rating badge
+   stays invisible until real reviews exist (no lone ★ bubble). */
+.hc-chip[hidden] { display: none !important; }
