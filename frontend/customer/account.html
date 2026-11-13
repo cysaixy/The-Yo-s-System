@@ -391,7 +391,7 @@
   /* Hide header when embedded in customer-app.html iframe */
   .customer-app-embedded header { display: none !important; }
 </style>
-<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=2"></head>
+<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=4"></head>
 <body>
 
 <header>
@@ -675,37 +675,52 @@
 
     </div>
 
-    <div class="login-art-col">
-      <div>
-        <p class="login-art-eyebrow">The~Yo's Resto Bar</p>
-        <div class="login-art-headline">
-          <h2 class="login-art-title">Good Food,<br>Good Company.</h2>
-          <p class="login-art-sub">One account gets you faster checkout, live order tracking, and easy table reservations at our Baggao dining room.</p>
+    <aside class="login-art-col acct-art" aria-label="About The~Yo's accounts">
+      <div class="acct-art-top">
+        <img src="../pics&vids/the-yo's_logo.jpg" alt="" class="acct-art-logo" width="44" height="44">
+        <div>
+          <strong>The~Yo's</strong>
+          <span>Resto Bar · Baggao</span>
         </div>
       </div>
 
-      <div class="login-art-benefits">
-        <h4>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          Member Benefits
-        </h4>
-        <div class="login-art-benefit-item"><div class="benefit-dot"></div>Real-time Order Tracking</div>
-        <div class="login-art-benefit-item"><div class="benefit-dot"></div>Faster One-Click Checkout</div>
-        <div class="login-art-benefit-item"><div class="benefit-dot"></div>Easy Table Reservations</div>
-        <div class="login-art-benefit-item"><div class="benefit-dot"></div>Saved Delivery Addresses</div>
+      <div class="acct-art-copy">
+        <p class="acct-art-eyebrow">Your table is waiting</p>
+        <h2 class="acct-art-title">Good food,<br><em>good company.</em></h2>
+        <p class="acct-art-sub">One account gets you faster checkout, live order tracking and easy table reservations.</p>
       </div>
 
-      <div class="login-art-stats">
-        <div><strong>8AM–8PM</strong><span>Open Daily</span></div>
-        <div><strong>20+</strong><span>Beverages</span></div>
-        <div><strong>2nd Flr</strong><span>DKB Building</span></div>
-      </div>
+      <ul class="acct-perks">
+        <li class="acct-perk is-wide">
+          <span class="acct-perk-icon"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></span>
+          <div><strong>Real-time order tracking</strong><span>See every step from kitchen to table.</span></div>
+        </li>
+        <li class="acct-perk">
+          <span class="acct-perk-icon"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg></span>
+          <strong>Faster checkout</strong>
+        </li>
+        <li class="acct-perk">
+          <span class="acct-perk-icon"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></span>
+          <strong>Easy reservations</strong>
+        </li>
+        <li class="acct-perk is-wide">
+          <span class="acct-perk-icon"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
+          <div><strong>Saved delivery address</strong><span>Fill it once, reuse it every order.</span></div>
+        </li>
+      </ul>
 
-      <a href="/admin/login" target="_top" class="login-art-admin-link" aria-label="Go to admin login">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Staff / Admin Login
-      </a>
-    </div>
+      <div class="acct-art-foot">
+        <div class="acct-stats">
+          <span><strong>8AM–8PM</strong> open daily</span>
+          <span><strong>20+</strong> drinks</span>
+          <span><strong>2nd Flr</strong> DKB Bldg</span>
+        </div>
+        <a href="/admin/login" target="_top" class="acct-staff-link" aria-label="Go to staff and admin login">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Staff login
+        </a>
+      </div>
+    </aside>
 
     </div>
   </div>
@@ -1262,6 +1277,6 @@
 <script src="global.js"></script>
 <script type="module" src="authNav.js"></script>
 <script src="cart.js"></script>
-<script src="motion.js?v=2" defer></script>
+<script src="motion.js?v=3" defer></script>
 </body>
 </html>

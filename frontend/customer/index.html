@@ -472,7 +472,7 @@
     .sticky-order .txt span { font: 600 .64rem 'Space Mono', monospace; opacity: .6; }
   }
 </style>
-<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=2"></head>
+<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=4"><link rel="stylesheet" href="home.css?v=3"></head>
 <body class="home-gsap">
 
 <header>
@@ -548,10 +548,12 @@
       </div>
     </div>
     <div class="gs-hero-figure fade-in">
-      <div class="gs-hero-plate">
-        <div class="gs-steam"></div>
-        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="9" ry="3.2"/><path d="M3 15V9a9 3.2 0 0 1 18 0v6"/><path d="M8 6c0-1.4.6-2.2.6-3.4M12 6c0-1.6.6-2.4.6-3.6M16 6c0-1.4.6-2.2.6-3.4" stroke-linecap="round"/></svg>
-        <span class="plate-label">The~Yo's signature</span>
+      <div class="hero-collage">
+        <figure class="hc-tile hc-main"><img src="../pics&amp;vids/the-yo's_sample-pic-3.jpg" alt="Barbeque pork rib platter with rice" fetchpriority="high"></figure>
+        <figure class="hc-tile hc-side"><img src="../pics&amp;vids/the-yo's_sample-pic-1.jpg" alt="Cafe latte, mocha and cheese fries" loading="lazy"></figure>
+        <figure class="hc-tile hc-small"><img src="../pics&amp;vids/the-yo's_sample-pic-4.jpg" alt="Latte art from the espresso bar" loading="lazy"></figure>
+        <div class="hc-chip hc-status" id="heroOpenStatus"><i aria-hidden="true"></i><span>Open daily · 8AM–8PM</span></div>
+        <a class="hc-chip hc-rating" id="heroRating" href="/reviews" hidden><b aria-hidden="true">★</b><strong></strong><span></span></a>
       </div>
     </div>
   </div>
@@ -670,14 +672,15 @@
     <div class="section-head">
       <div>
         <p class="gs-eyebrow">The Menu</p>
-        <h2 style="font-size:clamp(2rem,4vw,3.2rem);">What people actually order</h2>
+        <h2 style="font-size:clamp(2rem,4vw,3.2rem);">Explore the menu</h2>
       </div>
       <p>Every favorite in one place — from hearty rice meals to the espresso bar. Select any category to jump straight to that part of the menu.</p>
     </div>
 
     <div class="hp-cat-grid">
       <!-- 1. Rice Meals & Bowls -->
-      <a class="hp-cat-card" href="menu#rice-meals-bowls">
+      <a class="hp-cat-card hp-cat-photo" href="menu#rice-meals-bowls">
+        <img class="hp-cat-bg" src="../pics&amp;vids/the-yo's_sample-pic-3.jpg" alt="" loading="lazy">
         <div>
           <div class="hp-cat-top">
             <div class="hp-cat-icon">
@@ -722,7 +725,8 @@
       </a>
 
       <!-- 4. Specialty Beverages -->
-      <a class="hp-cat-card" href="menu#specialty-beverages">
+      <a class="hp-cat-card hp-cat-photo" href="menu#specialty-beverages">
+        <img class="hp-cat-bg" src="../pics&amp;vids/the-yo's_sample-pic-1.jpg" alt="" loading="lazy">
         <div>
           <div class="hp-cat-top">
             <div class="hp-cat-icon">
@@ -826,6 +830,7 @@
 <!-- ============ CTA BAND ============ -->
 <section class="cta-band">
   <div class="wrap cta-inner">
+    <img class="cta-bg" src="../pics&amp;vids/the-yo's_customer-2.jpg" alt="" loading="lazy">
     <div>
       <h3>Reserve Your Table</h3>
       <p>Planning a celebration or a catering order? Let us set it up for you.</p>
@@ -881,5 +886,6 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script src="home-anim.js"></script>
+<script src="home-live.js?v=1"></script>
 </body>
 </html>

@@ -49,7 +49,7 @@
     '.account-card', '.login-art-benefit-item', '.feedback-form-card', '.comment-card',
     '.reviews-identity', '.order-summary-box', '.checkout-step-panel.active',
     '.about-figure', '.about-text', '.stat-row > div', '.footer-grid > *', '.gallery-section-cta',
-    '.about-tile', '.about-cta',
+    '.about-tile', '.about-cta', '.acct-perk', '.acct-art-copy',
   ].join(',');
 
   function run() {

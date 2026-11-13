@@ -497,3 +497,120 @@ body .login-art-admin-link:hover { opacity: 1; }
 @media (max-width: 900px) {
   body .login-split { border-radius: var(--r-lg); }
 }
+
+/* ==========================================================================
+   ACCOUNT v3 — photo brand panel + icon fields
+   ========================================================================== */
+body .account-wrap { max-width: 1120px; }
+body .login-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-radius: 28px; }
+
+/* ---- Brand panel ---- */
+body .acct-art {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(28px, 3.4vw, 44px);
+  display: flex; flex-direction: column; gap: 22px;
+  color: #f6eee1;
+  background:
+    linear-gradient(180deg, rgba(20,15,10,.62) 0%, rgba(20,15,10,.58) 40%, rgba(20,15,10,.94) 100%),
+    radial-gradient(120% 80% at 90% 0%, rgba(201,160,92,.55), transparent 60%),
+    url("/pics&vids/the-yos.jpg") center / cover no-repeat,
+    #241a10;
+}
+body .acct-art::before, body .acct-art::after { display: none; }
+
+.acct-art-top { display: flex; align-items: center; gap: 12px; }
+.acct-art-logo { width: 44px; height: 44px; border-radius: 12px; object-fit: cover; box-shadow: 0 0 0 1px rgba(255,255,255,.25), 0 8px 18px -8px rgba(0,0,0,.6); }
+.acct-art-top strong { display: block; font: 900 1rem/1.1 'Archivo', sans-serif; text-transform: uppercase; letter-spacing: .02em; }
+.acct-art-top span { display: block; font: 700 .62rem 'Space Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: rgba(246,238,225,.7); margin-top: 3px; }
+
+.acct-art-copy { margin-top: auto; }
+.acct-art-eyebrow { font: 700 .66rem 'Space Mono', monospace; letter-spacing: .18em; text-transform: uppercase; color: #e2c48c; margin-bottom: 12px; }
+.acct-art-title { font: 900 clamp(2.2rem, 4vw, 3.2rem)/.98 'Archivo', sans-serif; letter-spacing: -.02em; color: #fff; margin: 0; }
+.acct-art-title em { font-style: normal; color: #e2c48c; }
+.acct-art-sub { margin-top: 14px; max-width: 380px; font-size: .95rem; line-height: 1.6; color: rgba(246,238,225,.82); }
+
+/* Perks as a small bento: two wide, two compact */
+.acct-perks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.acct-perk {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 16px;
+  background: rgba(255,255,255,.09);
+  border: 1px solid rgba(255,255,255,.16);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: background .3s ease, transform .4s var(--ease-out);
+}
+.acct-perk:hover { background: rgba(255,255,255,.14); transform: translateY(-2px); }
+.acct-perk.is-wide { grid-column: 1 / -1; }
+.acct-perk strong { font: 600 .9rem/1.25 'Inter', sans-serif; color: #fff; }
+.acct-perk div span { display: block; font-size: .78rem; color: rgba(246,238,225,.72); margin-top: 2px; }
+.acct-perk-icon {
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 11px;
+  display: grid; place-items: center;
+  background: linear-gradient(140deg, #d9b878, #a3844a);
+  box-shadow: 0 8px 16px -8px rgba(163,132,74,.9);
+}
+.acct-perk-icon svg { width: 18px; height: 18px; fill: none; stroke: #1a130c; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.acct-art-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.14); }
+.acct-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.acct-stats span {
+  font-size: .74rem; color: rgba(246,238,225,.75);
+  padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.1);
+}
+.acct-stats strong { color: #fff; font-weight: 700; }
+.acct-staff-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 700 .66rem 'Space Mono', monospace; letter-spacing: .12em; text-transform: uppercase;
+  color: rgba(246,238,225,.8); padding: 8px 12px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.2);
+  transition: background .2s ease, color .2s ease;
+}
+.acct-staff-link:hover { background: rgba(255,255,255,.12); color: #fff; }
+.acct-staff-link svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+/* ---- Form side ---- */
+body .login-form-col { background: var(--surface); }
+body .login-heading h1 {
+  text-transform: none;
+  font-size: clamp(2rem, 3.4vw, 2.6rem);
+  line-height: 1;
+  letter-spacing: -.02em;
+}
+body .login-heading::before {
+  content: "The~Yo\27 s account";
+  display: inline-block; margin-bottom: 14px;
+  font: 700 .62rem 'Space Mono', monospace; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--brass); padding: 6px 10px; border-radius: 999px; background: var(--brass-soft);
+}
+body .account-panel label { margin-bottom: 7px; }
+
+/* Leading icons inside fields (pure CSS, no markup changes) */
+body .account-card input[type="email"],
+body .account-card input[type="password"],
+body .account-card input[autocomplete="name"],
+body .account-card input[autocomplete="tel"],
+body .account-card input[autocomplete="street-address"],
+body .account-card input[autocomplete="one-time-code"],
+body .account-card #accName, body .account-card #accPhone, body .account-card #accAddress, body .account-card #pgPhone {
+  padding-left: 44px !important;
+  background-repeat: no-repeat !important;
+  background-position: 15px 50% !important;
+  background-size: 17px 17px !important;
+}
+body .account-card input[type="email"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3844a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E") !important; }
+body .account-card input[type="password"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3844a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E") !important; }
+body .account-card input[autocomplete="name"], body .account-card #accName { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3844a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21a8 8 0 0 1 16 0'/%3E%3C/svg%3E") !important; }
+body .account-card input[autocomplete="tel"], body .account-card #accPhone, body .account-card #pgPhone { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3844a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='7' y='2' width='10' height='20' rx='2'/%3E%3Cpath d='M11 18h2'/%3E%3C/svg%3E") !important; }
+body .account-card input[autocomplete="street-address"], body .account-card #accAddress { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3844a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z'/%3E%3Ccircle cx='12' cy='9' r='2.5'/%3E%3C/svg%3E") !important; }
+body .account-card input[autocomplete="one-time-code"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3844a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='15' r='4'/%3E%3Cpath d='m11 12 9-9M17 6l3 3'/%3E%3C/svg%3E") !important; letter-spacing: .3em; }
+
+@media (max-width: 860px) {
+  body .login-split { grid-template-columns: 1fr; }
+  body .acct-art { gap: 20px; }
+  body .acct-perks { display: none; }       /* keep the form near the top on phones */
+  body .acct-art-copy { margin-top: 8px; }
+}
+
+/* Keep breathing room around the sign-in card on every screen */
+body .account-section { padding: clamp(20px, 4vw, 48px) 16px clamp(36px, 5vw, 64px); }
