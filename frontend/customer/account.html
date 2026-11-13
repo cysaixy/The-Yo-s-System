@@ -734,8 +734,9 @@
     signInWithEmailAndPassword, 
     signInWithPopup, 
     signOut, 
-    onAuthStateChanged, 
-    syncCustomerProfile, 
+    onAuthStateChanged,
+    updatePassword as firebaseUpdatePassword,
+    syncCustomerProfile,
     API_BASE_URL 
   } from "./firebase-init.js";
 
@@ -1170,6 +1171,19 @@
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update password.');
+
+      // Server verified the email code but couldn't apply the change itself:
+      // finish it here with the Firebase client SDK.
+      if (data.code === 'CLIENT_UPDATE_REQUIRED') {
+        try {
+          await firebaseUpdatePassword(user, newPassword);
+        } catch (fbErr) {
+          if (fbErr.code === 'auth/requires-recent-login') {
+            throw new Error('For security, please sign out, sign back in, and then change your password again.');
+          }
+          throw new Error(friendlyAuthError(fbErr));
+        }
+      }
 
       setStatus('pwStatus3', 'Password updated successfully!', 'ok');
       document.getElementById('pwNew').value = '';

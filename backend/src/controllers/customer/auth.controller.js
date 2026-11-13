@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import pool from '../../config/db.js';
 import { getFirebaseAuth } from '../../config/firebase.js';
+import { isCredentialError } from '../../middlewares/auth.middleware.js';
 
 const OTP_TTL_MINUTES = 5;
 const OTP_MAX_ATTEMPTS = 5;
@@ -232,7 +233,20 @@ export async function sendVerificationCode(req, res, next) {
       [normalizedEmail, hashCode(normalizedEmail, code), OTP_TTL_MINUTES]
     );
 
-    const delivery = await sendOtpEmail(normalizedEmail, code);
+    let delivery;
+    try {
+      delivery = await sendOtpEmail(normalizedEmail, code);
+    } catch (mailErr) {
+      // Most often wrong SMTP credentials (e.g. a Gmail account password
+      // instead of an App Password). Remove the unusable code so the
+      // 60-second resend cooldown doesn't block the next attempt.
+      console.error('[send-code] Email delivery failed:', mailErr.code || '', mailErr.message);
+      await pool.query('DELETE FROM email_otps WHERE email = $1', [normalizedEmail]).catch(() => {});
+      return res.status(502).json({
+        error: 'We couldn\'t send the verification email right now. Please try again later or contact the restaurant.',
+        code: 'EMAIL_DELIVERY_FAILED',
+      });
+    }
 
     return res.status(200).json({
       message: delivery.sent ? 'Verification code sent.' : 'Verification code generated successfully.',
@@ -319,7 +333,23 @@ export async function updatePassword(req, res, next) {
       });
     }
 
-    await getFirebaseAuth().updateUser(req.user.firebaseUid, { password: newPassword });
+    try {
+      await getFirebaseAuth().updateUser(req.user.firebaseUid, { password: newPassword });
+    } catch (adminErr) {
+      // Email ownership was just verified above. If the server's Firebase
+      // service-account key is broken, let the signed-in browser apply the
+      // change itself with the Firebase client SDK (which enforces its own
+      // recent-login rule) instead of failing the whole flow.
+      if (isCredentialError(adminErr)) {
+        console.error('[update-password] Admin SDK unavailable, using client fallback:', adminErr.message);
+        return res.status(200).json({
+          verified: true,
+          code: 'CLIENT_UPDATE_REQUIRED',
+          message: 'Verified. Finishing the password change on your device…',
+        });
+      }
+      throw adminErr;
+    }
 
     return res.status(200).json({ message: 'Password updated successfully.' });
   } catch (err) {

@@ -154,6 +154,16 @@ describe('Critical Bug Fixes - API & Code Verification', () => {
     });
   });
 
+  describe('Firebase key problems are recognised (fallback instead of lockout)', () => {
+    it('detects a broken service-account key but not a bad customer token', async () => {
+      const { isCredentialError } = await import('../src/middlewares/auth.middleware.js');
+      expect(isCredentialError(new Error('failed to fetch a valid Google OAuth2 access token: "invalid_grant: Invalid JWT Signature."'))).toBe(true);
+      expect(isCredentialError({ code: 'app/invalid-credential', message: 'x' })).toBe(true);
+      expect(isCredentialError({ code: 'auth/id-token-expired', message: 'Firebase ID token has expired.' })).toBe(false);
+      expect(isCredentialError({ code: 'auth/argument-error', message: 'Decoding Firebase ID token failed.' })).toBe(false);
+    });
+  });
+
   describe('Guest reviews', () => {
     it('masks bad words with # and leaves clean words alone', async () => {
       const { censorText } = await import('../src/utils/profanity.js');

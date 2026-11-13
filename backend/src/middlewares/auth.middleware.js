@@ -50,6 +50,13 @@ export async function resolveStaffSession(token) {
   return staff;
 }
 
+// True when Firebase Admin failed because ITS OWN credentials are bad
+// (not because the customer's token is bad).
+export function isCredentialError(err) {
+  const text = `${err?.code || ''} ${err?.message || ''}`;
+  return /invalid_grant|invalid-credential|Invalid JWT Signature|Failed to parse private key|credentials are incomplete|OAuth2 access token/i.test(text);
+}
+
 // Firebase Token Middleware for Customers
 export async function verifyFirebaseToken(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -78,7 +85,17 @@ export async function verifyFirebaseToken(req, res, next) {
     const auth = getFirebaseAuth();
     // checkRevoked = true: tokens from disabled accounts or after a
     // "sign out everywhere"/password change are rejected immediately.
-    decodedToken = await auth.verifyIdToken(token, true);
+    try {
+      decodedToken = await auth.verifyIdToken(token, true);
+    } catch (revocationErr) {
+      // The revocation check needs a working service-account key. If that
+      // key is broken (revoked / malformed in env), still accept the token
+      // after a full signature check — that part only needs Google's public
+      // certificates — instead of locking every customer out.
+      if (!isCredentialError(revocationErr)) throw revocationErr;
+      console.error('[auth] Revocation check unavailable (service-account key rejected). Falling back to signature-only verification:', revocationErr.message);
+      decodedToken = await auth.verifyIdToken(token, false);
+    }
   } catch (error) {
     console.error('Firebase Token Error:', error.message);
     if (
