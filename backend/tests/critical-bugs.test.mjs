@@ -164,6 +164,39 @@ describe('Critical Bug Fixes - API & Code Verification', () => {
     });
   });
 
+  describe('Delivery proof-of-delivery', () => {
+    it('derives a stable 4-digit code per order that differs between orders', async () => {
+      const { deliveryCodeFor, codesMatch } = await import('../src/services/deliveryService.js');
+      const a = { id: 101, datetime_ordered: '2026-11-13T10:00:00Z' };
+      const b = { id: 102, datetime_ordered: '2026-11-13T10:00:00Z' };
+      const codeA = deliveryCodeFor(a);
+      expect(codeA).toMatch(/^\d{4}$/);
+      expect(deliveryCodeFor(a)).toBe(codeA);
+      expect(deliveryCodeFor(b)).not.toBe(codeA);
+      expect(codesMatch(codeA, codeA)).toBe(true);
+      expect(codesMatch(codeA, ` ${codeA} `)).toBe(true);
+      expect(codesMatch(codeA, '12')).toBe(false);
+    });
+
+    it('recognises delivery orders', async () => {
+      const { isDeliveryOrderRow } = await import('../src/services/deliveryService.js');
+      expect(isDeliveryOrderRow({ order_type: 'delivery' })).toBe(true);
+      expect(isDeliveryOrderRow({ order_type: 'online', delivery_address: 'Brgy 1' })).toBe(true);
+      expect(isDeliveryOrderRow({ order_type: 'dine_in' })).toBe(false);
+    });
+
+    it('requires staff auth to dispatch or confirm, and customer auth to mark received', async () => {
+      const dispatch = await request(app).patch('/api/admin/sales/orders/1/dispatch')
+        .set('Cookie', 'csrf_token=t').set('X-CSRF-Token', 't').send({ rider_id: 1 });
+      expect(dispatch.status).toBe(401);
+      const deliver = await request(app).post('/api/admin/sales/orders/1/deliver')
+        .set('Cookie', 'csrf_token=t').set('X-CSRF-Token', 't').send({ code: '1234' });
+      expect(deliver.status).toBe(401);
+      const received = await request(app).post('/api/customer/orders/1/received');
+      expect(received.status).toBe(401);
+    });
+  });
+
   describe('Guest reviews', () => {
     it('masks bad words with # and leaves clean words alone', async () => {
       const { censorText } = await import('../src/utils/profanity.js');

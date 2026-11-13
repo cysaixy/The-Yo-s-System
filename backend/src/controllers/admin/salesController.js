@@ -1,5 +1,6 @@
 // src/controllers/admin/salesController.js
 import pool from '../../config/db.js';
+import { ensureDeliveryColumns } from '../../services/deliveryService.js';
 import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
 import { postOrderPayment, postCashOrderSale, reverseCashOrderSale } from '../../services/cashReconciliationService.js';
 
@@ -507,11 +508,13 @@ export async function listOrders(req, res, next) {
    ================================================================ */
 export async function liveOrderState(req, res, next) {
   try {
+    await ensureDeliveryColumns();
     const { rows } = await pool.query(
       `SELECT o.id,
               COALESCE(o.customer_name, c.name) AS customer_name,
               s.name AS staff_name,
               handler.name AS handler_name, o.order_type, o.status,
+              o.delivery_status, rider.name AS delivery_rider_name, o.delivery_dispatched_at,
               o.total_amount, o.datetime_ordered, o.status_updated_at,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source,
               (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
@@ -530,6 +533,7 @@ export async function liveOrderState(req, res, next) {
        JOIN customers c ON c.id = o.customer_id
        LEFT JOIN staff s ON s.id = o.staff_id
        LEFT JOIN staff handler ON handler.id = o.handled_by_staff_id
+       LEFT JOIN staff rider ON rider.id = o.delivery_rider_id
        WHERE o.status IN ('pending', 'confirmed', 'preparing', 'ready')
           OR (o.status IN ('completed', 'cancelled') AND o.status_updated_at >= NOW() - INTERVAL '24 hours')
        ORDER BY o.datetime_ordered ASC`
@@ -545,6 +549,7 @@ export async function liveOrderState(req, res, next) {
    ================================================================ */
 export async function getOrder(req, res, next) {
   try {
+    await ensureDeliveryColumns();
     const { rows } = await pool.query(
       `SELECT o.*,
               COALESCE(o.customer_name, c.name) AS customer_name,
@@ -554,12 +559,14 @@ export async function getOrder(req, res, next) {
               CASE WHEN o.order_type = 'online' AND (o.delivery_address IS NOT NULL OR o.delivery_fee_status IS NOT NULL OR o.delivery_fee > 0)
                    THEN 'delivery' ELSE o.order_type END AS order_type,
               s.name AS staff_name,
+              rider.name AS delivery_rider_name,
               r.reservation_date, r.reservation_time, r.notes AS reservation_notes,
               CASE WHEN o.staff_id IS NULL THEN 'online' ELSE 'pos' END AS source
        FROM orders o
        JOIN customers c ON c.id = o.customer_id
        LEFT JOIN staff s ON s.id = o.staff_id
        LEFT JOIN reservations r ON r.id = o.reservation_id
+       LEFT JOIN staff rider ON rider.id = o.delivery_rider_id
        WHERE o.id = $1`,
       [req.params.id]
     );
@@ -670,6 +677,20 @@ export async function updateOrderStatus(req, res, next) {
       return res.status(400).json({ error: `status must be one of: ${VALID_ORDER_STATUSES.filter(value => value !== 'pending').join(', ')}` });
     }
 
+    // Proof of delivery: an order that is out with a rider is completed by
+    // the customer's code (or the customer's own confirmation). Only an
+    // Admin may override that manually.
+    if (status === 'completed' && req.staff.role !== 'Admin') {
+      await ensureDeliveryColumns();
+      const { rows: d } = await pool.query('SELECT delivery_status FROM orders WHERE id = $1', [req.params.id]);
+      if (d[0]?.delivery_status === 'out_for_delivery') {
+        return res.status(409).json({
+          error: 'This order is out for delivery. Confirm it with the customer\'s 4-digit code instead.',
+          code: 'DELIVERY_CODE_REQUIRED',
+        });
+      }
+    }
+
     const allowedPrevious = ALLOWED_PREVIOUS_STATUSES[status] || [];
     const assignsHandler = ['confirmed', 'preparing', 'ready', 'completed'].includes(status);
     const { rows } = await pool.query(
@@ -692,6 +713,15 @@ export async function updateOrderStatus(req, res, next) {
         error: `Order is already ${current.rows[0].status}. Refresh before applying another action.`,
         current_status: current.rows[0].status,
       });
+    }
+
+    if (status === 'completed') {
+      await ensureDeliveryColumns();
+      await pool.query(
+        `UPDATE orders SET delivery_status = 'delivered', delivered_at = NOW(), delivery_confirmed_by = 'staff_override'
+         WHERE id = $1 AND delivery_status = 'out_for_delivery'`,
+        [req.params.id]
+      );
     }
 
     if (status === 'cancelled') {

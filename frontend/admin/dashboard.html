@@ -10,6 +10,34 @@
   /* ---------- Section headers ---------- */
   .dash-section { margin-bottom: 30px; }
 
+  /* ---------- Delivery hand-off panel ---------- */
+  .dv-panel {
+    margin: 16px 0; padding: 14px 16px; border-radius: 14px;
+    border: 1px solid rgba(163,132,74,.35); background: #fbf6ec;
+  }
+  .dv-panel p { margin: 6px 0 10px; font-size: .84rem; color: var(--ink-muted); line-height: 1.5; }
+  .dv-panel p b { color: var(--ink); }
+  .dv-head { display: flex; align-items: center; gap: 8px; }
+  .dv-head strong { font: 900 .9rem 'Archivo', sans-serif; text-transform: uppercase; letter-spacing: .03em; }
+  .dv-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--brass); }
+  .dv-panel.is-out { border-color: rgba(44,95,176,.35); background: #f2f6fd; }
+  .dv-panel.is-out .dv-dot { background: #2c5fb0; box-shadow: 0 0 0 4px rgba(44,95,176,.15); }
+  .dv-panel.is-done { border-color: rgba(46,125,79,.35); background: #f1f8f3; }
+  .dv-panel.is-done .dv-dot { background: var(--success); }
+  .dv-panel.is-muted { background: var(--stone); border-color: var(--line); }
+  .dv-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .dv-row select { flex: 1 1 200px; min-height: 40px; border-radius: 10px; border: 1px solid var(--line); padding: 0 10px; background: #fff; font: inherit; }
+  .dv-code {
+    width: 130px; min-height: 46px; border-radius: 12px; border: 1px solid var(--line-strong);
+    text-align: center; letter-spacing: .5em; font: 900 1.3rem 'Archivo', sans-serif; padding-left: .5em;
+  }
+  .dv-code:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px rgba(163,132,74,.18); }
+  .dv-secondary { margin-top: 10px; font-size: .78rem; color: var(--ink-muted); }
+  .dv-secondary select { min-height: 34px; flex: 0 1 220px; }
+  .dv-msg { margin-top: 8px; font-size: .8rem; min-height: 1em; }
+  .dv-msg.err { color: var(--danger); }
+  .ticket-delivery { margin: 6px 0 2px; font-size: .74rem; font-weight: 700; color: #2c5fb0; }
+
   /* ---------- Bento layout ----------
      Tiles of different sizes, so the eye lands on what matters first:
      today's sales (feature tile), the monthly target (brass accent) and
@@ -918,9 +946,10 @@ const changed = new Set((changedIds || []).map(String));
         <button type="button" class="order-ticket status-${escapeHtml(order.status)}${changed.has(String(order.id)) ? ' live-updated' : ''}" data-order-id="${escapeHtml(order.id)}" aria-label="Open order ${escapeHtml(order.id)}">
           <div class="ticket-top">
             <span class="ticket-number">Order #${escapeHtml(order.id)}</span>
-            <span class="ticket-status">${escapeHtml(liveStatusLabel(order.status))}</span>
+            <span class="ticket-status">${order.delivery_status === 'out_for_delivery' ? 'On the way' : escapeHtml(liveStatusLabel(order.status))}</span>
           </div>
           ${orderStatusTrail(order.status)}
+          ${order.delivery_status === 'out_for_delivery' ? `<div class="ticket-delivery">🛵 Out with ${escapeHtml(order.delivery_rider_name || 'rider')}</div>` : ''}
           <ul class="ticket-items">
             ${visibleItems.length ? visibleItems.map(item => `<li><span class="qty">×${Number(item.quantity) || 1}</span><span>${escapeHtml(item.name || 'Menu item')}</span></li>`).join('') : `<li><span class="qty">×${Number(order.item_count) || 0}</span><span>Order items</span></li>`}
             ${items.length > visibleItems.length ? `<li class="ticket-more">+${items.length - visibleItems.length} more item${items.length - visibleItems.length === 1 ? '' : 's'}</li>` : ''}
@@ -1187,8 +1216,10 @@ const changed = new Set((changedIds || []).map(String));
           <div class="row"><span>Margin</span><span>${o.margin}%</span></div>` : ''}
       </div>
 
+      ${isDelivery ? deliveryPanelHTML(o) : ''}
+
       <div class="row-actions" id="orderModalActions" style="justify-content:flex-end;">
-        ${modalActionButtons(o)}
+        ${modalActionButtons(o, isDelivery)}
       </div>
     `;
 
@@ -1198,6 +1229,8 @@ const changed = new Set((changedIds || []).map(String));
         openOrderModal(btn.dataset.id);
       });
     });
+
+    if (isDelivery) bindDeliveryPanel(o);
 
     if (isDelivery) {
       const editBtn = document.getElementById('omFeeEditBtn');
@@ -1228,8 +1261,126 @@ const changed = new Set((changedIds || []).map(String));
     });
   }
 
-  function modalActionButtons(o) {
+  /* ========== Delivery hand-off panel (delivery orders only) ========== */
+  function deliveryPanelHTML(o) {
+    const confirmedBy = { code: 'customer\'s code', customer: 'the customer in My Orders', staff_override: 'Admin override' };
+    if (o.delivery_status === 'delivered') {
+      return `
+        <div class="dv-panel is-done">
+          <div class="dv-head"><span class="dv-dot"></span><strong>Delivered</strong></div>
+          <p>${escapeHtml(formatDate(o.delivered_at))} · confirmed by ${escapeHtml(confirmedBy[o.delivery_confirmed_by] || 'staff')}${o.delivery_rider_name ? ` · rider ${escapeHtml(o.delivery_rider_name)}` : ''}</p>
+        </div>`;
+    }
+    if (o.delivery_status === 'out_for_delivery') {
+      return `
+        <div class="dv-panel is-out">
+          <div class="dv-head"><span class="dv-dot"></span><strong>Out for delivery</strong></div>
+          <p>With <b>${escapeHtml(o.delivery_rider_name || 'rider')}</b> since ${escapeHtml(formatDate(o.delivery_dispatched_at, { timeStyle: 'short' }))}. At the door, ask the customer for the 4-digit code shown in their <b>My Orders</b>.</p>
+          <div class="dv-row">
+            <input id="dvCode" class="dv-code" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000" aria-label="Customer's 4-digit delivery code">
+            <button type="button" class="btn" id="dvConfirmBtn">Confirm delivery</button>
+          </div>
+          <div class="dv-row dv-secondary">
+            <span>Wrong rider?</span>
+            <select id="dvRider" aria-label="Change rider"><option>Loading staff…</option></select>
+            <button type="button" class="btn btn-outline small" id="dvDispatchBtn">Re-assign</button>
+          </div>
+          <div class="dv-msg" id="dvMsg" role="status"></div>
+        </div>`;
+    }
+    if (o.status === 'ready') {
+      return `
+        <div class="dv-panel">
+          <div class="dv-head"><span class="dv-dot"></span><strong>Ready to send out</strong></div>
+          <p>Pick who's delivering — any staff member can, including kitchen.</p>
+          <div class="dv-row">
+            <select id="dvRider" aria-label="Rider"><option>Loading staff…</option></select>
+            <button type="button" class="btn" id="dvDispatchBtn">Send out for delivery</button>
+          </div>
+          <div class="dv-msg" id="dvMsg" role="status"></div>
+        </div>`;
+    }
+    return `
+      <div class="dv-panel is-muted">
+        <div class="dv-head"><span class="dv-dot"></span><strong>Delivery</strong></div>
+        <p>Once this order is <b>Ready</b>, assign a rider here to send it out.</p>
+      </div>`;
+  }
+
+  async function bindDeliveryPanel(o) {
+    const msg = document.getElementById('dvMsg');
+    const say = (text, kind = '') => { if (msg) { msg.textContent = text; msg.className = `dv-msg ${kind}`; } };
+
+    const riderSel = document.getElementById('dvRider');
+    if (riderSel) {
+      try {
+        const res = await adminFetch('/api/admin/sales/delivery/riders');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not load staff.');
+        const current = o.delivery_rider_id || data.me;
+        riderSel.innerHTML = (data.riders || []).map(r =>
+          `<option value="${Number(r.id)}"${Number(r.id) === Number(current) ? ' selected' : ''}>${escapeHtml(r.name)}${Number(r.id) === Number(data.me) ? ' (me)' : ''} · ${escapeHtml(r.role)}</option>`
+        ).join('');
+      } catch (err) {
+        riderSel.innerHTML = '<option value="">Staff list unavailable</option>';
+        say(err.message, 'err');
+      }
+    }
+
+    document.getElementById('dvDispatchBtn')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      try {
+        const res = await adminFetch(`/api/admin/sales/orders/${o.id}/dispatch`, {
+          method: 'PATCH',
+          body: JSON.stringify({ rider_id: Number(riderSel?.value) }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not send out the order.');
+        showAlert(`Order #${o.id} is out for delivery with ${data.order.delivery_rider_name}.`, { title: 'On the way' });
+        openOrderModal(o.id);
+      } catch (err) {
+        say(err.message, 'err');
+        btn.disabled = false;
+      }
+    });
+
+    const codeInput = document.getElementById('dvCode');
+    codeInput?.addEventListener('input', () => { codeInput.value = codeInput.value.replace(/\D/g, '').slice(0, 4); });
+    codeInput?.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('dvConfirmBtn')?.click(); });
+
+    document.getElementById('dvConfirmBtn')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const code = codeInput?.value || '';
+      if (code.length !== 4) { say('Enter the 4-digit code from the customer.', 'err'); codeInput?.focus(); return; }
+      btn.disabled = true;
+      try {
+        const res = await adminFetch(`/api/admin/sales/orders/${o.id}/deliver`, {
+          method: 'POST',
+          body: JSON.stringify({ code }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not confirm delivery.');
+        showAlert(data.message || 'Delivered.', { title: `Order #${o.id} delivered` });
+        openOrderModal(o.id);
+      } catch (err) {
+        say(err.message, 'err');
+        btn.disabled = false;
+        codeInput?.select();
+      }
+    });
+  }
+
+  function modalActionButtons(o, isDelivery = false) {
     const id = o.id;
+    // Delivery orders that are Ready are finished from the delivery panel
+    // (send out → customer code). Admins keep a manual override.
+    if (isDelivery && o.status === 'ready') {
+      const override = session.staff?.role === 'Admin' && o.delivery_status === 'out_for_delivery'
+        ? `<button class="" data-action="completed" data-id="${id}" title="Admin override without the customer code">Mark delivered (override)</button>`
+        : '';
+      return `${override}<button class="danger" data-action="cancelled" data-id="${id}">Cancel</button>`;
+    }
     switch (o.status) {
       case 'pending':
         return `<button class="primary" data-action="confirmed" data-id="${id}">Confirm Order</button><button class="danger" data-action="cancelled" data-id="${id}">Cancel Order</button>`;

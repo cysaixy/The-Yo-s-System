@@ -1,5 +1,6 @@
 // src/controllers/customer/order.controller.js
 import pool from '../../config/db.js';
+import { ensureDeliveryColumns, isDeliveryOrderRow, deliveryCodeFor } from '../../services/deliveryService.js';
 import { restoreOrderInventory } from '../../utils/inventoryRestore.js';
 import { createPaymongoCheckoutSession } from '../../utils/paymongo.js';
 import { postOrderPayment } from '../../services/cashReconciliationService.js';
@@ -413,8 +414,10 @@ const ORDER_ITEM_AGG = (orderRef) => `
 
 export async function getOrder(req, res, next) {
   try {
+    await ensureDeliveryColumns();
     const { rows } = await pool.query(
       `SELECT o.*,
+              split_part(COALESCE(rider.name, ''), ' ', 1) AS delivery_rider_first_name,
               res.reservation_status, res.reservation_date, res.reservation_time,
               ${ORDER_ITEM_AGG('o.id')},
               COALESCE(
@@ -430,6 +433,7 @@ export async function getOrder(req, res, next) {
               ) AS payments
        FROM orders o
        LEFT JOIN reservations res ON res.id = o.reservation_id
+       LEFT JOIN staff rider ON rider.id = o.delivery_rider_id
        WHERE o.id = $1`,
       [req.params.id]
     );
@@ -465,8 +469,10 @@ export async function getCustomerOrders(req, res, next) {
       });
     }
 
+    await ensureDeliveryColumns();
     const { rows } = await pool.query(
       `SELECT o.*,
+              split_part(COALESCE(rider.name, ''), ' ', 1) AS delivery_rider_first_name,
               res.reservation_status, res.reservation_date, res.reservation_time,
               ${ORDER_ITEM_AGG('o.id')},
               COALESCE(
@@ -482,6 +488,7 @@ export async function getCustomerOrders(req, res, next) {
               ) AS payments
        FROM orders o
        LEFT JOIN reservations res ON res.id = o.reservation_id
+       LEFT JOIN staff rider ON rider.id = o.delivery_rider_id
        WHERE o.customer_id = $1
        ORDER BY o.datetime_ordered DESC`,
       [customer_id]
@@ -514,10 +521,21 @@ export async function getCustomerOrders(req, res, next) {
         } catch (e) {}
       }
       const cleanNotes = (o.notes || '').split('---CUSTOM_ITEMS_JSON---')[0].trim();
+      // The 4-digit hand-off code is shown only to the customer, only while
+      // a delivery is still on its way to them.
+      const showCode = isDeliveryOrderRow(o)
+        && !['completed', 'cancelled'].includes(o.status)
+        && o.delivery_status !== 'delivered';
+      // Internal staff/rate-limit fields never go to the customer.
+      const safe = { ...o };
+      delete safe.delivery_rider_id;
+      delete safe.delivery_code_attempts;
       return {
-        ...o,
+        ...safe,
         clean_notes: cleanNotes,
         custom_items: customItems,
+        delivery_code: showCode ? deliveryCodeFor(o) : null,
+        delivery_rider_name: o.delivery_rider_first_name || null,
       };
     });
 
@@ -616,6 +634,36 @@ export async function updateOrder(req, res, next) {
 
 // Lets a customer cancel their own order, but ONLY while it is still pending.
 // Both status update and inventory restoration happen in a single atomic transaction.
+// POST /api/customer/orders/:id/received — the customer confirms they have
+// their delivery (fallback when the rider couldn't enter the code).
+export async function confirmReceived(req, res, next) {
+  try {
+    const customer_id = req.user?.customer?.id;
+    const id = Number.parseInt(req.params.id, 10);
+    if (!customer_id) return res.status(400).json({ error: 'No customer profile found for this account.' });
+    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'Invalid order id.' });
+
+    await ensureDeliveryColumns();
+    const { rows } = await pool.query(
+      `UPDATE orders
+       SET delivery_status = 'delivered',
+           delivered_at = NOW(),
+           delivery_confirmed_by = 'customer',
+           status = CASE WHEN status = 'ready' THEN 'completed' ELSE status END,
+           status_updated_at = NOW()
+       WHERE id = $1 AND customer_id = $2 AND delivery_status = 'out_for_delivery'
+       RETURNING id, status, delivery_status, delivered_at`,
+      [id, customer_id]
+    );
+    if (!rows[0]) {
+      return res.status(409).json({ error: 'This order isn\'t out for delivery right now.' });
+    }
+    res.json({ order: rows[0], message: 'Thanks! Enjoy your meal.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function cancelOrder(req, res, next) {
   try {
     const customer_id = req.user?.customer?.id;

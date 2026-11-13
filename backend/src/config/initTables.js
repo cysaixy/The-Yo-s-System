@@ -1,3 +1,4 @@
+import { ensureDeliveryColumns } from '../services/deliveryService.js';
 // src/config/initTables.js
 import pool from './db.js';
 
@@ -268,6 +269,8 @@ export async function initTables() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
+
+    await ensureDeliveryColumns();
 
     console.log('Database tables initialized successfully.');
   } catch (err) {

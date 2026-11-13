@@ -197,7 +197,7 @@
   /* Hide header when embedded in customer-app.html iframe */
   .customer-app-embedded header { display: none !important; }
 </style>
-<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=7"></head>
+<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=8"></head>
 <body>
 
 <header>
@@ -746,6 +746,26 @@
     }
   };
 
+  // Customer confirms the delivery reached them (fallback to the rider code).
+  window.confirmReceived = async function(id, btn) {
+    if (!currentUser) return;
+    if (!confirm('Confirm you have received this order?')) return;
+    if (btn) { btn.disabled = true; btn.textContent = 'Confirming…'; }
+    try {
+      const idToken = await currentUser.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/customer/orders/${id}/received`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not confirm. Please try again.');
+      window.refreshOrders();
+    } catch (err) {
+      alert(err.message);
+      if (btn) { btn.disabled = false; btn.textContent = 'I received my order'; }
+    }
+  };
+
   window.cancelOrder = async function(id) {
     const orderId = id || currentDetailOrder?.id || window.currentDetailOrder?.id;
     if (!orderId) {
@@ -907,23 +927,46 @@
       pending: ['Order received', 'We\'ve got it — the counter will confirm it shortly.'],
       confirmed: ['Confirmed — we\'re on it', 'Your order is in the kitchen queue.'],
       preparing: ['Being prepared right now', 'The kitchen is working on your order.'],
-      ready: [isDelivery ? 'Ready — heading your way' : 'Ready for pickup at the pass', 'Done. Tracked. Every step from kitchen to table.'],
+      ready: isDelivery
+        ? ['Packed and ready', 'Your order is ready and will leave with a rider shortly.']
+        : ['Ready for pickup at the pass', 'Done. Tracked. Every step from kitchen to table.'],
       completed: ['Enjoy your meal!', 'This order is complete. Thanks for ordering from The~Yo\'s.'],
       cancelled: ['This order was cancelled', 'Need help? Message us or place a new order.'],
     };
     const statusKey = STEP_ALIASES[order.status] || order.status;
-    const [headline, subline] = HEADLINES[statusKey] || ['Order update', ''];
+    let [headline, subline] = HEADLINES[statusKey] || ['Order update', ''];
+    const onTheWay = isDelivery && order.delivery_status === 'out_for_delivery';
+    const delivered = isDelivery && order.delivery_status === 'delivered';
+    const leftAt = order.delivery_dispatched_at
+      ? new Date(order.delivery_dispatched_at).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
+      : '';
+    if (onTheWay) {
+      headline = 'On the way to you';
+      subline = `${order.delivery_rider_name ? esc(order.delivery_rider_name) + ' from The~Yo\'s' : 'Our rider'} left at ${leftAt}. Give them your delivery code at the door.`;
+    } else if (delivered) {
+      headline = 'Delivered — enjoy!';
+      subline = 'Your order reached you. Thanks for ordering from The~Yo\'s.';
+    }
+    // Hand-off code: big and highlighted while the order is on its way,
+    // smaller before that so the customer already has it ready.
+    const codeBlock = order.delivery_code
+      ? `<div class="oc-code${onTheWay ? ' is-live' : ''}">
+          <div><span>Delivery code</span><strong aria-label="Delivery code ${esc(order.delivery_code.split('').join(' '))}">${esc(order.delivery_code)}</strong></div>
+          <p>${onTheWay ? 'Tell this code to the rider once you have your order. Don\'t share it before then.' : 'You\'ll give this code to the rider when your order arrives.'}</p>
+        </div>`
+      : '';
     const placedTime = order.datetime_ordered
       ? new Date(order.datetime_ordered).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
       : '—';
     const payLabel = esc((order.payment_method || '—').toString().replace(/^./, c => c.toUpperCase()));
 
     return `<div class="order-card oc-v2">
-      <section class="oc-main">
+      <div class="oc-main">
         <p class="oc-kicker">My orders · #${order.id} · ${esc(orderType)}</p>
         <h2 class="oc-headline">${headline}</h2>
         <p class="oc-sub">${subline}</p>
         ${renderTracker(order.status, order)}
+        ${codeBlock}
         <div class="oc-tiles">
           <div class="oc-tile"><span>Placed</span><strong>${placedTime}</strong></div>
           <div class="oc-tile"><span>${parsedNotes.prefTime ? 'Preferred time' : 'Total'}</span><strong>${parsedNotes.prefTime ? esc(parsedNotes.prefTime) : peso(t.grandTotal)}</strong></div>
@@ -933,10 +976,11 @@
         ${deliveryNoteHTML(t)}
         <p class="order-meta" style="margin-top:10px;">Placed ${date}</p>
         <div class="oc-actions">
+          ${onTheWay ? `<button type="button" class="btn" onclick="confirmReceived(${order.id}, this)">I received my order</button>` : ''}
           <button type="button" class="btn btn-outline view-details-btn" onclick="openOrderDetails(${order.id})">View Details</button>
           ${order.status === 'pending' ? `<button type="button" class="btn btn-outline" style="color:#e05252; border-color:rgba(224,82,82,.4);" onclick="cancelOrder(${order.id})">Cancel order</button>` : ''}
         </div>
-      </section>
+      </div>
       <aside class="oc-side">
         <p class="oc-kicker">Order details</p>
         <h3>${items.length} item${items.length === 1 ? '' : 's'}</h3>

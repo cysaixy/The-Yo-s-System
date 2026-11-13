@@ -894,3 +894,15 @@ body .menu-head { margin-bottom: 18px; }
 body .menu-grid.active { grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
 body:not(.home-gsap) .section-head.menu-head h2 { font-size: clamp(1.9rem, 3.4vw, 2.7rem); line-height: 1.02; padding-bottom: 0; }
 body:not(.home-gsap) .section-head.menu-head h2::after { display: none; }
+
+/* My Orders — delivery hand-off code */
+.oc-code {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  margin-top: 16px; padding: 12px 16px; border-radius: 16px;
+  border: 1px dashed var(--brass-line); background: var(--surface-2);
+}
+.oc-code span { display: block; font: 700 .6rem 'Space Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.oc-code strong { display: block; font: 900 1.6rem/1 'Space Mono', monospace; letter-spacing: .35em; color: var(--ink); margin-top: 4px; }
+.oc-code p { flex: 1 1 200px; margin: 0; font-size: .84rem; color: var(--muted); line-height: 1.5; }
+.oc-code.is-live { border-style: solid; border-color: var(--brass); background: color-mix(in srgb, var(--brass) 10%, var(--surface)); box-shadow: 0 0 0 4px var(--brass-soft); }
+.oc-code.is-live strong { font-size: 2.3rem; color: var(--brass); }

@@ -8,6 +8,7 @@ import {
   getCustomerOrders,
   updateOrder,
   cancelOrder,
+  confirmReceived,
   createPayment,
   getPayment,
   createOrderCheckoutSession,
@@ -30,6 +31,9 @@ router.patch('/:id', verifyFirebaseToken, updateOrder);
 
 // Cancel an order while it is still pending
 router.post('/:id/cancel', verifyFirebaseToken, cancelOrder);
+
+// Customer confirms they received a delivery (proof-of-delivery fallback)
+router.post('/:id/received', verifyFirebaseToken, confirmReceived);
 
 router.post('/:id/payment', verifyFirebaseToken, createPayment);
 router.get('/:id/payment', verifyFirebaseToken, getPayment);

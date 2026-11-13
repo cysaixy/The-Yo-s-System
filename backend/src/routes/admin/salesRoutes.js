@@ -17,6 +17,7 @@ import {
   categorySalesReport,
   orderTypesReport,
 } from '../../controllers/admin/salesController.js';
+import { listRiders, dispatchOrder, confirmDelivery } from '../../controllers/admin/deliveryController.js';
 import { requireStaffAuth } from '../../middlewares/auth.middleware.js';
 import { liveStateLimiter } from '../../middlewares/rateLimit.middleware.js';
 import { requirePermission } from '../../middlewares/role.middleware.js';
@@ -39,6 +40,11 @@ salesRouter.patch('/orders/:id/status', updateOrderStatus);
 // Cashier access as viewing and confirming orders above — not gated
 // behind can_access_reports.
 salesRouter.patch('/orders/:id/delivery-fee', updateDeliveryFee);
+
+// Delivery hand-off — any active staff can be the rider (incl. kitchen).
+salesRouter.get('/delivery/riders', listRiders);
+salesRouter.patch('/orders/:id/dispatch', dispatchOrder);
+salesRouter.post('/orders/:id/deliver', confirmDelivery);
 
 // Payments and sales reports — genuinely behind can_access_reports
 salesRouter.get('/payments', requirePermission('can_access_reports'), listPayments);
