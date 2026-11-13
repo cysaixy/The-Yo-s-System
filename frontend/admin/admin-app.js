@@ -1,4 +1,4 @@
-import { renderAdminShell } from './admin-shell.js';
+import { renderAdminShell, groupLabelFor } from './admin-shell.js';
 import { adminFetch } from './admin-api.js';
 import { printerManager } from './receipt-printer.js?v=5';
 
@@ -114,6 +114,8 @@ if (session) {
     currentFeature = feature;
     document.title = `${FEATURES[feature]} — The~Yo's Admin`;
     document.querySelector('.admin-header h1').textContent = FEATURES[feature];
+    const groupEl = document.getElementById('adminHeaderGroup');
+    if (groupEl) groupEl.textContent = groupLabelFor(feature);
     document.querySelectorAll('[data-admin-nav-key]').forEach(link => {
       link.classList.toggle('active', link.dataset.adminNavKey === feature);
     });

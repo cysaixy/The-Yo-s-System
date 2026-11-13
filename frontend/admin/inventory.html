@@ -6,7 +6,7 @@
 <title>Inventory — The~Yo's Admin</title>
 <meta name="description" content="Manage The~Yo's inventory — ingredients, raw materials, packaging, and supplies.">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=11">
+<link rel="stylesheet" href="admin-shell.css?v=13">
 <style>
 /* ================================================================
    INVENTORY PAGE — Scoped styles (.inv-* namespace)
@@ -187,6 +187,34 @@
 .inv-table tbody tr:hover td { background: rgba(163,132,74,0.04); }
 .inv-table .item-name { font-weight: 600; }
 .inv-table .item-cat { font-size: 0.77rem; opacity: 0.5; margin-top: 2px; }
+
+/* ---- Item avatar: initials coloured by stock status + level bar ---- */
+.inv-item { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.inv-avatar {
+  --tone: var(--success);
+  --tint: rgba(46,125,79,.12);
+  position: relative; flex-shrink: 0;
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center;
+  background: var(--tint);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 22%, transparent);
+  overflow: hidden;
+}
+.inv-avatar span {
+  font: 900 .74rem/1 'Archivo', sans-serif; letter-spacing: .02em;
+  color: var(--tone); margin-top: -3px;
+}
+/* stock level relative to 2× the reorder point */
+.inv-avatar::before, .inv-avatar::after {
+  content: ''; position: absolute; left: 6px; right: 6px; bottom: 6px; height: 3px; border-radius: 3px;
+}
+.inv-avatar::before { background: color-mix(in srgb, var(--tone) 18%, transparent); }
+.inv-avatar::after { right: auto; width: calc((100% - 12px) * var(--fill, 1)); background: var(--tone); transition: width .5s ease; }
+.inv-avatar.is-below_reorder { --tone: #2c5fb0; --tint: rgba(44,95,176,.1); }
+.inv-avatar.is-low_stock     { --tone: var(--warning); --tint: rgba(184,134,11,.12); }
+.inv-avatar.is-out_of_stock  { --tone: var(--danger); --tint: rgba(192,57,43,.1); }
+.inv-avatar.is-out_of_stock span { opacity: .75; }
+.inv-table tbody tr:hover .inv-avatar { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 40%, transparent); }
 .inv-table .stock-qty {
   font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.9rem;
 }
@@ -1142,13 +1170,22 @@ function renderStockTable() {
     const s    = STATUS_META[i.stock_status] || STATUS_META.in_stock;
     const cost = Number(i.unit_cost || 0);
     const val  = Number(i.stock_quantity || 0) * cost;
-    const init = (i.name || '?')[0].toUpperCase();
+    // Two-letter initials ("Coffee Beans" -> "CB", "Milk" -> "MI").
+    const words = String(i.name || '?').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
+    const init = (words.length > 1 ? words[0][0] + words[1][0] : (words[0] || '?').slice(0, 2)).toUpperCase();
+    // Level bar: current stock against twice the reorder point (full = comfortably stocked).
+    const qty = Number(i.stock_quantity || 0);
+    const reorder = Number(i.reorder_level || 0);
+    const fill = qty <= 0 ? 0 : reorder > 0 ? Math.min(1, qty / (reorder * 2)) : 1;
+    const statusKey = STATUS_META[i.stock_status] ? i.stock_status : 'in_stock';
 
     return `
     <tr data-id="${i.id}">
       <td>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:32px;height:32px;border-radius:7px;background:var(--stone);display:flex;align-items:center;justify-content:center;font-family:'Archivo',sans-serif;font-weight:900;font-size:0.78rem;color:var(--brass-dark);flex-shrink:0;">${escapeHtml(init)}</div>
+        <div class="inv-item">
+          <div class="inv-avatar is-${statusKey}" style="--fill:${fill.toFixed(3)}" title="${escapeHtml(s.label)} · ${qty} ${escapeHtml(i.unit || 'pcs')}">
+            <span>${escapeHtml(init)}</span>
+          </div>
           <div>
             <div class="item-name">${escapeHtml(i.name)}</div>
             ${i.sku ? `<div class="item-cat">SKU: ${escapeHtml(i.sku)}</div>` : ''}

@@ -88,6 +88,16 @@ function hasAccess(item, staff) {
   return true; // default access - Dashboard, POS, Sales, Reservations, Settings
 }
 
+// Section name shown above the page title in the top bar ("Inventory" › "Products").
+export function groupLabelFor(key) {
+  const section = NAV_SECTIONS.find(s => s.items.some(i => i.key === key));
+  return section ? section.label : 'Overview';
+}
+
+function todayLabel() {
+  return new Date().toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Manila' });
+}
+
 function navLinkHTML(item, active, staff) {
   const allowed = hasAccess(item, staff);
   const badge = item.badge
@@ -535,9 +545,13 @@ export function renderAdminShell({ active, title }) {
             <button class="mobile-nav-toggle" id="adminMobileNavToggle" type="button" aria-label="Open menu" title="Open menu">
               <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
             </button>
-            <h1>${safeTitle}</h1>
+            <div class="admin-header-title">
+              <span class="admin-header-group" id="adminHeaderGroup">${escapeShellHtml(groupLabelFor(active))}</span>
+              <h1>${safeTitle}</h1>
+            </div>
           </div>
           <div class="admin-user">
+            <span class="admin-header-date" id="adminHeaderDate">${escapeShellHtml(todayLabel())}</span>
             <div class="admin-notification-wrap">
               <button class="admin-notification-btn" id="adminOnlineOrdersBtn" title="Notifications" aria-label="Notifications">
                 <svg viewBox="0 0 24 24" class="bell-icon"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -545,12 +559,17 @@ export function renderAdminShell({ active, title }) {
               </button>
               <div class="online-order-panel" id="onlineOrderPanel"></div>
             </div>
-            <div class="who">
-              <strong>${displayName}</strong>
-              <span>${displayRole}</span>
+            <div class="admin-user-chip">
+              <div class="avatar">${initial}</div>
+              <div class="who">
+                <strong>${displayName}</strong>
+                <span>${displayRole}</span>
+              </div>
             </div>
-            <div class="avatar">${initial}</div>
-            <button class="logout-btn" id="adminLogoutBtn">Log Out</button>
+            <button class="logout-btn" id="adminLogoutBtn" type="button" title="Log out" aria-label="Log out">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+              <span>Log out</span>
+            </button>
           </div>
         </header>
         <div class="admin-body">

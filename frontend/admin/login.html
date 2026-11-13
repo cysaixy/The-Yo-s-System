@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Staff Login — The~Yo's Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin-shell.css?v=6">
+<link rel="stylesheet" href="admin-shell.css?v=13">
 <style>
   /* =====================================================================
      ADMIN LOGIN — Redesigned split layout
@@ -380,6 +380,128 @@
     text-decoration: none;
   }
   .customer-login-link a:hover { text-decoration: underline; }
+
+  /* ==================================================================
+     v2 — photo brand panel + icon fields (matches the customer sign-in)
+     ================================================================== */
+  body {
+    background:
+      radial-gradient(60% 50% at 8% 0%, rgba(163,132,74,.12), transparent 60%),
+      radial-gradient(50% 50% at 100% 100%, rgba(163,132,74,.10), transparent 60%),
+      #f6f2ea;
+  }
+  .login-wrap { max-width: 1080px; }
+  .login-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    border-radius: 28px;
+    border: 1px solid var(--line);
+    box-shadow: 0 2px 4px rgba(20,16,10,.05), 0 40px 90px -40px rgba(20,16,10,.55);
+  }
+
+  /* ---- Brand panel ---- */
+  .staff-art {
+    isolation: isolate;
+    padding: clamp(28px, 3.4vw, 44px);
+    gap: 22px;
+    justify-content: flex-start;
+    min-height: 600px;
+    color: #f6eee1;
+    background:
+      linear-gradient(180deg, rgba(20,15,10,.66) 0%, rgba(20,15,10,.6) 40%, rgba(20,15,10,.95) 100%),
+      radial-gradient(120% 80% at 90% 0%, rgba(201,160,92,.55), transparent 60%),
+      url("/pics&vids/the-yo's_sample-pic-cateting.jpg") center / cover no-repeat,
+      #241a10;
+  }
+  .staff-art::before, .staff-art::after { display: none; }
+
+  .sa-top { display: flex; align-items: center; gap: 12px; }
+  .sa-logo { width: 44px; height: 44px; border-radius: 12px; object-fit: cover; box-shadow: 0 0 0 1px rgba(255,255,255,.25), 0 8px 18px -8px rgba(0,0,0,.6); }
+  .sa-top strong { display: block; font: 900 1rem/1.1 'Archivo', sans-serif; text-transform: uppercase; letter-spacing: .02em; }
+  .sa-top span { display: block; font: 700 .6rem 'Plus Jakarta Sans', sans-serif; letter-spacing: .14em; text-transform: uppercase; color: rgba(246,238,225,.7); margin-top: 3px; }
+
+  .sa-copy { margin-top: auto; }
+  .sa-eyebrow { margin: 0 0 12px; font: 800 .64rem 'Plus Jakarta Sans', sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #e2c48c; }
+  .sa-title { margin: 0; font: 900 clamp(2.1rem, 3.8vw, 3rem)/.98 'Archivo', sans-serif; letter-spacing: -.02em; color: #fff; }
+  .sa-title em { font-style: normal; color: #e2c48c; }
+  .sa-sub { margin: 14px 0 0; max-width: 380px; font-size: .92rem; line-height: 1.6; color: rgba(246,238,225,.82); }
+
+  .sa-tools { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .sa-tool {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 16px;
+    background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.16);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: background .3s ease, transform .4s cubic-bezier(.22,1,.36,1);
+  }
+  .sa-tool:hover { background: rgba(255,255,255,.14); transform: translateY(-2px); }
+  .sa-tool.is-wide { grid-column: 1 / -1; }
+  .sa-tool strong { font: 700 .88rem/1.25 'Plus Jakarta Sans', sans-serif; color: #fff; }
+  .sa-tool div span { display: block; font-size: .76rem; color: rgba(246,238,225,.72); margin-top: 2px; }
+  .sa-tool-icon {
+    flex-shrink: 0; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center;
+    background: linear-gradient(140deg, #d9b878, #a3844a); box-shadow: 0 8px 16px -8px rgba(163,132,74,.9);
+  }
+  .sa-tool-icon svg { width: 18px; height: 18px; fill: none; stroke: #1a130c; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .sa-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.14); }
+  .sa-shift, .sa-secure {
+    display: inline-flex; align-items: center; gap: 8px;
+    font: 600 .74rem 'Plus Jakarta Sans', sans-serif; color: rgba(246,238,225,.82);
+    padding: 7px 12px; border-radius: 999px; background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.1);
+  }
+  .sa-shift i { width: 8px; height: 8px; border-radius: 50%; background: #9aa0a6; }
+  .sa-shift.is-open i { background: #4caf7d; box-shadow: 0 0 0 4px rgba(76,175,125,.2); }
+  .sa-shift.is-closed i { background: #e57368; }
+  .sa-secure svg { width: 13px; height: 13px; fill: none; stroke: #e2c48c; stroke-width: 2; }
+
+  /* ---- Form panel ---- */
+  .login-card { background: #fff; padding: clamp(32px, 4vw, 60px) clamp(24px, 4vw, 60px); }
+  .sa-pill {
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 7px;
+    margin-bottom: 16px; padding: 7px 12px; border-radius: 999px;
+    background: rgba(163,132,74,.12); color: var(--brass-dark);
+    font: 800 .62rem 'Plus Jakarta Sans', sans-serif; letter-spacing: .14em; text-transform: uppercase;
+  }
+  .sa-pill svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .login-page-heading { margin-bottom: 28px; }
+  .login-page-heading h1 {
+    margin: 0 0 8px;
+    font: 900 clamp(2rem, 3.4vw, 2.6rem)/1 'Archivo', sans-serif;
+    letter-spacing: -.02em; color: var(--ink);
+  }
+  .login-page-heading p { font-size: .92rem; }
+
+  .login-field input {
+    min-height: 50px;
+    padding-left: 46px;
+    border-radius: 12px;
+    background-repeat: no-repeat;
+    background-position: 16px 50%;
+    background-size: 17px 17px;
+  }
+  .login-field input:focus { background-color: #fff; box-shadow: 0 0 0 4px rgba(163,132,74,.14); }
+  #staffEmail { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3844a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E"); }
+  #staffPassword { padding-right: 48px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3844a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E"); }
+  .login-submit {
+    min-height: 52px; border-radius: 999px !important;
+    box-shadow: 0 14px 28px -14px rgba(138,109,58,.95);
+    transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease, background .2s ease;
+  }
+  .login-submit:hover:not(:disabled) { transform: translateY(-1px); }
+  .customer-login-link { margin-top: 26px; }
+
+  html { background: #f6f2ea; min-height: 100%; }
+  body { min-height: 100vh; }
+  @media (max-width: 760px) {
+    .login-split { grid-template-columns: 1fr; }
+    .staff-art { min-height: 0; gap: 18px; }
+    .sa-tools { display: none; }
+    .sa-copy { margin-top: 6px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sa-tool, .login-submit { transition: none; }
+  }
 </style>
 </head>
 <body>
@@ -388,51 +510,55 @@
   <div class="login-split">
 
     <!-- LEFT — dark brass branding panel -->
-    <div class="login-art-col">
-      <div class="art-top">
-        <div class="art-logo">
-          <img src="/pics&vids/the-yo's_logo.jpg" alt="The~Yo's Logo">
+    <aside class="login-art-col staff-art" aria-label="About the staff portal">
+      <div class="sa-top">
+        <img src="/pics&amp;vids/the-yo's_logo.jpg" alt="" class="sa-logo" width="44" height="44">
+        <div>
+          <strong>The~Yo's</strong>
+          <span>Staff &amp; Admin Portal</span>
         </div>
-        <p class="art-eyebrow">The~Yo's Resto Bar</p>
       </div>
 
-      <div class="art-headline">
-        <h2 class="art-title">Staff &amp;<br>Admin Portal.</h2>
-        <p class="art-sub">Manage orders, reservations, inventory, and your team — all in one place.</p>
+      <div class="sa-copy">
+        <p class="sa-eyebrow">Back of house</p>
+        <h2 class="sa-title">Run the floor,<br><em>from one place.</em></h2>
+        <p class="sa-sub">Orders, reservations, inventory and your team — everything the shift needs.</p>
       </div>
 
-      <div class="art-access-card">
-        <h4>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Secure Staff Access
-        </h4>
-        <div class="art-access-item"><div class="access-dot"></div>Order &amp; Reservation Management</div>
-        <div class="art-access-item"><div class="access-dot"></div>Inventory &amp; Recipe Tracking</div>
-        <div class="art-access-item"><div class="access-dot"></div>Sales Reports &amp; Analytics</div>
-      </div>
+      <ul class="sa-tools">
+        <li class="sa-tool is-wide">
+          <span class="sa-tool-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg></span>
+          <div><strong>Live orders &amp; POS</strong><span>Confirm, prepare and print receipts in real time.</span></div>
+        </li>
+        <li class="sa-tool">
+          <span class="sa-tool-icon"><svg viewBox="0 0 24 24"><path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="M3 7.5v9L12 21l9-4.5v-9"/></svg></span>
+          <strong>Inventory</strong>
+        </li>
+        <li class="sa-tool">
+          <span class="sa-tool-icon"><svg viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-6"/><path d="M2 20h20"/></svg></span>
+          <strong>Sales reports</strong>
+        </li>
+      </ul>
 
-      <div class="art-footer">
-        <div><strong>8AM–8PM</strong><span>Operating Hours</span></div>
-        <div><strong>2nd Flr</strong><span>DKB Building</span></div>
-        <div><strong>Baggao</strong><span>Cagayan</span></div>
+      <div class="sa-foot">
+        <span class="sa-shift" id="saShift"><i aria-hidden="true"></i><span>Store hours · 8AM–8PM</span></span>
+        <span class="sa-secure">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          Encrypted session
+        </span>
       </div>
-    </div>
+    </aside>
 
     <!-- RIGHT — form panel -->
     <div class="login-card">
-      <div class="login-brand">
-        <div class="brand-mark">
-          <img src="/pics&vids/the-yo's_logo.jpg" alt="The~Yo's Logo">
-        </div>
-        <div class="login-brand-text">
-          <h1>The~Yo's</h1>
-          <span>Staff &amp; Admin Panel</span>
-        </div>
-      </div>
+      <span class="sa-pill">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Staff &amp; Admin Panel
+      </span>
 
       <div class="login-page-heading">
-        <h2>Welcome back</h2>
-        <p>Sign in with your staff credentials to continue.</p>
+        <h1>Welcome back</h1>
+        <p>Sign in with your staff credentials to start your shift.</p>
       </div>
 
       <div class="login-expired-notice" id="expiredNotice">
@@ -465,6 +591,17 @@
 </div>
 
 <script type="module">
+  // Store-hours status on the brand panel (Philippine time, 8AM–8PM).
+  (() => {
+    const el = document.getElementById('saShift');
+    if (!el) return;
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', hour12: false }).formatToParts(new Date());
+    const hour = Number(parts.find(p => p.type === 'hour')?.value) % 24;
+    const open = hour >= 8 && hour < 20;
+    el.classList.add(open ? 'is-open' : 'is-closed');
+    el.querySelector('span').textContent = open ? 'Store open · until 8PM' : 'Store closed · opens 8AM';
+  })();
+
   // Show the expired-session notice if redirected here with ?expired=1
   const params = new URLSearchParams(window.location.search);
   if (params.get('expired') === '1') {
