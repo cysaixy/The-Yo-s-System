@@ -978,7 +978,7 @@
   .customer-app-embedded header { display: none !important; }
 
 </style>
-<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=4"></head>
+<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=7"></head>
 <body data-no-floating-cart>
 
 <header>
@@ -1064,7 +1064,8 @@
       </div>
 
       <div class="kiosk-cart-panel">
-        <span class="cart-title">My Order</span>
+        <span class="tray-eyebrow">Tap to order</span>
+        <span class="cart-title">Your Order Tray</span>
         <span class="cart-panel-subtitle">Review your picks before checkout.</span>
         <div class="cart-preview" style="border:none; padding:0; margin:0;">
           <div class="cart-list" id="cartListContainer">
@@ -1161,7 +1162,8 @@
 
       <!-- STEP 1: CART REVIEW -->
       <div class="checkout-step-panel" id="stepCart">
-        <h3 class="checkout-step-title">Review Your Order</h3>
+        <span class="tray-eyebrow">Tap to order</span>
+        <h3 class="checkout-step-title">Your Order Tray</h3>
         <div class="cart-list" id="checkoutCartList" style="max-height:none;"></div>
         <div class="order-summary-box" style="border-top:1px dashed var(--line); margin-top:6px; padding-top:16px;">
           <div>
@@ -1173,7 +1175,8 @@
 
       <!-- STEP 2: YOUR INFO -->
       <div class="checkout-step-panel" id="stepInfo">
-        <h3 class="checkout-step-title">Your Details</h3>
+        <span class="tray-eyebrow">Your details</span>
+        <h3 class="checkout-step-title">Review Your Order</h3>
 
         <div class="signed-in-banner" id="signedInBanner" style="display:none;">
           <span>Ordering as <strong id="signedInEmail"></strong></span>
@@ -1190,8 +1193,13 @@
 
         <div class="form-row">
           <div>
-            <label for="orderType">Service / Order Type</label>
-            <select id="orderType" onchange="onOrderTypeChange()">
+            <label for="orderType">Order type</label>
+            <div class="ot-seg" id="orderTypeSeg" role="radiogroup" aria-label="Order type">
+              <button type="button" role="radio" aria-checked="false" data-value="Dine-In">Dine-in</button>
+              <button type="button" role="radio" aria-checked="false" data-value="Takeout">Takeout</button>
+              <button type="button" role="radio" aria-checked="false" data-value="Delivery">Delivery</button>
+            </div>
+            <select id="orderType" class="ot-select-hidden" onchange="onOrderTypeChange()" tabindex="-1" aria-hidden="true">
               <option value="" disabled selected>Select order type</option>
               <option value="Dine-In">Dine-In (At Table)</option>
               <option value="Takeout">Advanced Takeout Pick-up</option>
@@ -1228,8 +1236,8 @@
         </div>
 
         <div class="payments-badge-wrapper" style="margin-top:6px;">
-          <label class="payment-card-label"><input type="radio" name="paymentChoice" value="GCash" checked><span class="payment-pill p-gcash">GCash (Online)</span></label>
-          <label class="payment-card-label"><input type="radio" name="paymentChoice" value="Cash"><span class="payment-pill p-cash">Cash (Counter / On Delivery)</span></label>
+          <label class="payment-card-label"><input type="radio" name="paymentChoice" value="GCash" checked><span class="pay-card"><strong>GCash</strong><small>Pay online now</small></span></label>
+          <label class="payment-card-label"><input type="radio" name="paymentChoice" value="Cash"><span class="pay-card"><strong>Cash</strong><small>Pay at counter / on delivery</small></span></label>
         </div>
 
         <div class="order-summary-box" style="border-top:1px dashed var(--line); margin-top:22px; padding-top:16px;">
@@ -1770,9 +1778,9 @@
       <div class="cart-row">
         <div class="cart-row-main" style="max-width:75%; cursor:pointer;" onclick="openCustomizationModal(${entry.id}, ${entry.uniqueCartId})" title="Tap to edit">
           ${productImageTemplate(entry.image_url, entry.name, 'cart-item-thumb')}
+          <span class="tray-qty">${entry.quantity}×</span>
           <div style="min-width:0;">
             <strong>${entry.name}</strong>
-            <span style="color:var(--brass); margin-left:6px; font-family:'Space Mono'; font-weight:700;">x${entry.quantity}</span>
             ${modsHTML}
             ${addonsHTML}
             <span style="display:inline-flex; align-items:center; gap:4px; font-size:0.7rem; color:var(--ink); opacity:0.4; margin-top:2px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>Tap to edit details</span>
@@ -2352,6 +2360,7 @@
 
 <script src="theme.js"></script>
 <script src="global.js"></script>
+<script src="order-ui.js?v=1" defer></script>
 <script src="motion.js?v=3" defer></script>
 </body>
 </html>

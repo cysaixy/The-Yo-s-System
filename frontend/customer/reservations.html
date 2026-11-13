@@ -116,7 +116,7 @@
     display: none !important;
   }
 </style>
-<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=4"></head>
+<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=7"></head>
 <body>
 
 <header>
@@ -242,8 +242,29 @@
       </div>
 
     </div>
+
+    <!-- Middle: latest real guest review -->
+    <aside class="rs-card rs-review" aria-labelledby="rsReviewTitle">
+      <p class="eyebrow">Guest reviews</p>
+      <h3 id="rsReviewTitle" class="rs-title">Check it twice</h3>
+      <div class="rs-review-body" id="rsReviewBody">
+        <p class="rs-muted">Loading what guests are saying…</p>
+      </div>
+      <a href="/reviews" class="rs-pill-btn">Leave a review</a>
+    </aside>
+
+    <!-- Right: coffee night (theme) -->
+    <aside class="rs-card rs-theme" aria-labelledby="rsThemeTitle">
+      <p class="eyebrow">Coffee night</p>
+      <button type="button" class="rs-cup" id="rsThemeBtn" aria-label="Switch between day mode and coffee night">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5V9Z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M9 3.5c.8.8.8 1.7 0 2.5M12 3.5c.8.8.8 1.7 0 2.5"/></svg>
+      </button>
+      <h3 id="rsThemeTitle" class="rs-theme-mode">Day mode</h3>
+      <p class="rs-muted">Tap the cup to switch — or use the cup in the header.</p>
+    </aside>
   </div>
 </section>
+<script type="module" src="reserve-side.js?v=1"></script>
 
 <script type="module">
   import { auth, onAuthStateChanged, API_BASE_URL } from "./firebase-init.js";

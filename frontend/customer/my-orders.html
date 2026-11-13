@@ -197,7 +197,7 @@
   /* Hide header when embedded in customer-app.html iframe */
   .customer-app-embedded header { display: none !important; }
 </style>
-<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=4"></head>
+<link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="refresh.css?v=7"></head>
 <body>
 
 <header>
@@ -901,24 +901,45 @@
     const items = getOrderItems(order);
     const t = totalsFor(order);
 
-    return `<div class="order-card">
-      <div class="order-card-head">
-        <div>
-          <div class="order-id">Order #${order.id}</div>
-          <div class="order-meta">Placed: ${date} · ${(order.order_type || '').replace('_', ' ')}</div>
-          ${parsedNotes.prefTime ? `<div class="order-meta" style="color:var(--brass); font-weight:600; margin-top:2px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Preferred Time: ${esc(parsedNotes.prefTime)}</div>` : ''}
-          ${(order.order_type === 'online' && order.delivery_address) ? `<div class="order-meta">Deliver to: ${order.delivery_address}</div>` : ''}
+    const orderType = (order.order_type || '').replace('_', ' ');
+    const isDelivery = isDeliveryOrder(order);
+    const HEADLINES = {
+      pending: ['Order received', 'We\'ve got it — the counter will confirm it shortly.'],
+      confirmed: ['Confirmed — we\'re on it', 'Your order is in the kitchen queue.'],
+      preparing: ['Being prepared right now', 'The kitchen is working on your order.'],
+      ready: [isDelivery ? 'Ready — heading your way' : 'Ready for pickup at the pass', 'Done. Tracked. Every step from kitchen to table.'],
+      completed: ['Enjoy your meal!', 'This order is complete. Thanks for ordering from The~Yo\'s.'],
+      cancelled: ['This order was cancelled', 'Need help? Message us or place a new order.'],
+    };
+    const statusKey = STEP_ALIASES[order.status] || order.status;
+    const [headline, subline] = HEADLINES[statusKey] || ['Order update', ''];
+    const placedTime = order.datetime_ordered
+      ? new Date(order.datetime_ordered).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
+      : '—';
+    const payLabel = esc((order.payment_method || '—').toString().replace(/^./, c => c.toUpperCase()));
+
+    return `<div class="order-card oc-v2">
+      <section class="oc-main">
+        <p class="oc-kicker">My orders · #${order.id} · ${esc(orderType)}</p>
+        <h2 class="oc-headline">${headline}</h2>
+        <p class="oc-sub">${subline}</p>
+        ${renderTracker(order.status, order)}
+        <div class="oc-tiles">
+          <div class="oc-tile"><span>Placed</span><strong>${placedTime}</strong></div>
+          <div class="oc-tile"><span>${parsedNotes.prefTime ? 'Preferred time' : 'Total'}</span><strong>${parsedNotes.prefTime ? esc(parsedNotes.prefTime) : peso(t.grandTotal)}</strong></div>
+          <div class="oc-tile"><span>${t.amountPaid > 0 ? 'Paid' : 'Payment'}</span><strong>${payLabel}</strong></div>
         </div>
-        <div class="order-total">
-          <div class="card-totals">${totalsRowsHTML(t)}</div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:10px;">
-            <button type="button" class="btn btn-outline view-details-btn" onclick="openOrderDetails(${order.id})">View Details</button>
-            ${order.status === 'pending' ? `<button type="button" class="btn btn-outline" style="color:#e05252; border-color:rgba(224,82,82,.4); padding:8px 12px; font-size:0.72rem;" onclick="cancelOrder(${order.id})">Cancel</button>` : ''}
-          </div>
+        ${(isDelivery && order.delivery_address) ? `<p class="order-meta" style="margin-top:12px;">Deliver to: ${esc(order.delivery_address)}</p>` : ''}
+        ${deliveryNoteHTML(t)}
+        <p class="order-meta" style="margin-top:10px;">Placed ${date}</p>
+        <div class="oc-actions">
+          <button type="button" class="btn btn-outline view-details-btn" onclick="openOrderDetails(${order.id})">View Details</button>
+          ${order.status === 'pending' ? `<button type="button" class="btn btn-outline" style="color:#e05252; border-color:rgba(224,82,82,.4);" onclick="cancelOrder(${order.id})">Cancel order</button>` : ''}
         </div>
-      </div>
-      ${renderTracker(order.status, order)}
-      ${deliveryNoteHTML(t)}
+      </section>
+      <aside class="oc-side">
+        <p class="oc-kicker">Order details</p>
+        <h3>${items.length} item${items.length === 1 ? '' : 's'}</h3>
       <div class="order-items">
         ${items.length
           ? items.map(it => {
@@ -927,12 +948,15 @@
                 .join('');
               const customTag = it.is_custom ? ' <span style="font-size:0.75rem; color:var(--brass); opacity:0.85;">(Custom Item)</span>' : '';
               return `<div class="order-item-row">
-                <span><span class="qty">×${it.quantity}</span>${esc(it.item_name) || 'Item #' + it.menu_id}${customTag}${it.notes ? ` <span style="opacity:.6; font-size:0.8em;">(${esc(it.notes)})</span>` : ''}${addons}</span>
+                <span class="qty">${it.quantity}×</span>
+                <span>${esc(it.item_name) || 'Item #' + it.menu_id}${customTag}${it.notes ? ` <span style="display:block; opacity:.6; font-size:0.8em;">${esc(it.notes)}</span>` : ''}${addons}</span>
                 <span>${peso(it.subtotal)}</span>
               </div>`;
             }).join('')
           : '<div class="order-item-row" style="opacity:.5;">No item details available.</div>'}
       </div>
+        <div class="card-totals" style="margin-top:12px;">${totalsRowsHTML(t)}</div>
+      </aside>
     </div>`;
   }
 

@@ -75,7 +75,8 @@ async function sendOtpEmail(email, code) {
   const port = process.env.SMTP_PORT;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
-  const from = process.env.EMAIL_FROM || user || 'no-reply@theyos.local';
+  // Vercel has this configured as FROM_EMAIL; accept either name.
+  const from = process.env.EMAIL_FROM || process.env.FROM_EMAIL || user || 'no-reply@theyos.local';
 
   if (!host || !user || !pass) {
     return { sent: false, code };
