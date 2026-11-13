@@ -736,6 +736,7 @@
     signOut, 
     onAuthStateChanged,
     updatePassword as firebaseUpdatePassword,
+    sendPasswordResetEmail,
     syncCustomerProfile,
     API_BASE_URL 
   } from "./firebase-init.js";
@@ -1067,6 +1068,36 @@
   let pwVerifiedEmail = null;
   let pwResendTimer = null;
 
+  // Backup path when our verification email can't be delivered: Firebase
+  // emails a secure reset link to the account's own address.
+  function showResetLinkFallback(statusId, email) {
+    const status = document.getElementById(statusId);
+    if (!status) return;
+    status.className = 'account-status err';
+    status.textContent = 'We couldn\'t send the verification code right now. ';
+    const link = document.createElement('button');
+    link.type = 'button';
+    link.className = 'btn-google';
+    link.style.marginTop = '10px';
+    link.textContent = 'Email me a password reset link instead';
+    link.addEventListener('click', async () => {
+      link.disabled = true;
+      link.textContent = 'Sending…';
+      try {
+        await sendPasswordResetEmail(auth, email);
+        status.className = 'account-status ok';
+        status.textContent = `Reset link sent to ${email}. Open it to choose a new password (check Spam too).`;
+      } catch (fbErr) {
+        link.disabled = false;
+        link.textContent = 'Email me a password reset link instead';
+        status.className = 'account-status err';
+        status.textContent = friendlyAuthError(fbErr);
+        status.appendChild(link);
+      }
+    });
+    status.appendChild(link);
+  }
+
   window.handleSendPasswordCode = async function (isResend) {
     const user = auth.currentUser;
     if (!user || !user.email) {
@@ -1086,7 +1117,15 @@
         body: JSON.stringify({ email: user.email }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not send verification code.');
+      if (!res.ok) {
+        // Our mail server couldn't send the code: offer Firebase's own
+        // password-reset email instead (separate delivery service).
+        if (data.code === 'EMAIL_DELIVERY_FAILED') {
+          showResetLinkFallback(statusId, user.email);
+          return;
+        }
+        throw new Error(data.error || 'Could not send verification code.');
+      }
 
       document.getElementById('pwStage1').style.display = 'none';
       document.getElementById('pwStage2').style.display = 'block';

@@ -13,6 +13,7 @@ import {
   signOut,
   onAuthStateChanged,
   updatePassword,
+  sendPasswordResetEmail,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -39,6 +40,7 @@ export {
   signOut,
   onAuthStateChanged,
   updatePassword,
+  sendPasswordResetEmail,
 };
 
 // Syncs the Firebase-authenticated user's profile fields (name, phone,
